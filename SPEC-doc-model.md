@@ -1,0 +1,246 @@
+# Spec: `doc-model`
+
+Shared stack, commands, style and boundaries: see `SPEC.md`. Module map: `CAPABILITY-MAP.md`.
+
+## Objective
+
+The single, pure data layer for a Chalkbond document. Every other module reads documents from
+here and changes them only through `doc-model` operations. It knows *structure and geometry*
+but no chemistry rules (valence, formulas → `chem-core`) and no drawing (→ `svg-render`).
+
+It must make three things cheap for later modules:
+1. **Undo/redo of everything**, including multi-step gestures as one step.
+2. **Copy/paste and templates**: extract a sub-document and insert it elsewhere with fresh ids.
+3. **Lossless save/open** with a versioned schema that can migrate forward.
+
+## Scope
+
+In: types, id generation, edit operations, transactions + history, invariants, geometry
+helpers (bounds, transforms), sub-document extract/insert, serialization + migration.
+
+Out: chemistry perception, rendering, hit-testing on screen, clipboard, file I/O (the module
+produces/consumes strings; `app-shell` reads/writes disk).
+
+## Data Model
+
+Coordinates are in **bond-length units (BLU)**: a standard bond is 1.0 long. `svg-render`
+multiplies by the style preset's bond length, so switching Slides ↔ Journal style rescales the
+whole figure consistently. +y points down (screen convention).
+
+```ts
+type AtomId   = Brand<'AtomId'>;    type BondId   = Brand<'BondId'>;
+type ObjectId = Brand<'ObjectId'>;  type GroupId  = Brand<'GroupId'>;
+type Color    = `#${string}`;       // #rrggbb
+type Point    = { x: number; y: number };
+
+interface Atom {
+  id: AtomId;
+  x: number; y: number;
+  element: ElementSymbol;          // 'C', 'N', 'Cl', …; 'R'/'X' pseudo-atoms allowed
+  label?: string;                  // abbreviation/display label: 'Ph', 'OMe', 'CO2H', 'Boc'
+  charge: number;                  // -4..+4
+  isotope?: number;
+  explicitH?: number;              // undefined = automatic (chem-core decides)
+  radical: 0 | 1 | 2;              // 0 none, 1 doublet (•), 2 triplet/diradical
+  lonePairs?: number;              // displayed lone pairs (teaching annotation), 0..4
+  partialCharge?: 'δ+' | 'δ-' | 'δδ+' | 'δδ-';
+  number?: string;                 // atom-numbering annotation, e.g. '1', 'α'
+  color?: Color;
+}
+
+type BondOrder  = 1 | 2 | 3 | 1.5;  // 1.5 = aromatic/delocalized — see "Aromatic rings" below
+type BondStereo = 'none' | 'wedge' | 'hash' | 'wavy' | 'bold';
+
+interface Bond {
+  id: BondId;
+  a1: AtomId; a2: AtomId;          // wedge/hash narrow end at a1
+  order: BondOrder;
+  stereo: BondStereo;
+  doublePlacement: 'auto' | 'center' | 'left' | 'right';
+  color?: Color;
+}
+
+/** Attachment point for curved arrows and callouts; follows the structure when it moves. */
+type Anchor =
+  | { kind: 'point'; p: Point }
+  | { kind: 'atom'; atom: AtomId; offset?: Point }       // offset → e.g. a lone pair
+  | { kind: 'bond'; bond: BondId; t?: number };          // t ∈ [0,1] along bond, default .5
+
+type ArrowKind = 'forward' | 'equilibrium' | 'retro' | 'resonance' | 'no-go';
+
+type DrawObject =
+  | { type: 'arrow'; id: ObjectId; kind: ArrowKind; from: Point; to: Point }
+  | { type: 'curved-arrow'; id: ObjectId; head: 'full' | 'fishhook';
+      from: Anchor; to: Anchor; bend: number }           // bend: signed curvature
+  | { type: 'plus'; id: ObjectId; at: Point }
+  | { type: 'text'; id: ObjectId; at: Point; runs: TextRun[];
+      align: 'left' | 'center' | 'right';
+      attachedTo?: { arrow: ObjectId; slot: 'above' | 'below' } }   // reaction conditions
+  | { type: 'caption'; id: ObjectId; runs: TextRun[]; target: AtomId[] } // compound number under a structure
+  | { type: 'callout'; id: ObjectId; at: Point; runs: TextRun[]; anchor: Anchor }
+  | { type: 'bracket'; id: ObjectId; shape: 'square' | 'round' | 'curly';
+      rect: Rect; corner?: TextRun[] }                   // e.g. ‡, n, 2+
+  | { type: 'shape'; id: ObjectId; shape: 'rect' | 'ellipse'; rect: Rect;
+      stroke?: Color; fill?: Color; fillOpacity: number };  // highlights
+
+interface TextRun {
+  text: string;
+  script?: 'sub' | 'sup';
+  bold?: boolean; italic?: boolean;
+  color?: Color;
+}
+
+interface Group { id: GroupId; members: { atoms: AtomId[]; objects: ObjectId[] } }
+
+interface Doc {
+  schemaVersion: 1;
+  atoms:   Record<AtomId, Atom>;
+  bonds:   Record<BondId, Bond>;
+  objects: Record<ObjectId, DrawObject>;
+  zOrder:  ObjectId[];             // paint order of objects; atoms/bonds paint below objects,
+                                   // except 'shape' highlights, which paint beneath structures
+  groups:  Record<GroupId, Group>;
+  style:   { preset: 'slides' | 'journal'; overrides: Partial<StyleSettings> };
+  meta:    { title?: string; created: string; modified: string };  // ISO 8601
+}
+```
+
+**Molecules are not stored.** A molecule (fragment) is a connected component of the atom/bond
+graph, derived on demand via `fragments(doc)`. Bonding two fragments together or deleting a
+bridging bond needs no bookkeeping.
+
+**Aromatic rings need no extra object.** Aromaticity is stored on bonds as `order: 1.5`.
+`svg-render` draws a ring whose bonds are *all* 1.5 as single lines with an inscribed circle
+(the default look; fused systems like naphthalene get one circle per ring). A 1.5 bond that is
+not part of such a ring (e.g. carboxylate, allyl) is drawn as a line plus a dashed line. The
+editor's "Kekulé ↔ circle" toggle rewrites bond orders via `chem-core` (kekulize/aromatize),
+so no extra `DrawObject` variant or document flag exists.
+
+**Reactions are not stored as semantic objects.** A reaction is arrows, plus signs, fragments and
+conditions text in space. `editor`'s Tidy reaction infers the scheme from layout. (Reaction
+SMILES export, if ever wanted, would infer it the same way.)
+
+## Public API
+
+All functions are pure and return a new `Doc`. They throw `DocError` (with a `code`) for
+references to unknown ids. Callers normally go through `History.transact`.
+
+```ts
+// creation
+emptyDoc(now: string): Doc
+newId<T>(kind): T                                         // collision-free, sortable
+
+// atoms & bonds
+addAtom(doc, init: Partial<Atom> & Point): [Doc, AtomId]
+addBond(doc, a1, a2, init?: Partial<Bond>): [Doc, BondId] // rejects self-bond / duplicate pair
+updateAtom(doc, id, patch: Partial<Omit<Atom,'id'>>): Doc
+updateBond(doc, id, patch: Partial<Omit<Bond,'id'|'a1'|'a2'>>): Doc
+mergeAtoms(doc, keep: AtomId, drop: AtomId): Doc          // re-points drop's bonds to keep;
+                                                          // collapses resulting duplicates
+// objects
+addObject(doc, obj: DistributiveOmit<DrawObject,'id'>): [Doc, ObjectId]
+updateObject(doc, id, patch): Doc
+
+// selection-based
+type Selection = { atoms: Set<AtomId>; bonds: Set<BondId>; objects: Set<ObjectId> };
+deleteItems(doc, sel): Doc        // cascades: atom → its bonds; arrow → its attached texts
+transformItems(doc, sel, m: Affine): Doc   // move / rotate / flip / scale
+bounds(doc, sel?): Rect | null
+
+// derived structure
+fragments(doc): AtomId[][]                     // connected components, deterministic order
+neighbors(doc, atomId): AtomId[]
+
+// sub-documents (copy/paste, templates, name insert)
+extract(doc, sel): SubDoc                       // closed over selection: bonds kept only if
+                                                // both atoms selected; anchors to unselected
+                                                // atoms become point anchors
+insert(doc, sub: SubDoc, at: Point): [Doc, Selection]   // fresh ids, returns what was inserted
+
+// history
+interface History { /* immutable */ }
+createHistory(doc): History
+transact(h, label: string, recipe: (doc) => Doc, opts?: { coalesceKey?: string }): History
+undo(h): History;  redo(h): History
+current(h): Doc;   canUndo(h); canRedo(h); undoLabel(h); redoLabel(h)
+
+// persistence
+serialize(doc): string                          // stable key order, 2-space JSON
+parse(text: string): Result<Doc, ParseError>    // Zod-validated, runs migrations, checks invariants
+checkInvariants(doc): InvariantViolation[]
+```
+
+### Cascade rules (deleteItems / mergeAtoms)
+
+| Deleted | Effect |
+|---|---|
+| atom | its bonds deleted; `caption.target` loses the atom (caption deleted if empty); anchors to it → `point` at its last position |
+| bond | anchors to it → `point` at the anchor's last position |
+| arrow | texts with `attachedTo.arrow` = it are deleted |
+| any | removed from `zOrder` and group memberships; empty groups deleted |
+
+### History
+
+- Implemented with Immer `produceWithPatches`; history stores patch/inverse-patch pairs, not
+  snapshots.
+- `coalesceKey`: consecutive transactions with the same key merge into one undo step (a drag
+  emits many moves → one undo).
+- Depth limit 500 steps; oldest dropped.
+- A new transaction after undo clears the redo stack.
+- `meta.modified` is set by `transact`, not stored as a separate undo step.
+
+## File Format
+
+- Extension **`.chalk`**, UTF-8 JSON, `{ "format": "chalkbond", "schemaVersion": 1, "doc": … }`.
+- `parse` rejects: wrong `format`, malformed JSON, schema violations, invariant violations
+  (with a message listing the first 10), files > 20 MB, and `schemaVersion` newer than this
+  build ("created by a newer version of Chalkbond").
+- Older versions run through `migrations[n] : (v_n) => v_{n+1}` in sequence. v1 has none, but
+  the mechanism and a test for it exist from day one.
+- `serialize` is deterministic: same doc → byte-identical output (stable diffs, golden tests).
+
+## Invariants (`checkInvariants`)
+
+1. Every bond's `a1`, `a2` exist and differ.
+2. At most one bond per unordered atom pair.
+3. Every id in `zOrder` exists in `objects`, exactly once, and every object is in `zOrder`.
+4. Every `atom` / `bond` anchor and `caption.target` id exists.
+5. Every `attachedTo.arrow` refers to an object of type `arrow`.
+6. Group members exist; an item belongs to at most one group.
+7. All coordinates finite; `charge` ∈ [-4, 4]; colours match `#rrggbb`; `fillOpacity` ∈ [0,1].
+
+## Testing
+
+- Unit tests for every public function, including each cascade rule row.
+- Property tests (fast-check): random sequences of 1–50 operations from a generator covering
+  every op →
+  - `checkInvariants` is empty after every step;
+  - undo all → doc deep-equals the start; redo all → deep-equals the end;
+  - `parse(serialize(doc))` deep-equals `doc`;
+  - `insert(extract(doc, everything))` into an empty doc preserves atom/bond/object counts
+    and relative geometry.
+- Migration harness test with a synthetic v0 → v1 migration fixture.
+- Perf check (unit test with timing budget): `transact` on a 500-atom doc < 2 ms median;
+  `fragments` on 500 atoms < 1 ms.
+
+## Success Criteria
+
+1. Every type and function above exists with tests; `src/core/doc-model` line coverage ≥ 95%.
+2. All property tests pass at 1,000 runs each.
+3. No import of `react`, `electron`, `node:*`, `openchemlib` or DOM types in the module
+   (lint rule passes).
+4. A drag of 200 move events produces exactly one undo step.
+5. Hand-written fixture docs for benzene, a 2-step reaction scheme with conditions, and a
+   mechanism with curved arrows round-trip through `serialize`/`parse` unchanged.
+
+## Boundaries (module-specific)
+
+- **Always:** keep `Doc` JSON-serializable (no Maps/Sets/classes inside `Doc`); every new field
+  is optional or has a migration.
+- **Ask first:** adding a new `DrawObject` variant or `Atom` field once `editor` work has
+  started (it ripples into render, editor and file format).
+- **Never:** encode chemistry rules here (e.g. "carbon has 4 bonds") — that is `chem-core`.
+
+## Open Questions
+
+None. (Resolved 2026-11-09: aromatic rings default to circle-in-ring, stored as all-1.5 bonds.)
