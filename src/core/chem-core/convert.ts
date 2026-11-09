@@ -278,10 +278,14 @@ export function toMolfile(
 }
 
 /**
- * OCL canonical IDCode of the atoms (stereo included): equal for the same structure however it
- * is drawn. chem-core-internal (tests, round trips); never stored in documents.
+ * OCL canonical IDCode of the atoms (stereo included unless `stereo: false`): equal for the same
+ * structure however it is drawn. chem-core-internal (tests, round trips); never stored.
  */
-export function canonicalId(doc: Doc, atoms?: Iterable<AtomId>): string {
+export function canonicalId(
+  doc: Doc,
+  atoms?: Iterable<AtomId>,
+  opts: { stereo?: boolean } = {},
+): string {
   const ids = selection(doc, atoms);
-  return molIdCode(buildMolecule(doc, ids, { stereo: true }).mol);
+  return molIdCode(buildMolecule(doc, ids, { stereo: true }).mol, opts);
 }

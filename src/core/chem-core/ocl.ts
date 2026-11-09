@@ -296,6 +296,9 @@ export function molToMolfile(mol: Mol, version: 'V2000' | 'V3000'): string {
 }
 
 /** OCL's canonical IDCode, stereo included: equal for the same structure however drawn. */
-export function molIdCode(mol: Mol): string {
-  return unwrap(mol).m.getIDCode();
+export function molIdCode(mol: Mol, opts: { stereo?: boolean } = {}): string {
+  const { m } = unwrap(mol);
+  return opts.stereo === false
+    ? m.getCanonizedIDCode(Molecule.CANONIZER_NEGLECT_ANY_STEREO_INFORMATION)
+    : m.getIDCode();
 }

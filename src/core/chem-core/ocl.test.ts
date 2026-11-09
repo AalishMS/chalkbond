@@ -177,5 +177,8 @@ describe('ocl adapter', () => {
     expect(molIdCode(molfileToMol(v2))).toBe(id);
     expect(molIdCode(molfileToMol(v3))).toBe(id);
     expect(atomCount(molfileToMol('not a molfile'))).toBe(0);
+    const mirror = smilesToMol('C[C@H](N)C(O)=O', { coordinates: true });
+    expect(molIdCode(mirror)).not.toBe(id);
+    expect(molIdCode(mirror, { stereo: false })).toBe(molIdCode(mol, { stereo: false }));
   });
 });

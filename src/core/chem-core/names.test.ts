@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { emptyDoc, insert } from '../doc-model/index';
 import dictionary from '../../../resources/compounds/compounds.json';
 import { NOW } from './__fixtures__/build';
-import { toMolfile, parseSmiles } from './convert';
+import { canonicalId, parseMolfile, parseSmiles, toMolfile, toSmiles } from './convert';
 import { createNameIndex, normaliseName, structureFromText, type CompoundEntry } from './names';
-import { smilesToMol } from './ocl';
+import { molIdCode, smilesToMol } from './ocl';
 import { perceive } from './perceive';
 
 const names = createNameIndex(dictionary);
@@ -83,6 +83,42 @@ describe('compound dictionary integrity', () => {
       }
     }
   });
+});
+
+/**
+ * Entries whose source leaves a double bond's E/Z open. A 2D drawing always shows one geometry
+ * (doc-model has no "either" double bond), so these are drawn — and exported — as this isomer.
+ */
+const DRAWN_ISOMER: Record<string, string> = {
+  'but-2-ene': 'C/C=C/C',
+  'pent-2-ene': 'CC/C=C/C',
+  azobenzene: 'c1ccccc1/N=N/c1ccccc1',
+  '4-hydroxyazobenzene': 'Oc1ccc(cc1)/N=N/c1ccccc1',
+  '4-aminoazobenzene': 'Nc1ccc(cc1)/N=N/c1ccccc1',
+};
+
+describe('dictionary round trips (canonical IDCode, stereo included)', () => {
+  it('every entry: parseSmiles → toSmiles, and through Molfile V2000 / V3000', () => {
+    const problems: string[] = [];
+    for (const e of entries) {
+      const id = molIdCode(smilesToMol(DRAWN_ISOMER[e.name] ?? e.smiles, { coordinates: true }));
+      const r = parseSmiles(e.smiles);
+      if (!r.ok) {
+        problems.push(`${e.name}: ${r.error.message}`);
+        continue;
+      }
+      const doc = insert(emptyDoc(NOW), r.value, { x: 0, y: 0 })[0];
+      if (canonicalId(doc) !== id) problems.push(`${e.name}: drawn structure differs`);
+      const back = molIdCode(smilesToMol(toSmiles(doc), { coordinates: true }));
+      if (back !== id) problems.push(`${e.name}: SMILES round trip ${toSmiles(doc)}`);
+      for (const version of ['V2000', 'V3000'] as const) {
+        const m = parseMolfile(toMolfile(doc, undefined, { version }));
+        const mid = m.ok ? canonicalId(insert(emptyDoc(NOW), m.value, { x: 0, y: 0 })[0]) : null;
+        if (mid !== id) problems.push(`${e.name}: ${version} round trip`);
+      }
+    }
+    expect(problems).toEqual([]);
+  }, 60_000);
 });
 
 describe('createNameIndex', () => {

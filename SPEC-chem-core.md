@@ -175,6 +175,9 @@ cleanStructure(doc: Doc, atoms: Iterable<AtomId>): Doc
     // same configuration in the new layout; otherwise OCL's wedge/hash bonds replace them, and
     // a bond whose narrow end must move to its other atom is re-created reversed (a1 is
     // immutable), so a curved-arrow anchor on that bond becomes a point anchor.
+    // (C9) "Preserved" means configuration the drawing defines. Where it leaves a geometry
+    // undefined (atoms stacked on one point, a double bond with a substituent on an alkyne
+    // axis), the new layout defines one; for valid chemistry, cleaning again changes nothing.
 
 // conversion
 parseSmiles(text: string, opts?: ImportOptions): Result<SubDoc, ChemError>
@@ -353,11 +356,18 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
 
 - **Reference set (SPEC.md success criterion 6):** ≥ 30 compounds whose formula and MW match
   the dictionary's PubChem values (MW to 0.01), covering C/H/N/O/S/P/halogens, charged species
-  (acetate, ammonium), and an isotope-labelled case.
+  (acetate, ammonium), and an isotope-labelled case. (C9) 44 compounds in `reference.test.ts`
+  with PubChem values copied in (independent of the dictionary file), incl. 5 ions and 3
+  deuterated species with exact masses; PubChem folds D into H in formulas, so the comparison
+  does too.
 - **Dictionary integrity:** every entry parses; its OCL formula equals the stored formula;
   every name/synonym is unique after normalisation.
 - **Round trips:** for every dictionary entry, `parseSmiles` → `toSmiles` → canonical OCL
   IDCode equals that of the original SMILES (stereo included). Molfile V2000 and V3000 the same.
+  (C9) Exception by nature: a source that leaves a double bond's E/Z open (`but-2-ene`,
+  `pent-2-ene` and PubChem's generic azobenzenes) is *drawn* as one isomer — a 2D drawing
+  always shows a geometry and doc-model has no "either" double bond — so those 5 entries are
+  checked against the isomer they are drawn as (trans).
 - **Kekulé / aromatic:** benzene, naphthalene, anthracene, azulene, pyridine, pyrrole, furan,
   thiophene, indole, imidazole, carboxylate (1.5 outside a ring): `kekulize(aromatize(x))` gives
   a valid Kekulé structure with the right formula; `aromatize` is idempotent; an impossible
@@ -377,7 +387,9 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
 - **Library facts:** each row of "Verified library facts" has a test.
 - **Perf:** `perceive` on a 500-atom single-fragment doc < 16 ms median (one frame);
   `createPerceiver` after a one-atom label change in a 10-fragment doc < 3 ms median;
-  `parseSmiles` of a 50-heavy-atom molecule < 20 ms median.
+  `parseSmiles` of a 50-heavy-atom molecule < 20 ms median. (C9) The timing assertions are
+  skipped under `--coverage` (instrumentation slows code several-fold); `npm test` enforces
+  them.
 
 ## Success Criteria
 

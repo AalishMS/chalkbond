@@ -69,10 +69,10 @@ C5 perceiver cache    C6 SMILES / Molfile in & out (+ stereo)
 
 ### Phase 3: names and hardening
 - [x] C8: compound dictionary + name lookup
-- [ ] C9: reference set, dictionary round trips, property tests, perf budgets
+- [x] C9: reference set, dictionary round trips, property tests, perf budgets
 
 ### Checkpoint G — module complete
-- [ ] All `SPEC-chem-core.md` success criteria met; coverage ≥ 90% on `src/core/chem-core`
+- [x] All `SPEC-chem-core.md` success criteria met; coverage ≥ 90% on `src/core/chem-core`
 - [ ] Commit + push; human review before `svg-render` spec
 
 ## Risks and Mitigations

@@ -176,10 +176,10 @@ writing `resources/compounds/compounds.json`; `createNameIndex` (Zod) and
 dictionary; fast-check properties reusing doc-model's command generator; perf budgets.
 
 **Acceptance criteria:**
-- [ ] Reference set: formula and MW (to 0.01) match PubChem values for ≥ 30 compounds
-- [ ] Every dictionary entry: `parseSmiles` → `toSmiles` keeps the canonical IDCode
-- [ ] `perceive` never throws on reachable docs; cached perceiver equals `perceive` across edit sequences
-- [ ] Perf: `perceive` 500-atom fragment < 16 ms; cached one-fragment change < 3 ms; 50-atom `parseSmiles` < 20 ms (medians)
+- [x] Reference set: formula and MW (to 0.01) match PubChem values for ≥ 30 compounds
+- [x] Every dictionary entry: `parseSmiles` → `toSmiles` keeps the canonical IDCode
+- [x] `perceive` never throws on reachable docs; cached perceiver equals `perceive` across edit sequences
+- [x] Perf: `perceive` 500-atom fragment < 16 ms; cached one-fragment change < 3 ms; 50-atom `parseSmiles` < 20 ms (medians)
 
 **Verification:** `npm test -- --coverage` (chem-core ≥ 90% lines)
 
@@ -190,6 +190,6 @@ dictionary; fast-check properties reusing doc-model's command generator; perf bu
 **Scope:** M
 
 ### ✅ Checkpoint G — module complete
-- [ ] Every success criterion in `SPEC-chem-core.md` met
-- [ ] `npm run check` green; coverage ≥ 90%
+- [x] Every success criterion in `SPEC-chem-core.md` met
+- [x] `npm run check` green; coverage ≥ 90%
 - [ ] Commit + push; human review → then write `SPEC-svg-render.md`
