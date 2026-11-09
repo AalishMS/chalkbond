@@ -48,7 +48,7 @@ script. All npm scripts must run under PowerShell.
 ### ✅ Checkpoint A — tooling
 - [x] All commands above pass on Linux
 - [x] Commit + push
-- [ ] User runs `npm install && npm run check && npm run test:e2e && npm run dev` on Windows
+- [x] User runs `npm install && npm run check && npm run test:e2e && npm run dev` on Windows
 
 ---
 

@@ -63,7 +63,7 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 ### Checkpoint A — tooling
 - [x] `npm run check` and `npm run test:e2e` pass on Linux (window title, canvas, security prefs asserted)
 - [x] Commit + push
-- [ ] **User runs the same commands on Windows** (first real Windows check)
+- [x] **User runs the same commands on Windows** (first real Windows check) — passed 2026-11-09, no fixes
 
 ### Phase 1: doc-model foundations
 - [ ] T1: Types, `emptyDoc`, `checkInvariants`
