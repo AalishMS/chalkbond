@@ -32,6 +32,10 @@ type AtomId   = Brand<'AtomId'>;    type BondId   = Brand<'BondId'>;
 type ObjectId = Brand<'ObjectId'>;  type GroupId  = Brand<'GroupId'>;
 type Color    = `#${string}`;       // #rrggbb
 type Point    = { x: number; y: number };
+type Rect     = { x: number; y: number; w: number; h: number };   // axis-aligned, w,h ≥ 0
+type Affine   = [a: number, b: number, c: number, d: number, e: number, f: number];
+                                   // x' = a·x + c·y + e ;  y' = b·x + d·y + f  (SVG matrix order)
+type ElementSymbol = string;       // validated against PERIODIC_SYMBOLS ∪ {'R','X','*'}
 
 interface Atom {
   id: AtomId;
@@ -100,6 +104,7 @@ interface Doc {
   zOrder:  ObjectId[];             // paint order of objects; atoms/bonds paint below objects,
                                    // except 'shape' highlights, which paint beneath structures
   groups:  Record<GroupId, Group>;
+  nextId:  number;                 // id counter; ids are 'a12', 'b7', 'o3', 'g1' (prefix + n)
   style:   { preset: 'slides' | 'journal'; overrides: Partial<StyleSettings> };
   meta:    { title?: string; created: string; modified: string };  // ISO 8601
 }
@@ -128,7 +133,8 @@ references to unknown ids. Callers normally go through `History.transact`.
 ```ts
 // creation
 emptyDoc(now: string): Doc
-newId<T>(kind): T                                         // collision-free, sortable
+// Ids come from doc.nextId inside each add*/insert op — no global state, no randomness, so
+// every op is deterministic and undo restores the counter. Ids are never reused within a doc.
 
 // atoms & bonds
 addAtom(doc, init: Partial<Atom> & Point): [Doc, AtomId]
@@ -144,7 +150,10 @@ updateObject(doc, id, patch): Doc
 // selection-based
 type Selection = { atoms: Set<AtomId>; bonds: Set<BondId>; objects: Set<ObjectId> };
 deleteItems(doc, sel): Doc        // cascades: atom → its bonds; arrow → its attached texts
-transformItems(doc, sel, m: Affine): Doc   // move / rotate / flip / scale
+transformItems(doc, sel, m: Affine): Doc   // move / rotate / flip / scale. Points, atoms,
+                                           // arrow ends and point anchors transform exactly;
+                                           // Rects (bracket/shape) stay axis-aligned: their
+                                           // centre transforms, size scales by |scale|
 bounds(doc, sel?): Rect | null
 
 // derived structure
@@ -208,6 +217,7 @@ checkInvariants(doc): InvariantViolation[]
 5. Every `attachedTo.arrow` refers to an object of type `arrow`.
 6. Group members exist; an item belongs to at most one group.
 7. All coordinates finite; `charge` ∈ [-4, 4]; colours match `#rrggbb`; `fillOpacity` ∈ [0,1].
+8. Every id's numeric suffix is < `nextId`; element symbols are valid.
 
 ## Testing
 
