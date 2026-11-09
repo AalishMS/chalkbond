@@ -84,8 +84,11 @@ describe('public entry (index.ts)', () => {
   it('exports exactly the public surface', () => {
     expect(Object.keys(publicApi).sort()).toEqual(
       [
+        'CURRENT_SCHEMA_VERSION',
         'DocError',
+        'FILE_FORMAT',
         'IDENTITY',
+        'MAX_FILE_BYTES',
         'HISTORY_DEPTH',
         'PERIODIC_SYMBOLS',
         'PSEUDO_SYMBOLS',
@@ -110,11 +113,13 @@ describe('public entry (index.ts)', () => {
         'mergeAtoms',
         'neighbors',
         'paintLayers',
+        'parse',
         'redo',
         'redoLabel',
         'resolveAnchor',
         'rotation',
         'scaling',
+        'serialize',
         'transact',
         'transformItems',
         'translation',

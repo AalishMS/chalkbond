@@ -215,6 +215,9 @@ current(h): Doc;   canUndo(h); canRedo(h); undoLabel(h); redoLabel(h)
 // persistence
 serialize(doc): string                          // stable key order, 2-space JSON
 parse(text: string): Result<Doc, ParseError>    // Zod-validated, runs migrations, checks invariants
+// Result = { ok: true; value } | { ok: false; error }; ParseError = { code, message, details? }
+// codes: too-large | invalid-json | not-chalkbond | newer-version | unsupported-version |
+//        migration-failed | schema | invariants  (details: first 10 issues/violations)
 checkInvariants(doc): InvariantViolation[]
 ```
 
@@ -259,6 +262,11 @@ leaves its group.
 - Older versions run through `migrations[n] : (v_n) => v_{n+1}` in sequence. v1 has none, but
   the mechanism and a test for it exist from day one.
 - `serialize` is deterministic: same doc → byte-identical output (stable diffs, golden tests).
+  Record entries are ordered by id number; other keys lead with `format, schemaVersion, id,
+  type, kind, x, y, w, h`, then alphabetical; `-0` is written as `0`; trailing newline.
+- The Zod schema (`schema.ts`) is strict: unknown keys are rejected, so a file is never
+  silently truncated. Consequently **any** new field — even optional — bumps `schemaVersion`
+  with a migration. A compile-time identity check keeps `z.infer<schema>` equal to `Doc`.
 
 ## Invariants (`checkInvariants`)
 

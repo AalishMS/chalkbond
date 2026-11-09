@@ -1,0 +1,17 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 0,
+  "doc": {
+    "atoms": [
+      { "id": "a1", "x": 0, "y": 0, "element": "C" },
+      { "id": "a2", "x": 0.866, "y": -0.5, "element": "C" },
+      { "id": "a3", "x": 1.732, "y": 0, "element": "O", "charge": 0 }
+    ],
+    "bonds": [
+      { "id": "b4", "a1": "a1", "a2": "a2", "order": 1 },
+      { "id": "b5", "a1": "a2", "a2": "a3", "order": 1 }
+    ],
+    "title": "Ethanol (v0)",
+    "created": "2026-01-01T00:00:00.000Z"
+  }
+}

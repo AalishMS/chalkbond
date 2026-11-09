@@ -13,6 +13,16 @@ export { resolveAnchor } from './anchors';
 export { transformItems, bounds } from './transform';
 export { fragments } from './graph';
 export { extract, insert, everything, type SubDoc } from './subdoc';
+export {
+  serialize,
+  parse,
+  FILE_FORMAT,
+  MAX_FILE_BYTES,
+  type Result,
+  type ParseError,
+  type ParseErrorCode,
+} from './serialize';
+export { CURRENT_SCHEMA_VERSION } from './migrations';
 export { IDENTITY, applyAffine, translation, rotation, scaling } from './geometry';
 export {
   createHistory,

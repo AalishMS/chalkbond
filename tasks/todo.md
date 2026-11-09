@@ -198,9 +198,9 @@ over a selection, insertion at a point with fresh ids and returned `Selection`.
 type-equality check, size limit, newer-version error, migration pipeline.
 
 **Acceptance criteria:**
-- [ ] `serialize` is byte-identical for equal docs regardless of insertion order
-- [ ] `parse` returns typed errors for: bad JSON, wrong `format`, schema violation, invariant violation, > 20 MB, newer `schemaVersion`
-- [ ] A synthetic v0 fixture migrates to v1 and parses
+- [x] `serialize` is byte-identical for equal docs regardless of insertion order
+- [x] `parse` returns typed errors for: bad JSON, wrong `format`, schema violation, invariant violation, > 20 MB, newer `schemaVersion`
+- [x] A synthetic v0 fixture migrates to v1 and parses
 
 **Verification:** `npm test -- src/core/doc-model && npm run typecheck`
 

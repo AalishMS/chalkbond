@@ -47,6 +47,7 @@
     "vitest": "5.1.0"
   },
   "dependencies": {
-    "immer": "11.2.9"
+    "immer": "11.2.9",
+    "zod": "4.6.7"
   }
 }
