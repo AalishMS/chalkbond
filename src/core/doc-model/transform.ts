@@ -63,7 +63,8 @@ function transformObject(
         ...obj,
         from: mapAnchor(obj.from),
         to: mapAnchor(obj.to),
-        bend: mirror ? -obj.bend : obj.bend,
+        // `+ 0`: negating a zero bend must not leave -0 (JSON has no -0).
+        bend: mirror ? -obj.bend + 0 : obj.bend,
       };
     case 'plus':
     case 'text':

@@ -166,6 +166,23 @@ describe('transformItems — exact coordinates (1e-9)', () => {
     );
   });
 
+  it('mirroring a zero bend gives 0, not -0 (JSON has no -0; save/open must round-trip)', () => {
+    const [start, id] = addObject(emptyDoc(NOW), {
+      type: 'curved-arrow',
+      head: 'full',
+      from: { kind: 'point', p: { x: 0, y: 0 } },
+      to: { kind: 'point', p: { x: 1, y: 0 } },
+      bend: 0,
+    });
+    const doc = transformItems(
+      start,
+      { atoms: new Set(), bonds: new Set(), objects: new Set([id]) },
+      scaling(-1, 1),
+    );
+    const obj = doc.objects[id]!;
+    expect(obj.type === 'curved-arrow' && Object.is(obj.bend, 0)).toBe(true);
+  });
+
   it('scale ×2 about the origin', () => {
     const doc = transformItems(layout(), ALL, scaling(2));
     const dbl = (r: { x: number; y: number; w: number; h: number }) => ({

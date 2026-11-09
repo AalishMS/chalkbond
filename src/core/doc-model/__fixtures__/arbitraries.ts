@@ -85,7 +85,8 @@ const objectSpec = fc.oneof(
     head: fc.constantFrom('full' as const, 'fishhook' as const),
     from: anchorSpec,
     to: anchorSpec,
-    bend: fc.double({ min: -1, max: 1, noNaN: true }),
+    // `+ 0` like `coord`: callers never pass -0 (it can't survive save/open).
+    bend: fc.double({ min: -1, max: 1, noNaN: true }).map((v) => v + 0),
   }),
   fc.record({ type: fc.constant('plus' as const), at: point }),
   fc.record({
