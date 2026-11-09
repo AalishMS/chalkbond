@@ -1,0 +1,342 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0.866,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": 1.732,
+        "y": 0,
+        "charge": 0,
+        "element": "O",
+        "label": "OH",
+        "radical": 0
+      },
+      "a6": {
+        "id": "a6",
+        "x": 6,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a7": {
+        "id": "a7",
+        "x": 6.866,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a8": {
+        "id": "a8",
+        "x": 6.866,
+        "y": -1.5,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a11": {
+        "id": "a11",
+        "x": 12,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a12": {
+        "id": "a12",
+        "x": 12.866,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a13": {
+        "id": "a13",
+        "x": 12.866,
+        "y": -1.5,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a14": {
+        "id": "a14",
+        "x": 13.732,
+        "y": 0,
+        "charge": 0,
+        "element": "O",
+        "label": "OH",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b4": {
+        "id": "b4",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b5": {
+        "id": "b5",
+        "a1": "a2",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b9": {
+        "id": "b9",
+        "a1": "a6",
+        "a2": "a7",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b10": {
+        "id": "b10",
+        "a1": "a7",
+        "a2": "a8",
+        "doublePlacement": "auto",
+        "order": 2,
+        "stereo": "none"
+      },
+      "b15": {
+        "id": "b15",
+        "a1": "a11",
+        "a2": "a12",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b16": {
+        "id": "b16",
+        "a1": "a12",
+        "a2": "a13",
+        "doublePlacement": "auto",
+        "order": 2,
+        "stereo": "none"
+      },
+      "b17": {
+        "id": "b17",
+        "a1": "a12",
+        "a2": "a14",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-09T00:00:00.000Z",
+      "modified": "2026-11-09T00:00:00.000Z"
+    },
+    "nextId": 27,
+    "objects": {
+      "o18": {
+        "id": "o18",
+        "type": "arrow",
+        "kind": "forward",
+        "from": {
+          "x": 2.5,
+          "y": -0.25
+        },
+        "to": {
+          "x": 4.5,
+          "y": -0.25
+        }
+      },
+      "o19": {
+        "id": "o19",
+        "type": "text",
+        "align": "center",
+        "at": {
+          "x": 3.5,
+          "y": -0.75
+        },
+        "attachedTo": {
+          "arrow": "o18",
+          "slot": "above"
+        },
+        "runs": [
+          {
+            "text": "PCC"
+          }
+        ]
+      },
+      "o20": {
+        "id": "o20",
+        "type": "text",
+        "align": "center",
+        "at": {
+          "x": 3.5,
+          "y": 0.35
+        },
+        "attachedTo": {
+          "arrow": "o18",
+          "slot": "below"
+        },
+        "runs": [
+          {
+            "text": "CH"
+          },
+          {
+            "script": "sub",
+            "text": "2"
+          },
+          {
+            "text": "Cl"
+          },
+          {
+            "script": "sub",
+            "text": "2"
+          }
+        ]
+      },
+      "o21": {
+        "id": "o21",
+        "type": "arrow",
+        "kind": "forward",
+        "from": {
+          "x": 8.5,
+          "y": -0.25
+        },
+        "to": {
+          "x": 10.5,
+          "y": -0.25
+        }
+      },
+      "o22": {
+        "id": "o22",
+        "type": "text",
+        "align": "center",
+        "at": {
+          "x": 9.5,
+          "y": -0.75
+        },
+        "attachedTo": {
+          "arrow": "o21",
+          "slot": "above"
+        },
+        "runs": [
+          {
+            "text": "KMnO"
+          },
+          {
+            "script": "sub",
+            "text": "4"
+          }
+        ]
+      },
+      "o23": {
+        "id": "o23",
+        "type": "text",
+        "align": "center",
+        "at": {
+          "x": 9.5,
+          "y": 0.35
+        },
+        "attachedTo": {
+          "arrow": "o21",
+          "slot": "below"
+        },
+        "runs": [
+          {
+            "text": "H"
+          },
+          {
+            "script": "sub",
+            "text": "3"
+          },
+          {
+            "text": "O"
+          },
+          {
+            "script": "sup",
+            "text": "+"
+          }
+        ]
+      },
+      "o24": {
+        "id": "o24",
+        "type": "caption",
+        "runs": [
+          {
+            "bold": true,
+            "text": "1"
+          }
+        ],
+        "target": [
+          "a1",
+          "a2",
+          "a3"
+        ]
+      },
+      "o25": {
+        "id": "o25",
+        "type": "caption",
+        "runs": [
+          {
+            "bold": true,
+            "text": "2"
+          }
+        ],
+        "target": [
+          "a6",
+          "a7",
+          "a8"
+        ]
+      },
+      "o26": {
+        "id": "o26",
+        "type": "caption",
+        "runs": [
+          {
+            "bold": true,
+            "text": "3"
+          }
+        ],
+        "target": [
+          "a11",
+          "a12",
+          "a13",
+          "a14"
+        ]
+      }
+    },
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o18",
+      "o19",
+      "o20",
+      "o21",
+      "o22",
+      "o23",
+      "o24",
+      "o25",
+      "o26"
+    ]
+  }
+}

@@ -5,7 +5,8 @@ export const IDENTITY: Affine = [1, 0, 0, 1, 0, 0];
 /** x' = a·x + c·y + e ; y' = b·x + d·y + f */
 export function applyAffine(m: Affine, p: Point): Point {
   const [a, b, c, d, e, f] = m;
-  return { x: a * p.x + c * p.y + e, y: b * p.x + d * p.y + f };
+  // `+ 0` turns -0 into 0 (JSON has no -0, so save/open would otherwise not round-trip).
+  return { x: a * p.x + c * p.y + e + 0, y: b * p.x + d * p.y + f + 0 };
 }
 
 export function translation(dx: number, dy: number): Affine {
@@ -46,7 +47,7 @@ export function transformRect(m: Affine, r: Rect): Rect {
   const center = applyAffine(m, { x: r.x + r.w / 2, y: r.y + r.h / 2 });
   const w = Math.hypot(a * r.w, c * r.h);
   const h = Math.hypot(b * r.w, d * r.h);
-  return { x: center.x - w / 2, y: center.y - h / 2, w, h };
+  return { x: center.x - w / 2 + 0, y: center.y - h / 2 + 0, w, h };
 }
 
 /** Smallest rect containing all points and rects, or `null` if there are none. */

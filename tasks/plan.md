@@ -84,11 +84,12 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 ### Phase 3: reuse and persistence
 - [x] T7: `fragments`, `neighbors`, `extract`, `insert`
 - [x] T8: `serialize`, `parse`, migrations
-- [ ] T9: Property-test suite, fixtures, perf budgets
+- [x] T9: Property-test suite, fixtures, perf budgets
 
 ### Checkpoint D — module complete
-- [ ] All `SPEC-doc-model.md` success criteria met; coverage ≥ 95% on `src/core/doc-model`
-- [ ] Commit + push; human review before `chem-core` spec
+- [x] All `SPEC-doc-model.md` success criteria met; coverage ≥ 95% on `src/core/doc-model` (98.6% lines)
+- [x] Commit + push
+- [ ] Human review before `chem-core` spec
 
 ## Risks and Mitigations
 

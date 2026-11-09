@@ -1,4 +1,4 @@
-import { castDraft } from 'immer';
+import { castDraft, current, isDraft } from 'immer';
 import { resolveAnchor } from './anchors';
 import { byIdNumber } from './atoms';
 import { assertNever } from './assert-never';
@@ -43,7 +43,9 @@ export interface SubDoc {
  * anchors; captions keep only extracted targets (and are dropped if none remain); groups keep
  * only extracted members. The result is translated so its bounds are centred on the origin.
  */
-export function extract(doc: Doc, sel: Selection): SubDoc {
+export function extract(source: Doc, sel: Selection): SubDoc {
+  // Inside transact `source` is a draft; snapshot it so no proxy leaks into the result.
+  const doc: Doc = isDraft(source) ? current(castDraft(source)) : source;
   for (const id of sel.atoms) if (!(id in doc.atoms)) throw new DocError('unknown-atom', id);
   for (const id of sel.objects) {
     if (!(id in doc.objects)) throw new DocError('unknown-object', id);

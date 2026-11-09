@@ -217,9 +217,9 @@ hand-written fixtures (benzene, 2-step reaction with conditions, mechanism with 
 arrows); timing budgets.
 
 **Acceptance criteria:**
-- [ ] All four spec properties pass at 1,000 runs each
-- [ ] Three fixtures round-trip through `serialize`/`parse` unchanged
-- [ ] 500-atom doc: `transact` median < 2 ms, `fragments` < 1 ms
+- [x] All four spec properties pass at 1,000 runs each
+- [x] Three fixtures round-trip through `serialize`/`parse` unchanged
+- [x] 500-atom doc: `transact` median < 2 ms, `fragments` < 1 ms (measured ≈ 0.2 ms each on Windows)
 
 **Verification:** `npm test -- --coverage` (doc-model ≥ 95% lines)
 
@@ -230,6 +230,7 @@ arrows); timing budgets.
 **Scope:** M
 
 ### ✅ Checkpoint D — module complete
-- [ ] Every success criterion in `SPEC-doc-model.md` met
-- [ ] `npm run check` green; coverage ≥ 95%
-- [ ] Commit + push; human review → then write `SPEC-chem-core.md`
+- [x] Every success criterion in `SPEC-doc-model.md` met
+- [x] `npm run check` green; coverage ≥ 95% (98.6% lines)
+- [x] Commit + push
+- [ ] Human review → then write `SPEC-chem-core.md`

@@ -295,6 +295,10 @@ Each violation is `{ invariant: 1…8, code, id?, message }`; `code` is a stable
   - `insert(extract(doc, everything))` into an empty doc preserves atom/bond/object counts
     and relative geometry.
 - Migration harness test with a synthetic v0 → v1 migration fixture.
+- Test-support code lives in `__fixtures__/` (excluded from coverage): the property-test
+  command generator (`arbitraries.ts`), fixture builders (`schemes.ts`) and golden `.chalk`
+  files, which are `serialize` output of those builders (a test keeps the two in sync).
+- The generator test asserts every op actually applies (not just gets generated) many times.
 - Perf check (unit test with timing budget): `transact` on a 500-atom doc < 2 ms median;
   `fragments` on 500 atoms < 1 ms.
 

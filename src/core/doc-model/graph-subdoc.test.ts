@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { geometrySignature, sameGeometry } from './__fixtures__/geometry-signature';
 import { kitchenSinkDoc } from './__fixtures__/kitchen-sink';
 import { addAtom } from './atoms';
 import { addBond } from './bonds';
@@ -140,34 +141,6 @@ describe('extract', () => {
   });
 });
 
-/** Every coordinate of a doc relative to its bounds centre, keyed by position in id order. */
-function relativeGeometry(doc: Doc, s: Selection): number[] {
-  const box = bounds(doc, s)!;
-  const cx = box.x + box.w / 2;
-  const cy = box.y + box.h / 2;
-  const nums: number[] = [];
-  // Absolute positions are taken relative to the centre; relative ones (anchor offsets) as-is.
-  const walk = (v: unknown, relative = false): void => {
-    if (typeof v === 'number') nums.push(v);
-    else if (Array.isArray(v)) v.forEach((x) => walk(x));
-    else if (v && typeof v === 'object') {
-      const o = v as Record<string, unknown>;
-      const x = o['x'];
-      const y = o['y'];
-      const isPos = typeof x === 'number' && typeof y === 'number';
-      if (isPos) nums.push(relative ? x : x - cx, relative ? y : y - cy);
-      for (const [k, val] of Object.entries(o)) {
-        if (k === 'id' || (isPos && (k === 'x' || k === 'y'))) continue;
-        walk(val, k === 'offset');
-      }
-    }
-  };
-  for (const id of [...s.atoms].sort(byNum)) walk(doc.atoms[id]);
-  for (const id of [...s.objects].sort(byNum)) walk(doc.objects[id]);
-  return nums.map((n) => Math.round(n * 1e9) / 1e9);
-}
-const byNum = (p: string, q: string) => Number(p.slice(1)) - Number(q.slice(1));
-
 describe('insert', () => {
   it('insert(extract(sel)) reproduces relative geometry with all-new ids', () => {
     const source = kitchenSinkDoc();
@@ -185,7 +158,9 @@ describe('insert', () => {
     ]);
     for (const id of [...inserted.atoms, ...inserted.bonds, ...inserted.objects])
       expect(oldIds.has(id)).toBe(false);
-    expect(relativeGeometry(doc, inserted)).toEqual(relativeGeometry(source, all));
+    expect(sameGeometry(geometrySignature(doc, inserted), geometrySignature(source, all))).toBe(
+      true,
+    );
     expect(checkInvariants(doc)).toEqual([]);
 
     const box = bounds(doc, inserted)!;

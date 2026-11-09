@@ -1,0 +1,157 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0,
+        "y": 0,
+        "charge": -1,
+        "element": "O",
+        "label": "HO",
+        "lonePairs": 3,
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 2,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "partialCharge": "δ+",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": 3,
+        "y": 0,
+        "charge": 0,
+        "element": "Br",
+        "lonePairs": 3,
+        "partialCharge": "δ-",
+        "radical": 0
+      },
+      "a8": {
+        "id": "a8",
+        "x": 7,
+        "y": 0,
+        "charge": 0,
+        "element": "O",
+        "label": "HO",
+        "radical": 0
+      },
+      "a9": {
+        "id": "a9",
+        "x": 8,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a12": {
+        "id": "a12",
+        "x": 10,
+        "y": 0,
+        "charge": -1,
+        "element": "Br",
+        "lonePairs": 4,
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b4": {
+        "id": "b4",
+        "a1": "a2",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b10": {
+        "id": "b10",
+        "a1": "a8",
+        "a2": "a9",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-09T00:00:00.000Z",
+      "modified": "2026-11-09T00:00:00.000Z"
+    },
+    "nextId": 13,
+    "objects": {
+      "o5": {
+        "id": "o5",
+        "type": "curved-arrow",
+        "bend": 0.4,
+        "from": {
+          "kind": "atom",
+          "atom": "a1",
+          "offset": {
+            "x": 0.3,
+            "y": -0.3
+          }
+        },
+        "head": "full",
+        "to": {
+          "kind": "atom",
+          "atom": "a2"
+        }
+      },
+      "o6": {
+        "id": "o6",
+        "type": "curved-arrow",
+        "bend": -0.4,
+        "from": {
+          "kind": "bond",
+          "bond": "b4"
+        },
+        "head": "full",
+        "to": {
+          "kind": "atom",
+          "atom": "a3",
+          "offset": {
+            "x": 0.3,
+            "y": -0.3
+          }
+        }
+      },
+      "o7": {
+        "id": "o7",
+        "type": "arrow",
+        "kind": "forward",
+        "from": {
+          "x": 4,
+          "y": 0
+        },
+        "to": {
+          "x": 6,
+          "y": 0
+        }
+      },
+      "o11": {
+        "id": "o11",
+        "type": "plus",
+        "at": {
+          "x": 9,
+          "y": 0
+        }
+      }
+    },
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o5",
+      "o6",
+      "o7",
+      "o11"
+    ]
+  }
+}
