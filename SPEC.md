@@ -221,6 +221,8 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-09 | ESLint `no-unused-vars` uses `ignoreRestSiblings` (omit-a-key via rest destructuring). |
 | 2026-11-09 | ESLint allows `!` non-null assertions in `*.test.ts` and `__fixtures__/` only (they assert fixture shape; a wrong one fails the test). Source code keeps the rule. |
 | 2026-11-09 | `openchemlib@9.25.2` added (exact pin). Lint forbids importing it anywhere but `src/core/chem-core/ocl.ts` (+ chem-core tests that pin library facts), including renderer, main, preload, tests and e2e. A tooling test checks the bundle has no `eval`/`new Function` (CSP). |
+| 2026-11-09 | chem-core keeps its own valence table for common organic elements (OCL accepts neutral 4-bonded N and divalent Cl, which the spec flags); OCL decides only outside it. See `SPEC-chem-core.md` "Valence model". |
+| 2026-11-09 | doc-model fix found by its round-trip property during chem-core C2: mirroring a curved arrow with `bend: 0` emitted `-0` (now `-bend + 0`), and the generator could pass `bend: -0` (now mapped like coordinates). Regression test added. |
 
 ## Open Questions
 

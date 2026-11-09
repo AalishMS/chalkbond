@@ -31,9 +31,9 @@ double so every atom that needs a π bond gets exactly one; optional donors (pyr
 O, S) stay single. Forced-assignment propagation + backtracking.
 
 **Acceptance criteria:**
-- [ ] Correct, valid assignments for benzene, naphthalene, anthracene, azulene, pyridine, pyrrole, furan, thiophene, indole, imidazole, carboxylate (1.5 outside a ring)
-- [ ] Unsolvable systems report `cannot-kekulize` with the offending bonds
-- [ ] Deterministic output (same doc → same assignment)
+- [x] Correct, valid assignments for benzene, naphthalene, anthracene, azulene, pyridine, pyrrole, furan, thiophene, indole, imidazole, carboxylate (1.5 outside a ring)
+- [x] Unsolvable systems report `cannot-kekulize` with the offending bonds
+- [x] Deterministic output (same doc → same assignment)
 
 **Verification:** `npm test -- src/core/chem-core`
 
