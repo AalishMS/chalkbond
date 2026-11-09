@@ -76,10 +76,10 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 ### Phase 2: doc-model full surface
 - [x] T4: Draw objects (arrows, curved arrows, plus, text, caption, callout, bracket, shape) + zOrder
 - [x] T5: `deleteItems` cascades + `mergeAtoms`
-- [ ] T6: `transformItems` + `bounds`
+- [x] T6: `transformItems` + `bounds`
 
 ### Checkpoint C — editing surface
-- [ ] `npm run check` green; every cascade row in the spec has a test
+- [x] `npm run check` green; every cascade row in the spec has a test
 
 ### Phase 3: reuse and persistence
 - [ ] T7: `fragments`, `neighbors`, `extract`, `insert`

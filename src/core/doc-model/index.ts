@@ -10,6 +10,8 @@ export { paintLayers } from './z-order';
 export { deleteItems } from './delete';
 export { mergeAtoms } from './merge';
 export { resolveAnchor } from './anchors';
+export { transformItems, bounds } from './transform';
+export { IDENTITY, applyAffine, translation, rotation, scaling } from './geometry';
 export {
   createHistory,
   transact,

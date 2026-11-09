@@ -169,9 +169,20 @@ type Selection = { atoms: Set<AtomId>; bonds: Set<BondId>; objects: Set<ObjectId
 deleteItems(doc, sel): Doc        // cascades: atom → its bonds; arrow → its attached texts
 transformItems(doc, sel, m: Affine): Doc   // move / rotate / flip / scale. Points, atoms,
                                            // arrow ends and point anchors transform exactly;
-                                           // Rects (bracket/shape) stay axis-aligned: their
-                                           // centre transforms, size scales by |scale|
-bounds(doc, sel?): Rect | null
+                                           // atom/bond anchors follow their atom. Rects
+                                           // (bracket/shape) stay axis-aligned: centre maps
+                                           // exactly, size → bbox of the mapped inscribed
+                                           // ellipse (w' = hypot(a·w, c·h), h' = hypot(b·w,
+                                           // d·h)): exact for 90° turns (w/h swap), flips and
+                                           // scales; circles keep size under any rotation.
+                                           // Mirroring (det < 0) negates curved-arrow `bend`
+                                           // (bend is dimensionless, relative to the chord).
+                                           // Selected bonds bring their atoms; selected arrows
+                                           // bring their attached texts.
+bounds(doc, sel?): Rect | null             // geometric hull (BLU) of atom positions, arrow
+                                           // ends, points, rects, resolved anchors, caption
+                                           // targets; no label/stroke extents (svg-render adds)
+IDENTITY, applyAffine, translation(dx,dy), rotation(rad, center?), scaling(sx, sy?, center?)
 
 // derived structure
 fragments(doc): AtomId[][]                     // connected components, deterministic order

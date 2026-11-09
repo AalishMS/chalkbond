@@ -156,9 +156,9 @@ text `attachedTo` validation (must reference an `arrow`).
 positions, rect centres with size scaling) and `bounds(doc, sel?)`.
 
 **Acceptance criteria:**
-- [ ] Translate, rotate 90°, flip-horizontal and scale ×2 each produce exact expected coordinates (to 1e-9)
-- [ ] Atom/bond anchors are untouched (they follow their atom); unselected items unchanged
-- [ ] `bounds` of empty selection → `null`; of benzene → expected rect
+- [x] Translate, rotate 90°, flip-horizontal and scale ×2 each produce exact expected coordinates (to 1e-9)
+- [x] Atom/bond anchors are untouched (they follow their atom); unselected items unchanged
+- [x] `bounds` of empty selection → `null`; of benzene → expected rect
 
 **Verification:** `npm test -- src/core/doc-model`
 
@@ -169,8 +169,8 @@ positions, rect centres with size scaling) and `bounds(doc, sel?)`.
 **Scope:** S
 
 ### ✅ Checkpoint C — editing surface
-- [ ] `npm run check` green; all cascade rows tested
-- [ ] Commit + push
+- [x] `npm run check` green; all cascade rows tested
+- [x] Commit + push
 
 ---
 
