@@ -1,0 +1,3255 @@
+{
+  "format": "chalkbond-compounds",
+  "version": 1,
+  "source": "PubChem PUG-REST (pubchem.ncbi.nlm.nih.gov), retrieved 2026-11-09; names curated in scripts/compound-names.txt",
+  "entries": [
+    {
+      "name": "methane",
+      "synonyms": ["marsh gas"],
+      "smiles": "C",
+      "formula": "CH4",
+      "mw": 16.043,
+      "cid": 297
+    },
+    {
+      "name": "ethane",
+      "synonyms": [],
+      "smiles": "CC",
+      "formula": "C2H6",
+      "mw": 30.07,
+      "cid": 6324
+    },
+    {
+      "name": "propane",
+      "synonyms": [],
+      "smiles": "CCC",
+      "formula": "C3H8",
+      "mw": 44.1,
+      "cid": 6334
+    },
+    {
+      "name": "butane",
+      "synonyms": ["n-butane"],
+      "smiles": "CCCC",
+      "formula": "C4H10",
+      "mw": 58.12,
+      "cid": 7843
+    },
+    {
+      "name": "2-methylpropane",
+      "synonyms": ["isobutane"],
+      "smiles": "CC(C)C",
+      "formula": "C4H10",
+      "mw": 58.12,
+      "cid": 6360
+    },
+    {
+      "name": "pentane",
+      "synonyms": ["n-pentane"],
+      "smiles": "CCCCC",
+      "formula": "C5H12",
+      "mw": 72.15,
+      "cid": 8003
+    },
+    {
+      "name": "2-methylbutane",
+      "synonyms": ["isopentane"],
+      "smiles": "CCC(C)C",
+      "formula": "C5H12",
+      "mw": 72.15,
+      "cid": 6556
+    },
+    {
+      "name": "2,2-dimethylpropane",
+      "synonyms": ["neopentane"],
+      "smiles": "CC(C)(C)C",
+      "formula": "C5H12",
+      "mw": 72.15,
+      "cid": 10041
+    },
+    {
+      "name": "hexane",
+      "synonyms": ["n-hexane"],
+      "smiles": "CCCCCC",
+      "formula": "C6H14",
+      "mw": 86.18,
+      "cid": 8058
+    },
+    {
+      "name": "2-methylpentane",
+      "synonyms": ["isohexane"],
+      "smiles": "CCCC(C)C",
+      "formula": "C6H14",
+      "mw": 86.18,
+      "cid": 7892
+    },
+    {
+      "name": "3-methylpentane",
+      "synonyms": [],
+      "smiles": "CCC(C)CC",
+      "formula": "C6H14",
+      "mw": 86.18,
+      "cid": 7282
+    },
+    {
+      "name": "2,2-dimethylbutane",
+      "synonyms": ["neohexane"],
+      "smiles": "CCC(C)(C)C",
+      "formula": "C6H14",
+      "mw": 86.18,
+      "cid": 6403
+    },
+    {
+      "name": "2,3-dimethylbutane",
+      "synonyms": [],
+      "smiles": "CC(C)C(C)C",
+      "formula": "C6H14",
+      "mw": 86.18,
+      "cid": 6589
+    },
+    {
+      "name": "heptane",
+      "synonyms": ["n-heptane"],
+      "smiles": "CCCCCCC",
+      "formula": "C7H16",
+      "mw": 100.2,
+      "cid": 8900
+    },
+    {
+      "name": "octane",
+      "synonyms": ["n-octane"],
+      "smiles": "CCCCCCCC",
+      "formula": "C8H18",
+      "mw": 114.23,
+      "cid": 356
+    },
+    {
+      "name": "2,2,4-trimethylpentane",
+      "synonyms": ["isooctane"],
+      "smiles": "CC(C)CC(C)(C)C",
+      "formula": "C8H18",
+      "mw": 114.23,
+      "cid": 10907
+    },
+    {
+      "name": "nonane",
+      "synonyms": ["n-nonane"],
+      "smiles": "CCCCCCCCC",
+      "formula": "C9H20",
+      "mw": 128.25,
+      "cid": 8141
+    },
+    {
+      "name": "decane",
+      "synonyms": ["n-decane"],
+      "smiles": "CCCCCCCCCC",
+      "formula": "C10H22",
+      "mw": 142.28,
+      "cid": 15600
+    },
+    {
+      "name": "cyclopropane",
+      "synonyms": [],
+      "smiles": "C1CC1",
+      "formula": "C3H6",
+      "mw": 42.08,
+      "cid": 6351
+    },
+    {
+      "name": "cyclobutane",
+      "synonyms": [],
+      "smiles": "C1CCC1",
+      "formula": "C4H8",
+      "mw": 56.11,
+      "cid": 9250
+    },
+    {
+      "name": "cyclopentane",
+      "synonyms": [],
+      "smiles": "C1CCCC1",
+      "formula": "C5H10",
+      "mw": 70.13,
+      "cid": 9253
+    },
+    {
+      "name": "cyclohexane",
+      "synonyms": [],
+      "smiles": "C1CCCCC1",
+      "formula": "C6H12",
+      "mw": 84.16,
+      "cid": 8078
+    },
+    {
+      "name": "methylcyclohexane",
+      "synonyms": [],
+      "smiles": "CC1CCCCC1",
+      "formula": "C7H14",
+      "mw": 98.19,
+      "cid": 7962
+    },
+    {
+      "name": "ethene",
+      "synonyms": ["ethylene"],
+      "smiles": "C=C",
+      "formula": "C2H4",
+      "mw": 28.05,
+      "cid": 6325
+    },
+    {
+      "name": "propene",
+      "synonyms": ["propylene"],
+      "smiles": "CC=C",
+      "formula": "C3H6",
+      "mw": 42.08,
+      "cid": 8252
+    },
+    {
+      "name": "but-1-ene",
+      "synonyms": ["1-butene"],
+      "smiles": "CCC=C",
+      "formula": "C4H8",
+      "mw": 56.11,
+      "cid": 7844
+    },
+    {
+      "name": "but-2-ene",
+      "synonyms": ["2-butene"],
+      "smiles": "CC=CC",
+      "formula": "C4H8",
+      "mw": 56.11,
+      "cid": 12220
+    },
+    {
+      "name": "cis-but-2-ene",
+      "synonyms": ["(Z)-but-2-ene", "cis-2-butene"],
+      "smiles": "C/C=C\\C",
+      "formula": "C4H8",
+      "mw": 56.11,
+      "cid": 5287573
+    },
+    {
+      "name": "trans-but-2-ene",
+      "synonyms": ["(E)-but-2-ene", "trans-2-butene"],
+      "smiles": "C/C=C/C",
+      "formula": "C4H8",
+      "mw": 56.11,
+      "cid": 62695
+    },
+    {
+      "name": "2-methylpropene",
+      "synonyms": ["isobutylene", "isobutene"],
+      "smiles": "CC(=C)C",
+      "formula": "C4H8",
+      "mw": 56.11,
+      "cid": 8255
+    },
+    {
+      "name": "pent-1-ene",
+      "synonyms": ["1-pentene"],
+      "smiles": "CCCC=C",
+      "formula": "C5H10",
+      "mw": 70.13,
+      "cid": 8004
+    },
+    {
+      "name": "pent-2-ene",
+      "synonyms": ["2-pentene"],
+      "smiles": "CCC=CC",
+      "formula": "C5H10",
+      "mw": 70.13,
+      "cid": 12585
+    },
+    {
+      "name": "hex-1-ene",
+      "synonyms": ["1-hexene"],
+      "smiles": "CCCCC=C",
+      "formula": "C6H12",
+      "mw": 84.16,
+      "cid": 11597
+    },
+    {
+      "name": "cyclopentene",
+      "synonyms": [],
+      "smiles": "C1CC=CC1",
+      "formula": "C5H8",
+      "mw": 68.12,
+      "cid": 8882
+    },
+    {
+      "name": "cyclohexene",
+      "synonyms": [],
+      "smiles": "C1CCC=CC1",
+      "formula": "C6H10",
+      "mw": 82.14,
+      "cid": 8079
+    },
+    {
+      "name": "propadiene",
+      "synonyms": ["allene"],
+      "smiles": "C=C=C",
+      "formula": "C3H4",
+      "mw": 40.06,
+      "cid": 10037
+    },
+    {
+      "name": "buta-1,3-diene",
+      "synonyms": ["1,3-butadiene", "butadiene"],
+      "smiles": "C=CC=C",
+      "formula": "C4H6",
+      "mw": 54.09,
+      "cid": 7845
+    },
+    {
+      "name": "2-methylbuta-1,3-diene",
+      "synonyms": ["isoprene"],
+      "smiles": "CC(=C)C=C",
+      "formula": "C5H8",
+      "mw": 68.12,
+      "cid": 6557
+    },
+    {
+      "name": "2-chlorobuta-1,3-diene",
+      "synonyms": ["chloroprene"],
+      "smiles": "C=CC(=C)Cl",
+      "formula": "C4H5Cl",
+      "mw": 88.53,
+      "cid": 31369
+    },
+    {
+      "name": "ethyne",
+      "synonyms": ["acetylene"],
+      "smiles": "C#C",
+      "formula": "C2H2",
+      "mw": 26.04,
+      "cid": 6326
+    },
+    {
+      "name": "propyne",
+      "synonyms": ["methylacetylene"],
+      "smiles": "CC#C",
+      "formula": "C3H4",
+      "mw": 40.06,
+      "cid": 6335
+    },
+    {
+      "name": "but-1-yne",
+      "synonyms": ["1-butyne", "ethylacetylene"],
+      "smiles": "CCC#C",
+      "formula": "C4H6",
+      "mw": 54.09,
+      "cid": 7846
+    },
+    {
+      "name": "but-2-yne",
+      "synonyms": ["2-butyne", "dimethylacetylene"],
+      "smiles": "CC#CC",
+      "formula": "C4H6",
+      "mw": 54.09,
+      "cid": 10419
+    },
+    {
+      "name": "pent-1-yne",
+      "synonyms": ["1-pentyne"],
+      "smiles": "CCCC#C",
+      "formula": "C5H8",
+      "mw": 68.12,
+      "cid": 12309
+    },
+    {
+      "name": "pent-2-yne",
+      "synonyms": ["2-pentyne"],
+      "smiles": "CCC#CC",
+      "formula": "C5H8",
+      "mw": 68.12,
+      "cid": 12310
+    },
+    {
+      "name": "3-methylbut-1-yne",
+      "synonyms": [],
+      "smiles": "CC(C)C#C",
+      "formula": "C5H8",
+      "mw": 68.12,
+      "cid": 69019
+    },
+    {
+      "name": "hex-1-yne",
+      "synonyms": ["1-hexyne"],
+      "smiles": "CCCCC#C",
+      "formula": "C6H10",
+      "mw": 82.14,
+      "cid": 12732
+    },
+    {
+      "name": "benzene",
+      "synonyms": [],
+      "smiles": "C1=CC=CC=C1",
+      "formula": "C6H6",
+      "mw": 78.11,
+      "cid": 241
+    },
+    {
+      "name": "toluene",
+      "synonyms": ["methylbenzene"],
+      "smiles": "CC1=CC=CC=C1",
+      "formula": "C7H8",
+      "mw": 92.14,
+      "cid": 1140
+    },
+    {
+      "name": "ethylbenzene",
+      "synonyms": [],
+      "smiles": "CCC1=CC=CC=C1",
+      "formula": "C8H10",
+      "mw": 106.16,
+      "cid": 7500
+    },
+    {
+      "name": "o-xylene",
+      "synonyms": ["1,2-dimethylbenzene"],
+      "smiles": "CC1=CC=CC=C1C",
+      "formula": "C8H10",
+      "mw": 106.16,
+      "cid": 7237
+    },
+    {
+      "name": "m-xylene",
+      "synonyms": ["1,3-dimethylbenzene"],
+      "smiles": "CC1=CC(=CC=C1)C",
+      "formula": "C8H10",
+      "mw": 106.16,
+      "cid": 7929
+    },
+    {
+      "name": "p-xylene",
+      "synonyms": ["1,4-dimethylbenzene"],
+      "smiles": "CC1=CC=C(C=C1)C",
+      "formula": "C8H10",
+      "mw": 106.16,
+      "cid": 7809
+    },
+    {
+      "name": "mesitylene",
+      "synonyms": ["1,3,5-trimethylbenzene"],
+      "smiles": "CC1=CC(=CC(=C1)C)C",
+      "formula": "C9H12",
+      "mw": 120.19,
+      "cid": 7947
+    },
+    {
+      "name": "cumene",
+      "synonyms": ["isopropylbenzene", "(propan-2-yl)benzene"],
+      "smiles": "CC(C)C1=CC=CC=C1",
+      "formula": "C9H12",
+      "mw": 120.19,
+      "cid": 7406
+    },
+    {
+      "name": "styrene",
+      "synonyms": ["ethenylbenzene", "vinylbenzene"],
+      "smiles": "C=CC1=CC=CC=C1",
+      "formula": "C8H8",
+      "mw": 104.15,
+      "cid": 7501
+    },
+    {
+      "name": "biphenyl",
+      "synonyms": ["diphenyl"],
+      "smiles": "C1=CC=C(C=C1)C2=CC=CC=C2",
+      "formula": "C12H10",
+      "mw": 154.21,
+      "cid": 7095
+    },
+    {
+      "name": "diphenylmethane",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)CC2=CC=CC=C2",
+      "formula": "C13H12",
+      "mw": 168.23,
+      "cid": 7580
+    },
+    {
+      "name": "naphthalene",
+      "synonyms": [],
+      "smiles": "C1=CC=C2C=CC=CC2=C1",
+      "formula": "C10H8",
+      "mw": 128.17,
+      "cid": 931
+    },
+    {
+      "name": "anthracene",
+      "synonyms": [],
+      "smiles": "C1=CC=C2C=C3C=CC=CC3=CC2=C1",
+      "formula": "C14H10",
+      "mw": 178.23,
+      "cid": 8418
+    },
+    {
+      "name": "phenanthrene",
+      "synonyms": [],
+      "smiles": "C1=CC=C2C(=C1)C=CC3=CC=CC=C32",
+      "formula": "C14H10",
+      "mw": 178.23,
+      "cid": 995
+    },
+    {
+      "name": "chloromethane",
+      "synonyms": ["methyl chloride"],
+      "smiles": "CCl",
+      "formula": "CH3Cl",
+      "mw": 50.49,
+      "cid": 6327
+    },
+    {
+      "name": "bromomethane",
+      "synonyms": ["methyl bromide"],
+      "smiles": "CBr",
+      "formula": "CH3Br",
+      "mw": 94.94,
+      "cid": 6323
+    },
+    {
+      "name": "iodomethane",
+      "synonyms": ["methyl iodide"],
+      "smiles": "CI",
+      "formula": "CH3I",
+      "mw": 141.939,
+      "cid": 6328
+    },
+    {
+      "name": "fluoromethane",
+      "synonyms": ["methyl fluoride"],
+      "smiles": "CF",
+      "formula": "CH3F",
+      "mw": 34.033,
+      "cid": 11638
+    },
+    {
+      "name": "dichloromethane",
+      "synonyms": ["methylene chloride", "DCM", "CH2Cl2"],
+      "smiles": "C(Cl)Cl",
+      "formula": "CH2Cl2",
+      "mw": 84.93,
+      "cid": 6344
+    },
+    {
+      "name": "chloroform",
+      "synonyms": ["trichloromethane", "CHCl3"],
+      "smiles": "C(Cl)(Cl)Cl",
+      "formula": "CHCl3",
+      "mw": 119.37,
+      "cid": 6212
+    },
+    {
+      "name": "carbon tetrachloride",
+      "synonyms": ["tetrachloromethane", "CCl4"],
+      "smiles": "C(Cl)(Cl)(Cl)Cl",
+      "formula": "CCl4",
+      "mw": 153.8,
+      "cid": 5943
+    },
+    {
+      "name": "bromoform",
+      "synonyms": ["tribromomethane"],
+      "smiles": "C(Br)(Br)Br",
+      "formula": "CHBr3",
+      "mw": 252.73,
+      "cid": 5558
+    },
+    {
+      "name": "iodoform",
+      "synonyms": ["triiodomethane"],
+      "smiles": "C(I)(I)I",
+      "formula": "CHI3",
+      "mw": 393.732,
+      "cid": 6374
+    },
+    {
+      "name": "chloroethane",
+      "synonyms": ["ethyl chloride"],
+      "smiles": "CCCl",
+      "formula": "C2H5Cl",
+      "mw": 64.51,
+      "cid": 6337
+    },
+    {
+      "name": "bromoethane",
+      "synonyms": ["ethyl bromide"],
+      "smiles": "CCBr",
+      "formula": "C2H5Br",
+      "mw": 108.97,
+      "cid": 6332
+    },
+    {
+      "name": "iodoethane",
+      "synonyms": ["ethyl iodide"],
+      "smiles": "CCI",
+      "formula": "C2H5I",
+      "mw": 155.97,
+      "cid": 6340
+    },
+    {
+      "name": "1-chloropropane",
+      "synonyms": ["n-propyl chloride"],
+      "smiles": "CCCCl",
+      "formula": "C3H7Cl",
+      "mw": 78.54,
+      "cid": 10899
+    },
+    {
+      "name": "2-chloropropane",
+      "synonyms": ["isopropyl chloride"],
+      "smiles": "CC(C)Cl",
+      "formula": "C3H7Cl",
+      "mw": 78.54,
+      "cid": 6361
+    },
+    {
+      "name": "1-bromopropane",
+      "synonyms": ["n-propyl bromide"],
+      "smiles": "CCCBr",
+      "formula": "C3H7Br",
+      "mw": 122.99,
+      "cid": 7840
+    },
+    {
+      "name": "2-bromopropane",
+      "synonyms": ["isopropyl bromide"],
+      "smiles": "CC(C)Br",
+      "formula": "C3H7Br",
+      "mw": 122.99,
+      "cid": 6358
+    },
+    {
+      "name": "1-iodopropane",
+      "synonyms": ["n-propyl iodide"],
+      "smiles": "CCCI",
+      "formula": "C3H7I",
+      "mw": 169.99,
+      "cid": 33643
+    },
+    {
+      "name": "2-iodopropane",
+      "synonyms": ["isopropyl iodide"],
+      "smiles": "CC(C)I",
+      "formula": "C3H7I",
+      "mw": 169.99,
+      "cid": 6362
+    },
+    {
+      "name": "1-chlorobutane",
+      "synonyms": ["n-butyl chloride"],
+      "smiles": "CCCCCl",
+      "formula": "C4H9Cl",
+      "mw": 92.57,
+      "cid": 8005
+    },
+    {
+      "name": "2-chlorobutane",
+      "synonyms": ["sec-butyl chloride"],
+      "smiles": "CCC(C)Cl",
+      "formula": "C4H9Cl",
+      "mw": 92.57,
+      "cid": 6563
+    },
+    {
+      "name": "1-bromobutane",
+      "synonyms": ["n-butyl bromide"],
+      "smiles": "CCCCBr",
+      "formula": "C4H9Br",
+      "mw": 137.02,
+      "cid": 8002
+    },
+    {
+      "name": "2-bromobutane",
+      "synonyms": ["sec-butyl bromide"],
+      "smiles": "CCC(C)Br",
+      "formula": "C4H9Br",
+      "mw": 137.02,
+      "cid": 6554
+    },
+    {
+      "name": "1-chloro-2-methylpropane",
+      "synonyms": ["isobutyl chloride"],
+      "smiles": "CC(C)CCl",
+      "formula": "C4H9Cl",
+      "mw": 92.57,
+      "cid": 10554
+    },
+    {
+      "name": "2-chloro-2-methylpropane",
+      "synonyms": ["tert-butyl chloride", "t-butyl chloride"],
+      "smiles": "CC(C)(C)Cl",
+      "formula": "C4H9Cl",
+      "mw": 92.57,
+      "cid": 10486
+    },
+    {
+      "name": "2-bromo-2-methylpropane",
+      "synonyms": ["tert-butyl bromide", "t-butyl bromide"],
+      "smiles": "CC(C)(C)Br",
+      "formula": "C4H9Br",
+      "mw": 137.02,
+      "cid": 10485
+    },
+    {
+      "name": "1,1-dichloroethane",
+      "synonyms": ["ethylidene dichloride"],
+      "smiles": "CC(Cl)Cl",
+      "formula": "C2H4Cl2",
+      "mw": 98.96,
+      "cid": 6365
+    },
+    {
+      "name": "1,2-dichloroethane",
+      "synonyms": ["ethylene dichloride"],
+      "smiles": "C(CCl)Cl",
+      "formula": "C2H4Cl2",
+      "mw": 98.96,
+      "cid": 11
+    },
+    {
+      "name": "1,2-dibromoethane",
+      "synonyms": ["ethylene dibromide"],
+      "smiles": "C(CBr)Br",
+      "formula": "C2H4Br2",
+      "mw": 187.86,
+      "cid": 7839
+    },
+    {
+      "name": "1,1,1-trichloroethane",
+      "synonyms": ["methyl chloroform"],
+      "smiles": "CC(Cl)(Cl)Cl",
+      "formula": "C2H3Cl3",
+      "mw": 133.4,
+      "cid": 6278
+    },
+    {
+      "name": "chloroethene",
+      "synonyms": ["vinyl chloride"],
+      "smiles": "C=CCl",
+      "formula": "C2H3Cl",
+      "mw": 62.5,
+      "cid": 6338
+    },
+    {
+      "name": "3-chloroprop-1-ene",
+      "synonyms": ["allyl chloride"],
+      "smiles": "C=CCCl",
+      "formula": "C3H5Cl",
+      "mw": 76.52,
+      "cid": 7850
+    },
+    {
+      "name": "3-bromoprop-1-ene",
+      "synonyms": ["allyl bromide"],
+      "smiles": "C=CCBr",
+      "formula": "C3H5Br",
+      "mw": 120.98,
+      "cid": 7841
+    },
+    {
+      "name": "tetrafluoroethene",
+      "synonyms": ["tetrafluoroethylene"],
+      "smiles": "C(=C(F)F)(F)F",
+      "formula": "C2F4",
+      "mw": 100.01,
+      "cid": 8301
+    },
+    {
+      "name": "dichlorodifluoromethane",
+      "synonyms": ["freon-12", "CFC-12"],
+      "smiles": "C(F)(F)(Cl)Cl",
+      "formula": "CCl2F2",
+      "mw": 120.91,
+      "cid": 6391
+    },
+    {
+      "name": "trichlorofluoromethane",
+      "synonyms": ["freon-11", "CFC-11"],
+      "smiles": "C(F)(Cl)(Cl)Cl",
+      "formula": "CCl3F",
+      "mw": 137.36,
+      "cid": 6389
+    },
+    {
+      "name": "chloropicrin",
+      "synonyms": ["trichloronitromethane"],
+      "smiles": "C([N+](=O)[O-])(Cl)(Cl)Cl",
+      "formula": "CCl3NO2",
+      "mw": 164.37,
+      "cid": 6423
+    },
+    {
+      "name": "DDT",
+      "synonyms": ["dichlorodiphenyltrichloroethane", "p,p'-DDT"],
+      "smiles": "C1=CC(=CC=C1C(C2=CC=C(C=C2)Cl)C(Cl)(Cl)Cl)Cl",
+      "formula": "C14H9Cl5",
+      "mw": 354.5,
+      "cid": 3036
+    },
+    {
+      "name": "lindane",
+      "synonyms": ["gammexane"],
+      "smiles": "C1(C(C(C(C(C1Cl)Cl)Cl)Cl)Cl)Cl",
+      "formula": "C6H6Cl6",
+      "mw": 290.8,
+      "cid": 727
+    },
+    {
+      "name": "chlorobenzene",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)Cl",
+      "formula": "C6H5Cl",
+      "mw": 112.55,
+      "cid": 7964
+    },
+    {
+      "name": "bromobenzene",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)Br",
+      "formula": "C6H5Br",
+      "mw": 157.01,
+      "cid": 7961
+    },
+    {
+      "name": "iodobenzene",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)I",
+      "formula": "C6H5I",
+      "mw": 204.01,
+      "cid": 11575
+    },
+    {
+      "name": "fluorobenzene",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)F",
+      "formula": "C6H5F",
+      "mw": 96.1,
+      "cid": 10008
+    },
+    {
+      "name": "1,2-dichlorobenzene",
+      "synonyms": ["o-dichlorobenzene"],
+      "smiles": "C1=CC=C(C(=C1)Cl)Cl",
+      "formula": "C6H4Cl2",
+      "mw": 147,
+      "cid": 7239
+    },
+    {
+      "name": "1,4-dichlorobenzene",
+      "synonyms": ["p-dichlorobenzene"],
+      "smiles": "C1=CC(=CC=C1Cl)Cl",
+      "formula": "C6H4Cl2",
+      "mw": 147,
+      "cid": 4685
+    },
+    {
+      "name": "2-chlorotoluene",
+      "synonyms": ["o-chlorotoluene"],
+      "smiles": "CC1=CC=CC=C1Cl",
+      "formula": "C7H7Cl",
+      "mw": 126.58,
+      "cid": 7238
+    },
+    {
+      "name": "4-chlorotoluene",
+      "synonyms": ["p-chlorotoluene"],
+      "smiles": "CC1=CC=C(C=C1)Cl",
+      "formula": "C7H7Cl",
+      "mw": 126.58,
+      "cid": 7810
+    },
+    {
+      "name": "benzyl chloride",
+      "synonyms": ["(chloromethyl)benzene"],
+      "smiles": "C1=CC=C(C=C1)CCl",
+      "formula": "C7H7Cl",
+      "mw": 126.58,
+      "cid": 7503
+    },
+    {
+      "name": "benzyl bromide",
+      "synonyms": ["(bromomethyl)benzene"],
+      "smiles": "C1=CC=C(C=C1)CBr",
+      "formula": "C7H7Br",
+      "mw": 171.03,
+      "cid": 7498
+    },
+    {
+      "name": "benzal chloride",
+      "synonyms": ["(dichloromethyl)benzene", "benzylidene chloride"],
+      "smiles": "C1=CC=C(C=C1)C(Cl)Cl",
+      "formula": "C7H6Cl2",
+      "mw": 161.03,
+      "cid": 7411
+    },
+    {
+      "name": "benzotrichloride",
+      "synonyms": ["(trichloromethyl)benzene"],
+      "smiles": "C1=CC=C(C=C1)C(Cl)(Cl)Cl",
+      "formula": "C7H5Cl3",
+      "mw": 195.5,
+      "cid": 7367
+    },
+    {
+      "name": "methanol",
+      "synonyms": ["methyl alcohol", "wood spirit", "CH3OH"],
+      "smiles": "CO",
+      "formula": "CH4O",
+      "mw": 32.042,
+      "cid": 887
+    },
+    {
+      "name": "ethanol",
+      "synonyms": ["ethyl alcohol", "C2H5OH"],
+      "smiles": "CCO",
+      "formula": "C2H6O",
+      "mw": 46.07,
+      "cid": 702
+    },
+    {
+      "name": "propan-1-ol",
+      "synonyms": ["1-propanol", "n-propyl alcohol", "propyl alcohol"],
+      "smiles": "CCCO",
+      "formula": "C3H8O",
+      "mw": 60.1,
+      "cid": 1031
+    },
+    {
+      "name": "propan-2-ol",
+      "synonyms": ["2-propanol", "isopropyl alcohol", "isopropanol"],
+      "smiles": "CC(C)O",
+      "formula": "C3H8O",
+      "mw": 60.1,
+      "cid": 3776
+    },
+    {
+      "name": "butan-1-ol",
+      "synonyms": ["1-butanol", "n-butyl alcohol"],
+      "smiles": "CCCCO",
+      "formula": "C4H10O",
+      "mw": 74.12,
+      "cid": 263
+    },
+    {
+      "name": "butan-2-ol",
+      "synonyms": ["2-butanol", "sec-butyl alcohol"],
+      "smiles": "CCC(C)O",
+      "formula": "C4H10O",
+      "mw": 74.12,
+      "cid": 6568
+    },
+    {
+      "name": "2-methylpropan-1-ol",
+      "synonyms": ["isobutyl alcohol", "isobutanol"],
+      "smiles": "CC(C)CO",
+      "formula": "C4H10O",
+      "mw": 74.12,
+      "cid": 6560
+    },
+    {
+      "name": "2-methylpropan-2-ol",
+      "synonyms": ["tert-butyl alcohol", "tert-butanol", "t-butanol"],
+      "smiles": "CC(C)(C)O",
+      "formula": "C4H10O",
+      "mw": 74.12,
+      "cid": 6386
+    },
+    {
+      "name": "pentan-1-ol",
+      "synonyms": ["1-pentanol", "n-amyl alcohol"],
+      "smiles": "CCCCCO",
+      "formula": "C5H12O",
+      "mw": 88.15,
+      "cid": 6276
+    },
+    {
+      "name": "pentan-2-ol",
+      "synonyms": ["2-pentanol"],
+      "smiles": "CCCC(C)O",
+      "formula": "C5H12O",
+      "mw": 88.15,
+      "cid": 22386
+    },
+    {
+      "name": "pentan-3-ol",
+      "synonyms": ["3-pentanol"],
+      "smiles": "CCC(CC)O",
+      "formula": "C5H12O",
+      "mw": 88.15,
+      "cid": 11428
+    },
+    {
+      "name": "3-methylbutan-1-ol",
+      "synonyms": ["isoamyl alcohol", "isopentyl alcohol"],
+      "smiles": "CC(C)CCO",
+      "formula": "C5H12O",
+      "mw": 88.15,
+      "cid": 31260
+    },
+    {
+      "name": "2-methylbutan-2-ol",
+      "synonyms": ["tert-amyl alcohol"],
+      "smiles": "CCC(C)(C)O",
+      "formula": "C5H12O",
+      "mw": 88.15,
+      "cid": 6405
+    },
+    {
+      "name": "hexan-1-ol",
+      "synonyms": ["1-hexanol"],
+      "smiles": "CCCCCCO",
+      "formula": "C6H14O",
+      "mw": 102.17,
+      "cid": 8103
+    },
+    {
+      "name": "cyclohexanol",
+      "synonyms": [],
+      "smiles": "C1CCC(CC1)O",
+      "formula": "C6H12O",
+      "mw": 100.16,
+      "cid": 7966
+    },
+    {
+      "name": "prop-2-en-1-ol",
+      "synonyms": ["allyl alcohol"],
+      "smiles": "C=CCO",
+      "formula": "C3H6O",
+      "mw": 58.08,
+      "cid": 7858
+    },
+    {
+      "name": "benzyl alcohol",
+      "synonyms": ["phenylmethanol"],
+      "smiles": "C1=CC=C(C=C1)CO",
+      "formula": "C7H8O",
+      "mw": 108.14,
+      "cid": 244
+    },
+    {
+      "name": "2-phenylethanol",
+      "synonyms": ["phenethyl alcohol"],
+      "smiles": "C1=CC=C(C=C1)CCO",
+      "formula": "C8H10O",
+      "mw": 122.16,
+      "cid": 6054
+    },
+    {
+      "name": "ethane-1,2-diol",
+      "synonyms": ["ethylene glycol", "glycol"],
+      "smiles": "C(CO)O",
+      "formula": "C2H6O2",
+      "mw": 62.07,
+      "cid": 174
+    },
+    {
+      "name": "propane-1,2-diol",
+      "synonyms": ["propylene glycol"],
+      "smiles": "CC(CO)O",
+      "formula": "C3H8O2",
+      "mw": 76.09,
+      "cid": 1030
+    },
+    {
+      "name": "glycerol",
+      "synonyms": ["propane-1,2,3-triol", "glycerine", "glycerin"],
+      "smiles": "C(C(CO)O)O",
+      "formula": "C3H8O3",
+      "mw": 92.09,
+      "cid": 753
+    },
+    {
+      "name": "ethyl hydrogen sulfate",
+      "synonyms": ["ethyl sulfuric acid"],
+      "smiles": "CCOS(=O)(=O)O",
+      "formula": "C2H6O4S",
+      "mw": 126.13,
+      "cid": 6004
+    },
+    {
+      "name": "phenol",
+      "synonyms": ["carbolic acid", "hydroxybenzene"],
+      "smiles": "C1=CC=C(C=C1)O",
+      "formula": "C6H6O",
+      "mw": 94.11,
+      "cid": 996
+    },
+    {
+      "name": "o-cresol",
+      "synonyms": ["2-methylphenol"],
+      "smiles": "CC1=CC=CC=C1O",
+      "formula": "C7H8O",
+      "mw": 108.14,
+      "cid": 335
+    },
+    {
+      "name": "m-cresol",
+      "synonyms": ["3-methylphenol"],
+      "smiles": "CC1=CC(=CC=C1)O",
+      "formula": "C7H8O",
+      "mw": 108.14,
+      "cid": 342
+    },
+    {
+      "name": "p-cresol",
+      "synonyms": ["4-methylphenol"],
+      "smiles": "CC1=CC=C(C=C1)O",
+      "formula": "C7H8O",
+      "mw": 108.14,
+      "cid": 2879
+    },
+    {
+      "name": "catechol",
+      "synonyms": ["benzene-1,2-diol", "pyrocatechol"],
+      "smiles": "C1=CC=C(C(=C1)O)O",
+      "formula": "C6H6O2",
+      "mw": 110.11,
+      "cid": 289
+    },
+    {
+      "name": "resorcinol",
+      "synonyms": ["benzene-1,3-diol"],
+      "smiles": "C1=CC(=CC(=C1)O)O",
+      "formula": "C6H6O2",
+      "mw": 110.11,
+      "cid": 5054
+    },
+    {
+      "name": "hydroquinone",
+      "synonyms": ["benzene-1,4-diol", "quinol"],
+      "smiles": "C1=CC(=CC=C1O)O",
+      "formula": "C6H6O2",
+      "mw": 110.11,
+      "cid": 785
+    },
+    {
+      "name": "2-nitrophenol",
+      "synonyms": ["o-nitrophenol"],
+      "smiles": "C1=CC=C(C(=C1)[N+](=O)[O-])O",
+      "formula": "C6H5NO3",
+      "mw": 139.11,
+      "cid": 6947
+    },
+    {
+      "name": "4-nitrophenol",
+      "synonyms": ["p-nitrophenol"],
+      "smiles": "C1=CC(=CC=C1[N+](=O)[O-])O",
+      "formula": "C6H5NO3",
+      "mw": 139.11,
+      "cid": 980
+    },
+    {
+      "name": "picric acid",
+      "synonyms": ["2,4,6-trinitrophenol"],
+      "smiles": "C1=C(C=C(C(=C1[N+](=O)[O-])O)[N+](=O)[O-])[N+](=O)[O-]",
+      "formula": "C6H3N3O7",
+      "mw": 229.1,
+      "cid": 6954
+    },
+    {
+      "name": "2,4,6-tribromophenol",
+      "synonyms": [],
+      "smiles": "C1=C(C=C(C(=C1Br)O)Br)Br",
+      "formula": "C6H3Br3O",
+      "mw": 330.8,
+      "cid": 1483
+    },
+    {
+      "name": "1-naphthol",
+      "synonyms": ["naphthalen-1-ol", "alpha-naphthol", "α-naphthol"],
+      "smiles": "C1=CC=C2C(=C1)C=CC=C2O",
+      "formula": "C10H8O",
+      "mw": 144.17,
+      "cid": 7005
+    },
+    {
+      "name": "2-naphthol",
+      "synonyms": ["naphthalen-2-ol", "beta-naphthol", "β-naphthol"],
+      "smiles": "C1=CC=C2C=C(C=CC2=C1)O",
+      "formula": "C10H8O",
+      "mw": 144.17,
+      "cid": 8663
+    },
+    {
+      "name": "dimethyl ether",
+      "synonyms": ["methoxymethane"],
+      "smiles": "COC",
+      "formula": "C2H6O",
+      "mw": 46.07,
+      "cid": 8254
+    },
+    {
+      "name": "diethyl ether",
+      "synonyms": ["ethoxyethane", "ether"],
+      "smiles": "CCOCC",
+      "formula": "C4H10O",
+      "mw": 74.12,
+      "cid": 3283
+    },
+    {
+      "name": "ethyl methyl ether",
+      "synonyms": ["methoxyethane"],
+      "smiles": "CCOC",
+      "formula": "C3H8O",
+      "mw": 60.1,
+      "cid": 10903
+    },
+    {
+      "name": "methyl propyl ether",
+      "synonyms": ["1-methoxypropane"],
+      "smiles": "CCCOC",
+      "formula": "C4H10O",
+      "mw": 74.12,
+      "cid": 11182
+    },
+    {
+      "name": "isopropyl methyl ether",
+      "synonyms": ["2-methoxypropane"],
+      "smiles": "CC(C)OC",
+      "formula": "C4H10O",
+      "mw": 74.12,
+      "cid": 11721
+    },
+    {
+      "name": "methyl tert-butyl ether",
+      "synonyms": ["2-methoxy-2-methylpropane", "MTBE"],
+      "smiles": "CC(C)(C)OC",
+      "formula": "C5H12O",
+      "mw": 88.15,
+      "cid": 15413
+    },
+    {
+      "name": "anisole",
+      "synonyms": ["methoxybenzene", "methyl phenyl ether"],
+      "smiles": "COC1=CC=CC=C1",
+      "formula": "C7H8O",
+      "mw": 108.14,
+      "cid": 7519
+    },
+    {
+      "name": "phenetole",
+      "synonyms": ["ethoxybenzene", "ethyl phenyl ether"],
+      "smiles": "CCOC1=CC=CC=C1",
+      "formula": "C8H10O",
+      "mw": 122.16,
+      "cid": 7674
+    },
+    {
+      "name": "diphenyl ether",
+      "synonyms": ["phenoxybenzene"],
+      "smiles": "C1=CC=C(C=C1)OC2=CC=CC=C2",
+      "formula": "C12H10O",
+      "mw": 170.21,
+      "cid": 7583
+    },
+    {
+      "name": "ethylene oxide",
+      "synonyms": ["oxirane", "epoxyethane"],
+      "smiles": "C1CO1",
+      "formula": "C2H4O",
+      "mw": 44.05,
+      "cid": 6354
+    },
+    {
+      "name": "tetrahydrofuran",
+      "synonyms": ["THF", "oxolane"],
+      "smiles": "C1CCOC1",
+      "formula": "C4H8O",
+      "mw": 72.11,
+      "cid": 8028
+    },
+    {
+      "name": "1,4-dioxane",
+      "synonyms": ["dioxane"],
+      "smiles": "C1COCCO1",
+      "formula": "C4H8O2",
+      "mw": 88.11,
+      "cid": 31275
+    },
+    {
+      "name": "formaldehyde",
+      "synonyms": ["methanal", "HCHO"],
+      "smiles": "C=O",
+      "formula": "CH2O",
+      "mw": 30.026,
+      "cid": 712
+    },
+    {
+      "name": "acetaldehyde",
+      "synonyms": ["ethanal", "CH3CHO"],
+      "smiles": "CC=O",
+      "formula": "C2H4O",
+      "mw": 44.05,
+      "cid": 177
+    },
+    {
+      "name": "propanal",
+      "synonyms": ["propionaldehyde"],
+      "smiles": "CCC=O",
+      "formula": "C3H6O",
+      "mw": 58.08,
+      "cid": 527
+    },
+    {
+      "name": "butanal",
+      "synonyms": ["butyraldehyde"],
+      "smiles": "CCCC=O",
+      "formula": "C4H8O",
+      "mw": 72.11,
+      "cid": 261
+    },
+    {
+      "name": "2-methylpropanal",
+      "synonyms": ["isobutyraldehyde"],
+      "smiles": "CC(C)C=O",
+      "formula": "C4H8O",
+      "mw": 72.11,
+      "cid": 6561
+    },
+    {
+      "name": "pentanal",
+      "synonyms": ["valeraldehyde"],
+      "smiles": "CCCCC=O",
+      "formula": "C5H10O",
+      "mw": 86.13,
+      "cid": 8063
+    },
+    {
+      "name": "acrolein",
+      "synonyms": ["prop-2-enal", "acrylaldehyde"],
+      "smiles": "C=CC=O",
+      "formula": "C3H4O",
+      "mw": 56.06,
+      "cid": 7847
+    },
+    {
+      "name": "crotonaldehyde",
+      "synonyms": ["but-2-enal"],
+      "smiles": "C/C=C/C=O",
+      "formula": "C4H6O",
+      "mw": 70.09,
+      "cid": 447466
+    },
+    {
+      "name": "3-hydroxybutanal",
+      "synonyms": ["aldol", "acetaldol"],
+      "smiles": "CC(CC=O)O",
+      "formula": "C4H8O2",
+      "mw": 88.11,
+      "cid": 7897
+    },
+    {
+      "name": "chloral",
+      "synonyms": ["trichloroethanal"],
+      "smiles": "C(=O)C(Cl)(Cl)Cl",
+      "formula": "C2HCl3O",
+      "mw": 147.38,
+      "cid": 6407
+    },
+    {
+      "name": "chloral hydrate",
+      "synonyms": ["2,2,2-trichloroethane-1,1-diol"],
+      "smiles": "C(C(Cl)(Cl)Cl)(O)O",
+      "formula": "C2H3Cl3O2",
+      "mw": 165.4,
+      "cid": 2707
+    },
+    {
+      "name": "glyoxal",
+      "synonyms": ["ethanedial"],
+      "smiles": "C(=O)C=O",
+      "formula": "C2H2O2",
+      "mw": 58.04,
+      "cid": 7860
+    },
+    {
+      "name": "paraldehyde",
+      "synonyms": [],
+      "smiles": "CC1OC(OC(O1)C)C",
+      "formula": "C6H12O3",
+      "mw": 132.16,
+      "cid": 31264
+    },
+    {
+      "name": "hexamethylenetetramine",
+      "synonyms": ["urotropine", "methenamine"],
+      "smiles": "C1N2CN3CN1CN(C2)C3",
+      "formula": "C6H12N4",
+      "mw": 140.19,
+      "cid": 4101
+    },
+    {
+      "name": "benzaldehyde",
+      "synonyms": ["benzenecarbaldehyde", "oil of bitter almonds"],
+      "smiles": "C1=CC=C(C=C1)C=O",
+      "formula": "C7H6O",
+      "mw": 106.12,
+      "cid": 240
+    },
+    {
+      "name": "salicylaldehyde",
+      "synonyms": ["2-hydroxybenzaldehyde"],
+      "smiles": "C1=CC=C(C(=C1)C=O)O",
+      "formula": "C7H6O2",
+      "mw": 122.12,
+      "cid": 6998
+    },
+    {
+      "name": "4-methylbenzaldehyde",
+      "synonyms": ["p-tolualdehyde"],
+      "smiles": "CC1=CC=C(C=C1)C=O",
+      "formula": "C8H8O",
+      "mw": 120.15,
+      "cid": 7725
+    },
+    {
+      "name": "4-nitrobenzaldehyde",
+      "synonyms": ["p-nitrobenzaldehyde"],
+      "smiles": "C1=CC(=CC=C1C=O)[N+](=O)[O-]",
+      "formula": "C7H5NO3",
+      "mw": 151.12,
+      "cid": 541
+    },
+    {
+      "name": "cinnamaldehyde",
+      "synonyms": ["3-phenylprop-2-enal"],
+      "smiles": "C1=CC=C(C=C1)/C=C/C=O",
+      "formula": "C9H8O",
+      "mw": 132.16,
+      "cid": 637511
+    },
+    {
+      "name": "acetone",
+      "synonyms": ["propanone", "propan-2-one", "dimethyl ketone"],
+      "smiles": "CC(=O)C",
+      "formula": "C3H6O",
+      "mw": 58.08,
+      "cid": 180
+    },
+    {
+      "name": "butanone",
+      "synonyms": ["butan-2-one", "methyl ethyl ketone", "MEK"],
+      "smiles": "CCC(=O)C",
+      "formula": "C4H8O",
+      "mw": 72.11,
+      "cid": 6569
+    },
+    {
+      "name": "pentan-2-one",
+      "synonyms": ["2-pentanone", "methyl propyl ketone"],
+      "smiles": "CCCC(=O)C",
+      "formula": "C5H10O",
+      "mw": 86.13,
+      "cid": 7895
+    },
+    {
+      "name": "pentan-3-one",
+      "synonyms": ["3-pentanone", "diethyl ketone"],
+      "smiles": "CCC(=O)CC",
+      "formula": "C5H10O",
+      "mw": 86.13,
+      "cid": 7288
+    },
+    {
+      "name": "3-methylbutan-2-one",
+      "synonyms": ["methyl isopropyl ketone"],
+      "smiles": "CC(C)C(=O)C",
+      "formula": "C5H10O",
+      "mw": 86.13,
+      "cid": 11251
+    },
+    {
+      "name": "4-methylpentan-2-one",
+      "synonyms": ["methyl isobutyl ketone", "MIBK"],
+      "smiles": "CC(C)CC(=O)C",
+      "formula": "C6H12O",
+      "mw": 100.16,
+      "cid": 7909
+    },
+    {
+      "name": "cyclopentanone",
+      "synonyms": [],
+      "smiles": "C1CCC(=O)C1",
+      "formula": "C5H8O",
+      "mw": 84.12,
+      "cid": 8452
+    },
+    {
+      "name": "cyclohexanone",
+      "synonyms": [],
+      "smiles": "C1CCC(=O)CC1",
+      "formula": "C6H10O",
+      "mw": 98.14,
+      "cid": 7967
+    },
+    {
+      "name": "acetophenone",
+      "synonyms": ["1-phenylethanone", "methyl phenyl ketone"],
+      "smiles": "CC(=O)C1=CC=CC=C1",
+      "formula": "C8H8O",
+      "mw": 120.15,
+      "cid": 7410
+    },
+    {
+      "name": "propiophenone",
+      "synonyms": ["1-phenylpropan-1-one", "ethyl phenyl ketone"],
+      "smiles": "CCC(=O)C1=CC=CC=C1",
+      "formula": "C9H10O",
+      "mw": 134.17,
+      "cid": 7148
+    },
+    {
+      "name": "benzophenone",
+      "synonyms": ["diphenylmethanone", "diphenyl ketone"],
+      "smiles": "C1=CC=C(C=C1)C(=O)C2=CC=CC=C2",
+      "formula": "C13H10O",
+      "mw": 182.22,
+      "cid": 3102
+    },
+    {
+      "name": "diacetone alcohol",
+      "synonyms": ["4-hydroxy-4-methylpentan-2-one"],
+      "smiles": "CC(=O)CC(C)(C)O",
+      "formula": "C6H12O2",
+      "mw": 116.16,
+      "cid": 31256
+    },
+    {
+      "name": "mesityl oxide",
+      "synonyms": ["4-methylpent-3-en-2-one"],
+      "smiles": "CC(=CC(=O)C)C",
+      "formula": "C6H10O",
+      "mw": 98.14,
+      "cid": 8858
+    },
+    {
+      "name": "acetone cyanohydrin",
+      "synonyms": ["2-hydroxy-2-methylpropanenitrile"],
+      "smiles": "CC(C)(C#N)O",
+      "formula": "C4H7NO",
+      "mw": 85.1,
+      "cid": 6406
+    },
+    {
+      "name": "lactonitrile",
+      "synonyms": ["2-hydroxypropanenitrile", "acetaldehyde cyanohydrin"],
+      "smiles": "CC(C#N)O",
+      "formula": "C3H5NO",
+      "mw": 71.08,
+      "cid": 6572
+    },
+    {
+      "name": "acetaldoxime",
+      "synonyms": ["acetaldehyde oxime"],
+      "smiles": "C/C=N/O",
+      "formula": "C2H5NO",
+      "mw": 59.07,
+      "cid": 5324279
+    },
+    {
+      "name": "acetoxime",
+      "synonyms": ["acetone oxime", "propan-2-one oxime"],
+      "smiles": "CC(=NO)C",
+      "formula": "C3H7NO",
+      "mw": 73.09,
+      "cid": 67180
+    },
+    {
+      "name": "hydroxylamine",
+      "synonyms": ["NH2OH"],
+      "smiles": "NO",
+      "formula": "H3NO",
+      "mw": 33.03,
+      "cid": 787
+    },
+    {
+      "name": "hydrazine",
+      "synonyms": ["N2H4"],
+      "smiles": "NN",
+      "formula": "H4N2",
+      "mw": 32.046,
+      "cid": 9321
+    },
+    {
+      "name": "phenylhydrazine",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)NN",
+      "formula": "C6H8N2",
+      "mw": 108.14,
+      "cid": 7516
+    },
+    {
+      "name": "2,4-dinitrophenylhydrazine",
+      "synonyms": ["Brady's reagent", "2,4-DNPH"],
+      "smiles": "C1=CC(=C(C=C1[N+](=O)[O-])[N+](=O)[O-])NN",
+      "formula": "C6H6N4O4",
+      "mw": 198.14,
+      "cid": 3772977
+    },
+    {
+      "name": "semicarbazide",
+      "synonyms": [],
+      "smiles": "C(=O)(N)NN",
+      "formula": "CH5N3O",
+      "mw": 75.07,
+      "cid": 5196
+    },
+    {
+      "name": "formic acid",
+      "synonyms": ["methanoic acid", "HCOOH"],
+      "smiles": "C(=O)O",
+      "formula": "CH2O2",
+      "mw": 46.025,
+      "cid": 284
+    },
+    {
+      "name": "acetic acid",
+      "synonyms": ["ethanoic acid", "glacial acetic acid", "AcOH", "CH3COOH"],
+      "smiles": "CC(=O)O",
+      "formula": "C2H4O2",
+      "mw": 60.05,
+      "cid": 176
+    },
+    {
+      "name": "propanoic acid",
+      "synonyms": ["propionic acid"],
+      "smiles": "CCC(=O)O",
+      "formula": "C3H6O2",
+      "mw": 74.08,
+      "cid": 1032
+    },
+    {
+      "name": "butanoic acid",
+      "synonyms": ["butyric acid"],
+      "smiles": "CCCC(=O)O",
+      "formula": "C4H8O2",
+      "mw": 88.11,
+      "cid": 264
+    },
+    {
+      "name": "2-methylpropanoic acid",
+      "synonyms": ["isobutyric acid"],
+      "smiles": "CC(C)C(=O)O",
+      "formula": "C4H8O2",
+      "mw": 88.11,
+      "cid": 6590
+    },
+    {
+      "name": "pentanoic acid",
+      "synonyms": ["valeric acid"],
+      "smiles": "CCCCC(=O)O",
+      "formula": "C5H10O2",
+      "mw": 102.13,
+      "cid": 7991
+    },
+    {
+      "name": "hexanoic acid",
+      "synonyms": ["caproic acid"],
+      "smiles": "CCCCCC(=O)O",
+      "formula": "C6H12O2",
+      "mw": 116.16,
+      "cid": 8892
+    },
+    {
+      "name": "palmitic acid",
+      "synonyms": ["hexadecanoic acid"],
+      "smiles": "CCCCCCCCCCCCCCCC(=O)O",
+      "formula": "C16H32O2",
+      "mw": 256.42,
+      "cid": 985
+    },
+    {
+      "name": "stearic acid",
+      "synonyms": ["octadecanoic acid"],
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)O",
+      "formula": "C18H36O2",
+      "mw": 284.5,
+      "cid": 5281
+    },
+    {
+      "name": "oleic acid",
+      "synonyms": ["(Z)-octadec-9-enoic acid"],
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)O",
+      "formula": "C18H34O2",
+      "mw": 282.5,
+      "cid": 445639
+    },
+    {
+      "name": "acrylic acid",
+      "synonyms": ["propenoic acid", "prop-2-enoic acid"],
+      "smiles": "C=CC(=O)O",
+      "formula": "C3H4O2",
+      "mw": 72.06,
+      "cid": 6581
+    },
+    {
+      "name": "methacrylic acid",
+      "synonyms": ["2-methylpropenoic acid"],
+      "smiles": "CC(=C)C(=O)O",
+      "formula": "C4H6O2",
+      "mw": 86.09,
+      "cid": 4093
+    },
+    {
+      "name": "chloroacetic acid",
+      "synonyms": ["chloroethanoic acid", "monochloroacetic acid"],
+      "smiles": "C(C(=O)O)Cl",
+      "formula": "C2H3ClO2",
+      "mw": 94.5,
+      "cid": 300
+    },
+    {
+      "name": "dichloroacetic acid",
+      "synonyms": ["dichloroethanoic acid"],
+      "smiles": "C(C(=O)O)(Cl)Cl",
+      "formula": "C2H2Cl2O2",
+      "mw": 128.94,
+      "cid": 6597
+    },
+    {
+      "name": "trichloroacetic acid",
+      "synonyms": ["trichloroethanoic acid", "TCA"],
+      "smiles": "C(=O)(C(Cl)(Cl)Cl)O",
+      "formula": "C2HCl3O2",
+      "mw": 163.38,
+      "cid": 6421
+    },
+    {
+      "name": "trifluoroacetic acid",
+      "synonyms": ["trifluoroethanoic acid", "TFA"],
+      "smiles": "C(=O)(C(F)(F)F)O",
+      "formula": "C2HF3O2",
+      "mw": 114.02,
+      "cid": 6422
+    },
+    {
+      "name": "glycolic acid",
+      "synonyms": ["hydroxyacetic acid", "2-hydroxyethanoic acid"],
+      "smiles": "C(C(=O)O)O",
+      "formula": "C2H4O3",
+      "mw": 76.05,
+      "cid": 757
+    },
+    {
+      "name": "lactic acid",
+      "synonyms": ["2-hydroxypropanoic acid"],
+      "smiles": "CC(C(=O)O)O",
+      "formula": "C3H6O3",
+      "mw": 90.08,
+      "cid": 612
+    },
+    {
+      "name": "pyruvic acid",
+      "synonyms": ["2-oxopropanoic acid"],
+      "smiles": "CC(=O)C(=O)O",
+      "formula": "C3H4O3",
+      "mw": 88.06,
+      "cid": 1060
+    },
+    {
+      "name": "oxalic acid",
+      "synonyms": ["ethanedioic acid"],
+      "smiles": "C(=O)(C(=O)O)O",
+      "formula": "C2H2O4",
+      "mw": 90.03,
+      "cid": 971
+    },
+    {
+      "name": "malonic acid",
+      "synonyms": ["propanedioic acid"],
+      "smiles": "C(C(=O)O)C(=O)O",
+      "formula": "C3H4O4",
+      "mw": 104.06,
+      "cid": 867
+    },
+    {
+      "name": "succinic acid",
+      "synonyms": ["butanedioic acid"],
+      "smiles": "C(CC(=O)O)C(=O)O",
+      "formula": "C4H6O4",
+      "mw": 118.09,
+      "cid": 1110
+    },
+    {
+      "name": "adipic acid",
+      "synonyms": ["hexanedioic acid"],
+      "smiles": "C(CCC(=O)O)CC(=O)O",
+      "formula": "C6H10O4",
+      "mw": 146.14,
+      "cid": 196
+    },
+    {
+      "name": "maleic acid",
+      "synonyms": ["(Z)-butenedioic acid", "cis-butenedioic acid"],
+      "smiles": "C(=C\\C(=O)O)\\C(=O)O",
+      "formula": "C4H4O4",
+      "mw": 116.07,
+      "cid": 444266
+    },
+    {
+      "name": "fumaric acid",
+      "synonyms": ["(E)-butenedioic acid", "trans-butenedioic acid"],
+      "smiles": "C(=C/C(=O)O)\\C(=O)O",
+      "formula": "C4H4O4",
+      "mw": 116.07,
+      "cid": 444972
+    },
+    {
+      "name": "tartaric acid",
+      "synonyms": ["2,3-dihydroxybutanedioic acid"],
+      "smiles": "[C@@H]([C@H](C(=O)O)O)(C(=O)O)O",
+      "formula": "C4H6O6",
+      "mw": 150.09,
+      "cid": 444305
+    },
+    {
+      "name": "citric acid",
+      "synonyms": ["2-hydroxypropane-1,2,3-tricarboxylic acid"],
+      "smiles": "C(C(=O)O)C(CC(=O)O)(C(=O)O)O",
+      "formula": "C6H8O7",
+      "mw": 192.12,
+      "cid": 311
+    },
+    {
+      "name": "benzoic acid",
+      "synonyms": ["benzenecarboxylic acid"],
+      "smiles": "C1=CC=C(C=C1)C(=O)O",
+      "formula": "C7H6O2",
+      "mw": 122.12,
+      "cid": 243
+    },
+    {
+      "name": "phenylacetic acid",
+      "synonyms": ["2-phenylethanoic acid"],
+      "smiles": "C1=CC=C(C=C1)CC(=O)O",
+      "formula": "C8H8O2",
+      "mw": 136.15,
+      "cid": 999
+    },
+    {
+      "name": "salicylic acid",
+      "synonyms": ["2-hydroxybenzoic acid"],
+      "smiles": "C1=CC=C(C(=C1)C(=O)O)O",
+      "formula": "C7H6O3",
+      "mw": 138.12,
+      "cid": 338
+    },
+    {
+      "name": "anthranilic acid",
+      "synonyms": ["2-aminobenzoic acid"],
+      "smiles": "C1=CC=C(C(=C1)C(=O)O)N",
+      "formula": "C7H7NO2",
+      "mw": 137.14,
+      "cid": 227
+    },
+    {
+      "name": "3-nitrobenzoic acid",
+      "synonyms": ["m-nitrobenzoic acid"],
+      "smiles": "C1=CC(=CC(=C1)[N+](=O)[O-])C(=O)O",
+      "formula": "C7H5NO4",
+      "mw": 167.12,
+      "cid": 8497
+    },
+    {
+      "name": "4-nitrobenzoic acid",
+      "synonyms": ["p-nitrobenzoic acid"],
+      "smiles": "C1=CC(=CC=C1C(=O)O)[N+](=O)[O-]",
+      "formula": "C7H5NO4",
+      "mw": 167.12,
+      "cid": 6108
+    },
+    {
+      "name": "phthalic acid",
+      "synonyms": ["benzene-1,2-dicarboxylic acid"],
+      "smiles": "C1=CC=C(C(=C1)C(=O)O)C(=O)O",
+      "formula": "C8H6O4",
+      "mw": 166.13,
+      "cid": 1017
+    },
+    {
+      "name": "terephthalic acid",
+      "synonyms": ["benzene-1,4-dicarboxylic acid"],
+      "smiles": "C1=CC(=CC=C1C(=O)O)C(=O)O",
+      "formula": "C8H6O4",
+      "mw": 166.13,
+      "cid": 7489
+    },
+    {
+      "name": "cinnamic acid",
+      "synonyms": ["3-phenylprop-2-enoic acid"],
+      "smiles": "C1=CC=C(C=C1)/C=C/C(=O)O",
+      "formula": "C9H8O2",
+      "mw": 148.16,
+      "cid": 444539
+    },
+    {
+      "name": "benzenesulfonic acid",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)S(=O)(=O)O",
+      "formula": "C6H6O3S",
+      "mw": 158.18,
+      "cid": 7371
+    },
+    {
+      "name": "sulfanilic acid",
+      "synonyms": ["4-aminobenzenesulfonic acid"],
+      "smiles": "C1=CC(=CC=C1N)S(=O)(=O)O",
+      "formula": "C6H7NO3S",
+      "mw": 173.19,
+      "cid": 8479
+    },
+    {
+      "name": "acetyl chloride",
+      "synonyms": ["ethanoyl chloride"],
+      "smiles": "CC(=O)Cl",
+      "formula": "C2H3ClO",
+      "mw": 78.5,
+      "cid": 6367
+    },
+    {
+      "name": "propionyl chloride",
+      "synonyms": ["propanoyl chloride"],
+      "smiles": "CCC(=O)Cl",
+      "formula": "C3H5ClO",
+      "mw": 92.52,
+      "cid": 62324
+    },
+    {
+      "name": "benzoyl chloride",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)C(=O)Cl",
+      "formula": "C7H5ClO",
+      "mw": 140.56,
+      "cid": 7412
+    },
+    {
+      "name": "benzenesulfonyl chloride",
+      "synonyms": ["Hinsberg's reagent"],
+      "smiles": "C1=CC=C(C=C1)S(=O)(=O)Cl",
+      "formula": "C6H5ClO2S",
+      "mw": 176.62,
+      "cid": 7369
+    },
+    {
+      "name": "acetic anhydride",
+      "synonyms": ["ethanoic anhydride"],
+      "smiles": "CC(=O)OC(=O)C",
+      "formula": "C4H6O3",
+      "mw": 102.09,
+      "cid": 7918
+    },
+    {
+      "name": "benzoic anhydride",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)C(=O)OC(=O)C2=CC=CC=C2",
+      "formula": "C14H10O3",
+      "mw": 226.23,
+      "cid": 7167
+    },
+    {
+      "name": "succinic anhydride",
+      "synonyms": [],
+      "smiles": "C1CC(=O)OC1=O",
+      "formula": "C4H4O3",
+      "mw": 100.07,
+      "cid": 7922
+    },
+    {
+      "name": "maleic anhydride",
+      "synonyms": [],
+      "smiles": "C1=CC(=O)OC1=O",
+      "formula": "C4H2O3",
+      "mw": 98.06,
+      "cid": 7923
+    },
+    {
+      "name": "phthalic anhydride",
+      "synonyms": [],
+      "smiles": "C1=CC=C2C(=C1)C(=O)OC2=O",
+      "formula": "C8H4O3",
+      "mw": 148.11,
+      "cid": 6811
+    },
+    {
+      "name": "methyl formate",
+      "synonyms": ["methyl methanoate"],
+      "smiles": "COC=O",
+      "formula": "C2H4O2",
+      "mw": 60.05,
+      "cid": 7865
+    },
+    {
+      "name": "ethyl formate",
+      "synonyms": ["ethyl methanoate"],
+      "smiles": "CCOC=O",
+      "formula": "C3H6O2",
+      "mw": 74.08,
+      "cid": 8025
+    },
+    {
+      "name": "methyl acetate",
+      "synonyms": ["methyl ethanoate"],
+      "smiles": "CC(=O)OC",
+      "formula": "C3H6O2",
+      "mw": 74.08,
+      "cid": 6584
+    },
+    {
+      "name": "ethyl acetate",
+      "synonyms": ["ethyl ethanoate", "EtOAc"],
+      "smiles": "CCOC(=O)C",
+      "formula": "C4H8O2",
+      "mw": 88.11,
+      "cid": 8857
+    },
+    {
+      "name": "propyl acetate",
+      "synonyms": ["propyl ethanoate", "n-propyl acetate"],
+      "smiles": "CCCOC(=O)C",
+      "formula": "C5H10O2",
+      "mw": 102.13,
+      "cid": 7997
+    },
+    {
+      "name": "isopropyl acetate",
+      "synonyms": ["propan-2-yl acetate"],
+      "smiles": "CC(C)OC(=O)C",
+      "formula": "C5H10O2",
+      "mw": 102.13,
+      "cid": 7915
+    },
+    {
+      "name": "butyl acetate",
+      "synonyms": ["butyl ethanoate", "n-butyl acetate"],
+      "smiles": "CCCCOC(=O)C",
+      "formula": "C6H12O2",
+      "mw": 116.16,
+      "cid": 31272
+    },
+    {
+      "name": "pentyl acetate",
+      "synonyms": ["pentyl ethanoate", "amyl acetate"],
+      "smiles": "CCCCCOC(=O)C",
+      "formula": "C7H14O2",
+      "mw": 130.18,
+      "cid": 12348
+    },
+    {
+      "name": "isoamyl acetate",
+      "synonyms": ["3-methylbutyl ethanoate", "isopentyl acetate", "banana oil"],
+      "smiles": "CC(C)CCOC(=O)C",
+      "formula": "C7H14O2",
+      "mw": 130.18,
+      "cid": 31276
+    },
+    {
+      "name": "octyl acetate",
+      "synonyms": ["octyl ethanoate"],
+      "smiles": "CCCCCCCCOC(=O)C",
+      "formula": "C10H20O2",
+      "mw": 172.26,
+      "cid": 8164
+    },
+    {
+      "name": "methyl propanoate",
+      "synonyms": ["methyl propionate"],
+      "smiles": "CCC(=O)OC",
+      "formula": "C4H8O2",
+      "mw": 88.11,
+      "cid": 11124
+    },
+    {
+      "name": "ethyl propanoate",
+      "synonyms": ["ethyl propionate"],
+      "smiles": "CCC(=O)OCC",
+      "formula": "C5H10O2",
+      "mw": 102.13,
+      "cid": 7749
+    },
+    {
+      "name": "methyl butanoate",
+      "synonyms": ["methyl butyrate"],
+      "smiles": "CCCC(=O)OC",
+      "formula": "C5H10O2",
+      "mw": 102.13,
+      "cid": 12180
+    },
+    {
+      "name": "ethyl butanoate",
+      "synonyms": ["ethyl butyrate"],
+      "smiles": "CCCC(=O)OCC",
+      "formula": "C6H12O2",
+      "mw": 116.16,
+      "cid": 7762
+    },
+    {
+      "name": "vinyl acetate",
+      "synonyms": ["ethenyl ethanoate"],
+      "smiles": "CC(=O)OC=C",
+      "formula": "C4H6O2",
+      "mw": 86.09,
+      "cid": 7904
+    },
+    {
+      "name": "phenyl acetate",
+      "synonyms": ["phenyl ethanoate"],
+      "smiles": "CC(=O)OC1=CC=CC=C1",
+      "formula": "C8H8O2",
+      "mw": 136.15,
+      "cid": 31229
+    },
+    {
+      "name": "benzyl acetate",
+      "synonyms": ["benzyl ethanoate"],
+      "smiles": "CC(=O)OCC1=CC=CC=C1",
+      "formula": "C9H10O2",
+      "mw": 150.17,
+      "cid": 8785
+    },
+    {
+      "name": "methyl benzoate",
+      "synonyms": [],
+      "smiles": "COC(=O)C1=CC=CC=C1",
+      "formula": "C8H8O2",
+      "mw": 136.15,
+      "cid": 7150
+    },
+    {
+      "name": "ethyl benzoate",
+      "synonyms": [],
+      "smiles": "CCOC(=O)C1=CC=CC=C1",
+      "formula": "C9H10O2",
+      "mw": 150.17,
+      "cid": 7165
+    },
+    {
+      "name": "phenyl benzoate",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)C(=O)OC2=CC=CC=C2",
+      "formula": "C13H10O2",
+      "mw": 198.22,
+      "cid": 7169
+    },
+    {
+      "name": "methyl salicylate",
+      "synonyms": ["methyl 2-hydroxybenzoate", "oil of wintergreen"],
+      "smiles": "COC(=O)C1=CC=CC=C1O",
+      "formula": "C8H8O3",
+      "mw": 152.15,
+      "cid": 4133
+    },
+    {
+      "name": "methyl methacrylate",
+      "synonyms": ["methyl 2-methylpropenoate"],
+      "smiles": "CC(=C)C(=O)OC",
+      "formula": "C5H8O2",
+      "mw": 100.12,
+      "cid": 6658
+    },
+    {
+      "name": "diethyl malonate",
+      "synonyms": ["diethyl propanedioate"],
+      "smiles": "CCOC(=O)CC(=O)OCC",
+      "formula": "C7H12O4",
+      "mw": 160.17,
+      "cid": 7761
+    },
+    {
+      "name": "ethyl acetoacetate",
+      "synonyms": ["ethyl 3-oxobutanoate", "acetoacetic ester"],
+      "smiles": "CCOC(=O)CC(=O)C",
+      "formula": "C6H10O3",
+      "mw": 130.14,
+      "cid": 8868
+    },
+    {
+      "name": "tristearin",
+      "synonyms": ["glyceryl tristearate"],
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)OCC(COC(=O)CCCCCCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCCCC",
+      "formula": "C57H110O6",
+      "mw": 891.5,
+      "cid": 11146
+    },
+    {
+      "name": "nitroglycerin",
+      "synonyms": ["glyceryl trinitrate", "nitroglycerine"],
+      "smiles": "C(C(CO[N+](=O)[O-])O[N+](=O)[O-])O[N+](=O)[O-]",
+      "formula": "C3H5N3O9",
+      "mw": 227.09,
+      "cid": 4510
+    },
+    {
+      "name": "methyl nitrite",
+      "synonyms": [],
+      "smiles": "CON=O",
+      "formula": "CH3NO2",
+      "mw": 61.04,
+      "cid": 12231
+    },
+    {
+      "name": "ethyl nitrite",
+      "synonyms": [],
+      "smiles": "CCON=O",
+      "formula": "C2H5NO2",
+      "mw": 75.07,
+      "cid": 8026
+    },
+    {
+      "name": "formamide",
+      "synonyms": ["methanamide"],
+      "smiles": "C(=O)N",
+      "formula": "CH3NO",
+      "mw": 45.041,
+      "cid": 713
+    },
+    {
+      "name": "acetamide",
+      "synonyms": ["ethanamide"],
+      "smiles": "CC(=O)N",
+      "formula": "C2H5NO",
+      "mw": 59.07,
+      "cid": 178
+    },
+    {
+      "name": "propanamide",
+      "synonyms": ["propionamide"],
+      "smiles": "CCC(=O)N",
+      "formula": "C3H7NO",
+      "mw": 73.09,
+      "cid": 6578
+    },
+    {
+      "name": "butanamide",
+      "synonyms": ["butyramide"],
+      "smiles": "CCCC(=O)N",
+      "formula": "C4H9NO",
+      "mw": 87.12,
+      "cid": 10927
+    },
+    {
+      "name": "benzamide",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)C(=O)N",
+      "formula": "C7H7NO",
+      "mw": 121.14,
+      "cid": 2331
+    },
+    {
+      "name": "N-methylacetamide",
+      "synonyms": ["N-methylethanamide"],
+      "smiles": "CC(=O)NC",
+      "formula": "C3H7NO",
+      "mw": 73.09,
+      "cid": 6582
+    },
+    {
+      "name": "dimethylformamide",
+      "synonyms": ["N,N-dimethylformamide", "N,N-dimethylmethanamide", "DMF"],
+      "smiles": "CN(C)C=O",
+      "formula": "C3H7NO",
+      "mw": 73.09,
+      "cid": 6228
+    },
+    {
+      "name": "acetanilide",
+      "synonyms": ["N-phenylethanamide", "N-phenylacetamide"],
+      "smiles": "CC(=O)NC1=CC=CC=C1",
+      "formula": "C8H9NO",
+      "mw": 135.16,
+      "cid": 904
+    },
+    {
+      "name": "benzanilide",
+      "synonyms": ["N-phenylbenzamide"],
+      "smiles": "C1=CC=C(C=C1)C(=O)NC2=CC=CC=C2",
+      "formula": "C13H11NO",
+      "mw": 197.23,
+      "cid": 7168
+    },
+    {
+      "name": "succinimide",
+      "synonyms": [],
+      "smiles": "C1CC(=O)NC1=O",
+      "formula": "C4H5NO2",
+      "mw": 99.09,
+      "cid": 11439
+    },
+    {
+      "name": "phthalimide",
+      "synonyms": [],
+      "smiles": "C1=CC=C2C(=C1)C(=O)NC2=O",
+      "formula": "C8H5NO2",
+      "mw": 147.13,
+      "cid": 6809
+    },
+    {
+      "name": "caprolactam",
+      "synonyms": ["azepan-2-one"],
+      "smiles": "C1CCC(=O)NCC1",
+      "formula": "C6H11NO",
+      "mw": 113.16,
+      "cid": 7768
+    },
+    {
+      "name": "urea",
+      "synonyms": ["carbamide"],
+      "smiles": "C(=O)(N)N",
+      "formula": "CH4N2O",
+      "mw": 60.056,
+      "cid": 1176
+    },
+    {
+      "name": "thiourea",
+      "synonyms": [],
+      "smiles": "C(=S)(N)N",
+      "formula": "CH4N2S",
+      "mw": 76.12,
+      "cid": 2723790
+    },
+    {
+      "name": "acetonitrile",
+      "synonyms": ["ethanenitrile", "methyl cyanide"],
+      "smiles": "CC#N",
+      "formula": "C2H3N",
+      "mw": 41.05,
+      "cid": 6342
+    },
+    {
+      "name": "propionitrile",
+      "synonyms": ["propanenitrile", "ethyl cyanide"],
+      "smiles": "CCC#N",
+      "formula": "C3H5N",
+      "mw": 55.08,
+      "cid": 7854
+    },
+    {
+      "name": "butyronitrile",
+      "synonyms": ["butanenitrile", "propyl cyanide"],
+      "smiles": "CCCC#N",
+      "formula": "C4H7N",
+      "mw": 69.11,
+      "cid": 8008
+    },
+    {
+      "name": "acrylonitrile",
+      "synonyms": ["prop-2-enenitrile", "vinyl cyanide"],
+      "smiles": "C=CC#N",
+      "formula": "C3H3N",
+      "mw": 53.06,
+      "cid": 7855
+    },
+    {
+      "name": "benzonitrile",
+      "synonyms": ["phenyl cyanide", "cyanobenzene"],
+      "smiles": "C1=CC=C(C=C1)C#N",
+      "formula": "C7H5N",
+      "mw": 103.12,
+      "cid": 7505
+    },
+    {
+      "name": "methyl isocyanide",
+      "synonyms": ["isocyanomethane", "methyl carbylamine"],
+      "smiles": "C[N+]#[C-]",
+      "formula": "C2H3N",
+      "mw": 41.05,
+      "cid": 11646
+    },
+    {
+      "name": "ethyl isocyanide",
+      "synonyms": ["isocyanoethane", "ethyl carbylamine"],
+      "smiles": "CC[N+]#C",
+      "formula": "C3H6N+",
+      "mw": 56.09,
+      "cid": 4474585
+    },
+    {
+      "name": "phenyl isocyanide",
+      "synonyms": ["isocyanobenzene", "phenyl carbylamine"],
+      "smiles": "[C-]#[N+]C1=CC=CC=C1",
+      "formula": "C7H5N",
+      "mw": 103.12,
+      "cid": 13606
+    },
+    {
+      "name": "nitromethane",
+      "synonyms": [],
+      "smiles": "C[N+](=O)[O-]",
+      "formula": "CH3NO2",
+      "mw": 61.04,
+      "cid": 6375
+    },
+    {
+      "name": "nitroethane",
+      "synonyms": [],
+      "smiles": "CC[N+](=O)[O-]",
+      "formula": "C2H5NO2",
+      "mw": 75.07,
+      "cid": 6587
+    },
+    {
+      "name": "1-nitropropane",
+      "synonyms": [],
+      "smiles": "CCC[N+](=O)[O-]",
+      "formula": "C3H7NO2",
+      "mw": 89.09,
+      "cid": 7903
+    },
+    {
+      "name": "2-nitropropane",
+      "synonyms": [],
+      "smiles": "CC(C)[N+](=O)[O-]",
+      "formula": "C3H7NO2",
+      "mw": 89.09,
+      "cid": 398
+    },
+    {
+      "name": "nitrobenzene",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)[N+](=O)[O-]",
+      "formula": "C6H5NO2",
+      "mw": 123.11,
+      "cid": 7416
+    },
+    {
+      "name": "1,3-dinitrobenzene",
+      "synonyms": ["m-dinitrobenzene"],
+      "smiles": "C1=CC(=CC(=C1)[N+](=O)[O-])[N+](=O)[O-]",
+      "formula": "C6H4N2O4",
+      "mw": 168.11,
+      "cid": 7452
+    },
+    {
+      "name": "2-nitrotoluene",
+      "synonyms": ["o-nitrotoluene"],
+      "smiles": "CC1=CC=CC=C1[N+](=O)[O-]",
+      "formula": "C7H7NO2",
+      "mw": 137.14,
+      "cid": 6944
+    },
+    {
+      "name": "4-nitrotoluene",
+      "synonyms": ["p-nitrotoluene"],
+      "smiles": "CC1=CC=C(C=C1)[N+](=O)[O-]",
+      "formula": "C7H7NO2",
+      "mw": 137.14,
+      "cid": 7473
+    },
+    {
+      "name": "TNT",
+      "synonyms": ["2,4,6-trinitrotoluene", "trinitrotoluene"],
+      "smiles": "CC1=C(C=C(C=C1[N+](=O)[O-])[N+](=O)[O-])[N+](=O)[O-]",
+      "formula": "C7H5N3O6",
+      "mw": 227.13,
+      "cid": 8376
+    },
+    {
+      "name": "1-chloro-4-nitrobenzene",
+      "synonyms": ["p-chloronitrobenzene"],
+      "smiles": "C1=CC(=CC=C1[N+](=O)[O-])Cl",
+      "formula": "C6H4ClNO2",
+      "mw": 157.55,
+      "cid": 7474
+    },
+    {
+      "name": "1-chloro-2,4-dinitrobenzene",
+      "synonyms": [],
+      "smiles": "C1=CC(=C(C=C1[N+](=O)[O-])[N+](=O)[O-])Cl",
+      "formula": "C6H3ClN2O4",
+      "mw": 202.55,
+      "cid": 6
+    },
+    {
+      "name": "methylamine",
+      "synonyms": ["methanamine", "CH3NH2"],
+      "smiles": "CN",
+      "formula": "CH5N",
+      "mw": 31.057,
+      "cid": 6329
+    },
+    {
+      "name": "ethylamine",
+      "synonyms": ["ethanamine"],
+      "smiles": "CCN",
+      "formula": "C2H7N",
+      "mw": 45.08,
+      "cid": 6341
+    },
+    {
+      "name": "propylamine",
+      "synonyms": ["propan-1-amine", "n-propylamine"],
+      "smiles": "CCCN",
+      "formula": "C3H9N",
+      "mw": 59.11,
+      "cid": 7852
+    },
+    {
+      "name": "isopropylamine",
+      "synonyms": ["propan-2-amine"],
+      "smiles": "CC(C)N",
+      "formula": "C3H9N",
+      "mw": 59.11,
+      "cid": 6363
+    },
+    {
+      "name": "butylamine",
+      "synonyms": ["butan-1-amine", "n-butylamine"],
+      "smiles": "CCCCN",
+      "formula": "C4H11N",
+      "mw": 73.14,
+      "cid": 8007
+    },
+    {
+      "name": "tert-butylamine",
+      "synonyms": ["2-methylpropan-2-amine"],
+      "smiles": "CC(C)(C)N",
+      "formula": "C4H11N",
+      "mw": 73.14,
+      "cid": 6385
+    },
+    {
+      "name": "dimethylamine",
+      "synonyms": ["N-methylmethanamine"],
+      "smiles": "CNC",
+      "formula": "C2H7N",
+      "mw": 45.08,
+      "cid": 674
+    },
+    {
+      "name": "diethylamine",
+      "synonyms": ["N-ethylethanamine"],
+      "smiles": "CCNCC",
+      "formula": "C4H11N",
+      "mw": 73.14,
+      "cid": 8021
+    },
+    {
+      "name": "ethylmethylamine",
+      "synonyms": ["N-methylethanamine", "N-methylethylamine"],
+      "smiles": "CCNC",
+      "formula": "C3H9N",
+      "mw": 59.11,
+      "cid": 12219
+    },
+    {
+      "name": "trimethylamine",
+      "synonyms": ["N,N-dimethylmethanamine"],
+      "smiles": "CN(C)C",
+      "formula": "C3H9N",
+      "mw": 59.11,
+      "cid": 1146
+    },
+    {
+      "name": "triethylamine",
+      "synonyms": ["N,N-diethylethanamine"],
+      "smiles": "CCN(CC)CC",
+      "formula": "C6H15N",
+      "mw": 101.19,
+      "cid": 8471
+    },
+    {
+      "name": "ethylenediamine",
+      "synonyms": ["ethane-1,2-diamine"],
+      "smiles": "C(CN)N",
+      "formula": "C2H8N2",
+      "mw": 60.1,
+      "cid": 3301
+    },
+    {
+      "name": "hexamethylenediamine",
+      "synonyms": ["hexane-1,6-diamine"],
+      "smiles": "C(CCCN)CCN",
+      "formula": "C6H16N2",
+      "mw": 116.2,
+      "cid": 16402
+    },
+    {
+      "name": "aniline",
+      "synonyms": ["benzenamine", "aminobenzene", "phenylamine"],
+      "smiles": "C1=CC=C(C=C1)N",
+      "formula": "C6H7N",
+      "mw": 93.13,
+      "cid": 6115
+    },
+    {
+      "name": "N-methylaniline",
+      "synonyms": ["N-methylbenzenamine"],
+      "smiles": "CNC1=CC=CC=C1",
+      "formula": "C7H9N",
+      "mw": 107.15,
+      "cid": 7515
+    },
+    {
+      "name": "N,N-dimethylaniline",
+      "synonyms": ["N,N-dimethylbenzenamine"],
+      "smiles": "CN(C)C1=CC=CC=C1",
+      "formula": "C8H11N",
+      "mw": 121.18,
+      "cid": 949
+    },
+    {
+      "name": "benzylamine",
+      "synonyms": ["phenylmethanamine"],
+      "smiles": "C1=CC=C(C=C1)CN",
+      "formula": "C7H9N",
+      "mw": 107.15,
+      "cid": 7504
+    },
+    {
+      "name": "diphenylamine",
+      "synonyms": ["N-phenylaniline"],
+      "smiles": "C1=CC=C(C=C1)NC2=CC=CC=C2",
+      "formula": "C12H11N",
+      "mw": 169.22,
+      "cid": 11487
+    },
+    {
+      "name": "o-toluidine",
+      "synonyms": ["2-methylaniline"],
+      "smiles": "CC1=CC=CC=C1N",
+      "formula": "C7H9N",
+      "mw": 107.15,
+      "cid": 7242
+    },
+    {
+      "name": "m-toluidine",
+      "synonyms": ["3-methylaniline"],
+      "smiles": "CC1=CC(=CC=C1)N",
+      "formula": "C7H9N",
+      "mw": 107.15,
+      "cid": 7934
+    },
+    {
+      "name": "p-toluidine",
+      "synonyms": ["4-methylaniline"],
+      "smiles": "CC1=CC=C(C=C1)N",
+      "formula": "C7H9N",
+      "mw": 107.15,
+      "cid": 7813
+    },
+    {
+      "name": "4-nitroaniline",
+      "synonyms": ["p-nitroaniline"],
+      "smiles": "C1=CC(=CC=C1N)[N+](=O)[O-]",
+      "formula": "C6H6N2O2",
+      "mw": 138.12,
+      "cid": 7475
+    },
+    {
+      "name": "2,4,6-tribromoaniline",
+      "synonyms": [],
+      "smiles": "C1=C(C=C(C(=C1Br)N)Br)Br",
+      "formula": "C6H4Br3N",
+      "mw": 329.81,
+      "cid": 8986
+    },
+    {
+      "name": "benzenediazonium chloride",
+      "synonyms": ["phenyldiazonium chloride"],
+      "smiles": "C1=CC=C(C=C1)[N+]#N.[Cl-]",
+      "formula": "C6H5ClN2",
+      "mw": 140.57,
+      "cid": 60992
+    },
+    {
+      "name": "azobenzene",
+      "synonyms": [],
+      "smiles": "C1=CC=C(C=C1)N=NC2=CC=CC=C2",
+      "formula": "C12H10N2",
+      "mw": 182.22,
+      "cid": 2272
+    },
+    {
+      "name": "4-hydroxyazobenzene",
+      "synonyms": ["p-hydroxyazobenzene"],
+      "smiles": "C1=CC=C(C=C1)N=NC2=CC=C(C=C2)O",
+      "formula": "C12H10N2O",
+      "mw": 198.22,
+      "cid": 15529
+    },
+    {
+      "name": "4-aminoazobenzene",
+      "synonyms": ["p-aminoazobenzene", "aniline yellow"],
+      "smiles": "C1=CC=C(C=C1)N=NC2=CC=C(C=C2)N",
+      "formula": "C12H11N3",
+      "mw": 197.24,
+      "cid": 6051
+    },
+    {
+      "name": "melamine",
+      "synonyms": [],
+      "smiles": "C1(=NC(=NC(=N1)N)N)N",
+      "formula": "C3H6N6",
+      "mw": 126.12,
+      "cid": 7955
+    },
+    {
+      "name": "pyridine",
+      "synonyms": [],
+      "smiles": "C1=CC=NC=C1",
+      "formula": "C5H5N",
+      "mw": 79.1,
+      "cid": 1049
+    },
+    {
+      "name": "pyrrole",
+      "synonyms": [],
+      "smiles": "C1=CNC=C1",
+      "formula": "C4H5N",
+      "mw": 67.09,
+      "cid": 8027
+    },
+    {
+      "name": "furan",
+      "synonyms": [],
+      "smiles": "C1=COC=C1",
+      "formula": "C4H4O",
+      "mw": 68.07,
+      "cid": 8029
+    },
+    {
+      "name": "thiophene",
+      "synonyms": [],
+      "smiles": "C1=CSC=C1",
+      "formula": "C4H4S",
+      "mw": 84.14,
+      "cid": 8030
+    },
+    {
+      "name": "methylmagnesium bromide",
+      "synonyms": ["CH3MgBr"],
+      "smiles": "C[Mg]Br",
+      "formula": "CH3BrMg",
+      "mw": 119.24,
+      "cid": 6349
+    },
+    {
+      "name": "ethylmagnesium bromide",
+      "synonyms": ["C2H5MgBr"],
+      "smiles": "CC[Mg]Br",
+      "formula": "C2H5BrMg",
+      "mw": 133.27,
+      "cid": 101914
+    },
+    {
+      "name": "phenylmagnesium bromide",
+      "synonyms": ["C6H5MgBr"],
+      "smiles": "Br[Mg]c1ccccc1",
+      "formula": "C6H5BrMg",
+      "mw": 181.31,
+      "cid": 66852
+    },
+    {
+      "name": "water",
+      "synonyms": ["H2O"],
+      "smiles": "O",
+      "formula": "H2O",
+      "mw": 18.015,
+      "cid": 962
+    },
+    {
+      "name": "hydrogen",
+      "synonyms": ["H2"],
+      "smiles": "[H][H]",
+      "formula": "H2",
+      "mw": 2.016,
+      "cid": 783
+    },
+    {
+      "name": "oxygen",
+      "synonyms": ["O2"],
+      "smiles": "O=O",
+      "formula": "O2",
+      "mw": 31.999,
+      "cid": 977
+    },
+    {
+      "name": "nitrogen",
+      "synonyms": ["N2"],
+      "smiles": "N#N",
+      "formula": "N2",
+      "mw": 28.014,
+      "cid": 947
+    },
+    {
+      "name": "ozone",
+      "synonyms": ["O3"],
+      "smiles": "[O-][O+]=O",
+      "formula": "O3",
+      "mw": 47.998,
+      "cid": 24823
+    },
+    {
+      "name": "chlorine",
+      "synonyms": ["Cl2"],
+      "smiles": "ClCl",
+      "formula": "Cl2",
+      "mw": 70.9,
+      "cid": 24526
+    },
+    {
+      "name": "bromine",
+      "synonyms": ["Br2"],
+      "smiles": "BrBr",
+      "formula": "Br2",
+      "mw": 159.81,
+      "cid": 24408
+    },
+    {
+      "name": "iodine",
+      "synonyms": ["I2"],
+      "smiles": "II",
+      "formula": "I2",
+      "mw": 253.8089,
+      "cid": 807
+    },
+    {
+      "name": "ammonia",
+      "synonyms": ["NH3"],
+      "smiles": "N",
+      "formula": "H3N",
+      "mw": 17.031,
+      "cid": 222
+    },
+    {
+      "name": "hydrogen chloride",
+      "synonyms": ["HCl"],
+      "smiles": "Cl",
+      "formula": "ClH",
+      "mw": 36.46,
+      "cid": 313
+    },
+    {
+      "name": "hydrogen bromide",
+      "synonyms": ["HBr"],
+      "smiles": "Br",
+      "formula": "BrH",
+      "mw": 80.91,
+      "cid": 260
+    },
+    {
+      "name": "hydrogen iodide",
+      "synonyms": ["HI"],
+      "smiles": "I",
+      "formula": "HI",
+      "mw": 127.9124,
+      "cid": 24841
+    },
+    {
+      "name": "hydrogen fluoride",
+      "synonyms": ["HF"],
+      "smiles": "F",
+      "formula": "FH",
+      "mw": 20.0064,
+      "cid": 14917
+    },
+    {
+      "name": "hydrogen cyanide",
+      "synonyms": ["HCN", "hydrocyanic acid", "prussic acid"],
+      "smiles": "C#N",
+      "formula": "CHN",
+      "mw": 27.025,
+      "cid": 768
+    },
+    {
+      "name": "hydrogen peroxide",
+      "synonyms": ["H2O2"],
+      "smiles": "OO",
+      "formula": "H2O2",
+      "mw": 34.015,
+      "cid": 784
+    },
+    {
+      "name": "hydrogen sulfide",
+      "synonyms": ["H2S"],
+      "smiles": "S",
+      "formula": "H2S",
+      "mw": 34.08,
+      "cid": 402
+    },
+    {
+      "name": "hypochlorous acid",
+      "synonyms": ["HOCl"],
+      "smiles": "OCl",
+      "formula": "ClHO",
+      "mw": 52.46,
+      "cid": 24341
+    },
+    {
+      "name": "sulfuric acid",
+      "synonyms": ["H2SO4"],
+      "smiles": "OS(=O)(=O)O",
+      "formula": "H2O4S",
+      "mw": 98.08,
+      "cid": 1118
+    },
+    {
+      "name": "nitric acid",
+      "synonyms": ["HNO3"],
+      "smiles": "[N+](=O)(O)[O-]",
+      "formula": "HNO3",
+      "mw": 63.013,
+      "cid": 944
+    },
+    {
+      "name": "nitrous acid",
+      "synonyms": ["HNO2"],
+      "smiles": "N(=O)O",
+      "formula": "HNO2",
+      "mw": 47.014,
+      "cid": 24529
+    },
+    {
+      "name": "phosphoric acid",
+      "synonyms": ["orthophosphoric acid", "H3PO4"],
+      "smiles": "OP(=O)(O)O",
+      "formula": "H3O4P",
+      "mw": 97.995,
+      "cid": 1004
+    },
+    {
+      "name": "carbon dioxide",
+      "synonyms": ["CO2"],
+      "smiles": "C(=O)=O",
+      "formula": "CO2",
+      "mw": 44.009,
+      "cid": 280
+    },
+    {
+      "name": "carbon monoxide",
+      "synonyms": [],
+      "smiles": "[C-]#[O+]",
+      "formula": "CO",
+      "mw": 28.01,
+      "cid": 281
+    },
+    {
+      "name": "carbon disulfide",
+      "synonyms": ["CS2"],
+      "smiles": "C(=S)=S",
+      "formula": "CS2",
+      "mw": 76.15,
+      "cid": 6348
+    },
+    {
+      "name": "sulfur dioxide",
+      "synonyms": ["SO2"],
+      "smiles": "O=S=O",
+      "formula": "O2S",
+      "mw": 64.07,
+      "cid": 1119
+    },
+    {
+      "name": "sulfur trioxide",
+      "synonyms": ["SO3"],
+      "smiles": "O=S(=O)=O",
+      "formula": "O3S",
+      "mw": 80.07,
+      "cid": 24682
+    },
+    {
+      "name": "phosgene",
+      "synonyms": ["carbonyl chloride", "COCl2"],
+      "smiles": "C(=O)(Cl)Cl",
+      "formula": "CCl2O",
+      "mw": 98.91,
+      "cid": 6371
+    },
+    {
+      "name": "thionyl chloride",
+      "synonyms": ["SOCl2"],
+      "smiles": "O=S(Cl)Cl",
+      "formula": "Cl2OS",
+      "mw": 118.97,
+      "cid": 24386
+    },
+    {
+      "name": "phosphorus trichloride",
+      "synonyms": ["PCl3"],
+      "smiles": "P(Cl)(Cl)Cl",
+      "formula": "Cl3P",
+      "mw": 137.33,
+      "cid": 24387
+    },
+    {
+      "name": "phosphorus pentachloride",
+      "synonyms": ["PCl5"],
+      "smiles": "P(Cl)(Cl)(Cl)(Cl)Cl",
+      "formula": "Cl5P",
+      "mw": 208.2,
+      "cid": 24819
+    },
+    {
+      "name": "phosphoryl chloride",
+      "synonyms": ["phosphorus oxychloride", "POCl3"],
+      "smiles": "O=P(Cl)(Cl)Cl",
+      "formula": "Cl3OP",
+      "mw": 153.33,
+      "cid": 24813
+    },
+    {
+      "name": "borane",
+      "synonyms": ["BH3"],
+      "smiles": "B",
+      "formula": "BH3",
+      "mw": 13.84,
+      "cid": 6331
+    },
+    {
+      "name": "dimethyl sulfoxide",
+      "synonyms": ["DMSO"],
+      "smiles": "CS(=O)C",
+      "formula": "C2H6OS",
+      "mw": 78.14,
+      "cid": 679
+    },
+    {
+      "name": "glucose",
+      "synonyms": ["D-glucose", "dextrose"],
+      "smiles": "C([C@@H]1[C@H]([C@@H]([C@H](C(O1)O)O)O)O)O",
+      "formula": "C6H12O6",
+      "mw": 180.16,
+      "cid": 5793
+    },
+    {
+      "name": "fructose",
+      "synonyms": ["D-fructose", "fruit sugar"],
+      "smiles": "C1[C@H]([C@H]([C@@H](C(O1)(CO)O)O)O)O",
+      "formula": "C6H12O6",
+      "mw": 180.16,
+      "cid": 2723872
+    },
+    {
+      "name": "galactose",
+      "synonyms": ["D-galactose"],
+      "smiles": "C([C@@H]1[C@@H]([C@@H]([C@H](C(O1)O)O)O)O)O",
+      "formula": "C6H12O6",
+      "mw": 180.16,
+      "cid": 6036
+    },
+    {
+      "name": "ribose",
+      "synonyms": ["D-ribose"],
+      "smiles": "C1[C@H]([C@H]([C@H](C(O1)O)O)O)O",
+      "formula": "C5H10O5",
+      "mw": 150.13,
+      "cid": 10975657
+    },
+    {
+      "name": "sucrose",
+      "synonyms": ["cane sugar", "table sugar"],
+      "smiles": "C([C@@H]1[C@H]([C@@H]([C@H]([C@H](O1)O[C@]2([C@H]([C@@H]([C@H](O2)CO)O)O)CO)O)O)O)O",
+      "formula": "C12H22O11",
+      "mw": 342.3,
+      "cid": 5988
+    },
+    {
+      "name": "maltose",
+      "synonyms": ["malt sugar"],
+      "smiles": "C([C@@H]1[C@H]([C@@H]([C@H]([C@H](O1)O[C@@H]2[C@H](OC([C@@H]([C@H]2O)O)O)CO)O)O)O)O",
+      "formula": "C12H22O11",
+      "mw": 342.3,
+      "cid": 439186
+    },
+    {
+      "name": "lactose",
+      "synonyms": ["milk sugar"],
+      "smiles": "C([C@@H]1[C@@H]([C@@H]([C@H]([C@@H](O1)O[C@@H]2[C@H](O[C@H]([C@@H]([C@H]2O)O)O)CO)O)O)O)O",
+      "formula": "C12H22O11",
+      "mw": 342.3,
+      "cid": 6134
+    },
+    {
+      "name": "glycine",
+      "synonyms": ["aminoacetic acid", "2-aminoethanoic acid"],
+      "smiles": "C(C(=O)O)N",
+      "formula": "C2H5NO2",
+      "mw": 75.07,
+      "cid": 750
+    },
+    {
+      "name": "alanine",
+      "synonyms": ["L-alanine", "2-aminopropanoic acid"],
+      "smiles": "C[C@@H](C(=O)O)N",
+      "formula": "C3H7NO2",
+      "mw": 89.09,
+      "cid": 5950
+    },
+    {
+      "name": "valine",
+      "synonyms": ["L-valine"],
+      "smiles": "CC(C)[C@@H](C(=O)O)N",
+      "formula": "C5H11NO2",
+      "mw": 117.15,
+      "cid": 6287
+    },
+    {
+      "name": "leucine",
+      "synonyms": ["L-leucine"],
+      "smiles": "CC(C)C[C@@H](C(=O)O)N",
+      "formula": "C6H13NO2",
+      "mw": 131.17,
+      "cid": 6106
+    },
+    {
+      "name": "isoleucine",
+      "synonyms": ["L-isoleucine"],
+      "smiles": "CC[C@H](C)[C@@H](C(=O)O)N",
+      "formula": "C6H13NO2",
+      "mw": 131.17,
+      "cid": 6306
+    },
+    {
+      "name": "serine",
+      "synonyms": ["L-serine"],
+      "smiles": "C([C@@H](C(=O)O)N)O",
+      "formula": "C3H7NO3",
+      "mw": 105.09,
+      "cid": 5951
+    },
+    {
+      "name": "threonine",
+      "synonyms": ["L-threonine"],
+      "smiles": "C[C@H]([C@@H](C(=O)O)N)O",
+      "formula": "C4H9NO3",
+      "mw": 119.12,
+      "cid": 6288
+    },
+    {
+      "name": "cysteine",
+      "synonyms": ["L-cysteine"],
+      "smiles": "C([C@@H](C(=O)O)N)S",
+      "formula": "C3H7NO2S",
+      "mw": 121.16,
+      "cid": 5862
+    },
+    {
+      "name": "methionine",
+      "synonyms": ["L-methionine"],
+      "smiles": "CSCC[C@@H](C(=O)O)N",
+      "formula": "C5H11NO2S",
+      "mw": 149.21,
+      "cid": 6137
+    },
+    {
+      "name": "aspartic acid",
+      "synonyms": ["L-aspartic acid"],
+      "smiles": "C([C@@H](C(=O)O)N)C(=O)O",
+      "formula": "C4H7NO4",
+      "mw": 133.1,
+      "cid": 5960
+    },
+    {
+      "name": "glutamic acid",
+      "synonyms": ["L-glutamic acid"],
+      "smiles": "C(CC(=O)O)[C@@H](C(=O)O)N",
+      "formula": "C5H9NO4",
+      "mw": 147.13,
+      "cid": 33032
+    },
+    {
+      "name": "asparagine",
+      "synonyms": ["L-asparagine"],
+      "smiles": "C([C@@H](C(=O)O)N)C(=O)N",
+      "formula": "C4H8N2O3",
+      "mw": 132.12,
+      "cid": 6267
+    },
+    {
+      "name": "glutamine",
+      "synonyms": ["L-glutamine"],
+      "smiles": "C(CC(=O)N)[C@@H](C(=O)O)N",
+      "formula": "C5H10N2O3",
+      "mw": 146.14,
+      "cid": 5961
+    },
+    {
+      "name": "lysine",
+      "synonyms": ["L-lysine"],
+      "smiles": "C(CCN)C[C@@H](C(=O)O)N",
+      "formula": "C6H14N2O2",
+      "mw": 146.19,
+      "cid": 5962
+    },
+    {
+      "name": "arginine",
+      "synonyms": ["L-arginine"],
+      "smiles": "C(C[C@@H](C(=O)O)N)CN=C(N)N",
+      "formula": "C6H14N4O2",
+      "mw": 174.2,
+      "cid": 6322
+    },
+    {
+      "name": "histidine",
+      "synonyms": ["L-histidine"],
+      "smiles": "C1=C(NC=N1)C[C@@H](C(=O)O)N",
+      "formula": "C6H9N3O2",
+      "mw": 155.15,
+      "cid": 6274
+    },
+    {
+      "name": "phenylalanine",
+      "synonyms": ["L-phenylalanine"],
+      "smiles": "C1=CC=C(C=C1)C[C@@H](C(=O)O)N",
+      "formula": "C9H11NO2",
+      "mw": 165.19,
+      "cid": 6140
+    },
+    {
+      "name": "tyrosine",
+      "synonyms": ["L-tyrosine"],
+      "smiles": "C1=CC(=CC=C1C[C@@H](C(=O)O)N)O",
+      "formula": "C9H11NO3",
+      "mw": 181.19,
+      "cid": 6057
+    },
+    {
+      "name": "tryptophan",
+      "synonyms": ["L-tryptophan"],
+      "smiles": "C1=CC=C2C(=C1)C(=CN2)C[C@@H](C(=O)O)N",
+      "formula": "C11H12N2O2",
+      "mw": 204.22,
+      "cid": 6305
+    },
+    {
+      "name": "proline",
+      "synonyms": ["L-proline"],
+      "smiles": "C1C[C@H](NC1)C(=O)O",
+      "formula": "C5H9NO2",
+      "mw": 115.13,
+      "cid": 145742
+    },
+    {
+      "name": "aspirin",
+      "synonyms": ["acetylsalicylic acid", "2-acetoxybenzoic acid"],
+      "smiles": "CC(=O)OC1=CC=CC=C1C(=O)O",
+      "formula": "C9H8O4",
+      "mw": 180.16,
+      "cid": 2244
+    },
+    {
+      "name": "paracetamol",
+      "synonyms": ["acetaminophen", "N-(4-hydroxyphenyl)acetamide"],
+      "smiles": "CC(=O)NC1=CC=C(C=C1)O",
+      "formula": "C8H9NO2",
+      "mw": 151.16,
+      "cid": 1983
+    },
+    {
+      "name": "ibuprofen",
+      "synonyms": [],
+      "smiles": "CC(C)CC1=CC=C(C=C1)C(C)C(=O)O",
+      "formula": "C13H18O2",
+      "mw": 206.28,
+      "cid": 3672
+    },
+    {
+      "name": "caffeine",
+      "synonyms": [],
+      "smiles": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+      "formula": "C8H10N4O2",
+      "mw": 194.19,
+      "cid": 2519
+    }
+  ]
+}

@@ -158,9 +158,9 @@ writing `resources/compounds/compounds.json`; `createNameIndex` (Zod) and
 `structureFromText` (Molfile → name → SMILES → not-found with suggestions).
 
 **Acceptance criteria:**
-- [ ] JSON generated and committed; every entry's OCL formula equals its stored formula; names/synonyms unique after normalisation
-- [ ] `propan-2-ol`, `Isopropyl alcohol`, `ethanoic acid`, `acetic-acid` resolve; `CO` parses as SMILES; `etanol` → not-found with `ethanol` suggested
-- [ ] The app bundle contains no network code (script lives outside `src/`)
+- [x] JSON generated and committed; every entry's OCL formula equals its stored formula; names/synonyms unique after normalisation
+- [x] `propan-2-ol`, `Isopropyl alcohol`, `ethanoic acid`, `acetic-acid` resolve; `CO` parses as SMILES; `etanol` → not-found with `ethanol` suggested
+- [x] The app bundle contains no network code (script lives outside `src/`)
 
 **Verification:** `npm test -- src/core/chem-core`; `node scripts/build-compounds.mjs --check` (offline: validates the list/JSON pair)
 

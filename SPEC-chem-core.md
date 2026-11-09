@@ -63,6 +63,8 @@ Found while building the adapter (C1, same version; also pinned by tests):
 | Coordinate invention needs parities perceived from the old layout first | The adapter does it; stereo survives Clean Structure |
 | Helper perception moves plain H atoms (no isotope/charge/radical/label) and their bonds to the end of OCL's lists; `setHydrogenProtection` doesn't stop it | The adapter puts them last itself and maps caller ↔ OCL indexes, with a sanity check that throws if OCL reorders anything else |
 | `inventCoordinates()` deletes explicit H atoms unless `keepHydrogens: true` | The adapter keeps them (drawn H atoms are doc atoms) |
+| OCL's average atomic weights are an older IUPAC set (S 32.066, Cl 35.453, Se 78.96, Zn 65.39) and iodine is 126.9 | chem-core's own weight table for MW (see "Name lookup") |
+| `[HH]` parses as a single H atom with no H (formula "H") | Dictionary `hydrogen` uses curated SMILES `[H][H]` |
 | OCL's formula string is not strict Hill order (`C(=O)Cl` → `CHOCl`; Hill/PubChem: `CHClO`) | chem-core builds Hill strings from its own counts; dictionary checks compare counts |
 
 Pin `openchemlib` to `9.25.2` exactly (it is already in the Tech Stack). Only `ocl.ts` (and
@@ -185,8 +187,15 @@ toMolfile(doc: Doc, atoms?: Iterable<AtomId>, opts?: { version?: 'V2000' | 'V300
 createNameIndex(data: unknown): NameIndex        // validates the dictionary JSON with Zod
 interface NameIndex {
   lookup(query: string): CompoundEntry | null    // exact name/synonym match (normalised)
-  suggest(prefix: string, limit?: number): CompoundEntry[]
+  suggest(prefix: string, limit?: number): CompoundEntry[]   // default limit 10
+  closest(query: string, limit?: number): CompoundEntry[]    // (C8) prefix matches, then near
+                                                             // spellings (edit distance ≤
+                                                             // max(1, ⌊len/4⌋)); feeds the
+                                                             // 'not-found' suggestions
 }
+normaliseName(name: string): string              // (C8) the matching form, exported for tools
+// createNameIndex throws an Error for invalid data, two entries sharing a normalised name, or a
+// name that normalises to ''.
 structureFromText(text: string, names: NameIndex, opts?: ImportOptions):
   Result<{ sub: SubDoc; source: 'name' | 'smiles' | 'molfile'; entry?: CompoundEntry }, ChemError>
     // order: Molfile (contains 'V2000'/'V3000') → dictionary → SMILES → 'not-found' with
@@ -286,7 +295,8 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
 - Data file: `resources/compounds/compounds.json`:
   `{ format: 'chalkbond-compounds', version: 1, source: string, entries: CompoundEntry[] }`.
   chem-core never reads files: the editor imports the JSON and passes it to `createNameIndex`.
-- Normalisation: case-insensitive; spaces, hyphens and commas ignored for matching
+- Normalisation: case-insensitive; spaces, hyphens and commas — and (C8) brackets and
+  apostrophes, so `(E)-but-2-ene` / `E-but-2-ene` and `Brady's reagent` match — ignored for matching
   (`Acetic-acid` = `acetic acid`); Unicode NFC.
 - Scope: about 350 compounds following the NEB grade 11–12 organic topics — alkanes,
   alkenes, alkynes (C1–C6 incl. the isomers taught), benzene and simple arenes, haloalkanes and
@@ -301,6 +311,19 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
   up in PubChem (PUG-REST, ≤ 5 requests/s) and writes SMILES, formula, MW and CID into the
   committed JSON. Synonyms come from the curated list, not PubChem's long synonym lists. The
   app never goes online; the generated JSON is reviewed in git like code.
+- Implementation (C8): 406 compounds (the extra over ~350 are the 20 standard amino acids and
+  formula synonyms for small reagents, e.g. `NH3`, `SOCl2`). A list line may end with `cid=NNN`
+  (pin the record) and/or `smiles=…` (curated SMILES replacing PubChem's; formula and MW still
+  come from PubChem and are checked). Overrides used: `hydrogen` (`[H][H]` — OCL reads PubChem's
+  `[HH]` as one H atom) and the three Grignard reagents (PubChem stores them as separate ions;
+  `C[Mg]Br` is what a teacher draws). The script reuses already-fetched records unless
+  `--refresh`. Diborane was dropped (bridging H). No name or synonym may be valid SMILES (it
+  would shadow SMILES input) — tested.
+- MW: PubChem rounds MW to its element precision (`153.8` for CCl₄), so dictionary checks allow
+  half a unit of PubChem's last digit (≥ 0.01). chem-core computes average masses from its own
+  IUPAC table (`atomic-weights.ts`, PubChem's values incl. S 32.07) because OCL's table is older
+  and rounds iodine to 126.9; OCL is used for other elements and isotope masses, and for exact
+  (monoisotopic) mass.
 
 ## Perception and caching
 

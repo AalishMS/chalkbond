@@ -68,7 +68,7 @@ C5 perceiver cache    C6 SMILES / Molfile in & out (+ stereo)
 - [x] `npm run check` green; (R)-alanine stereo round trip passes; commit + push
 
 ### Phase 3: names and hardening
-- [ ] C8: compound dictionary + name lookup
+- [x] C8: compound dictionary + name lookup
 - [ ] C9: reference set, dictionary round trips, property tests, perf budgets
 
 ### Checkpoint G — module complete

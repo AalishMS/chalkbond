@@ -167,4 +167,15 @@ describe('openchemlib facts found while building the adapter', () => {
     expect(stereo).toHaveLength(1);
     expect(m.getBondAtom(0, stereo[0]!)).toBe(1);
   });
+
+  it('uses older atomic weights (iodine 126.9, sulfur 32.066) than PubChem', () => {
+    expect(Molecule.fromSmiles('[I]').getMolecularFormula().relativeWeight).toBe(126.9);
+    expect(Molecule.fromSmiles('[S]').getMolecularFormula().relativeWeight).toBeCloseTo(32.066, 6);
+  });
+
+  it('reads [HH] as a single H atom without its hydrogen', () => {
+    const m = Molecule.fromSmiles('[HH]');
+    expect(m.getAllAtoms()).toBe(1);
+    expect(m.getMolecularFormula().formula).toBe('H');
+  });
 });

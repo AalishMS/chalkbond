@@ -229,6 +229,29 @@ export function molFormula(mol: Mol): MolFormula {
   return { formula, relativeWeight, absoluteWeight };
 }
 
+const OCL_HYDROGEN_WEIGHT = 1.00794;
+const weightCache = new Map<string, number>();
+
+/**
+ * OCL's average weight of one atom: the natural element (`mass` 0) or the isotope `mass`.
+ * Used for elements outside chem-core's own table and for isotope masses.
+ */
+export function atomWeight(atomicNo: number, mass: number): number {
+  const key = `${atomicNo}/${mass}`;
+  let weight = weightCache.get(key);
+  if (weight === undefined) {
+    const m = new Molecule(1, 1);
+    const a = m.addAtom(atomicNo);
+    if (mass !== 0) m.setAtomMass(a, mass);
+    m.setAtomAbnormalValence(a, 0);
+    m.ensureHelperArrays(Molecule.cHelperNeighbours);
+    weight =
+      m.getMolecularFormula().relativeWeight - m.getImplicitHydrogens(a) * OCL_HYDROGEN_WEIGHT;
+    weightCache.set(key, weight);
+  }
+  return weight;
+}
+
 export function atomCount(mol: Mol): number {
   return unwrap(mol).m.getAllAtoms();
 }

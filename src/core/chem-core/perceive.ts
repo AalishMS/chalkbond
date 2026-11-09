@@ -9,7 +9,8 @@ import {
 } from '../doc-model/index';
 import { makeFormula, sumFormulas } from './formula';
 import { buildMolecule } from './molecule';
-import { molFormula, readMol } from './ocl';
+import { STANDARD_ATOMIC_WEIGHTS } from './atomic-weights';
+import { atomWeight, molFormula, readMol } from './ocl';
 import type { AtomInfo, BondInfo, ChemWarning, Formula, Perception } from './types';
 
 /** Perception of one fragment — the unit `createPerceiver` caches. */
@@ -45,21 +46,32 @@ export function perceiveFragment(doc: Doc, atoms: readonly AtomId[]): FragmentRe
   const counts: Record<string, number> = {};
   let charge = 0;
   let pseudo = false;
+  let mw = 0;
   for (const a of data.atoms) {
     const symbol = atomSymbol(a.atomicNo, a.mass, a.customLabel);
     counts[symbol] = (counts[symbol] ?? 0) + 1;
     if (a.implicitH > 0) counts['H'] = (counts['H'] ?? 0) + a.implicitH;
     charge += a.charge;
     if (a.atomicNo === 0) pseudo = true;
+    else mw += averageWeight(a.atomicNo, a.mass) + a.implicitH * HYDROGEN;
   }
-  const weights = pseudo ? null : molFormula(built.mol);
   const formula = makeFormula(
     counts,
     charge,
-    weights?.relativeWeight ?? null,
-    weights?.absoluteWeight ?? null,
+    pseudo ? null : mw,
+    pseudo ? null : molFormula(built.mol).absoluteWeight,
   );
   return { atoms, atomInfo, bondInfo, formula, warnings: built.warnings };
+}
+
+const HYDROGEN = STANDARD_ATOMIC_WEIGHTS['H'] as number;
+
+/** Average atomic weight: chem-core's IUPAC table, else OCL's; isotopes take OCL's mass. */
+function averageWeight(atomicNo: number, mass: number): number {
+  if (mass !== 0) return atomWeight(atomicNo, mass);
+  return (
+    STANDARD_ATOMIC_WEIGHTS[PERIODIC_SYMBOLS[atomicNo - 1] as string] ?? atomWeight(atomicNo, 0)
+  );
 }
 
 function atomSymbol(atomicNo: number, mass: number, customLabel: string | null): string {

@@ -225,6 +225,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-09 | doc-model fix found by its round-trip property during chem-core C2: mirroring a curved arrow with `bend: 0` emitted `-0` (now `-bend + 0`), and the generator could pass `bend: -0` (now mapped like coordinates). Regression test added. |
 | 2026-11-09 | Atom labels: abbreviations win over element symbols (`Ac` acetyl, `Pr` propyl), case-sensitive. |
 | 2026-11-09 | Valence model: implicit H fills only to an element's lowest valence; hypervalent states (SF₆, H₃PO₄, DMSO) must be reached by bonds exactly, so divalent Cl is flagged instead of becoming HClR₂. |
+| 2026-11-10 | Compound dictionary generated (406 entries, PubChem PUG-REST, dev-time). Curated `smiles=` overrides for H2 and Grignard reagents; MW computed from chem-core's own IUPAC/PubChem atomic-weight table (OCL's is older; iodine 126.9). Name matching also ignores brackets/apostrophes; `NameIndex.closest` added for 'did you mean'. |
 
 ## Open Questions
 

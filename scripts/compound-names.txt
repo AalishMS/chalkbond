@@ -1,0 +1,464 @@
+# Chalkbond compound dictionary — curated name list (SPEC-chem-core.md "Name lookup").
+#
+# One compound per line:  display name | synonym | synonym ... [| cid=NNN] [| smiles=...]
+# The display name is looked up in PubChem (PUG-REST) unless `cid=` pins the record;
+# `smiles=` replaces PubChem's SMILES (formula and MW still come from PubChem; tests check them).
+# Synonyms come only from this file (never from PubChem's long synonym lists). Every name and
+# synonym must be unique after normalisation (case, spaces, hyphens, commas, brackets,
+# apostrophes ignored), and none may be valid SMILES (it would shadow SMILES input).
+# Regenerate:  node scripts/build-compounds.mjs        Check offline:  --check
+# Scope: NEB grade 11–12 organic chemistry + common molecular reagents and solvents.
+
+# ── Alkanes and cycloalkanes ──────────────────────────────────────────────────────────────
+methane | marsh gas
+ethane
+propane
+butane | n-butane
+2-methylpropane | isobutane
+pentane | n-pentane
+2-methylbutane | isopentane
+2,2-dimethylpropane | neopentane
+hexane | n-hexane
+2-methylpentane | isohexane
+3-methylpentane
+2,2-dimethylbutane | neohexane
+2,3-dimethylbutane
+heptane | n-heptane
+octane | n-octane
+2,2,4-trimethylpentane | isooctane
+nonane | n-nonane
+decane | n-decane
+cyclopropane
+cyclobutane
+cyclopentane
+cyclohexane
+methylcyclohexane
+
+# ── Alkenes and dienes ────────────────────────────────────────────────────────────────────
+ethene | ethylene
+propene | propylene
+but-1-ene | 1-butene
+but-2-ene | 2-butene
+cis-but-2-ene | (Z)-but-2-ene | cis-2-butene
+trans-but-2-ene | (E)-but-2-ene | trans-2-butene
+2-methylpropene | isobutylene | isobutene
+pent-1-ene | 1-pentene
+pent-2-ene | 2-pentene
+hex-1-ene | 1-hexene
+cyclopentene
+cyclohexene
+propadiene | allene
+buta-1,3-diene | 1,3-butadiene | butadiene
+2-methylbuta-1,3-diene | isoprene
+2-chlorobuta-1,3-diene | chloroprene
+
+# ── Alkynes ───────────────────────────────────────────────────────────────────────────────
+ethyne | acetylene
+propyne | methylacetylene
+but-1-yne | 1-butyne | ethylacetylene
+but-2-yne | 2-butyne | dimethylacetylene
+pent-1-yne | 1-pentyne
+pent-2-yne | 2-pentyne
+3-methylbut-1-yne
+hex-1-yne | 1-hexyne
+
+# ── Arenes ────────────────────────────────────────────────────────────────────────────────
+benzene
+toluene | methylbenzene
+ethylbenzene
+o-xylene | 1,2-dimethylbenzene
+m-xylene | 1,3-dimethylbenzene
+p-xylene | 1,4-dimethylbenzene
+mesitylene | 1,3,5-trimethylbenzene
+cumene | isopropylbenzene | (propan-2-yl)benzene
+styrene | ethenylbenzene | vinylbenzene
+biphenyl | diphenyl
+diphenylmethane
+naphthalene
+anthracene
+phenanthrene
+
+# ── Haloalkanes ───────────────────────────────────────────────────────────────────────────
+chloromethane | methyl chloride
+bromomethane | methyl bromide
+iodomethane | methyl iodide
+fluoromethane | methyl fluoride
+dichloromethane | methylene chloride | DCM | CH2Cl2
+chloroform | trichloromethane | CHCl3
+carbon tetrachloride | tetrachloromethane | CCl4
+bromoform | tribromomethane
+iodoform | triiodomethane
+chloroethane | ethyl chloride
+bromoethane | ethyl bromide
+iodoethane | ethyl iodide
+1-chloropropane | n-propyl chloride
+2-chloropropane | isopropyl chloride
+1-bromopropane | n-propyl bromide
+2-bromopropane | isopropyl bromide
+1-iodopropane | n-propyl iodide
+2-iodopropane | isopropyl iodide
+1-chlorobutane | n-butyl chloride
+2-chlorobutane | sec-butyl chloride
+1-bromobutane | n-butyl bromide
+2-bromobutane | sec-butyl bromide
+1-chloro-2-methylpropane | isobutyl chloride
+2-chloro-2-methylpropane | tert-butyl chloride | t-butyl chloride
+2-bromo-2-methylpropane | tert-butyl bromide | t-butyl bromide
+1,1-dichloroethane | ethylidene dichloride
+1,2-dichloroethane | ethylene dichloride
+1,2-dibromoethane | ethylene dibromide
+1,1,1-trichloroethane | methyl chloroform
+chloroethene | vinyl chloride
+3-chloroprop-1-ene | allyl chloride
+3-bromoprop-1-ene | allyl bromide
+tetrafluoroethene | tetrafluoroethylene
+dichlorodifluoromethane | freon-12 | CFC-12
+trichlorofluoromethane | freon-11 | CFC-11
+chloropicrin | trichloronitromethane
+DDT | dichlorodiphenyltrichloroethane | p,p'-DDT
+lindane | gammexane
+
+# ── Haloarenes ────────────────────────────────────────────────────────────────────────────
+chlorobenzene
+bromobenzene
+iodobenzene
+fluorobenzene
+1,2-dichlorobenzene | o-dichlorobenzene
+1,4-dichlorobenzene | p-dichlorobenzene
+2-chlorotoluene | o-chlorotoluene
+4-chlorotoluene | p-chlorotoluene
+benzyl chloride | (chloromethyl)benzene
+benzyl bromide | (bromomethyl)benzene
+benzal chloride | (dichloromethyl)benzene | benzylidene chloride
+benzotrichloride | (trichloromethyl)benzene
+
+# ── Alcohols ──────────────────────────────────────────────────────────────────────────────
+methanol | methyl alcohol | wood spirit | CH3OH
+ethanol | ethyl alcohol | C2H5OH
+propan-1-ol | 1-propanol | n-propyl alcohol | propyl alcohol
+propan-2-ol | 2-propanol | isopropyl alcohol | isopropanol
+butan-1-ol | 1-butanol | n-butyl alcohol
+butan-2-ol | 2-butanol | sec-butyl alcohol
+2-methylpropan-1-ol | isobutyl alcohol | isobutanol
+2-methylpropan-2-ol | tert-butyl alcohol | tert-butanol | t-butanol
+pentan-1-ol | 1-pentanol | n-amyl alcohol
+pentan-2-ol | 2-pentanol
+pentan-3-ol | 3-pentanol
+3-methylbutan-1-ol | isoamyl alcohol | isopentyl alcohol
+2-methylbutan-2-ol | tert-amyl alcohol
+hexan-1-ol | 1-hexanol
+cyclohexanol
+prop-2-en-1-ol | allyl alcohol
+benzyl alcohol | phenylmethanol
+2-phenylethanol | phenethyl alcohol
+ethane-1,2-diol | ethylene glycol | glycol
+propane-1,2-diol | propylene glycol
+glycerol | propane-1,2,3-triol | glycerine | glycerin
+ethyl hydrogen sulfate | ethyl sulfuric acid
+
+# ── Phenols ───────────────────────────────────────────────────────────────────────────────
+phenol | carbolic acid | hydroxybenzene
+o-cresol | 2-methylphenol
+m-cresol | 3-methylphenol
+p-cresol | 4-methylphenol
+catechol | benzene-1,2-diol | pyrocatechol
+resorcinol | benzene-1,3-diol
+hydroquinone | benzene-1,4-diol | quinol
+2-nitrophenol | o-nitrophenol
+4-nitrophenol | p-nitrophenol
+picric acid | 2,4,6-trinitrophenol
+2,4,6-tribromophenol
+1-naphthol | naphthalen-1-ol | alpha-naphthol | α-naphthol
+2-naphthol | naphthalen-2-ol | beta-naphthol | β-naphthol
+
+# ── Ethers and epoxides ───────────────────────────────────────────────────────────────────
+dimethyl ether | methoxymethane
+diethyl ether | ethoxyethane | ether
+ethyl methyl ether | methoxyethane
+methyl propyl ether | 1-methoxypropane
+isopropyl methyl ether | 2-methoxypropane
+methyl tert-butyl ether | 2-methoxy-2-methylpropane | MTBE
+anisole | methoxybenzene | methyl phenyl ether
+phenetole | ethoxybenzene | ethyl phenyl ether
+diphenyl ether | phenoxybenzene
+ethylene oxide | oxirane | epoxyethane
+tetrahydrofuran | THF | oxolane
+1,4-dioxane | dioxane
+
+# ── Aldehydes ─────────────────────────────────────────────────────────────────────────────
+formaldehyde | methanal | HCHO
+acetaldehyde | ethanal | CH3CHO
+propanal | propionaldehyde
+butanal | butyraldehyde
+2-methylpropanal | isobutyraldehyde
+pentanal | valeraldehyde
+acrolein | prop-2-enal | acrylaldehyde
+crotonaldehyde | but-2-enal
+3-hydroxybutanal | aldol | acetaldol
+chloral | trichloroethanal
+chloral hydrate | 2,2,2-trichloroethane-1,1-diol
+glyoxal | ethanedial
+paraldehyde
+hexamethylenetetramine | urotropine | methenamine
+benzaldehyde | benzenecarbaldehyde | oil of bitter almonds
+salicylaldehyde | 2-hydroxybenzaldehyde
+4-methylbenzaldehyde | p-tolualdehyde
+4-nitrobenzaldehyde | p-nitrobenzaldehyde
+cinnamaldehyde | 3-phenylprop-2-enal
+
+# ── Ketones and carbonyl derivatives ──────────────────────────────────────────────────────
+acetone | propanone | propan-2-one | dimethyl ketone
+butanone | butan-2-one | methyl ethyl ketone | MEK
+pentan-2-one | 2-pentanone | methyl propyl ketone
+pentan-3-one | 3-pentanone | diethyl ketone
+3-methylbutan-2-one | methyl isopropyl ketone
+4-methylpentan-2-one | methyl isobutyl ketone | MIBK
+cyclopentanone
+cyclohexanone
+acetophenone | 1-phenylethanone | methyl phenyl ketone
+propiophenone | 1-phenylpropan-1-one | ethyl phenyl ketone
+benzophenone | diphenylmethanone | diphenyl ketone
+diacetone alcohol | 4-hydroxy-4-methylpentan-2-one
+mesityl oxide | 4-methylpent-3-en-2-one
+acetone cyanohydrin | 2-hydroxy-2-methylpropanenitrile
+lactonitrile | 2-hydroxypropanenitrile | acetaldehyde cyanohydrin
+acetaldoxime | acetaldehyde oxime
+acetoxime | acetone oxime | propan-2-one oxime
+hydroxylamine | NH2OH
+hydrazine | N2H4
+phenylhydrazine
+2,4-dinitrophenylhydrazine | Brady's reagent | 2,4-DNPH
+semicarbazide
+
+# ── Carboxylic acids ──────────────────────────────────────────────────────────────────────
+formic acid | methanoic acid | HCOOH
+acetic acid | ethanoic acid | glacial acetic acid | AcOH | CH3COOH
+propanoic acid | propionic acid
+butanoic acid | butyric acid
+2-methylpropanoic acid | isobutyric acid
+pentanoic acid | valeric acid
+hexanoic acid | caproic acid
+palmitic acid | hexadecanoic acid
+stearic acid | octadecanoic acid
+oleic acid | (Z)-octadec-9-enoic acid
+acrylic acid | propenoic acid | prop-2-enoic acid
+methacrylic acid | 2-methylpropenoic acid
+chloroacetic acid | chloroethanoic acid | monochloroacetic acid
+dichloroacetic acid | dichloroethanoic acid
+trichloroacetic acid | trichloroethanoic acid | TCA
+trifluoroacetic acid | trifluoroethanoic acid | TFA
+glycolic acid | hydroxyacetic acid | 2-hydroxyethanoic acid
+lactic acid | 2-hydroxypropanoic acid
+pyruvic acid | 2-oxopropanoic acid
+oxalic acid | ethanedioic acid
+malonic acid | propanedioic acid
+succinic acid | butanedioic acid
+adipic acid | hexanedioic acid
+maleic acid | (Z)-butenedioic acid | cis-butenedioic acid
+fumaric acid | (E)-butenedioic acid | trans-butenedioic acid
+tartaric acid | 2,3-dihydroxybutanedioic acid
+citric acid | 2-hydroxypropane-1,2,3-tricarboxylic acid
+benzoic acid | benzenecarboxylic acid
+phenylacetic acid | 2-phenylethanoic acid
+salicylic acid | 2-hydroxybenzoic acid
+anthranilic acid | 2-aminobenzoic acid
+3-nitrobenzoic acid | m-nitrobenzoic acid
+4-nitrobenzoic acid | p-nitrobenzoic acid
+phthalic acid | benzene-1,2-dicarboxylic acid
+terephthalic acid | benzene-1,4-dicarboxylic acid
+cinnamic acid | 3-phenylprop-2-enoic acid
+benzenesulfonic acid
+sulfanilic acid | 4-aminobenzenesulfonic acid
+
+# ── Acyl chlorides and anhydrides ─────────────────────────────────────────────────────────
+acetyl chloride | ethanoyl chloride
+propionyl chloride | propanoyl chloride
+benzoyl chloride
+benzenesulfonyl chloride | Hinsberg's reagent
+acetic anhydride | ethanoic anhydride
+benzoic anhydride
+succinic anhydride
+maleic anhydride
+phthalic anhydride
+
+# ── Esters ────────────────────────────────────────────────────────────────────────────────
+methyl formate | methyl methanoate
+ethyl formate | ethyl methanoate
+methyl acetate | methyl ethanoate
+ethyl acetate | ethyl ethanoate | EtOAc
+propyl acetate | propyl ethanoate | n-propyl acetate
+isopropyl acetate | propan-2-yl acetate
+butyl acetate | butyl ethanoate | n-butyl acetate
+pentyl acetate | pentyl ethanoate | amyl acetate
+isoamyl acetate | 3-methylbutyl ethanoate | isopentyl acetate | banana oil
+octyl acetate | octyl ethanoate
+methyl propanoate | methyl propionate
+ethyl propanoate | ethyl propionate
+methyl butanoate | methyl butyrate
+ethyl butanoate | ethyl butyrate
+vinyl acetate | ethenyl ethanoate
+phenyl acetate | phenyl ethanoate
+benzyl acetate | benzyl ethanoate
+methyl benzoate
+ethyl benzoate
+phenyl benzoate
+methyl salicylate | methyl 2-hydroxybenzoate | oil of wintergreen
+methyl methacrylate | methyl 2-methylpropenoate
+diethyl malonate | diethyl propanedioate
+ethyl acetoacetate | ethyl 3-oxobutanoate | acetoacetic ester
+tristearin | glyceryl tristearate
+nitroglycerin | glyceryl trinitrate | nitroglycerine
+methyl nitrite
+ethyl nitrite
+
+# ── Amides, imides, urea ──────────────────────────────────────────────────────────────────
+formamide | methanamide
+acetamide | ethanamide
+propanamide | propionamide
+butanamide | butyramide
+benzamide
+N-methylacetamide | N-methylethanamide
+dimethylformamide | N,N-dimethylformamide | N,N-dimethylmethanamide | DMF
+acetanilide | N-phenylethanamide | N-phenylacetamide
+benzanilide | N-phenylbenzamide
+succinimide
+phthalimide
+caprolactam | azepan-2-one
+urea | carbamide
+thiourea
+
+# ── Nitriles and isocyanides ──────────────────────────────────────────────────────────────
+acetonitrile | ethanenitrile | methyl cyanide
+propionitrile | propanenitrile | ethyl cyanide
+butyronitrile | butanenitrile | propyl cyanide
+acrylonitrile | prop-2-enenitrile | vinyl cyanide
+benzonitrile | phenyl cyanide | cyanobenzene
+methyl isocyanide | isocyanomethane | methyl carbylamine
+ethyl isocyanide | isocyanoethane | ethyl carbylamine
+phenyl isocyanide | isocyanobenzene | phenyl carbylamine
+
+# ── Nitro compounds ───────────────────────────────────────────────────────────────────────
+nitromethane
+nitroethane
+1-nitropropane
+2-nitropropane
+nitrobenzene
+1,3-dinitrobenzene | m-dinitrobenzene
+2-nitrotoluene | o-nitrotoluene
+4-nitrotoluene | p-nitrotoluene
+TNT | 2,4,6-trinitrotoluene | trinitrotoluene
+1-chloro-4-nitrobenzene | p-chloronitrobenzene
+1-chloro-2,4-dinitrobenzene
+
+# ── Amines, anilines, diazonium and azo compounds ─────────────────────────────────────────
+methylamine | methanamine | CH3NH2
+ethylamine | ethanamine
+propylamine | propan-1-amine | n-propylamine
+isopropylamine | propan-2-amine
+butylamine | butan-1-amine | n-butylamine
+tert-butylamine | 2-methylpropan-2-amine
+dimethylamine | N-methylmethanamine
+diethylamine | N-ethylethanamine
+ethylmethylamine | N-methylethanamine | N-methylethylamine
+trimethylamine | N,N-dimethylmethanamine
+triethylamine | N,N-diethylethanamine
+ethylenediamine | ethane-1,2-diamine
+hexamethylenediamine | hexane-1,6-diamine
+aniline | benzenamine | aminobenzene | phenylamine
+N-methylaniline | N-methylbenzenamine
+N,N-dimethylaniline | N,N-dimethylbenzenamine
+benzylamine | phenylmethanamine
+diphenylamine | N-phenylaniline
+o-toluidine | 2-methylaniline
+m-toluidine | 3-methylaniline
+p-toluidine | 4-methylaniline
+4-nitroaniline | p-nitroaniline
+2,4,6-tribromoaniline
+benzenediazonium chloride | phenyldiazonium chloride
+azobenzene
+4-hydroxyazobenzene | p-hydroxyazobenzene
+4-aminoazobenzene | p-aminoazobenzene | aniline yellow
+melamine
+
+# ── Heterocycles ──────────────────────────────────────────────────────────────────────────
+pyridine
+pyrrole
+furan
+thiophene
+
+# ── Organometallic reagents ───────────────────────────────────────────────────────────────
+methylmagnesium bromide | CH3MgBr | smiles=C[Mg]Br
+ethylmagnesium bromide | C2H5MgBr | smiles=CC[Mg]Br
+phenylmagnesium bromide | C6H5MgBr | smiles=Br[Mg]c1ccccc1
+
+# ── Molecular reagents, gases and solvents ────────────────────────────────────────────────
+water | H2O
+hydrogen | H2 | smiles=[H][H]
+oxygen | O2
+nitrogen | N2
+ozone | O3
+chlorine | Cl2
+bromine | Br2
+iodine | I2
+ammonia | NH3
+hydrogen chloride | HCl
+hydrogen bromide | HBr
+hydrogen iodide | HI
+hydrogen fluoride | HF
+hydrogen cyanide | HCN | hydrocyanic acid | prussic acid
+hydrogen peroxide | H2O2
+hydrogen sulfide | H2S
+hypochlorous acid | HOCl
+sulfuric acid | H2SO4
+nitric acid | HNO3
+nitrous acid | HNO2
+phosphoric acid | orthophosphoric acid | H3PO4
+carbon dioxide | CO2
+carbon monoxide
+carbon disulfide | CS2
+sulfur dioxide | SO2
+sulfur trioxide | SO3
+phosgene | carbonyl chloride | COCl2
+thionyl chloride | SOCl2
+phosphorus trichloride | PCl3
+phosphorus pentachloride | PCl5
+phosphoryl chloride | phosphorus oxychloride | POCl3
+borane | BH3
+dimethyl sulfoxide | DMSO
+
+# ── Sugars ────────────────────────────────────────────────────────────────────────────────
+glucose | D-glucose | dextrose
+fructose | D-fructose | fruit sugar
+galactose | D-galactose
+ribose | D-ribose
+sucrose | cane sugar | table sugar
+maltose | malt sugar
+lactose | milk sugar
+
+# ── Amino acids (the 20 standard, L-forms) ────────────────────────────────────────────────
+glycine | aminoacetic acid | 2-aminoethanoic acid
+alanine | L-alanine | 2-aminopropanoic acid
+valine | L-valine
+leucine | L-leucine
+isoleucine | L-isoleucine
+serine | L-serine
+threonine | L-threonine
+cysteine | L-cysteine
+methionine | L-methionine
+aspartic acid | L-aspartic acid
+glutamic acid | L-glutamic acid
+asparagine | L-asparagine
+glutamine | L-glutamine
+lysine | L-lysine
+arginine | L-arginine
+histidine | L-histidine
+phenylalanine | L-phenylalanine
+tyrosine | L-tyrosine
+tryptophan | L-tryptophan
+proline | L-proline
+
+# ── Medicines and everyday compounds ──────────────────────────────────────────────────────
+aspirin | acetylsalicylic acid | 2-acetoxybenzoic acid
+paracetamol | acetaminophen | N-(4-hydroxyphenyl)acetamide
+ibuprofen
+caffeine

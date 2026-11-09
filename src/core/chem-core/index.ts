@@ -26,3 +26,11 @@ export {
 } from './convert';
 export { expandLabel } from './expand';
 export { cleanStructure } from './clean';
+export {
+  createNameIndex,
+  structureFromText,
+  normaliseName,
+  type CompoundEntry,
+  type NameIndex,
+  type TextStructure,
+} from './names';
