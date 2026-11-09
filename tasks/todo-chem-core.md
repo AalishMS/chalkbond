@@ -12,9 +12,9 @@ exposing a narrow adapter (create molecule, set atoms/bonds, read perception, SM
 coordinate invention). Pin each "Verified library facts" row with a test.
 
 **Acceptance criteria:**
-- [ ] Facts tested: loads without DOM; SMILES coordinates have avg bond length 1.0; y-down; SMILES input kekulized + aromatic flags; delocalized-bond ring unresolved; `*` read as carbon; free valence < 0 for pentavalent C; `fromText('ethanol')` is null
-- [ ] Lint: importing `openchemlib` from any file outside `src/core/chem-core` fails (existing rule, extended test)
-- [ ] `src/core/chem-core/index.ts` is the single public entry
+- [x] Facts tested: loads without DOM; SMILES coordinates have avg bond length 1.0; y-down; SMILES input kekulized + aromatic flags; delocalized-bond ring unresolved; `*` read as carbon; free valence < 0 for pentavalent C; `fromText('ethanol')` is null
+- [x] Lint: importing `openchemlib` from any file outside `src/core/chem-core` fails (existing rule, extended test)
+- [x] `src/core/chem-core/index.ts` is the single public entry
 
 **Verification:** `npm test -- src/core/chem-core && npm run lint`
 

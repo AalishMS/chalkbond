@@ -44,15 +44,47 @@ function coreModuleConfig(mod) {
       message: `${mod} may only import: ${CORE_DEPS[mod].join(', ') || '(no other core modules)'} — see CAPABILITY-MAP.md.`,
     });
   }
-  const paths = [...coreBaseRestrictions.paths];
-  if (mod !== 'chem-core') {
-    paths.push({ name: 'openchemlib', message: 'Only chem-core may import openchemlib.' });
+  const configs = [];
+  if (mod === 'chem-core') {
+    // Inside chem-core, only the adapter (and tests pinning library facts) touch OpenChemLib.
+    configs.push({
+      files: [`src/core/${mod}/**/*.{ts,tsx}`],
+      rules: {
+        'no-restricted-imports': ['error', { paths: coreBaseRestrictions.paths, patterns }],
+      },
+    });
+    configs.push({
+      files: [`src/core/${mod}/**/*.{ts,tsx}`],
+      ignores: [`src/core/${mod}/ocl.ts`, `src/core/${mod}/**/*.test.ts`],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          { paths: [...coreBaseRestrictions.paths, OCL_ADAPTER_ONLY], patterns },
+        ],
+      },
+    });
+  } else {
+    configs.push({
+      files: [`src/core/${mod}/**/*.{ts,tsx}`],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          { paths: [...coreBaseRestrictions.paths, OCL_CHEM_CORE_ONLY], patterns },
+        ],
+      },
+    });
   }
-  return {
-    files: [`src/core/${mod}/**/*.{ts,tsx}`],
-    rules: { 'no-restricted-imports': ['error', { paths, patterns }] },
-  };
+  return configs;
 }
+
+const OCL_CHEM_CORE_ONLY = {
+  name: 'openchemlib',
+  message: 'Only chem-core may import openchemlib.',
+};
+const OCL_ADAPTER_ONLY = {
+  name: 'openchemlib',
+  message: 'Within chem-core only ocl.ts may import openchemlib; use its adapter.',
+};
 
 export default tseslint.config(
   {
@@ -98,6 +130,11 @@ export default tseslint.config(
     languageOptions: { globals: {} },
     rules: { 'no-restricted-imports': ['error', coreBaseRestrictions] },
   },
-  ...CORE_MODULES.map(coreModuleConfig),
+  {
+    // Outside src/core: app-shell, editor, tests and tooling never touch OpenChemLib directly.
+    files: ['src/{main,preload,renderer}/**/*.{ts,tsx}', 'tests/**/*.ts', 'e2e/**/*.ts'],
+    rules: { 'no-restricted-imports': ['error', { paths: [OCL_CHEM_CORE_ONLY] }] },
+  },
+  ...CORE_MODULES.flatMap(coreModuleConfig),
   prettier,
 );

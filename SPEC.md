@@ -220,6 +220,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-09 | Selection formula/MW = whole fragments touched by the selection. |
 | 2026-11-09 | ESLint `no-unused-vars` uses `ignoreRestSiblings` (omit-a-key via rest destructuring). |
 | 2026-11-09 | ESLint allows `!` non-null assertions in `*.test.ts` and `__fixtures__/` only (they assert fixture shape; a wrong one fails the test). Source code keeps the rule. |
+| 2026-11-09 | `openchemlib@9.25.2` added (exact pin). Lint forbids importing it anywhere but `src/core/chem-core/ocl.ts` (+ chem-core tests that pin library facts), including renderer, main, preload, tests and e2e. A tooling test checks the bundle has no `eval`/`new Function` (CSP). |
 
 ## Open Questions
 

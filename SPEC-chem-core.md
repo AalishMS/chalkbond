@@ -50,7 +50,21 @@ them.
 | `Molecule.fromText('ethanol')` → `null` | No names in OCL; the dictionary is ours |
 | Parse + formula of aspirin from SMILES ≈ 0.4 ms | Perception is cheap enough to run on every edit (with caching) |
 
-Pin `openchemlib` to `9.25.2` exactly (it is already in the Tech Stack).
+Found while building the adapter (C1, same version; also pinned by tests):
+
+| Fact | Consequence |
+|---|---|
+| A neutral 4-bonded N and a divalent Cl get free valence ≥ 0 (OCL tolerates hypervalence) | chem-core keeps its own valence table (see "Valence model"); OCL's free valence is used only for elements outside it |
+| The implicit-H count follows the atom's abnormal valence, monotonically | `explicitH` is passed to OCL by choosing the abnormal valence that yields it (only when it differs from OCL's default, so SMILES carries no needless brackets) |
+| A SMILES containing `*` makes the whole molecule a query fragment: **no** implicit H anywhere (`*c1ccccc1` → C7) | Confirms `*` can't stand in for pseudo-atoms |
+| Pseudo-atom (atomic number 0) has no mass, no H; SMILES writes it `[?]` | chem-core writes pseudo-atoms as `*` itself |
+| Deuterium is `D` in OCL formulas; isotopes change the weights | Formula counts `D`/`T` separately, like OCL |
+| Unreadable Molfile text and empty SMILES give an empty molecule, not an error | chem-core checks the atom count itself (`invalid-molfile`, `empty`) |
+| Coordinate invention needs parities perceived from the old layout first | The adapter does it; stereo survives Clean Structure |
+
+Pin `openchemlib` to `9.25.2` exactly (it is already in the Tech Stack). Only `ocl.ts` (and
+tests pinning library facts) may import it — lint-enforced inside chem-core as well as
+everywhere outside it.
 
 ## Data Model
 

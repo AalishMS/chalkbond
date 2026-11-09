@@ -39,12 +39,48 @@ describe('core import boundaries (SPEC.md + CAPABILITY-MAP.md)', () => {
     expect(errors).toEqual([expect.stringContaining('Only chem-core')]);
   });
 
-  it('allows chem-core to import doc-model and openchemlib', async () => {
+  it.each([
+    'src/core/doc-model/probe.ts',
+    'src/core/svg-render/probe.ts',
+    'src/core/clipboard-export/probe.ts',
+    'src/renderer/editor/probe.ts',
+    'src/renderer/app/probe.tsx',
+    'src/main/probe.ts',
+    'src/preload/probe.ts',
+    'tests/tooling/probe.ts',
+    'e2e/probe.ts',
+  ])('rejects openchemlib in %s (outside chem-core)', async (filePath) => {
     const errors = await restrictedImportErrors(
-      'src/core/chem-core/probe.ts',
-      "import { x } from '../doc-model/index';\nimport OCL from 'openchemlib';\nexport { x, OCL };",
+      filePath,
+      "import { Molecule } from 'openchemlib';\nexport { Molecule };",
     );
-    expect(errors).toEqual([]);
+    expect(errors).toEqual([expect.stringContaining('Only chem-core')]);
+  });
+
+  it('rejects openchemlib in chem-core files other than the ocl.ts adapter', async () => {
+    const errors = await restrictedImportErrors(
+      'src/core/chem-core/perceive.ts',
+      "import { Molecule } from 'openchemlib';\nexport { Molecule };",
+    );
+    expect(errors).toEqual([expect.stringContaining('only ocl.ts')]);
+  });
+
+  it('still applies core restrictions to chem-core files', async () => {
+    const errors = await restrictedImportErrors(
+      'src/core/chem-core/perceive.ts',
+      "import { x } from '../svg-render/index';\nexport { x };",
+    );
+    expect(errors).toEqual([expect.stringContaining('chem-core may only import')]);
+  });
+
+  it('allows chem-core to import doc-model, and ocl.ts / tests to import openchemlib', async () => {
+    for (const filePath of ['src/core/chem-core/ocl.ts', 'src/core/chem-core/ocl-facts.test.ts']) {
+      const errors = await restrictedImportErrors(
+        filePath,
+        "import { x } from '../doc-model/index';\nimport OCL from 'openchemlib';\nexport { x, OCL };",
+      );
+      expect(errors).toEqual([]);
+    }
   });
 
   it('allows renderer code to import react', async () => {

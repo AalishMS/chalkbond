@@ -51,7 +51,7 @@ C5 perceiver cache    C6 SMILES / Molfile in & out (+ stereo)
 ## Task List
 
 ### Phase 1: foundations
-- [ ] C1: openchemlib 9.25.2, `ocl.ts` adapter, one test per "Verified library facts" row
+- [x] C1: openchemlib 9.25.2, `ocl.ts` adapter, one test per "Verified library facts" row
 - [ ] C2: Kekulé assignment for order-1.5 systems
 - [ ] C3: `interpretLabel` grammar + `ABBREVIATIONS` table
 
