@@ -155,6 +155,7 @@ updateAtom(doc, id, patch: Partial<Omit<Atom,'id'>>): Doc
 updateBond(doc, id, patch: Partial<Omit<Bond,'id'|'a1'|'a2'>>): Doc
 mergeAtoms(doc, keep: AtomId, drop: AtomId): Doc          // re-points drop's bonds to keep;
                                                           // collapses resulting duplicates
+resolveAnchor(doc, anchor): Point               // atom pos + offset, or point at t on a bond
 // objects
 addObject(doc, obj: DistributiveOmit<DrawObject,'id'>): [Doc, ObjectId]
 updateObject(doc, id, patch): Doc               // id/type never change
@@ -204,6 +205,16 @@ checkInvariants(doc): InvariantViolation[]
 | bond | anchors to it → `point` at the anchor's last position |
 | arrow | texts with `attachedTo.arrow` = it are deleted |
 | any | removed from `zOrder` and group memberships; empty groups deleted |
+
+"Last position" means the anchor's resolved position (atom position + `offset`; point at `t`
+along the bond), computed before anything is removed.
+
+`mergeAtoms(keep, drop)` is not a delete of `drop`: `drop`'s bonds move to `keep` (direction
+kept); a bond that would duplicate one of `keep`'s collapses into it (`keep`'s bond survives);
+the keep–drop bond is deleted. Atom anchors and caption targets on `drop` move to `keep`
+(captions deduplicated); bond anchors on a collapsed bond move to the survivor (`t` flipped if
+its direction is reversed); anchors on the deleted keep–drop bond become point anchors; `drop`
+leaves its group.
 
 ### History
 

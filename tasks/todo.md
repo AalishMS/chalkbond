@@ -138,9 +138,9 @@ text `attachedTo` validation (must reference an `arrow`).
 `mergeAtoms` (re-point bonds, collapse duplicates/self-bonds).
 
 **Acceptance criteria:**
-- [ ] One test per cascade-table row (atom, bond, arrow, any) asserting the exact resulting doc
-- [ ] Anchors to deleted atoms/bonds become `point` anchors at their last resolved position
-- [ ] `mergeAtoms` of two ring atoms that share a neighbour leaves no duplicate bond and no self-bond
+- [x] One test per cascade-table row (atom, bond, arrow, any) asserting the exact resulting doc
+- [x] Anchors to deleted atoms/bonds become `point` anchors at their last resolved position
+- [x] `mergeAtoms` of two ring atoms that share a neighbour leaves no duplicate bond and no self-bond
 
 **Verification:** `npm test -- src/core/doc-model`
 

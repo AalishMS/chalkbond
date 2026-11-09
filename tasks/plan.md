@@ -75,7 +75,7 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 
 ### Phase 2: doc-model full surface
 - [x] T4: Draw objects (arrows, curved arrows, plus, text, caption, callout, bracket, shape) + zOrder
-- [ ] T5: `deleteItems` cascades + `mergeAtoms`
+- [x] T5: `deleteItems` cascades + `mergeAtoms`
 - [ ] T6: `transformItems` + `bounds`
 
 ### Checkpoint C — editing surface
