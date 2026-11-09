@@ -50,7 +50,7 @@ Versions are the current stable releases as of 2026-11-09; pin exact versions in
 | Chemistry | OpenChemLib (BSD-3-Clause) | 9.x |
 | Unit tests | Vitest + fast-check (property tests) | 5.x |
 | E2E tests | Playwright (`_electron`) | 1.65.x |
-| Lint / format | ESLint 10 + typescript-eslint, Prettier 3 | — |
+| Lint / format | ESLint 10 + typescript-eslint 8, eslint-plugin-react-hooks, eslint-config-prettier, Prettier 3 | — |
 | Packaging | electron-builder, NSIS, Windows x64 | 26.x |
 
 Target platform: **Windows 10/11 x64 only**, personal use. Specs were written on Linux;
@@ -71,7 +71,7 @@ npm test -- --coverage      # with coverage report
 npm run test:e2e            # electron-vite build && playwright test
 npm run build               # electron-vite build -> out/
 npm run dist:win            # electron-builder --win nsis --x64 -> dist/
-npm run check               # typecheck && lint && test (gate before "done")
+npm run check               # typecheck && lint && format:check && test (gate before "done")
 ```
 
 `dist:win` runs natively on Windows. Commands must work in PowerShell — no POSIX-only shell
@@ -96,13 +96,16 @@ resources/
   compounds/                # offline name→SMILES dictionary (JSON)
   icons/
 e2e/                        # Playwright Electron tests
+tests/tooling/              # tests of the tooling itself (e.g. import-boundary lint rules)
 docs/                       # ADRs and notes
 CAPABILITY-MAP.md  SPEC.md  SPEC-<module>.md
 ```
 
 Unit tests are colocated: `foo.ts` → `foo.test.ts`.
 
-Import direction is enforced with ESLint `no-restricted-imports`:
+Import direction is enforced with ESLint `no-restricted-imports` (rules generated from the
+dependency table in `eslint.config.mjs`, proven by `tests/tooling/lint-boundaries.test.ts`) and
+by `tsconfig.core.json`, which compiles `src/core` with no DOM or Node types:
 `core/*` may import only `core/*` modules it depends on per the capability map;
 `core/*` never imports `react`, `electron`, `node:*` or DOM globals.
 
@@ -202,6 +205,9 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-09 | No ChemDraw `.cdxml` import — not on the roadmap. |
 | 2026-11-09 | Git repo, pushed to a private GitHub repo. |
 | 2026-11-09 | Aromatic rings drawn as circle-in-ring by default (Kekulé available as a toggle). |
+| 2026-11-09 | Template's `@electron-toolkit/*` helpers dropped: its preload exposes raw `ipcRenderer`, violating the preload boundary. Main/preload are hand-written. |
+| 2026-11-09 | Linux-only e2e launches add `--no-sandbox` (+ headless backend without a display) because dev boxes may lack a root-owned `chrome-sandbox`. Windows runs fully sandboxed. |
+| 2026-11-09 | `npm audit` reports a moderate `minimatch` advisory inside electron-builder (build-time only, not shipped). Accepted; revisit on electron-builder upgrades. |
 
 ## Open Questions
 

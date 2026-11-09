@@ -57,12 +57,13 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 ## Task List
 
 ### Phase 0: Scaffold (app-shell step 0)
-- [ ] T0a: Electron + React + TS window launches
-- [ ] T0b: Test, lint (with import boundaries), format and e2e tooling
+- [x] T0a: Electron + React + TS window launches
+- [x] T0b: Test, lint (with import boundaries), format and e2e tooling
 
 ### Checkpoint A — tooling
-- [ ] `npm run dev` opens a window titled "Chalkbond"; `npm run check` and `npm run test:e2e` pass
-- [ ] Commit + push; **user runs the same commands on Windows** (first real Windows check)
+- [x] `npm run check` and `npm run test:e2e` pass on Linux (window title, canvas, security prefs asserted)
+- [x] Commit + push
+- [ ] **User runs the same commands on Windows** (first real Windows check)
 
 ### Phase 1: doc-model foundations
 - [ ] T1: Types, `emptyDoc`, `checkInvariants`

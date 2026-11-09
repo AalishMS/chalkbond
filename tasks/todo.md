@@ -12,9 +12,9 @@ content, set product name "Chalkbond", security defaults (`contextIsolation`, `s
 no `nodeIntegration`, CSP), and pin the versions listed in `SPEC.md`.
 
 **Acceptance criteria:**
-- [ ] `npm run dev` opens one window titled "Chalkbond" showing an empty placeholder canvas area
-- [ ] `npm run build` produces `out/` with no errors; `npm run typecheck` passes
-- [ ] BrowserWindow uses `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`; renderer has a CSP meta tag
+- [x] Built app opens one window titled "Chalkbond" with an empty canvas area (e2e-verified on Linux; `npm run dev` itself is confirmed on Windows at Checkpoint A)
+- [x] `npm run build` produces `out/` with no errors; `npm run typecheck` passes
+- [x] BrowserWindow uses `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`; renderer has a CSP meta tag
 
 **Verification:** `npm run typecheck && npm run build`; manual: `npm run dev`.
 
@@ -32,9 +32,9 @@ Prettier, the `core/*` import-boundary rule, Playwright Electron smoke test, and
 script. All npm scripts must run under PowerShell.
 
 **Acceptance criteria:**
-- [ ] `npm test` runs a placeholder unit test; `npm run test:e2e` launches the built app and asserts the window title
-- [ ] A file in `src/core/` importing `react`, `electron` or `node:fs` fails `npm run lint` (proven by a lint test fixture or rule config test)
-- [ ] `npm run check` = typecheck + lint + test, exits 0
+- [x] `npm test` runs real unit tests (import-boundary lint tests); `npm run test:e2e` launches the built app and asserts the window title
+- [x] A file in `src/core/` importing `react`, `electron` or `node:fs` fails `npm run lint` (proven by a lint test fixture or rule config test)
+- [x] `npm run check` = typecheck + lint + test, exits 0
 
 **Verification:** `npm run check && npm run test:e2e`
 
@@ -46,8 +46,8 @@ script. All npm scripts must run under PowerShell.
 **Scope:** M
 
 ### ✅ Checkpoint A — tooling
-- [ ] All commands above pass on Linux
-- [ ] Commit + push
+- [x] All commands above pass on Linux
+- [x] Commit + push
 - [ ] User runs `npm install && npm run check && npm run test:e2e && npm run dev` on Windows
 
 ---
