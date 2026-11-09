@@ -113,9 +113,9 @@ wedges/hashes with the narrow end at the stereo centre); `toSmiles` (isomeric),
 `toMolfile` (V2000/V3000), abbreviations expanded, pseudo-atoms handled.
 
 **Acceptance criteria:**
-- [ ] Typed errors for invalid/empty input and > 1000 atoms (`too-large`)
-- [ ] (R)-alanine drawn with a wedge → SMILES with the same canonical IDCode as `C[C@@H](N)C(O)=O`; the mirror drawing gives the enantiomer
-- [ ] Molfile V2000 and V3000 round-trip a set of test molecules (canonical IDCode equal)
+- [x] Typed errors for invalid/empty input and > 1000 atoms (`too-large`)
+- [x] (R)-alanine drawn with a wedge → SMILES with the same canonical IDCode as `C[C@@H](N)C(O)=O`; the mirror drawing gives the enantiomer
+- [x] Molfile V2000 and V3000 round-trip a set of test molecules (canonical IDCode equal)
 
 **Verification:** `npm test -- src/core/chem-core`
 

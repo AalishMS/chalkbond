@@ -206,5 +206,7 @@ function solveSystem(
   if (best === null) return null;
   const doubles = new Set<BondId>();
   for (const e of best as Int32Array) if (e !== -1) doubles.add(system[e] as BondId);
-  return doubles;
+  // A delocalized system with no double bond at all is not one (e.g. 1.5 bonds between
+  // saturated atoms): report it rather than silently drawing single bonds.
+  return doubles.size > 0 ? doubles : null;
 }

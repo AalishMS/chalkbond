@@ -185,6 +185,23 @@ structureFromText(text: string, names: NameIndex, opts?: ImportOptions):
 `SubDoc` results follow the doc-model convention (centred on the origin, local ids), so the
 editor inserts them with `insert(doc, sub, at)`.
 
+Conversion details (C6):
+- Limits: > 1000 atoms (`MAX_IMPORT_ATOMS`) or > 1 000 000 characters → `too-large`, checked
+  before OCL's 2D layout (≈ 1 s for 1200 atoms). Charges outside −4…+4 → `invalid-smiles` /
+  `invalid-molfile`. Whitespace-only text or a Molfile with 0 atoms → `empty`.
+- SMILES `*` (bare or bracketed) is parsed as a placeholder element absent from the text
+  (Xe, else Rn, else Og) and mapped back to the pseudo-atom `*`, so neighbours keep their H.
+  Export writes every pseudo-atom and unknown label as `*`; `R`/`X` survive only through
+  Molfile (OCL custom labels).
+- Hydrogens: where chem-core's valence model would give a different H count than the source
+  (bracket atoms such as a tautomer's `[nH]`, `[CH2]`), the atom gets `explicitH`; atoms on
+  Molfile aromatic (type 4) bonds are skipped because OCL's counts there are wrong.
+- Molfile coordinates are rescaled to an average bond length of 1.0 (OCL flips y both ways;
+  all-zero coordinates get an OCL layout). Export writes BLU (bond length 1.0).
+- Stereo: OCL up/down from atom 0 ↔ wedge/hash with the narrow end at `a1`, single bonds only.
+- A chem-core-internal `canonicalId(doc, atoms?)` (OCL IDCode, stereo included) backs the round
+  trip tests; it is not public and never stored.
+
 ## Mapping doc-model ↔ OpenChemLib
 
 | doc-model | OpenChemLib | Notes |
@@ -217,7 +234,9 @@ It **must** iff it can and is isoelectronic with carbon (neutral C, N⁺, B⁻).
 required atom, the one matching the most atoms wins (so pyrazine's N are both matched, never a
 dihydro form); ties go to the first in id order, so the result is deterministic. A search
 budget (200 000 steps per system) bounds pathological inputs. Note: OCL perceives azulene's
-fusion bond as non-aromatic (peripheral 10π), so `aromatize` leaves it single.
+fusion bond as non-aromatic (peripheral 10π), so `aromatize` leaves it single. A system whose best
+assignment has no double bond at all (1.5 bonds between saturated atoms or pseudo-atoms) is
+`cannot-kekulize` too, rather than silently becoming single bonds.
 
 ## Valence model
 

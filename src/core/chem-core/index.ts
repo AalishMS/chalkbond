@@ -15,3 +15,12 @@ export type {
 } from './types';
 export { createPerceiver, PERCEIVER_CACHE_SIZE } from './perceiver';
 export { aromatize, kekulize } from './aromatic';
+export {
+  parseSmiles,
+  parseMolfile,
+  toSmiles,
+  toMolfile,
+  MAX_IMPORT_ATOMS,
+  MAX_IMPORT_CHARS,
+  type ImportOptions,
+} from './convert';

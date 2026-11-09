@@ -61,7 +61,7 @@ C5 perceiver cache    C6 SMILES / Molfile in & out (+ stereo)
 
 ### Phase 2: chemistry edits and conversion
 - [x] C5: `createPerceiver` cache + `aromatize` / `kekulize`
-- [ ] C6: `parseSmiles`, `parseMolfile`, `toSmiles`, `toMolfile` incl. wedges/hashes
+- [x] C6: `parseSmiles`, `parseMolfile`, `toSmiles`, `toMolfile` incl. wedges/hashes
 - [ ] C7: `expandLabel` + `cleanStructure`
 
 ### Checkpoint F — editing chemistry

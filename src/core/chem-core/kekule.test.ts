@@ -166,6 +166,15 @@ describe('assignKekule', () => {
     expect(assignKekule(pseudo.doc).failures).toHaveLength(1);
   });
 
+  it('fails a system that would get no double bond at all', () => {
+    // every ring carbon already saturated by explicit H: a "1.5" ring that is just cyclohexane
+    const sat = build(Array(6).fill({ element: 'C', explicitH: 2 }), ringBonds([0, 1, 2, 3, 4, 5]));
+    expect(assignKekule(sat.doc).failures).toEqual([sat.bonds]);
+    // a lone 1.5 bond between two pseudo-atoms
+    const rr = build(['R', 'R'], [[0, 1, 1.5]]);
+    expect(assignKekule(rr.doc).failures).toEqual([rr.bonds]);
+  });
+
   it('is deterministic and restricted to the scope', () => {
     const sys = AROMATICS.naphthalene!;
     const a = build(sys.atoms, sys.bonds);
