@@ -49,6 +49,36 @@ describe('ocl adapter', () => {
     expect(molFormula(buildMol(ethanol)).formula).toBe('C2H6O');
   });
 
+  it('keeps caller indexes although OCL moves plain hydrogen atoms last', () => {
+    // H–C–O drawn with an explicit H first: OCL's helper perception reorders to O, C, H.
+    const spec: MolSpec = {
+      atoms: [atom(1, 0, 0), atom(6, 1, 0), atom(8, 2, 0), atom(1, 3, 0, { mass: 2 })],
+      bonds: [
+        { a1: 0, a2: 1, kind: 'single' },
+        { a1: 1, a2: 2, kind: 'single' },
+        { a1: 2, a2: 3, kind: 'single' },
+      ],
+    };
+    const mol = buildMol(spec);
+    const data = readMol(mol);
+    expect(data.atoms.map((a) => [a.atomicNo, a.x, a.mass])).toEqual([
+      [1, 0, 0],
+      [6, 1, 0],
+      [8, 2, 0],
+      [1, 3, 2],
+    ]);
+    expect(data.bonds.map((b) => [b.a1, b.a2])).toEqual([
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ]);
+    expect(data.atoms.map((a) => a.implicitH)).toEqual([0, 2, 0, 0]);
+    expect(freeValence(mol, 1)).toBe(2); // max 4 − 2 explicit bonds (implicit H not counted)
+    expect(readMol(withInventedCoordinates(mol)).atoms.map((a) => a.atomicNo)).toEqual([
+      1, 6, 8, 1,
+    ]);
+  });
+
   it('carries charge, isotope, radicals and pseudo-atom labels both ways', () => {
     const mol = buildMol({
       atoms: [

@@ -61,6 +61,8 @@ Found while building the adapter (C1, same version; also pinned by tests):
 | Deuterium is `D` in OCL formulas; isotopes change the weights | Formula counts `D`/`T` separately, like OCL |
 | Unreadable Molfile text and empty SMILES give an empty molecule, not an error | chem-core checks the atom count itself (`invalid-molfile`, `empty`) |
 | Coordinate invention needs parities perceived from the old layout first | The adapter does it; stereo survives Clean Structure |
+| Helper perception moves plain H atoms (no isotope/charge/radical/label) and their bonds to the end of OCL's lists; `setHydrogenProtection` doesn't stop it | The adapter puts them last itself and maps caller ↔ OCL indexes, with a sanity check that throws if OCL reorders anything else |
+| `inventCoordinates()` deletes explicit H atoms unless `keepHydrogens: true` | The adapter keeps them (drawn H atoms are doc atoms) |
 | OCL's formula string is not strict Hill order (`C(=O)Cl` → `CHOCl`; Hill/PubChem: `CHClO`) | chem-core builds Hill strings from its own counts; dictionary checks compare counts |
 
 Pin `openchemlib` to `9.25.2` exactly (it is already in the Tech Stack). Only `ocl.ts` (and

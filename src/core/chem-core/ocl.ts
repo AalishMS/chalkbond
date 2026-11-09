@@ -51,33 +51,76 @@ export interface Mol {
   readonly [MOL]: true;
 }
 
-const wrap = (m: Molecule): Mol => m as unknown as Mol;
-const unwrap = (mol: Mol): Molecule => mol as unknown as Molecule;
+/**
+ * OCL moves "simple" hydrogen atoms (H, no isotope/charge/radical/label) and their bonds to the
+ * end of its lists during helper perception (verified). `buildMol` puts them last itself and
+ * keeps the caller → OCL index maps here, so callers' indexes stay valid. `null` = identity
+ * (molecules OCL created itself, read in OCL's own order).
+ */
+interface Handle {
+  readonly m: Molecule;
+  readonly atomAt: readonly number[] | null;
+  readonly bondAt: readonly number[] | null;
+}
+
+const wrap = (h: Handle): Mol => h as unknown as Mol;
+const unwrap = (mol: Mol): Handle => mol as unknown as Handle;
+const own = (m: Molecule): Mol => wrap({ m, atomAt: null, bondAt: null });
 
 const RADICAL_TO_OCL = [0, Molecule.cAtomRadicalStateD, Molecule.cAtomRadicalStateT] as const;
 const MAX_ABNORMAL_VALENCE = 15;
 
-/** Builds an OCL molecule. Atoms and bonds keep their indexes. */
+const isSimpleHydrogen = (a: MolAtom): boolean =>
+  a.atomicNo === 1 && a.mass === 0 && a.charge === 0 && a.radical === 0 && a.customLabel === null;
+
+/** Puts the items `last` picks after the others (stable); returns item index → new position. */
+function positions(n: number, last: (i: number) => boolean): number[] {
+  const order = [...Array(n).keys()].sort((p, q) => Number(last(p)) - Number(last(q)) || p - q);
+  const at = new Array<number>(n);
+  order.forEach((item, k) => (at[item] = k));
+  return at;
+}
+
+/** Builds an OCL molecule. Callers keep their atom and bond indexes (see `Handle`). */
 export function buildMol(spec: MolSpec): Mol {
+  const simple = spec.atoms.map(isSimpleHydrogen);
+  const atomAt = positions(spec.atoms.length, (i) => simple[i] === true);
+  const bondAt = positions(spec.bonds.length, (b) => {
+    const bond = spec.bonds[b] as MolBond;
+    return simple[bond.a1] === true || simple[bond.a2] === true;
+  });
+  const atomOf = new Array<number>(spec.atoms.length);
+  atomAt.forEach((k, i) => (atomOf[k] = i));
+  const bondOf = new Array<number>(spec.bonds.length);
+  bondAt.forEach((k, b) => (bondOf[k] = b));
+
   const m = new Molecule(Math.max(spec.atoms.length, 1), Math.max(spec.bonds.length, 1));
-  for (const atom of spec.atoms) {
-    const i = m.addAtom(atom.atomicNo);
-    m.setAtomX(i, atom.x);
-    m.setAtomY(i, atom.y);
-    if (atom.charge !== 0) m.setAtomCharge(i, atom.charge);
-    if (atom.mass !== 0) m.setAtomMass(i, atom.mass);
-    if (atom.radical !== 0) m.setAtomRadical(i, RADICAL_TO_OCL[atom.radical]);
-    if (atom.customLabel !== null) m.setAtomCustomLabel(i, atom.customLabel);
+  for (const i of atomOf) {
+    const atom = spec.atoms[i] as MolSpec['atoms'][number];
+    const k = m.addAtom(atom.atomicNo);
+    m.setAtomX(k, atom.x);
+    m.setAtomY(k, atom.y);
+    if (atom.charge !== 0) m.setAtomCharge(k, atom.charge);
+    if (atom.mass !== 0) m.setAtomMass(k, atom.mass);
+    if (atom.radical !== 0) m.setAtomRadical(k, RADICAL_TO_OCL[atom.radical]);
+    if (atom.customLabel !== null) m.setAtomCustomLabel(k, atom.customLabel);
   }
-  for (const bond of spec.bonds) {
-    const b = m.addBond(bond.a1, bond.a2);
-    m.setBondType(b, bondTypeToOcl(bond.kind));
+  for (const b of bondOf) {
+    const bond = spec.bonds[b] as MolBond;
+    const k = m.addBond(atomAt[bond.a1] as number, atomAt[bond.a2] as number);
+    m.setBondType(k, bondTypeToOcl(bond.kind));
   }
   spec.atoms.forEach((atom, i) => {
-    if (atom.hCount !== undefined) fixHydrogens(m, i, atom.hCount);
+    if (atom.hCount !== undefined) fixHydrogens(m, atomAt[i] as number, atom.hCount);
   });
   m.ensureHelperArrays(Molecule.cHelperRings);
-  return wrap(m);
+  spec.atoms.forEach((atom, i) => {
+    const k = atomAt[i] as number;
+    if (m.getAtomicNo(k) !== atom.atomicNo || m.getAtomX(k) !== atom.x) {
+      throw new Error('openchemlib reordered atoms unexpectedly');
+    }
+  });
+  return wrap({ m, atomAt, bondAt });
 }
 
 /**
@@ -136,31 +179,39 @@ function radicalFromOcl(state: number): 0 | 1 | 2 {
   return 0;
 }
 
-/** Reads a molecule back: atoms, bonds, implicit H and aromaticity. */
+/** Reads a molecule back (in the caller's indexes): atoms, bonds, implicit H, aromaticity. */
 export function readMol(mol: Mol): MolData {
-  const m = unwrap(mol);
+  const { m, atomAt, bondAt } = unwrap(mol);
   m.ensureHelperArrays(Molecule.cHelperRings);
+  const nAtoms = m.getAllAtoms();
+  const nBonds = m.getAllBonds();
+  const oclAtom = (i: number): number => (atomAt ? (atomAt[i] as number) : i);
+  const callerAtom = new Array<number>(nAtoms);
+  for (let i = 0; i < nAtoms; i++) callerAtom[oclAtom(i)] = i;
+
   const atoms = [];
-  for (let i = 0; i < m.getAllAtoms(); i++) {
+  for (let i = 0; i < nAtoms; i++) {
+    const k = oclAtom(i);
     atoms.push({
-      atomicNo: m.getAtomicNo(i),
-      x: m.getAtomX(i),
-      y: m.getAtomY(i),
-      charge: m.getAtomCharge(i),
-      mass: m.getAtomMass(i),
-      radical: radicalFromOcl(m.getAtomRadical(i)),
-      customLabel: m.getAtomCustomLabel(i),
-      implicitH: m.getImplicitHydrogens(i),
-      aromatic: m.isAromaticAtom(i),
+      atomicNo: m.getAtomicNo(k),
+      x: m.getAtomX(k),
+      y: m.getAtomY(k),
+      charge: m.getAtomCharge(k),
+      mass: m.getAtomMass(k),
+      radical: radicalFromOcl(m.getAtomRadical(k)),
+      customLabel: m.getAtomCustomLabel(k),
+      implicitH: m.getImplicitHydrogens(k),
+      aromatic: m.isAromaticAtom(k),
     });
   }
   const bonds = [];
-  for (let b = 0; b < m.getAllBonds(); b++) {
+  for (let b = 0; b < nBonds; b++) {
+    const k = bondAt ? (bondAt[b] as number) : b;
     bonds.push({
-      a1: m.getBondAtom(0, b),
-      a2: m.getBondAtom(1, b),
-      kind: bondKindFromOcl(m, b),
-      aromatic: m.isAromaticBond(b),
+      a1: callerAtom[m.getBondAtom(0, k)] as number,
+      a2: callerAtom[m.getBondAtom(1, k)] as number,
+      kind: bondKindFromOcl(m, k),
+      aromatic: m.isAromaticBond(k),
     });
   }
   return { atoms, bonds };
@@ -168,18 +219,18 @@ export function readMol(mol: Mol): MolData {
 
 /** OCL's free valence of an atom (negative = over its maximum valence). */
 export function freeValence(mol: Mol, atom: number): number {
-  const m = unwrap(mol);
+  const { m, atomAt } = unwrap(mol);
   m.ensureHelperArrays(Molecule.cHelperNeighbours);
-  return m.getFreeValence(atom);
+  return m.getFreeValence(atomAt ? (atomAt[atom] as number) : atom);
 }
 
 export function molFormula(mol: Mol): MolFormula {
-  const { formula, relativeWeight, absoluteWeight } = unwrap(mol).getMolecularFormula();
+  const { formula, relativeWeight, absoluteWeight } = unwrap(mol).m.getMolecularFormula();
   return { formula, relativeWeight, absoluteWeight };
 }
 
 export function atomCount(mol: Mol): number {
-  return unwrap(mol).getAllAtoms();
+  return unwrap(mol).m.getAllAtoms();
 }
 
 /**
@@ -187,35 +238,41 @@ export function atomCount(mol: Mol): number {
  * the size before paying for layout). Throws OCL's parse error for invalid text.
  */
 export function smilesToMol(text: string, opts: { coordinates: boolean }): Mol {
-  return wrap(Molecule.fromSmiles(text, { noCoordinates: !opts.coordinates }));
+  return own(Molecule.fromSmiles(text, { noCoordinates: !opts.coordinates }));
 }
 
 /** Parses a V2000/V3000 Molfile. OCL returns an empty molecule for unreadable text. */
 export function molfileToMol(text: string): Mol {
-  return wrap(Molecule.fromMolfile(text));
+  return own(Molecule.fromMolfile(text));
 }
 
 /** A copy with fresh 2D coordinates (OCL coordinate invention, fixed seed, bond length 1.0). */
 export function withInventedCoordinates(mol: Mol): Mol {
-  const copy = unwrap(mol).getCompactCopy();
+  const handle = unwrap(mol);
+  const copy = handle.m.getCompactCopy();
   // Parities must be perceived from the old layout first; invention then re-chooses up/down
   // bonds that express the same configuration in the new one.
   copy.ensureHelperArrays(Molecule.cHelperParities);
-  copy.inventCoordinates();
-  return wrap(copy);
+  // keepHydrogens: drawn H atoms are atoms of the doc; by default OCL would delete them.
+  copy.inventCoordinates({ keepHydrogens: true });
+  if (copy.getAllAtoms() !== handle.m.getAllAtoms()) {
+    throw new Error('openchemlib changed the atom count while inventing coordinates');
+  }
+  // The copy keeps OCL's atom/bond order, so the caller's index maps still apply.
+  return wrap({ ...handle, m: copy });
 }
 
 /** Isomeric SMILES (aromatic lowercase). Pseudo-atoms come out as OCL's `[?]`. */
 export function molToSmiles(mol: Mol): string {
-  return unwrap(mol).toIsomericSmiles();
+  return unwrap(mol).m.toIsomericSmiles();
 }
 
 export function molToMolfile(mol: Mol, version: 'V2000' | 'V3000'): string {
-  const m = unwrap(mol);
+  const { m } = unwrap(mol);
   return version === 'V3000' ? m.toMolfileV3() : m.toMolfile();
 }
 
 /** OCL's canonical IDCode, stereo included: equal for the same structure however drawn. */
 export function molIdCode(mol: Mol): string {
-  return unwrap(mol).getIDCode();
+  return unwrap(mol).m.getIDCode();
 }

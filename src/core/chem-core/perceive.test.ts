@@ -86,6 +86,21 @@ describe('perceive', () => {
     expect(p.atoms[r.atoms[0]!]).toEqual({ implicitH: 1, aromatic: true, valence: 'ok' });
   });
 
+  it('drawn H atoms count as atoms (OCL reorders them internally)', () => {
+    const m = mol(
+      ['H', 'C', 'O', 'H'],
+      [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+      ],
+    );
+    const p = perceive(m.doc);
+    expect(p.fragments[0]!.formula.hill).toBe('CH4O');
+    expect(m.atoms.map((a) => p.atoms[a]!.implicitH)).toEqual([0, 2, 0, 0]);
+    expect(p.warnings).toEqual([]);
+  });
+
   it('pseudo-atom: symbol counted, no H, mw null', () => {
     const r = mol(['C', 'R'], [[0, 1]]);
     const p = perceive(r.doc);
