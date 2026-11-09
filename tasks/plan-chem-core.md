@@ -62,10 +62,10 @@ C5 perceiver cache    C6 SMILES / Molfile in & out (+ stereo)
 ### Phase 2: chemistry edits and conversion
 - [x] C5: `createPerceiver` cache + `aromatize` / `kekulize`
 - [x] C6: `parseSmiles`, `parseMolfile`, `toSmiles`, `toMolfile` incl. wedges/hashes
-- [ ] C7: `expandLabel` + `cleanStructure`
+- [x] C7: `expandLabel` + `cleanStructure`
 
 ### Checkpoint F — editing chemistry
-- [ ] `npm run check` green; (R)-alanine stereo round trip passes; commit + push
+- [x] `npm run check` green; (R)-alanine stereo round trip passes; commit + push
 
 ### Phase 3: names and hardening
 - [ ] C8: compound dictionary + name lookup

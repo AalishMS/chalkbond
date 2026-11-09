@@ -24,3 +24,5 @@ export {
   MAX_IMPORT_CHARS,
   type ImportOptions,
 } from './convert';
+export { expandLabel } from './expand';
+export { cleanStructure } from './clean';

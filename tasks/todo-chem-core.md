@@ -132,9 +132,9 @@ re-lay out touched fragments with OCL coordinate invention and fit them back ont
 positions (rigid, no reflection).
 
 **Acceptance criteria:**
-- [ ] Expanding `Ph`, `CO2H`, `OMe` keeps the formula, bonds the group to the old neighbour, and is one undo step
-- [ ] Clean Structure on a distorted benzene → regular hexagon (bond length 1 ± 1e-6), centroid unchanged; other fragments untouched
-- [ ] Stereo preserved through Clean Structure (canonical IDCode unchanged)
+- [x] Expanding `Ph`, `CO2H`, `OMe` keeps the formula, bonds the group to the old neighbour, and is one undo step
+- [x] Clean Structure on a distorted benzene → regular hexagon (bond length 1 ± 1e-6), centroid unchanged; other fragments untouched
+- [x] Stereo preserved through Clean Structure (canonical IDCode unchanged)
 
 **Verification:** `npm test -- src/core/chem-core`
 
@@ -145,8 +145,8 @@ positions (rigid, no reflection).
 **Scope:** M
 
 ### ✅ Checkpoint F — editing chemistry
-- [ ] `npm run check` green
-- [ ] Commit + push
+- [x] `npm run check` green
+- [x] Commit + push
 
 ---
 

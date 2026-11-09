@@ -151,6 +151,12 @@ ABBREVIATIONS: Readonly<Record<string, { smiles: string }>>
 expandLabel(doc: Doc, atom: AtomId): Doc         // replaces the abbreviation atom by real atoms
                                                  // laid out away from its neighbour; throws
                                                  // ChemError('unknown-label')
+                                                 // (C7) laid out by OCL with a '*' stand-in
+                                                 // neighbour, rotated onto the real bond(s);
+                                                 // the attachment atom replaces the label atom
+                                                 // via mergeAtoms (bonds, anchors, captions
+                                                 // follow); aromatic groups as circles; the
+                                                 // label's colour carries over
 
 // aromatic representation (the editor's Kekulé ↔ circle toggle)
 aromatize(doc: Doc, atoms?: Iterable<AtomId>): Doc   // bonds OCL perceives as aromatic → 1.5
@@ -163,6 +169,10 @@ cleanStructure(doc: Doc, atoms: Iterable<AtomId>): Doc
     // the result onto the old positions (best rigid rotation + translation, no reflection),
     // so the structure tidies in place. Bond length 1.0. Stereo configuration is preserved;
     // which bonds carry the wedges may change.
+    // (C7) Single atoms are left alone. The drawn wedges are kept when they still give the
+    // same configuration in the new layout; otherwise OCL's wedge/hash bonds replace them, and
+    // a bond whose narrow end must move to its other atom is re-created reversed (a1 is
+    // immutable), so a curved-arrow anchor on that bond becomes a point anchor.
 
 // conversion
 parseSmiles(text: string, opts?: ImportOptions): Result<SubDoc, ChemError>
