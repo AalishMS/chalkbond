@@ -49,9 +49,9 @@ O, S) stay single. Forced-assignment propagation + backtracking.
 `ABBREVIATIONS` table (SMILES attached through the first atom), unknown labels.
 
 **Acceptance criteria:**
-- [ ] `OH`, `HO`, `NH2`, `H2N`, `NH4+`, `O-`, `Cl`, `CH3` → element interpretations with H count / charge
-- [ ] Every abbreviation's SMILES parses and gives the tested formula; keys are case-sensitive
-- [ ] Anything else → `unknown`
+- [x] `OH`, `HO`, `NH2`, `H2N`, `NH4+`, `O-`, `Cl`, `CH3` → element interpretations with H count / charge
+- [x] Every abbreviation's SMILES parses and gives the tested formula; keys are case-sensitive
+- [x] Anything else → `unknown`
 
 **Verification:** `npm test -- src/core/chem-core`
 

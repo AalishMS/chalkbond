@@ -61,6 +61,7 @@ Found while building the adapter (C1, same version; also pinned by tests):
 | Deuterium is `D` in OCL formulas; isotopes change the weights | Formula counts `D`/`T` separately, like OCL |
 | Unreadable Molfile text and empty SMILES give an empty molecule, not an error | chem-core checks the atom count itself (`invalid-molfile`, `empty`) |
 | Coordinate invention needs parities perceived from the old layout first | The adapter does it; stereo survives Clean Structure |
+| OCL's formula string is not strict Hill order (`C(=O)Cl` → `CHOCl`; Hill/PubChem: `CHClO`) | chem-core builds Hill strings from its own counts; dictionary checks compare counts |
 
 Pin `openchemlib` to `9.25.2` exactly (it is already in the Tech Stack). Only `ocl.ts` (and
 tests pinning library facts) may import it — lint-enforced inside chem-core as well as
@@ -240,6 +241,10 @@ noble gases, Cl⁻, Na⁺…) fall back to OCL's own valence model and free vale
 - An abbreviation atom with ≠ 1 bond gets an `abbreviation-bonds` warning (0 bonds: capped
   with H for formula purposes).
 - Anything else is `unknown`: drawn as typed, treated as a pseudo-atom, `unknown-label` warning.
+- Abbreviations are matched before element symbols, so `Ac` = acetyl and `Pr` = propyl (not
+  actinium / praseodymium), as in other drawing tools. Pseudo-atoms `R`, `X`, `*` typed as labels
+  are elements. Charges may be written `+`, `-`, `+2`, `2-`, and the typographic `−`, `⁺`, `⁻`;
+  |charge| ≤ 4 (doc-model limit). H on both sides (`HOH`) is `unknown`.
 
 ## Name lookup
 
