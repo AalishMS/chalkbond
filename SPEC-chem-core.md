@@ -1,7 +1,10 @@
 # Spec: `chem-core`
 
 Shared stack, commands, style and boundaries: see `SPEC.md`. Module map: `CAPABILITY-MAP.md`.
-Depends on: `doc-model` (public entry only). Status: **draft for review**.
+Depends on: `doc-model` (public entry only). Status: **approved 2026-11-09**.
+
+Audience: a teacher of grade 11–12 chemistry in Nepal (NEB curriculum) — basic organic and
+inorganic chemistry. Data sets (compounds, abbreviations) are scoped to that level.
 
 ## Objective
 
@@ -90,7 +93,7 @@ type LabelInterpretation =
       // 'O', 'OH', 'HO', 'NH2', 'H2N', 'NH3+', 'O-', 'Cl' — stored as element (+ explicitH /
       // charge), NOT as a label
   | { kind: 'abbreviation'; key: string; element: ElementSymbol }
-      // 'Ph', 'OMe', 'CO2H', 'Boc' — stored as label; `element` = the group's attachment atom
+      // 'Ph', 'OMe', 'CO2H', 'Ac' — stored as label; `element` = the group's attachment atom
   | { kind: 'unknown' };
 
 // ── Errors ──────────────────────────────────────────────────────────────────────────────
@@ -124,9 +127,10 @@ formulaOf(doc: Doc, atoms: Iterable<AtomId>): Formula
 
 // labels & abbreviations
 interpretLabel(text: string): LabelInterpretation
-ABBREVIATIONS: Readonly<Record<string, { smiles: string; valence: 1 }>>
-                                                 // SMILES with one '*' attachment, e.g.
-                                                 // Ph: '*c1ccccc1', OMe: '*OC', CO2H: '*C(=O)O'
+ABBREVIATIONS: Readonly<Record<string, { smiles: string }>>
+                                                 // the group's SMILES; it attaches through
+                                                 // its FIRST atom (OCL reads '*' as carbon):
+                                                 // Ph: 'c1ccccc1', OMe: 'OC', CO2H: 'C(=O)O'
 expandLabel(doc: Doc, atom: AtomId): Doc         // replaces the abbreviation atom by real atoms
                                                  // laid out away from its neighbour; throws
                                                  // ChemError('unknown-label')
@@ -173,7 +177,7 @@ editor inserts them with `insert(doc, sub, at)`.
 | `x`, `y` (BLU, y-down) | atom x, y | 1:1 |
 | `element` | atomic number | via `PERIODIC_SYMBOLS` index |
 | `R`, `X`, `*` | atomic number 0 + custom label | no mass, no implicit H; formula counts the symbol; `mw: null` |
-| abbreviation `label` | the group's atoms, attached at `*` | expanded for every computation (formula, valence, SMILES); the doc keeps the label |
+| abbreviation `label` | the group's atoms, attached through its first atom | expanded for every computation (formula, valence, SMILES); the doc keeps the label |
 | `charge`, `isotope`, `radical` 1/2 | charge, mass, radical doublet/triplet | |
 | `explicitH` | fixed H count | over-valence if bonds + H exceed the allowed valence |
 | order 1, 2, 3 | single, double, triple | |
@@ -194,10 +198,10 @@ perception, `ChemError` from `kekulize`.
 - **Element + H grammar:** `^(H\d*)?(El)(H\d*)?([+-]\d?)?$` with a known element symbol, either
   side (`OH`, `HO`, `NH2`, `H2N`, `NH4+`, `O-`). Stored as `element` + `explicitH` + `charge`,
   never as a label, so chemistry needs no expansion.
-- **Abbreviations (v1 table, monovalent):** Me, Et, Pr, iPr, Bu, tBu, Ph, Bn, Bz, Ac, Boc,
-  Cbz, Ts, Ms, Tf, TMS, TBS, OMe, OEt, OAc, OTs, CO2H, COOH, CO2Me, CO2Et, CHO, CN, NO2, CF3,
-  SO3H, NHAc, NMe2. Case-sensitive (`Me` ≠ `ME`). Each has a test that its SMILES gives the
-  expected formula.
+- **Abbreviations (v1 table, monovalent, grade 11–12 level):** Me, Et, Pr, iPr, Bu, tBu, Ph,
+  Bn, Ac, OMe, OEt, OPh, OAc, CO2H, COOH, CO2Me, CO2Et, CHO, COCl, CONH2, CN, NO2, SO3H.
+  Case-sensitive (`Me` ≠ `ME`). Each has a test that its SMILES gives the expected formula.
+  Research-level groups (Boc, Ts, TBS…) are left out; adding more is a data change.
 - An abbreviation atom with ≠ 1 bond gets an `abbreviation-bonds` warning (0 bonds: capped
   with H for formula purposes).
 - Anything else is `unknown`: drawn as typed, treated as a pseudo-atom, `unknown-label` warning.
@@ -209,13 +213,19 @@ perception, `ChemError` from `kekulize`.
   chem-core never reads files: the editor imports the JSON and passes it to `createNameIndex`.
 - Normalisation: case-insensitive; spaces, hyphens and commas ignored for matching
   (`Acetic-acid` = `acetic acid`); Unicode NFC.
-- Scope: about 300 compounds a chemistry teacher uses in slides (school through first-year
-  organic): solvents, simple alkanes/alkenes/alcohols/acids/esters/amines, aromatics and
-  heteroaromatics, common reagents (H2SO4, NaBH4, LiAlH4, PCC, KMnO4…), amino acids, sugars,
-  a few drugs (aspirin, paracetamol, ibuprofen, caffeine). IUPAC and common names as synonyms.
-- **Source — see Open Question 1.** Proposed: a dev-time script `scripts/build-compounds.mjs`
-  that looks up a curated name list in PubChem (PUG-REST) and writes SMILES, formula, MW and
-  CID into the committed JSON. The app itself never goes online; the JSON is reviewed in git.
+- Scope: about 350 compounds following the NEB grade 11–12 organic topics — alkanes,
+  alkenes, alkynes (C1–C6 incl. the isomers taught), benzene and simple arenes, haloalkanes and
+  haloarenes, alcohols, phenols, ethers, aldehydes, ketones, carboxylic acids and derivatives
+  (esters, acyl chlorides, amides, anhydrides), nitro compounds, amines and aniline, plus common
+  molecular reagents and solvents (HCN, NH3, CHCl3, CCl4, SOCl2, PCl5, H2O…), urea, simple
+  sugars and amino acids, aspirin and paracetamol. Every entry is findable by its IUPAC name
+  (`propan-2-ol`, `ethanoic acid`) and its common names (`isopropyl alcohol`, `acetic acid`).
+  Ionic reagents (KMnO4, K2Cr2O7…) are left out: they appear as conditions text, not structures.
+- **Source:** a dev-time script `scripts/build-compounds.mjs` reads a curated name list
+  (`scripts/compound-names.txt`: one compound per line, `name | synonym | …`), looks each name
+  up in PubChem (PUG-REST, ≤ 5 requests/s) and writes SMILES, formula, MW and CID into the
+  committed JSON. Synonyms come from the curated list, not PubChem's long synonym lists. The
+  app never goes online; the generated JSON is reviewed in git like code.
 
 ## Perception and caching
 
@@ -283,10 +293,6 @@ perception, `ChemError` from `kekulize`.
 
 ## Open Questions
 
-1. **Dictionary source.** Proposed: a one-off dev-time PubChem lookup (above) — accurate,
-   public-domain data with CIDs, but it uses the network at build time, which `SPEC.md` says to
-   ask about. Alternative: a hand-curated list checked only by the formula tests (offline, but
-   MW reference values would be unverified). Recommendation: PubChem script.
-2. **Formula of a partial selection.** Proposed: formula/MW of the *whole fragments* the
-   selection touches (well-defined, matches what a teacher wants for "this molecule").
-   Alternative: only the selected atoms, with cut bonds counted as H.
+None. Resolved 2026-11-09: (1) dictionary data comes from a dev-time PubChem lookup (network
+at development time only; approved); (2) formula/MW of a selection = the whole fragments it
+touches.

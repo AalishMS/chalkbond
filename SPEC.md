@@ -12,7 +12,9 @@ pasting them into PowerPoint / Word looking sharp. ChemDraw is the feature refer
 interaction design (hotkeys, click-drag bonds, templates, arrows); Chalkbond uses none of its
 names, assets or branding.
 
-Primary user: a chemistry teacher preparing slides. Success = they stop reaching for ChemDraw
+Primary user: a chemistry teacher in Nepal preparing slides for grade 11–12 students (NEB
+curriculum) — mostly basic organic chemistry, IUPAC and common names, simple reactions and
+mechanisms. Success = they stop reaching for ChemDraw
 for day-to-day slide figures.
 
 ### User stories
@@ -213,6 +215,9 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-09 | `History` takes an injectable clock for `meta.modified`; undo restores `nextId`, so an undone id can be reissued (callers drop ids across undo). |
 | 2026-11-09 | `.chalk` Zod schema is strict (unknown keys rejected); any new field bumps `schemaVersion`. Compile-time identity check ties `z.infer` to `Doc`. |
 | 2026-11-09 | Rects under `transformItems` map to the bbox of the transformed inscribed ellipse (exact for 90°/flip/scale) — replaces the undefined "scale by \|scale\|". |
+| 2026-11-09 | Audience: grade 11–12 (NEB, Nepal). chem-core data (compounds, abbreviations) is scoped to that level. |
+| 2026-11-09 | Compound dictionary built by a dev-time PubChem lookup script; JSON committed, app stays offline. Approved network use at development time only. |
+| 2026-11-09 | Selection formula/MW = whole fragments touched by the selection. |
 | 2026-11-09 | ESLint `no-unused-vars` uses `ignoreRestSiblings` (omit-a-key via rest destructuring). |
 | 2026-11-09 | ESLint allows `!` non-null assertions in `*.test.ts` and `__fixtures__/` only (they assert fixture shape; a wrong one fails the test). Source code keeps the rule. |
 
