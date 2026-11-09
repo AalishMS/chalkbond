@@ -180,9 +180,9 @@ positions, rect centres with size scaling) and `bounds(doc, sel?)`.
 over a selection, insertion at a point with fresh ids and returned `Selection`.
 
 **Acceptance criteria:**
-- [ ] `fragments` of a doc with ethanol + benzene returns 2 components sorted by lowest id
-- [ ] `extract` drops bonds with one unselected end; anchors to unselected atoms become point anchors; attached texts follow their arrow
-- [ ] `insert(extract(sel))` reproduces the selection's relative geometry with all-new ids
+- [x] `fragments` of a doc with ethanol + benzene returns 2 components sorted by lowest id
+- [x] `extract` drops bonds with one unselected end; anchors to unselected atoms become point anchors; attached texts follow their arrow
+- [x] `insert(extract(sel))` reproduces the selection's relative geometry with all-new ids
 
 **Verification:** `npm test -- src/core/doc-model`
 

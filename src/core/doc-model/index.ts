@@ -11,6 +11,8 @@ export { deleteItems } from './delete';
 export { mergeAtoms } from './merge';
 export { resolveAnchor } from './anchors';
 export { transformItems, bounds } from './transform';
+export { fragments } from './graph';
+export { extract, insert, everything, type SubDoc } from './subdoc';
 export { IDENTITY, applyAffine, translation, rotation, scaling } from './geometry';
 export {
   createHistory,

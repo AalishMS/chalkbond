@@ -190,10 +190,20 @@ neighbors(doc, atomId): AtomId[]                // sorted by id number
 findBond(doc, a1, a2): BondId | undefined       // either direction
 
 // sub-documents (copy/paste, templates, name insert)
-extract(doc, sel): SubDoc                       // closed over selection: bonds kept only if
-                                                // both atoms selected; anchors to unselected
-                                                // atoms become point anchors
-insert(doc, sub: SubDoc, at: Point): [Doc, Selection]   // fresh ids, returns what was inserted
+type SubDoc = Pick<Doc, 'atoms' | 'bonds' | 'objects' | 'zOrder' | 'groups'>  // plain JSON,
+                                                // ids local to the sub-doc, centred on (0,0)
+extract(doc, sel): SubDoc                       // closed over selection: selected bonds bring
+                                                // their atoms; a bond is kept iff both atoms
+                                                // are; anchors to atoms/bonds left behind
+                                                // become point anchors; arrows bring attached
+                                                // texts (a text without its arrow loses
+                                                // attachedTo); captions/groups keep only
+                                                // extracted members (empty ones dropped);
+                                                // result centred on the origin
+insert(doc, sub: SubDoc, at: Point): [Doc, Selection]   // validates sub (invariants), fresh
+                                                // ids in id order, origin lands at `at`,
+                                                // returns what was inserted
+everything(doc): Selection                      // every atom, bond and object
 
 // history
 interface History { /* immutable */ }

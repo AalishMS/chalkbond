@@ -82,7 +82,7 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 - [x] `npm run check` green; every cascade row in the spec has a test
 
 ### Phase 3: reuse and persistence
-- [ ] T7: `fragments`, `neighbors`, `extract`, `insert`
+- [x] T7: `fragments`, `neighbors`, `extract`, `insert`
 - [ ] T8: `serialize`, `parse`, migrations
 - [ ] T9: Property-test suite, fixtures, perf budgets
 
