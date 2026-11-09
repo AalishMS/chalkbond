@@ -69,10 +69,10 @@ radicals, explicit H); read back implicit H, aromaticity, valence, formula, MW, 
 collect warnings.
 
 **Acceptance criteria:**
-- [ ] Benzene drawn with 1.5 bonds → C6H6, all atoms aromatic, 1 H each; ethanol → C2H6O, MW 46.07
-- [ ] Acetate (charge −1) → text `C2H3O2⁻`; pseudo-atom → `mw: null`, symbol counted
-- [ ] Over-valence and unknown-label warnings name the right atoms; valid hypervalent cases stay ok
-- [ ] `formulaOf` sums whole fragments touched by the atoms
+- [x] Benzene drawn with 1.5 bonds → C6H6, all atoms aromatic, 1 H each; ethanol → C2H6O, MW 46.07
+- [x] Acetate (charge −1) → text `C2H3O2⁻`; pseudo-atom → `mw: null`, symbol counted
+- [x] Over-valence and unknown-label warnings name the right atoms; valid hypervalent cases stay ok
+- [x] `formulaOf` sums whole fragments touched by the atoms
 
 **Verification:** `npm test -- src/core/chem-core`
 
@@ -83,8 +83,8 @@ collect warnings.
 **Scope:** M
 
 ### ✅ Checkpoint E — perception
-- [ ] `npm run check` green
-- [ ] Commit + push
+- [x] `npm run check` green
+- [x] Commit + push
 
 ---
 

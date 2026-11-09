@@ -3,3 +3,13 @@
 export { ChemError, type ChemErrorCode } from './errors';
 export { interpretLabel, type LabelInterpretation } from './labels';
 export { ABBREVIATIONS, type AbbreviationDef } from './abbreviations';
+export { perceive, formulaOf } from './perceive';
+export type {
+  AtomInfo,
+  BondInfo,
+  ChemWarning,
+  ChemWarningCode,
+  Formula,
+  FragmentPerception,
+  Perception,
+} from './types';

@@ -2,7 +2,7 @@
 // unresolved (benzene → C6H12), so chem-core picks single/double itself before building a
 // molecule. Pure TS; see SPEC-chem-core.md "Mapping doc-model ↔ OpenChemLib".
 import type { Atom, AtomId, BondId, Doc } from '../doc-model/index';
-import { allowedValences, isoelectronicSymbol, targetValence } from './valence';
+import { allowedValences, isoelectronicSymbol } from './valence';
 
 export interface KekuleResult {
   /** Single (1) or double (2) for every order-1.5 bond in scope; 1 in unsolvable systems. */
@@ -26,9 +26,9 @@ const byIdNumber = (p: string, q: string): number => Number(p.slice(1)) - Number
 
 /**
  * The π role of an atom given its bonds counted with every 1.5 bond as single. An atom can
- * take a double bond if that stays within its *normal* valence (the smallest allowed one its
- * σ bonds and H fit in): pyridine N (2 bonds → normal 3) can, furan O and thiophene S (2 → 2)
- * can't, pyrrole N with an explicit H or a third neighbour (3 → 3) can't. Abbreviation or
+ * take a double bond if that stays within its *normal* (lowest allowed) valence: pyridine N
+ * (2 bonds, normal 3) can, furan O and thiophene S (2, normal 2) can't, pyrrole N with an
+ * explicit H or a third neighbour (3, normal 3) can't. Abbreviation or
  * unknown labels and pseudo-atoms never take part.
  */
 export function piRole(atom: Atom, sigmaValence: number): PiRole {
@@ -37,8 +37,8 @@ export function piRole(atom: Atom, sigmaValence: number): PiRole {
   const allowed = allowedValences(atom.element, atom.charge, atom.radical);
   if (!allowed) return none;
   const used = sigmaValence + (atom.explicitH ?? 0);
-  const target = targetValence(allowed, used);
-  if (target === null || used + 1 > target) return none;
+  const normal = allowed[0];
+  if (normal === undefined || used + 1 > normal) return none;
   return { canPi: true, required: isoelectronicSymbol(atom.element, atom.charge) === 'C' };
 }
 

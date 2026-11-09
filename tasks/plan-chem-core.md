@@ -56,8 +56,8 @@ C5 perceiver cache    C6 SMILES / Molfile in & out (+ stereo)
 - [x] C3: `interpretLabel` grammar + `ABBREVIATIONS` table
 
 ### Checkpoint E — perception
-- [ ] C4: molecule builder (mapping table) + `perceive` + `formulaOf`
-- [ ] `npm run check` green; benzene (circle), ethanol, acetate, pyrrole, pentavalent C perceive correctly; commit + push
+- [x] C4: molecule builder (mapping table) + `perceive` + `formulaOf`
+- [x] `npm run check` green; benzene (circle), ethanol, acetate, pyrrole, pentavalent C perceive correctly; commit + push
 
 ### Phase 2: chemistry edits and conversion
 - [ ] C5: `createPerceiver` cache + `aromatize` / `kekulize`

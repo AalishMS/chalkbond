@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allowedValences, isoelectronicSymbol, targetValence } from './valence';
+import { allowedValences, fillHydrogens, isOverValence, isoelectronicSymbol } from './valence';
 
 describe('valence model', () => {
   it.each([
@@ -43,10 +43,29 @@ describe('valence model', () => {
     expect(allowedValences('R', 0, 0)).toBeNull();
   });
 
-  it('picks the smallest allowed valence that fits', () => {
-    expect(targetValence([2, 4, 6], 1)).toBe(2);
-    expect(targetValence([2, 4, 6], 3)).toBe(4);
-    expect(targetValence([2, 4, 6], 6)).toBe(6);
-    expect(targetValence([4], 5)).toBeNull();
+  it.each([
+    [[4], 0, 4, false],
+    [[4], 3, 1, false],
+    [[4], 4, 0, false],
+    [[4], 5, 0, true],
+    [[3], 4, 0, true],
+    [[2, 4, 6], 1, 1, false],
+    [[2, 4, 6], 3, 0, true],
+    [[2, 4, 6], 4, 0, false],
+    [[2, 4, 6], 6, 0, false],
+    [[1, 3, 5, 7], 0, 1, false],
+    [[1, 3, 5, 7], 2, 0, true],
+    [[1, 3, 5, 7], 7, 0, false],
+    [[], 0, 0, false],
+    [[], 1, 0, true],
+  ])('allowed %j, bonds %d → %d H, over %s', (allowed, used, h, over) => {
+    expect(fillHydrogens(allowed, used)).toEqual({ h, over });
+  });
+
+  it('accepts under-valence and allowed hypervalence, rejects the rest', () => {
+    expect(isOverValence([2], 1)).toBe(false);
+    expect(isOverValence([2, 4, 6], 5)).toBe(true);
+    expect(isOverValence([2, 4, 6], 6)).toBe(false);
+    expect(isOverValence([2, 4, 6], 8)).toBe(true);
   });
 });

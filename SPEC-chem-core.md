@@ -209,8 +209,8 @@ so odd rings (azulene) and fused systems work. No solution → `cannot-kekulize`
 perception, `ChemError` from `kekulize`.
 
 Precise rule (C2): with every 1.5 bond counted as single, an atom's σ valence is its bond
-orders + `explicitH`; its *normal* valence is the smallest allowed valence (valence model
-below) that fits. It **can** take a double bond iff σ + 1 ≤ normal — pyridine N (2 → 3) can;
+orders + `explicitH`; its *normal* valence is its lowest allowed valence (valence model
+below). It **can** take a double bond iff σ + 1 ≤ normal — pyridine N (2 → 3) can;
 furan O, thiophene S (2 → 2), pyrrole N with an explicit H or a third neighbour (3 → 3) can't.
 It **must** iff it can and is isoelectronic with carbon (neutral C, N⁺, B⁻). Labelled
 (abbreviation/unknown) atoms and pseudo-atoms never take part. Among assignments covering every
@@ -225,9 +225,13 @@ OCL tolerates hypervalence, so chem-core keeps a table of allowed neutral valenc
 elements a grade 11–12 teacher draws: H 1; B 3; C, Si 4; N 3; P, As 3/5; O 2; S, Se 2/4/6;
 F 1; Cl, Br, I 1/3/5/7. A charged atom uses its isoelectronic element's row (N⁺ → C, O⁻ → F,
 C⁻ → N, C⁺ → B, B⁻ → C, S⁺ → P, Al⁻ → Si); a doublet radical uses up one valence, a triplet
-two. Implicit H fills up to the smallest allowed valence that fits the bonds; bonds (+ explicit
-H) above the largest is `over-valence`. Elements/charge states outside the table (metals,
-noble gases, Cl⁻, Na⁺…) fall back to OCL's own valence model and free valence.
+two. Implicit H fills up to the **lowest** allowed valence only; the higher (hypervalent)
+valences — SF₆, H₃PO₄, DMSO, HClO₄ — are valid only when bonds (+ explicit H) reach them
+exactly. So a divalent Cl or a 3-bonded neutral S is `over-valence` rather than silently
+gaining an H. A total above the lowest valence that is not in the list is `over-valence`;
+under-valence (e.g. `explicitH: 0` on a terminal O) is not flagged — there is no warning code
+for it. Elements/charge states outside the table (metals, noble gases, Cl⁻, Na⁺…) fall back to
+OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` is set).
 
 ## Labels and abbreviations
 
@@ -277,6 +281,12 @@ noble gases, Cl⁻, Na⁺…) fall back to OCL's own valence model and free vale
   recomputes the fragment it touched. Cache is LRU-bounded (e.g. 256 fragments).
 - Stereo is not part of perception (no R/S in v1); it matters only for SMILES/Molfile export
   and Clean Structure, which read coordinates directly.
+- Details (C4): an abbreviation or unknown-label atom reports `implicitH: 0`,
+  `aromatic: false`; its chemistry shows up in the formula and in `abbreviation-bonds` /
+  `unknown-label` warnings, not as over-valence. A label that reads as element + H (`OH`) is
+  ignored — the atom's own fields rule. Unknown labels are counted in `Formula.counts` under
+  their text (e.g. `CH3Boc`), and pseudo-atoms / unknown labels sort after the real elements in
+  `hill`. `formulaOf` throws doc-model's `DocError('unknown-atom')` for ids not in the doc.
 
 ## Testing
 

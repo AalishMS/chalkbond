@@ -49,8 +49,25 @@ export function allowedValences(
   return table.map((v) => v - radical).filter((v) => v >= 0);
 }
 
-/** Smallest allowed valence that `used` fits in, or `null` if it exceeds them all. */
-export function targetValence(allowed: readonly number[], used: number): number | null {
-  for (const v of allowed) if (v >= used) return v;
-  return null;
+/**
+ * Implicit H for an atom whose bonds use `used` valence: H fills up to the element's lowest
+ * (normal) valence only. Higher allowed valences are hypervalent states (SF6, H3PO4, DMSO,
+ * HClO4) that must be reached by bonds exactly; implicit H never makes them up, so a divalent Cl
+ * is not turned into "HClR2".
+ */
+export function fillHydrogens(
+  allowed: readonly number[],
+  used: number,
+): { h: number; over: boolean } {
+  const lowest = allowed[0];
+  if (lowest === undefined) return { h: 0, over: used > 0 };
+  const h = used <= lowest ? lowest - used : 0;
+  return { h, over: isOverValence(allowed, used + h) };
+}
+
+/** A total valence (bonds + H) is over when it exceeds the lowest one and isn't allowed. */
+export function isOverValence(allowed: readonly number[], total: number): boolean {
+  const lowest = allowed[0];
+  if (lowest === undefined) return total > 0;
+  return total > lowest && !allowed.includes(total);
 }
