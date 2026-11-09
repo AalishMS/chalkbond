@@ -130,7 +130,15 @@ SMILES export, if ever wanted, would infer it the same way.)
 ## Public API
 
 All functions are pure and return a new `Doc`. They throw `DocError` (with a `code`) for
-references to unknown ids. Callers normally go through `History.transact`.
+references to unknown ids (`unknown-atom` …), forbidden edits (`self-bond`, `duplicate-bond`,
+`invalid-attachment`) and values that would break invariant 7/8 (`invalid-value`), so no op can
+produce an invalid doc. Callers normally go through `History.transact`.
+
+Ops are Immer recipes underneath. Called on a frozen `Doc` they return a new doc; called on the
+draft that `transact` passes to its recipe they mutate that draft and return it, which gives
+`transact` fine-grained patches. A recipe must therefore thread the doc each op returns and
+not read an earlier version expecting it to be unchanged. In `update*` patches, `undefined`
+clears an optional field; `id` (and a bond's `a1`/`a2`) can't be changed.
 
 ```ts
 // creation
@@ -139,7 +147,7 @@ emptyDoc(now: string): Doc
 // every op is deterministic and undo restores the counter. Ids are never reused within a doc.
 
 // atoms & bonds
-addAtom(doc, init: Partial<Atom> & Point): [Doc, AtomId]
+addAtom(doc, init: Partial<Omit<Atom,'id'>> & Point): [Doc, AtomId]   // default: neutral C
 addBond(doc, a1, a2, init?: Partial<Bond>): [Doc, BondId] // rejects self-bond / duplicate pair
 updateAtom(doc, id, patch: Partial<Omit<Atom,'id'>>): Doc
 updateBond(doc, id, patch: Partial<Omit<Bond,'id'|'a1'|'a2'>>): Doc
@@ -160,7 +168,8 @@ bounds(doc, sel?): Rect | null
 
 // derived structure
 fragments(doc): AtomId[][]                     // connected components, deterministic order
-neighbors(doc, atomId): AtomId[]
+neighbors(doc, atomId): AtomId[]                // sorted by id number
+findBond(doc, a1, a2): BondId | undefined       // either direction
 
 // sub-documents (copy/paste, templates, name insert)
 extract(doc, sel): SubDoc                       // closed over selection: bonds kept only if

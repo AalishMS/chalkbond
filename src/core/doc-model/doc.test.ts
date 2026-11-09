@@ -81,15 +81,21 @@ describe('DocError', () => {
 });
 
 describe('public entry (index.ts)', () => {
-  it('exports the T1 surface', () => {
+  it('exports exactly the public surface', () => {
     expect(Object.keys(publicApi).sort()).toEqual(
       [
         'DocError',
         'PERIODIC_SYMBOLS',
         'PSEUDO_SYMBOLS',
+        'addAtom',
+        'addBond',
         'checkInvariants',
         'emptyDoc',
+        'findBond',
         'isValidElement',
+        'neighbors',
+        'updateAtom',
+        'updateBond',
       ].sort(),
     );
   });

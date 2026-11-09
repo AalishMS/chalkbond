@@ -77,9 +77,9 @@ DrawObject union, TextRun, Group, Doc, Selection, Rect, Affine), `PERIODIC_SYMBO
 `nextId`.
 
 **Acceptance criteria:**
-- [ ] `addBond` rejects self-bonds and duplicate pairs (either direction) with `DocError` codes
-- [ ] Unknown ids throw `DocError('unknown-atom' | 'unknown-bond')`
-- [ ] Building a 6-ring with alternating bonds yields 6 atoms, 6 bonds, ids `a1…a6`/`b7…b12`, no invariant violations
+- [x] `addBond` rejects self-bonds and duplicate pairs (either direction) with `DocError` codes
+- [x] Unknown ids throw `DocError('unknown-atom' | 'unknown-bond')`
+- [x] Building a 6-ring with alternating bonds yields 6 atoms, 6 bonds, ids `a1…a6`/`b7…b12`, no invariant violations
 
 **Verification:** `npm test -- src/core/doc-model`
 

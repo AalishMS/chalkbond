@@ -1,6 +1,7 @@
 import { assertNever } from './assert-never';
 import { isValidElement } from './elements';
 import { idNumber, type IdKind } from './ids';
+import { isColor } from './validate';
 import type { Anchor, Doc, DrawObject, Point, Rect, TextRun } from './types';
 
 /** Invariant numbers follow SPEC-doc-model.md "Invariants". */
@@ -43,8 +44,6 @@ export interface InvariantViolation {
   readonly id?: string;
   readonly message: string;
 }
-
-const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 /** All violations of the document invariants; `[]` means the doc is valid. */
 export function checkInvariants(doc: Doc): InvariantViolation[] {
@@ -90,7 +89,7 @@ export function checkInvariants(doc: Doc): InvariantViolation[] {
     if (r.w < 0 || r.h < 0) add(7, 'negative-rect-size', 'rect has negative size', id);
   };
   const color = (id: string, c: string | undefined): void => {
-    if (c !== undefined && !COLOR_RE.test(c)) {
+    if (c !== undefined && !isColor(c)) {
       add(7, 'invalid-color', `'${c}' is not #rrggbb`, id);
     }
   };

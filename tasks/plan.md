@@ -67,7 +67,7 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 
 ### Phase 1: doc-model foundations
 - [x] T1: Types, `emptyDoc`, `checkInvariants`
-- [ ] T2: Atom/bond operations
+- [x] T2: Atom/bond operations
 - [ ] T3: History (transact, undo/redo, coalescing, depth limit)
 
 ### Checkpoint B — foundations
