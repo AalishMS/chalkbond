@@ -287,6 +287,13 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
   ignored — the atom's own fields rule. Unknown labels are counted in `Formula.counts` under
   their text (e.g. `CH3Boc`), and pseudo-atoms / unknown labels sort after the real elements in
   `hill`. `formulaOf` throws doc-model's `DocError('unknown-atom')` for ids not in the doc.
+- Details (C5): the signature also carries atom and bond ids (results are keyed by them);
+  wedges, colours, coordinates and objects are left out. The LRU holds 256 fragments
+  (`PERCEIVER_CACHE_SIZE`). `aromatize` / `kekulize` with `atoms` change only bonds whose two
+  atoms are both given, but judge chemistry on the whole fragments touched; `kekulize` throws
+  only if an unsolvable system has a bond in that scope, and then changes nothing.
+  `aromatize` leaves 1.5 bonds OCL calls non-aromatic (carboxylate, azulene's fusion bond) as
+  they are. Unknown atom ids → `DocError('unknown-atom')`.
 
 ## Testing
 

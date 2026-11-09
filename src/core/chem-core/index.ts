@@ -13,3 +13,5 @@ export type {
   FragmentPerception,
   Perception,
 } from './types';
+export { createPerceiver, PERCEIVER_CACHE_SIZE } from './perceiver';
+export { aromatize, kekulize } from './aromatic';

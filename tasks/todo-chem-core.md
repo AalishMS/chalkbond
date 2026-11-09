@@ -94,9 +94,9 @@ collect warnings.
 signature; `aromatize` / `kekulize` as Doc → Doc edits through doc-model ops.
 
 **Acceptance criteria:**
-- [ ] Moving atoms or adding draw objects causes zero fragment rebuilds (counted via an adapter spy); changing one fragment rebuilds only it
-- [ ] `kekulize(aromatize(doc))` keeps every formula; `aromatize` is idempotent; works inside `transact` (one undo step)
-- [ ] `kekulize` on an unsolvable system throws `ChemError('cannot-kekulize')`
+- [x] Moving atoms or adding draw objects causes zero fragment rebuilds (counted via an adapter spy); changing one fragment rebuilds only it
+- [x] `kekulize(aromatize(doc))` keeps every formula; `aromatize` is idempotent; works inside `transact` (one undo step)
+- [x] `kekulize` on an unsolvable system throws `ChemError('cannot-kekulize')`
 
 **Verification:** `npm test -- src/core/chem-core`
 
