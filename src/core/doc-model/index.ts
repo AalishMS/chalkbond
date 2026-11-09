@@ -5,6 +5,8 @@ export { DocError, type DocErrorCode } from './errors';
 export { emptyDoc } from './doc';
 export { addAtom, updateAtom, neighbors, type AtomInit, type AtomPatch } from './atoms';
 export { addBond, updateBond, findBond, type BondInit, type BondPatch } from './bonds';
+export { addObject, updateObject, type ObjectInit, type ObjectPatch } from './objects';
+export { paintLayers } from './z-order';
 export {
   createHistory,
   transact,

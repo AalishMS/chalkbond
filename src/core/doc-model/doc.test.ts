@@ -90,6 +90,7 @@ describe('public entry (index.ts)', () => {
         'PSEUDO_SYMBOLS',
         'addAtom',
         'addBond',
+        'addObject',
         'canRedo',
         'canUndo',
         'checkInvariants',
@@ -99,6 +100,7 @@ describe('public entry (index.ts)', () => {
         'findBond',
         'isValidElement',
         'neighbors',
+        'paintLayers',
         'redo',
         'redoLabel',
         'transact',
@@ -106,6 +108,7 @@ describe('public entry (index.ts)', () => {
         'undoLabel',
         'updateAtom',
         'updateBond',
+        'updateObject',
       ].sort(),
     );
   });

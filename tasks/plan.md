@@ -74,7 +74,7 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 - [x] `npm run check` green; can build a benzene ring in a test and undo it step by step
 
 ### Phase 2: doc-model full surface
-- [ ] T4: Draw objects (arrows, curved arrows, plus, text, caption, callout, bracket, shape) + zOrder
+- [x] T4: Draw objects (arrows, curved arrows, plus, text, caption, callout, bracket, shape) + zOrder
 - [ ] T5: `deleteItems` cascades + `mergeAtoms`
 - [ ] T6: `transformItems` + `bounds`
 

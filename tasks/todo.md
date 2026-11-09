@@ -120,9 +120,9 @@ maintenance (new objects on top; `shape` highlights paint beneath structures per
 text `attachedTo` validation (must reference an `arrow`).
 
 **Acceptance criteria:**
-- [ ] Each variant can be added and updated; invariants hold
-- [ ] `attachedTo` pointing at a non-arrow is rejected
-- [ ] zOrder contains each object exactly once after any add/update sequence
+- [x] Each variant can be added and updated; invariants hold
+- [x] `attachedTo` pointing at a non-arrow is rejected
+- [x] zOrder contains each object exactly once after any add/update sequence
 
 **Verification:** `npm test -- src/core/doc-model`
 

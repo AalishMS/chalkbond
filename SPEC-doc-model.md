@@ -157,7 +157,11 @@ mergeAtoms(doc, keep: AtomId, drop: AtomId): Doc          // re-points drop's bo
                                                           // collapses resulting duplicates
 // objects
 addObject(doc, obj: DistributiveOmit<DrawObject,'id'>): [Doc, ObjectId]
-updateObject(doc, id, patch): Doc
+updateObject(doc, id, patch): Doc               // id/type never change
+paintLayers(doc): { beneath: ObjectId[]; above: ObjectId[] }  // shapes | everything else
+// zOrder always lists `shape` highlights first, then other objects; a new object goes on top
+// of its layer. A text's `attachedTo` must name an existing arrow ('invalid-attachment');
+// a caption needs ≥ 1 target atom.
 
 // selection-based
 type Selection = { atoms: Set<AtomId>; bonds: Set<BondId>; objects: Set<ObjectId> };
