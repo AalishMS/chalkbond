@@ -1,0 +1,9 @@
+{
+  "//": "core/* must not touch DOM or Node: no DOM lib, no @types/node. Compile errors catch it.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src/core/**/*"]
+}

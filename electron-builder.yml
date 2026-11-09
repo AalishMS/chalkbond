@@ -1,0 +1,22 @@
+appId: com.chalkbond.app
+productName: Chalkbond
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  executableName: Chalkbond
+  icon: build/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: Chalkbond-${version}-setup.${ext}
+  shortcutName: Chalkbond
+  uninstallDisplayName: Chalkbond
+  createDesktopShortcut: always
+npmRebuild: false
