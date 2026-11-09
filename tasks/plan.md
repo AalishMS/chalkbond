@@ -68,10 +68,10 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 ### Phase 1: doc-model foundations
 - [x] T1: Types, `emptyDoc`, `checkInvariants`
 - [x] T2: Atom/bond operations
-- [ ] T3: History (transact, undo/redo, coalescing, depth limit)
+- [x] T3: History (transact, undo/redo, coalescing, depth limit)
 
 ### Checkpoint B — foundations
-- [ ] `npm run check` green; can build a benzene ring in a test and undo it step by step
+- [x] `npm run check` green; can build a benzene ring in a test and undo it step by step
 
 ### Phase 2: doc-model full surface
 - [ ] T4: Draw objects (arrows, curved arrows, plus, text, caption, callout, bracket, shape) + zOrder

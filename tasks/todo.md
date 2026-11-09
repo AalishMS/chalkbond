@@ -95,9 +95,9 @@ DrawObject union, TextRun, Group, Doc, Selection, Rect, Affine), `PERIODIC_SYMBO
 `canUndo/canRedo`, `undoLabel/redoLabel`, depth limit 500, `meta.modified` update.
 
 **Acceptance criteria:**
-- [ ] Undo after N transactions restores each prior doc exactly (deep-equal), redo re-applies
-- [ ] 200 transactions with the same `coalesceKey` → one undo step; different key or a non-keyed transact breaks the run
-- [ ] 501st step drops the oldest; new transact after undo clears redo
+- [x] Undo after N transactions restores each prior doc exactly (deep-equal), redo re-applies
+- [x] 200 transactions with the same `coalesceKey` → one undo step; different key or a non-keyed transact breaks the run
+- [x] 501st step drops the oldest; new transact after undo clears redo
 
 **Verification:** `npm test -- src/core/doc-model`
 
@@ -108,8 +108,8 @@ DrawObject union, TextRun, Group, Doc, Selection, Rect, Affine), `PERIODIC_SYMBO
 **Scope:** S
 
 ### ✅ Checkpoint B — foundations
-- [ ] `npm run check` green
-- [ ] Test: build benzene via `transact` steps, undo to empty, redo to benzene
+- [x] `npm run check` green
+- [x] Test: build benzene via `transact` steps, undo to empty, redo to benzene
 
 ---
 

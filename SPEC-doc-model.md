@@ -144,7 +144,9 @@ clears an optional field; `id` (and a bond's `a1`/`a2`) can't be changed.
 // creation
 emptyDoc(now: string): Doc
 // Ids come from doc.nextId inside each add*/insert op — no global state, no randomness, so
-// every op is deterministic and undo restores the counter. Ids are never reused within a doc.
+// every op is deterministic and undo restores the counter. Ids are unique within a doc; an
+// id freed by undo may be issued again by the next op, so callers (editor selection, etc.)
+// must not hold ids across undo/redo.
 
 // atoms & bonds
 addAtom(doc, init: Partial<Omit<Atom,'id'>> & Point): [Doc, AtomId]   // default: neutral C
@@ -179,7 +181,7 @@ insert(doc, sub: SubDoc, at: Point): [Doc, Selection]   // fresh ids, returns wh
 
 // history
 interface History { /* immutable */ }
-createHistory(doc): History
+createHistory(doc, opts?: { clock?: () => string }): History  // clock → meta.modified (ISO)
 transact(h, label: string, recipe: (doc) => Doc, opts?: { coalesceKey?: string }): History
 undo(h): History;  redo(h): History
 current(h): Doc;   canUndo(h); canRedo(h); undoLabel(h); redoLabel(h)
@@ -207,7 +209,10 @@ checkInvariants(doc): InvariantViolation[]
   emits many moves → one undo).
 - Depth limit 500 steps; oldest dropped.
 - A new transaction after undo clears the redo stack.
-- `meta.modified` is set by `transact`, not stored as a separate undo step.
+- `meta.modified` is set by `transact` (from the history's injectable clock) inside the same
+  step, so undo restores the previous value too. A recipe that changes nothing records no step.
+- Coalescing applies only while the run is unbroken: a transact with another key or no key,
+  or any undo/redo, ends it.
 
 ## File Format
 
