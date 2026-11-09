@@ -66,7 +66,7 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 - [x] **User runs the same commands on Windows** (first real Windows check) — passed 2026-11-09, no fixes
 
 ### Phase 1: doc-model foundations
-- [ ] T1: Types, `emptyDoc`, `checkInvariants`
+- [x] T1: Types, `emptyDoc`, `checkInvariants`
 - [ ] T2: Atom/bond operations
 - [ ] T3: History (transact, undo/redo, coalescing, depth limit)
 

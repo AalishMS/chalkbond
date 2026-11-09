@@ -209,6 +209,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-09 | Linux-only e2e launches add `--no-sandbox` (+ headless backend without a display) because dev boxes may lack a root-owned `chrome-sandbox`. Windows runs fully sandboxed. |
 | 2026-11-09 | `npm audit` reports a moderate `minimatch` advisory inside electron-builder (build-time only, not shipped). Accepted; revisit on electron-builder upgrades. |
 | 2026-11-09 | Checkpoint A on Windows 11 (Node 26.3, npm 11.16): `npm install`, `npm run check`, `npm run test:e2e`, `npm run dev` all pass with no fixes needed; `git status` clean afterwards. The `minimatch` advisory now also appears via eslint / typescript-eslint (15 moderate, all dev-only); the only offered fix downgrades ESLint to 9 — not taken. npm 11's `allow-scripts` warns about `electron-winstaller` (Squirrel, unused by our NSIS target) — ignored. |
+| 2026-11-09 | ESLint allows `!` non-null assertions in `*.test.ts` and `__fixtures__/` only (they assert fixture shape; a wrong one fails the test). Source code keeps the rule. |
 
 ## Open Questions
 

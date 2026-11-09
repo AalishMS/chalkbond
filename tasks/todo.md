@@ -59,9 +59,9 @@ DrawObject union, TextRun, Group, Doc, Selection, Rect, Affine), `PERIODIC_SYMBO
 `DocError`, `emptyDoc(now)`, and `checkInvariants` covering invariants 1–8.
 
 **Acceptance criteria:**
-- [ ] `emptyDoc` returns a doc with `checkInvariants(doc) = []`
-- [ ] One failing-fixture test per invariant (1–8) asserting the specific violation code
-- [ ] Module has a single public entry `src/core/doc-model/index.ts`
+- [x] `emptyDoc` returns a doc with `checkInvariants(doc) = []`
+- [x] One failing-fixture test per invariant (1–8) asserting the specific violation code
+- [x] Module has a single public entry `src/core/doc-model/index.ts`
 
 **Verification:** `npm test -- src/core/doc-model`
 

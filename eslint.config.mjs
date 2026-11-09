@@ -80,6 +80,11 @@ export default tseslint.config(
     rules: { 'no-restricted-syntax': 'off' },
   },
   {
+    // In tests `!` only asserts the shape of a fixture; a wrong guess fails the test anyway.
+    files: ['**/*.test.{ts,tsx}', '**/__fixtures__/**/*.ts'],
+    rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+  },
+  {
     files: ['src/renderer/**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser } },
     plugins: { 'react-hooks': reactHooks },

@@ -106,6 +106,8 @@ interface Doc {
   groups:  Record<GroupId, Group>;
   nextId:  number;                 // id counter; ids are 'a12', 'b7', 'o3', 'g1' (prefix + n)
   style:   { preset: 'slides' | 'journal'; overrides: Partial<StyleSettings> };
+                                   // StyleSettings (provisional; svg-render's spec owns it):
+                                   // bondLength, lineWidth, doubleBondSpacing, fontFamily, fontSize
   meta:    { title?: string; created: string; modified: string };  // ISO 8601
 }
 ```
@@ -216,8 +218,13 @@ checkInvariants(doc): InvariantViolation[]
 4. Every `atom` / `bond` anchor and `caption.target` id exists.
 5. Every `attachedTo.arrow` refers to an object of type `arrow`.
 6. Group members exist; an item belongs to at most one group.
-7. All coordinates finite; `charge` ∈ [-4, 4]; colours match `#rrggbb`; `fillOpacity` ∈ [0,1].
-8. Every id's numeric suffix is < `nextId`; element symbols are valid.
+7. All coordinates finite; `charge` an integer in [-4, 4]; colours match `#rrggbb`;
+   `fillOpacity` ∈ [0,1]; `Rect` `w`, `h` ≥ 0; bond-anchor `t` ∈ [0,1].
+8. `nextId` is a positive integer; every id is `<prefix><n>` with the right prefix for its kind,
+   is stored under its own key, and has `n` < `nextId`; element symbols are valid.
+
+Each violation is `{ invariant: 1…8, code, id?, message }`; `code` is a stable string
+(`'duplicate-bond'`, `'zorder-missing-object'`, …) that tests and `parse` errors use.
 
 ## Testing
 
