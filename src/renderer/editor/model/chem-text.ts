@@ -1,6 +1,7 @@
 // How an atom label is written while it is typed (SPEC-editor.md rule L1): digits after a letter
 // or a closing bracket are subscripts, a trailing charge is a superscript. Pure: text in, runs out.
-import type { TextRun } from '@core/doc-model';
+import { PERIODIC_SYMBOLS, type TextRun } from '@core/doc-model';
+import type { EditRun, Script } from './text-edit';
 
 /** A sign, with its magnitude after it (`+2`) or before it (`2+`). */
 const TAIL = /(?:[+\-−]\d?|\d[+\-−])$/;
@@ -44,4 +45,202 @@ export function labelDisplayRuns(text: string): TextRun[] {
   const runs = bodyRuns(text.slice(0, at));
   if (at < text.length) runs.push({ text: text.slice(at), script: 'sup' });
   return runs;
+}
+
+// ---- finishText (SPEC-editor.md T4) ------------------------------------------------------------
+
+const ELEMENTS: ReadonlySet<string> = new Set(PERIODIC_SYMBOLS);
+/** Reaction-mechanism names that look like formulas and are not. */
+const NOT_FORMULAS: ReadonlySet<string> = new Set(['SN1', 'SN2', 'SNi', 'E1', 'E2', 'E1cb']);
+const MINUS = '−';
+
+/** One character of the text: its script, and whether `finishText` may still change it. */
+interface Cell {
+  ch: string;
+  script: Script | undefined;
+  /** False for an explicit character or one that already has a script (T4: never changed). */
+  free: boolean;
+}
+
+const isDigit = (c: string): boolean => c >= '0' && c <= '9';
+const isLetter = (c: string): boolean => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+const isBracket = (c: string): boolean => c === '(' || c === ')' || c === '[' || c === ']';
+const isClosing = (c: string): boolean => c === ')' || c === ']';
+const isTokenChar = (c: string): boolean => isLetter(c) || isDigit(c) || isBracket(c);
+const isSign = (c: string): boolean => c === '+' || c === '-' || c === MINUS;
+const isShortcutPayload = (c: string): boolean => isDigit(c) || isSign(c);
+
+/** Sets `script` on the cell and fixes it; a hyphen in a superscript is the true minus. */
+function setScript(cell: Cell, script: Script): void {
+  cell.script = script;
+  cell.free = false;
+  if (script === 'sup' && cell.ch === '-') cell.ch = MINUS;
+}
+
+/** T4 step 1: `->` becomes `→`. */
+function arrows(cells: Cell[]): Cell[] {
+  const out: Cell[] = [];
+  for (let i = 0; i < cells.length; i += 1) {
+    const a = cells[i];
+    const b = cells[i + 1];
+    if (a?.free === true && b?.free === true && a.ch === '-' && b.ch === '>') {
+      out.push({ ch: '→', script: undefined, free: true });
+      i += 1;
+    } else if (a !== undefined) out.push(a);
+  }
+  return out;
+}
+
+/** The index of the first free `}` after `from`, if every cell up to it is free; else -1. */
+function closingBrace(cells: readonly Cell[], from: number): number {
+  for (let i = from; i < cells.length; i += 1) {
+    const c = cells[i];
+    if (c?.free !== true) return -1;
+    if (c.ch === '}') return i;
+  }
+  return -1;
+}
+
+/** T4 step 2: `^{…}`, `_{…}`, and `^` / `_` before a run of digits and signs. Markers go. */
+function shortcuts(cells: Cell[]): Cell[] {
+  const out: Cell[] = [];
+  let i = 0;
+  while (i < cells.length) {
+    const here = cells[i];
+    const marker = here?.free === true && (here.ch === '^' || here.ch === '_') ? here.ch : null;
+    if (marker === null) {
+      if (here !== undefined) out.push(here);
+      i += 1;
+      continue;
+    }
+    const script: Script = marker === '^' ? 'sup' : 'sub';
+    const next = cells[i + 1];
+    let end = -1;
+    let from = -1;
+    if (next?.free === true && next.ch === '{') {
+      const close = closingBrace(cells, i + 2);
+      if (close !== -1) {
+        from = i + 2;
+        end = close;
+      }
+    } else {
+      let j = i + 1;
+      while (cells[j]?.free === true && isShortcutPayload(cells[j]?.ch ?? '')) j += 1;
+      if (j > i + 1) {
+        from = i + 1;
+        end = j;
+      }
+    }
+    if (end === -1) {
+      out.push(here as Cell);
+      i += 1;
+      continue;
+    }
+    for (let k = from; k < end; k += 1) {
+      const cell = cells[k];
+      if (cell !== undefined) {
+        setScript(cell, script);
+        out.push(cell);
+      }
+    }
+    // Past the closing brace when there was one.
+    i = next?.ch === '{' && next.free ? end + 1 : end;
+  }
+  return out;
+}
+
+/** True when every group of letters of `token` is a sequence of element symbols. */
+function isFormula(token: string): boolean {
+  if (isDigit(token.charAt(0)) || NOT_FORMULAS.has(token)) return false;
+  const groups = token.split(/[^A-Za-z]+/).filter((g) => g.length > 0);
+  if (groups.length === 0) return false;
+  return groups.every((g) => {
+    const symbols = g.match(/[A-Z][a-z]*/g);
+    // A group that starts lower case would leave characters outside every symbol.
+    return (
+      symbols !== null &&
+      symbols.join('') === g &&
+      symbols.every((s) => s.length <= 2 && ELEMENTS.has(s))
+    );
+  });
+}
+
+/** T4 step 3: subscripts and a trailing charge in each formula token. */
+function formulas(cells: Cell[]): void {
+  let i = 0;
+  while (i < cells.length) {
+    if (!isTokenChar(cells[i]?.ch ?? '')) {
+      i += 1;
+      continue;
+    }
+    let end = i;
+    while (end < cells.length && isTokenChar(cells[end]?.ch ?? '')) end += 1;
+    const token = cells
+      .slice(i, end)
+      .map((c) => c.ch)
+      .join('');
+    if (isFormula(token)) {
+      for (let k = i; k < end; k += 1) {
+        const cell = cells[k];
+        const before = cells[k - 1]?.ch ?? '';
+        if (cell?.free === true && isDigit(cell.ch) && (isLetter(before) || isClosing(before))) {
+          setScript(cell, 'sub');
+        } else if (cell?.free === true && isDigit(cell.ch) && cells[k - 1]?.script === 'sub') {
+          // The rest of a digit run that starts after a letter.
+          setScript(cell, 'sub');
+        }
+      }
+      const last = cells[end - 1]?.ch ?? '';
+      const sign = cells[end];
+      const after = cells[end + 1]?.ch ?? '';
+      if (
+        sign?.free === true &&
+        isSign(sign.ch) &&
+        (isLetter(last) || isClosing(last)) &&
+        !isTokenChar(after)
+      ) {
+        setScript(sign, 'sup');
+      }
+    }
+    i = end;
+  }
+}
+
+/**
+ * T4: the runs a text is stored with. Explicit characters (and any that already carry a script)
+ * stay as they are; in the rest `->` becomes `→`, `^` / `_` shortcuts become scripts, and formula
+ * tokens get subscript digits and a superscript charge. `bold` / `italic` come from the object.
+ * Pure; formatting its own output again changes nothing.
+ */
+export function finishText(
+  runs: readonly EditRun[],
+  style: { readonly bold?: boolean; readonly italic?: boolean },
+): TextRun[] {
+  const cells: Cell[] = runs.flatMap((r) =>
+    [...r.text].map((ch): Cell => ({
+      ch,
+      script: r.script,
+      free: r.explicit !== true && r.script === undefined,
+    })),
+  );
+  const done = shortcuts(arrows(cells));
+  formulas(done);
+  const out: TextRun[] = [];
+  const flags = {
+    ...(style.bold === true ? { bold: true as const } : {}),
+    ...(style.italic === true ? { italic: true as const } : {}),
+  };
+  for (const cell of done) {
+    const last = out.at(-1);
+    if (last !== undefined && last.script === cell.script) {
+      out[out.length - 1] = { ...last, text: last.text + cell.ch };
+    } else {
+      out.push({
+        text: cell.ch,
+        ...(cell.script === undefined ? {} : { script: cell.script }),
+        ...flags,
+      });
+    }
+  }
+  return out;
 }

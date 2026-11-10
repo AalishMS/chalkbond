@@ -985,6 +985,9 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
      `−` (`H3O+`, `OH-`). Never formulas: `SN1`, `SN2`, `SNi`, `E1`, `E2`, `E1cb`, and tokens
      starting with a digit (`25`, `2nd`). Tokens are found over the whole text (explicit
      characters included), but only non-explicit characters change.
+     Clarified in E26: a character that already has a script is never changed either (so the
+     formatter is idempotent); a sign counts as a charge only when no letter or digit follows it
+     (`NaOH+HCl` is left alone); a sign after a digit is not a charge (type `NH4^+`, `Fe^2+`).
   4. Adjacent runs with equal script/bold/italic merge; bold/italic come from the object.
   `fromStored(runs)` inverts the storage form (all explicit). `labelDisplayRuns(text)` is the
   display-only formatter of L1.

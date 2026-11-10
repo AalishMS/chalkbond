@@ -117,7 +117,7 @@ Everything else is sequential: each phase builds on the previous one.
 
 ### Phase 5: reaction tools
 - [x] E25: Arrow, Plus and Curved-arrow tools
-- [ ] E26: `finishText` formatter (pure)
+- [x] E26: `finishText` formatter (pure)
 - [ ] E27: Text tool and WYSIWYG text editor
 - [ ] E28: Conditions and Tidy reaction
 - [ ] E29: Reaction text in the name field

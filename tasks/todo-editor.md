@@ -791,8 +791,8 @@ bold/italic from the object.
 "2" in `CO2` stays plain; `fromStored` round trip. `chem-text.prop.test.ts`: T4 properties a–c.
 
 **Acceptance criteria:**
-- [ ] Every example above produces the expected runs
-- [ ] Properties a–c pass at the default run count; never produces `⇌`
+- [x] Every example above produces the expected runs
+- [x] Properties a–c pass at the default run count; never produces `⇌`
 
 **Verification:** `npm test -- src/renderer/editor/model`
 
