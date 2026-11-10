@@ -101,6 +101,74 @@ describe('perceive', () => {
     expect(p.warnings).toEqual([]);
   });
 
+  // Review of Checkpoint G: OCL only moves an H with one bond to a non-H atom; an H with two
+  // bonds stays put, which used to break the adapter's index maps and throw.
+  it.each([
+    [
+      'H–C–H–O',
+      ['H', 'C', 'H', 'O'],
+      [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+      ],
+    ],
+    ['H–H', ['H', 'H'], [[0, 1]]],
+    [
+      'C–H–C with a lone H',
+      ['C', 'H', 'C', 'H'],
+      [
+        [0, 1],
+        [1, 2],
+      ],
+    ],
+  ] as [string, AtomSpec[], BondSpec[]][])(
+    'drawn H in unusual bonding (%s) gives over-valence warnings, never throws',
+    (_, atoms, bonds) => {
+      const m = mol(atoms, bonds);
+      const p = perceive(m.doc);
+      expect(p.fragments.length).toBeGreaterThan(0);
+      for (const id of m.atoms) expect(p.atoms[id]).toBeDefined();
+    },
+  );
+
+  it('H bonded to two atoms is over-valence', () => {
+    const m = mol(
+      ['H', 'C', 'H', 'O'],
+      [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+      ],
+    );
+    const p = perceive(m.doc);
+    expect(p.atoms[m.atoms[2]!]!.valence).toBe('over');
+    expect(p.warnings.map((w) => w.code)).toContain('over-valence');
+  });
+
+  // Review of Checkpoint G: the formula must use the same H count as AtomInfo.
+  it.each([
+    ['C', 3, 'CH3', 15.035],
+    ['C', 0, 'C', 12.011],
+    ['N', 4, 'H4N', 18.039],
+    ['O', 1, 'HO', 17.007],
+  ] as const)('explicitH is honoured by formula and MW: %s with %i H', (el, h, hill, mw) => {
+    const m = mol([{ element: el, explicitH: h }]);
+    const p = perceive(m.doc);
+    expect(p.atoms[m.atoms[0]!]!.implicitH).toBe(h);
+    const f = p.fragments[0]!.formula;
+    expect(f.hill).toBe(hill);
+    expect(f.mw).toBeCloseTo(mw, 2);
+  });
+
+  it('a fixed H count OCL cannot hold (bare N⁺) still drives formula and both masses', () => {
+    const m = mol([{ element: 'N', charge: 1, explicitH: 0 }]);
+    const f = perceive(m.doc).fragments[0]!.formula;
+    expect(f.counts).toEqual({ N: 1 });
+    expect(f.mw).toBeCloseTo(14.007, 3);
+    expect(f.exactMass).toBeCloseTo(14.003074, 5);
+  });
+
   it('pseudo-atom: symbol counted, no H, mw null', () => {
     const r = mol(['C', 'R'], [[0, 1]]);
     const p = perceive(r.doc);

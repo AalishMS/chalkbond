@@ -178,4 +178,25 @@ describe('openchemlib facts found while building the adapter', () => {
     expect(m.getAllAtoms()).toBe(1);
     expect(m.getMolecularFormula().formula).toBe('H');
   });
+
+  it('moves only H with one bond to a non-H atom last; an H with two bonds stays (by swapping)', () => {
+    const m = new Molecule(4, 3);
+    [1, 6, 1, 8].forEach((no, i) => m.setAtomX(m.addAtom(no), i));
+    m.addBond(0, 1);
+    m.addBond(1, 2);
+    m.addBond(2, 3);
+    m.ensureHelperArrays(Molecule.cHelperNeighbours);
+    expect([0, 1, 2, 3].map((k) => m.getAtomX(k))).toEqual([3, 1, 2, 0]);
+  });
+
+  it('makes a carbon a carbene at abnormal valence 2, and a later valence keeps the radical', () => {
+    const m = new Molecule(1, 1);
+    const c = m.addAtom(6);
+    m.setAtomAbnormalValence(c, 2);
+    expect(m.getAtomRadical(c)).not.toBe(0);
+    m.setAtomAbnormalValence(c, 3);
+    m.ensureHelperArrays(Molecule.cHelperNeighbours);
+    expect(m.getAtomRadical(c)).not.toBe(0);
+    expect(m.getImplicitHydrogens(c)).toBe(1);
+  });
 });

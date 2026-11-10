@@ -52,10 +52,11 @@ export interface Mol {
 }
 
 /**
- * OCL moves "simple" hydrogen atoms (H, no isotope/charge/radical/label) and their bonds to the
- * end of its lists during helper perception (verified). `buildMol` puts them last itself and
- * keeps the caller → OCL index maps here, so callers' indexes stay valid. `null` = identity
- * (molecules OCL created itself, read in OCL's own order).
+ * OCL moves hydrogen atoms it can treat as implicit (plain H with one bond to a non-H atom) and
+ * their bonds to the end of its lists during helper perception, by swapping. Which H qualify is
+ * OCL's call (an H with two bonds or bonded to H stays), so `buildMol` does not predict it: it
+ * reads the final order back and keeps caller → OCL index maps here, so callers' indexes stay
+ * valid. `null` = identity (molecules OCL created itself, read in OCL's own order).
  */
 interface Handle {
   readonly m: Molecule;
@@ -68,83 +69,107 @@ const unwrap = (mol: Mol): Handle => mol as unknown as Handle;
 const own = (m: Molecule): Mol => wrap({ m, atomAt: null, bondAt: null });
 
 const RADICAL_TO_OCL = [0, Molecule.cAtomRadicalStateD, Molecule.cAtomRadicalStateT] as const;
-const MAX_ABNORMAL_VALENCE = 15;
+const MAX_ABNORMAL_VALENCE = 14;
 
-const isSimpleHydrogen = (a: MolAtom): boolean =>
+const isPlainHydrogen = (a: MolAtom): boolean =>
   a.atomicNo === 1 && a.mass === 0 && a.charge === 0 && a.radical === 0 && a.customLabel === null;
 
-/** Puts the items `last` picks after the others (stable); returns item index → new position. */
-function positions(n: number, last: (i: number) => boolean): number[] {
-  const order = [...Array(n).keys()].sort((p, q) => Number(last(p)) - Number(last(q)) || p - q);
-  const at = new Array<number>(n);
-  order.forEach((item, k) => (at[item] = k));
-  return at;
-}
-
-/** Builds an OCL molecule. Callers keep their atom and bond indexes (see `Handle`). */
+/**
+ * Builds an OCL molecule. Callers keep their atom and bond indexes (see `Handle`): each atom's
+ * x coordinate first holds its caller index as a tag, OCL reorders, the tags give the map, then
+ * the real coordinates are set.
+ */
 export function buildMol(spec: MolSpec): Mol {
-  const simple = spec.atoms.map(isSimpleHydrogen);
-  const atomAt = positions(spec.atoms.length, (i) => simple[i] === true);
-  const bondAt = positions(spec.bonds.length, (b) => {
-    const bond = spec.bonds[b] as MolBond;
-    return simple[bond.a1] === true || simple[bond.a2] === true;
-  });
-  const atomOf = new Array<number>(spec.atoms.length);
-  atomAt.forEach((k, i) => (atomOf[k] = i));
-  const bondOf = new Array<number>(spec.bonds.length);
-  bondAt.forEach((k, b) => (bondOf[k] = b));
-
-  const m = new Molecule(Math.max(spec.atoms.length, 1), Math.max(spec.bonds.length, 1));
-  for (const i of atomOf) {
+  const nAtoms = spec.atoms.length;
+  const nBonds = spec.bonds.length;
+  const m = new Molecule(Math.max(nAtoms, 1), Math.max(nBonds, 1));
+  // Plain H go last up front, so the common case needs no swaps (any order works, see above).
+  const order = [...Array(nAtoms).keys()].sort(
+    (p, q) =>
+      Number(isPlainHydrogen(spec.atoms[p] as MolAtom)) -
+        Number(isPlainHydrogen(spec.atoms[q] as MolAtom)) || p - q,
+  );
+  const added = new Array<number>(nAtoms);
+  for (const i of order) {
     const atom = spec.atoms[i] as MolSpec['atoms'][number];
     const k = m.addAtom(atom.atomicNo);
-    m.setAtomX(k, atom.x);
+    added[i] = k;
+    m.setAtomX(k, i);
     m.setAtomY(k, atom.y);
     if (atom.charge !== 0) m.setAtomCharge(k, atom.charge);
     if (atom.mass !== 0) m.setAtomMass(k, atom.mass);
     if (atom.radical !== 0) m.setAtomRadical(k, RADICAL_TO_OCL[atom.radical]);
     if (atom.customLabel !== null) m.setAtomCustomLabel(k, atom.customLabel);
   }
-  for (const b of bondOf) {
-    const bond = spec.bonds[b] as MolBond;
-    const k = m.addBond(atomAt[bond.a1] as number, atomAt[bond.a2] as number);
+  for (const bond of spec.bonds) {
+    const k = m.addBond(added[bond.a1] as number, added[bond.a2] as number);
     m.setBondType(k, bondTypeToOcl(bond.kind));
   }
+
+  m.ensureHelperArrays(Molecule.cHelperNeighbours); // OCL reorders here
+  const atomAt = atomMap(m, nAtoms);
   spec.atoms.forEach((atom, i) => {
     if (atom.hCount !== undefined) fixHydrogens(m, atomAt[i] as number, atom.hCount);
   });
   m.ensureHelperArrays(Molecule.cHelperRings);
-  spec.atoms.forEach((atom, i) => {
-    const k = atomAt[i] as number;
-    if (m.getAtomicNo(k) !== atom.atomicNo || m.getAtomX(k) !== atom.x) {
-      throw new Error('openchemlib reordered atoms unexpectedly');
-    }
-  });
+  const finalAt = atomMap(m, nAtoms);
+  if (finalAt.some((k, i) => k !== atomAt[i])) {
+    throw new Error('openchemlib reordered atoms unexpectedly');
+  }
+  const bondAt = bondMap(m, spec, atomAt);
+
+  spec.atoms.forEach((atom, i) => m.setAtomX(atomAt[i] as number, atom.x));
+  m.invalidateHelperArrays(Molecule.cHelperBitsStereo);
   return wrap({ m, atomAt, bondAt });
+}
+
+/** Caller atom index → OCL index, from the x-coordinate tags. */
+function atomMap(m: Molecule, n: number): number[] {
+  const at = new Array<number>(n);
+  for (let k = 0; k < n; k++) at[m.getAtomX(k)] = k;
+  return at;
+}
+
+/** Caller bond index → OCL index, by endpoints (doc-model allows one bond per atom pair). */
+function bondMap(m: Molecule, spec: MolSpec, atomAt: readonly number[]): number[] {
+  const n = spec.atoms.length;
+  const key = (p: number, q: number): number => Math.min(p, q) * n + Math.max(p, q);
+  const ocl = new Map<number, number>();
+  for (let k = 0; k < m.getAllBonds(); k++)
+    ocl.set(key(m.getBondAtom(0, k), m.getBondAtom(1, k)), k);
+  return spec.bonds.map(
+    (b) => ocl.get(key(atomAt[b.a1] as number, atomAt[b.a2] as number)) as number,
+  );
 }
 
 /**
  * Makes OCL give atom `i` exactly `target` implicit hydrogens by choosing its abnormal valence
- * (OCL's H count rises monotonically with it). Left at OCL's default when that already matches,
- * so SMILES output carries no needless brackets. If no value reaches `target` (e.g. an isolated
- * N⁺ with no H), the closest one is kept and readMol reports what OCL actually did.
+ * (OCL's H count rises with it). Left at OCL's default when that already matches, so SMILES
+ * output carries no needless brackets. Setting a carbon's valence to 2 also makes it a carbene
+ * (radical state), which later values do not undo, so the radical is restored after each try.
+ * If no value reaches `target` (e.g. an isolated N⁺ with no H), the closest one is kept and
+ * readMol reports what OCL actually did.
  */
 function fixHydrogens(m: Molecule, i: number, target: number): void {
-  m.ensureHelperArrays(Molecule.cHelperNeighbours);
   if (m.getImplicitHydrogens(i) === target) return;
+  const radical = m.getAtomRadical(i);
+  const tryValence = (v: number): number => {
+    m.setAtomAbnormalValence(i, v);
+    m.setAtomRadical(i, radical);
+    m.ensureHelperArrays(Molecule.cHelperNeighbours);
+    return m.getImplicitHydrogens(i);
+  };
   let best = -1;
   let bestDiff = Infinity;
   for (let v = 0; v <= MAX_ABNORMAL_VALENCE; v++) {
-    m.setAtomAbnormalValence(i, v);
-    m.ensureHelperArrays(Molecule.cHelperNeighbours);
-    const diff = Math.abs(m.getImplicitHydrogens(i) - target);
+    const diff = Math.abs(tryValence(v) - target);
     if (diff < bestDiff) {
       best = v;
       bestDiff = diff;
       if (diff === 0) break;
     }
   }
-  m.setAtomAbnormalValence(i, best);
+  tryValence(best);
 }
 
 function bondTypeToOcl(kind: MolBondKind): number {

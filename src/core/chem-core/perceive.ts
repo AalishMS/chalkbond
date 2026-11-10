@@ -27,13 +27,18 @@ export function perceiveFragment(doc: Doc, atoms: readonly AtomId[]): FragmentRe
   const built = buildMolecule(doc, atoms, { stereo: false });
   const data = readMol(built.mol);
 
+  // H per molecule atom: OCL's, except a drawn atom's fixed `explicitH`, which wins even where
+  // OCL cannot hold it (e.g. a bare N⁺), so AtomInfo, formula and masses always agree.
+  const hydrogens = data.atoms.map((a) => a.implicitH);
   const atomInfo = new Map<AtomId, AtomInfo>();
   for (const id of atoms) {
     const index = built.atomIndex.get(id) as number;
     const ocl = data.atoms[index];
     const labelled = built.kinds.get(id) !== 'element';
+    const fixed = labelled ? undefined : doc.atoms[id]?.explicitH;
+    if (fixed !== undefined) hydrogens[index] = fixed;
     atomInfo.set(id, {
-      implicitH: labelled ? 0 : (doc.atoms[id]?.explicitH ?? ocl?.implicitH ?? 0),
+      implicitH: labelled ? 0 : (hydrogens[index] ?? 0),
       aromatic: !labelled && ocl?.aromatic === true,
       valence: built.over.has(id) ? 'over' : 'ok',
     });
@@ -47,24 +52,29 @@ export function perceiveFragment(doc: Doc, atoms: readonly AtomId[]): FragmentRe
   let charge = 0;
   let pseudo = false;
   let mw = 0;
-  for (const a of data.atoms) {
+  let extraH = 0; // fixed H beyond OCL's count (corrects OCL's exact mass)
+  data.atoms.forEach((a, index) => {
+    const h = hydrogens[index] ?? 0;
+    extraH += h - a.implicitH;
     const symbol = atomSymbol(a.atomicNo, a.mass, a.customLabel);
     counts[symbol] = (counts[symbol] ?? 0) + 1;
-    if (a.implicitH > 0) counts['H'] = (counts['H'] ?? 0) + a.implicitH;
+    if (h > 0) counts['H'] = (counts['H'] ?? 0) + h;
     charge += a.charge;
     if (a.atomicNo === 0) pseudo = true;
-    else mw += averageWeight(a.atomicNo, a.mass) + a.implicitH * HYDROGEN;
-  }
+    else mw += averageWeight(a.atomicNo, a.mass) + h * HYDROGEN;
+  });
   const formula = makeFormula(
     counts,
     charge,
     pseudo ? null : mw,
-    pseudo ? null : molFormula(built.mol).absoluteWeight,
+    pseudo ? null : molFormula(built.mol).absoluteWeight + extraH * HYDROGEN_EXACT,
   );
   return { atoms, atomInfo, bondInfo, formula, warnings: built.warnings };
 }
 
 const HYDROGEN = STANDARD_ATOMIC_WEIGHTS['H'] as number;
+/** Monoisotopic mass of ¹H (AME2020). */
+const HYDROGEN_EXACT = 1.00782503223;
 
 /** Average atomic weight: chem-core's IUPAC table, else OCL's; isotopes take OCL's mass. */
 function averageWeight(atomicNo: number, mass: number): number {
