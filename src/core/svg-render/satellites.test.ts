@@ -63,8 +63,8 @@ describe('layoutSatellites', () => {
     expect(layout({ element: 'N', charge: 1 }, [unit(0)], true, 2)).toBeNull();
   });
 
-  it('a vertex charge is text at N of the point: its box is tangent, `satelliteGap` above it', () => {
-    const out = layout({ charge: 1 }, [unit(0)])!;
+  it('a lone vertex charge is text at N of the point: its box is tangent, `satelliteGap` above it', () => {
+    const out = layout({ charge: 1 }, [])!;
     const t = texts(out.svg)[0]!;
     expect(t.size).toBeCloseTo(70, 6);
     const w = (ADVANCE_REGULAR[0x2b]! * 70) / 1000;

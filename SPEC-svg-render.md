@@ -282,7 +282,11 @@ text (superscript at the upper right) except as the next rule says.
   nearest bond, farthest first, ties N, S, E, W; then NE, NW, SE, SW.
 - Lone pairs and radical dots, no bonds: N, S, the cardinal opposite the H part, the remaining
   cardinal, then the diagonals (a bare skeleton vertex: N, S, E, W).
-- Text (partial charge, vertex charge, number): N, NE, NW, S, SE, SW, E, W.
+- Text (partial charge, number): N, NE, NW, S, SE, SW, E, W. The formal charge of a skeleton
+  vertex takes, among the slots that are not blocked or taken, the one with the greatest angular
+  distance from the nearest bond (ties N, NE, E, SE, S, SW, W, NW), so it never sits in the notch
+  between two bonds (if its ink would touch an earlier satellite it slides outward along the
+  slot in steps of `satelliteGap`, up to four, before the next slot is tried).
 
 Each satellite takes the first slot in its list that is not blocked, not already taken and whose
 ink does not touch another glyph of the label (H part, subscript, charge sign), the charge sign,

@@ -190,8 +190,8 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
    ≤ 15 user actions using name insert + arrow + Tidy reaction, ending perfectly aligned.
 4. Copy → paste into PowerPoint/Word 2021 on Windows yields an image that stays sharp at 400%
    zoom (vector SVG where Office accepts it from the clipboard, otherwise a high-resolution PNG
-   — to be confirmed on Office 2021 during `clipboard-export`), transparent background, tight
-   bounds.
+   — to be confirmed on Office 2021 during `clipboard-export`), transparent background, bounds
+   that contain all ink (exact for non-text, bounded slack around text).
 5. Export PNG (default 300 dpi, transparent), SVG, PDF; output matches on-screen rendering.
 6. Formula and MW for a reference set of ≥ 30 compounds match PubChem values (MW to 0.01).
 7. Every edit is undoable/redoable; save → open round-trip is lossless.

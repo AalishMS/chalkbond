@@ -227,13 +227,29 @@ describe('satellites of bonded atoms', () => {
     expect(right.slots).toEqual(['E']);
   });
 
-  it('carbanion on a vertex: the lone pair opposite the bonds, the charge sign above', () => {
+  it('carbanion on a vertex: the lone pair opposite the bonds, the charge sign at SE, not in the notch', () => {
     const l = lay({ atom: { charge: -1, lonePairs: 1 }, bonds: [210, 330], vertex: true });
-    expect(l.slots).toEqual(['S', 'N']);
+    expect(l.slots).toEqual(['S', 'SE']);
     expectPairAt(l, 0, 'S');
     expect(l.sats!.svg).toContain('−');
     const box = l.sats!.boxes[1] as Rect;
-    near(POS.y - (box.y + box.h), GAP);
+    // Slid out along the diagonal in whole gaps until it clears the pair's dots.
+    near(box.x - POS.x, box.y - POS.y);
+    const steps = (box.x - POS.x) / (GAP * Math.SQRT1_2);
+    near(steps, Math.round(steps));
+    expect(steps).toBeGreaterThanOrEqual(1);
+    const pair = l.sats!.rects[0] as Rect[];
+    for (const d of pair) {
+      expect(
+        box.x < d.x + d.w && d.x < box.x + box.w && box.y < d.y + d.h && d.y < box.y + box.h,
+      ).toBe(false);
+    }
+  });
+
+  it('a vertex charge takes the free slot farthest from any bond, ties N, NE, E, SE, S, SW, W, NW', () => {
+    expect(lay({ atom: { charge: 1 }, vertex: true }).slots).toEqual(['N']);
+    expect(lay({ atom: { charge: 1 }, bonds: [0], vertex: true }).slots).toEqual(['W']);
+    expect(lay({ atom: { charge: 1 }, bonds: [90, 270], vertex: true }).slots).toEqual(['E']);
   });
 
   it('a bond blocks a slot only when strictly closer than 45 degrees', () => {

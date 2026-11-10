@@ -20,6 +20,8 @@ const BLOCK_ANGLE = Math.PI / 4 - 1e-9;
 /** Most rings a satellite is pushed outward before it gives up and keeps the last position. */
 const MAX_RINGS = 40;
 const BISECTIONS = 60;
+/** A vertex's formal charge is slid outward in steps of `satelliteGap`, up to this many. */
+const SLIDES = 4;
 
 export type Slot = 'N' | 'E' | 'S' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 
@@ -75,6 +77,8 @@ const CARDINALS: readonly Slot[] = ['N', 'S', 'E', 'W'];
 const DIAGONALS: readonly Slot[] = ['NE', 'NW', 'SE', 'SW'];
 /** Partial charge, formal charge of a vertex and atom number. */
 const TEXT_ORDER: readonly Slot[] = ['N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W'];
+/** Tie-break order of a skeleton vertex's formal charge. */
+const CHARGE_ORDER: readonly Slot[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
 export interface SatelliteInput {
   readonly atom: Atom;
@@ -121,7 +125,7 @@ export interface SatelliteLayout {
 type Satellite =
   | { readonly kind: 'pair' }
   | { readonly kind: 'dot' }
-  | { readonly kind: 'text'; readonly text: string };
+  | { readonly kind: 'text'; readonly text: string; readonly vertexCharge?: true };
 
 /** Order of assignment: lone pairs, radical dots, vertex charge, partial charge, number. */
 function satelliteList(atom: Atom, vertex: boolean): Satellite[] {
@@ -130,7 +134,11 @@ function satelliteList(atom: Atom, vertex: boolean): Satellite[] {
   for (let i = 0; i < atom.radical; i++) out.push({ kind: 'dot' });
   if (vertex && atom.charge !== 0) {
     const magnitude = Math.abs(atom.charge) > 1 ? String(Math.abs(atom.charge)) : '';
-    out.push({ kind: 'text', text: `${magnitude}${atom.charge > 0 ? '+' : MINUS}` });
+    out.push({
+      kind: 'text',
+      text: `${magnitude}${atom.charge > 0 ? '+' : MINUS}`,
+      vertexCharge: true,
+    });
   }
   if (atom.partialCharge !== undefined) {
     out.push({ kind: 'text', text: atom.partialCharge.replace('-', MINUS) });
@@ -201,6 +209,12 @@ export function layoutSatellites(
     return ['N', 'S', ...third, ...DIAGONALS];
   };
 
+  /** A vertex's formal charge: the slot farthest from every bond, ties in `CHARGE_ORDER`. */
+  const chargePreference = (): Slot[] => {
+    const far = (s: Slot): number => Math.min(nearestBond(s), Math.PI);
+    return [...CHARGE_ORDER].sort((a, b) => far(b) - far(a));
+  };
+
   // --- shapes ----------------------------------------------------------------------------------
   const dotRect = (c: Point): Rect => ({ x: c.x - r, y: c.y - r, w: 2 * r, h: 2 * r });
   const dotSvg = (c: Point): string => el('circle', { cx: c.x, cy: c.y, r, fill, stroke: 'none' });
@@ -230,7 +244,7 @@ export function layoutSatellites(
   };
 
   /** Satellite `sat` in `slot`, `ring` slot depths further out than its home. */
-  const place = (sat: Satellite, slot: Slot, ring: number): Placed => {
+  const place = (sat: Satellite, slot: Slot, ring: number, slid = 0): Placed => {
     const g = SLOTS[slot];
     const a = g.anchor(ref);
     if (sat.kind !== 'text') {
@@ -252,7 +266,7 @@ export function layoutSatellites(
     const m = measureRuns([{ text: sat.text }], style, textSize);
     const w = m.width;
     const depth = Math.abs(g.out.x) * w + Math.abs(g.out.y) * textCap;
-    const d = gap + ring * (depth + gap);
+    const d = gap * (1 + slid) + ring * (depth + gap);
     const p = { x: a.x + g.out.x * d, y: a.y + g.out.y * d };
     // The text box's nearest corner (or edge midpoint) is the point; it extends away from the atom.
     const sx = Math.sign(g.out.x);
@@ -321,16 +335,18 @@ export function layoutSatellites(
   const notices: UnmeasuredGlyphNotice[] = [];
 
   for (const sat of list) {
-    const preference = sat.kind === 'text' ? TEXT_ORDER : dotPreference();
+    const preference =
+      sat.kind !== 'text' ? dotPreference() : sat.vertexCharge ? chargePreference() : TEXT_ORDER;
     const movesCharge = sat.kind !== 'text';
+    const slide = sat.kind === 'text' && sat.vertexCharge === true ? SLIDES : 0;
     let chosen: { slot: Slot; ring: number; placed: Placed } | null = null;
     for (const slot of preference) {
       if (blocked(slot) || taken.has(slot)) continue;
-      const placed = place(sat, slot, 0);
-      if (clear(placed, slot, movesCharge)) {
-        chosen = { slot, ring: 0, placed };
-        break;
+      for (let slid = 0; slid <= slide && !chosen; slid++) {
+        const placed = place(sat, slot, 0, slid);
+        if (clear(placed, slot, movesCharge)) chosen = { slot, ring: 0, placed };
       }
+      if (chosen) break;
     }
     if (!chosen) {
       // Every slot is blocked, taken or crowded: the first usable preference, one slot depth
