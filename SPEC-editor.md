@@ -140,6 +140,8 @@ resolutions of the draft's open questions and of problems found in review.
 | R38 | The viewport follows the document's preset whenever a change alters the style's bond length: the preset switch, undo and redo all call `switchPreset(viewport, old, new)` (zoom × old / new bond length, drawing centre kept). The viewport is still not part of history; `load` keeps its own default-zoom rule. Replaces "the zoom stays" in PR1 | Undoing a Handout switch left the Slides style at the Handout zoom, so the drawing looked 2.8 times too big | 2026-11-10 |
 | R39 | A structure inserted through the name field (single names, chips, reaction parts; N2, N3) with exactly two atoms and one bond is rotated about its centre so the bond is horizontal, first atom on the left; done in the editor's insert path, not in chem-core | `2 H2 + O2 -> 2 H2O` drew H-H and O=O at the zig-zag angle, wrong beside "H₂O" | 2026-11-10 |
 | R40 | E32 measured every performance budget with room to spare on the development machine (worst e2e p95 3.5 ms against 16 ms), so the drag fast path and the keyed patch are enough and `createRenderer` is not requested (R19 stays as the rule for a future miss). A frame sample is script + forced style and layout on the main thread, one event per frame; raster and vsync are not in it | Measure before asking; the owner's laptop run is on the Windows checklist | 2026-11-10 |
+| R41 | The preset segments are 64×24 (`--preset-seg-h: 24px`), centred in the 28 px status bar: the group is 24 + 2 × 1 px padding + 2 × 1 px outline = 28 px, so its outline lies inside the bar | The mock-up's 64×20 was 4 px under the 24 px hit target of Accessibility; the status-bar controls now all meet it (zoom buttons and the warnings button are 24 high already) | 2026-11-10 |
+| R42 | `--border-control` is `#79818c` (was `#7a828e`, 2.96 : 1 on `--pressed-bg`): 3.64 on `--chrome-bg`, 3.94 on `--canvas-bg`, 3.30 on `--hover-bg`, 3.00 on `--pressed-bg`. The contrast table now lists hover and pressed; the test asserts all four | A control border must reach 3 : 1 on every background the control can have, including while pressed. The darkest step that does it keeps the field and chip borders from looking heavier | 2026-11-10 |
 
 ---
 
@@ -270,7 +272,7 @@ All values live in `tokens.css` (normative). Summary:
 | `--warning` | `--canvas-bg`, `--chrome-bg`, `--warning-bg` | 4.5 |
 | `--tooltip-fg`, `--tooltip-muted` | `--tooltip-bg` | 4.5 |
 | `--accent` | `--canvas-bg`, `--chrome-bg`, `--active-bg` | 3.0 (focus ring, indicator) |
-| `--border-control` | `--canvas-bg`, `--chrome-bg` | 3.0 (control boundary) |
+| `--border-control` | `--canvas-bg`, `--chrome-bg`, `--hover-bg`, `--pressed-bg` | 3.0 (control boundary) |
 
 `--text-disabled` is exempt (WCAG 1.4.3, disabled controls). Selected state never relies on
 colour alone: rail buttons get the 3×24 `--accent` bar at the rail's left edge; option buttons a
@@ -298,7 +300,7 @@ offset 0), only on `:focus-visible`. States per control as in `mockup.css` and s
 | Action button (icon + label, height 32, padding 0 8 0 4, gap 4) | as option | as option | as option | — | as option |
 | Undo / Redo 32×32 | transparent, `--text` | `--hover-bg` | `--pressed-bg` | — | `--text-disabled` when nothing to undo/redo or an editor is open (R7) |
 | Name field 32 high, radius 6, padding 0 8 0 32, `search` icon at x 7 | `--canvas-bg`, 1 px `--border-control`, placeholder `--text-muted` | border `--text-muted` | — | focused: 1 px border + 1 px inset, both `--accent` | not found: `--warning` border; focused + not found: 2 px `--warning` |
-| Status controls 24 high (readout 48 wide) | transparent, `--text-muted` | `--hover-bg`, `--text` | `--pressed-bg` | preset segment (64×20 inside a 1 px `--border` outline, radius 4): `--active-bg`, `--active-fg`, 600 | zoom −/+ at 25 % / 800 % |
+| Status controls 24 high (readout 48 wide) | transparent, `--text-muted` | `--hover-bg`, `--text` | `--pressed-bg` | preset segment (64×24 inside a 1 px `--border` outline with 1 px padding, radius 4: the 28 px group fills the 28 px bar, the outline inside it): `--active-bg`, `--active-fg`, 600 | zoom −/+ at 25 % / 800 % |
 | Warnings button (auto width, padding 0 4) | `warning` icon + count, `--warning`, 600 | `--hover-bg` | `--pressed-bg` | — | hidden when there are no warnings |
 | Chip (empty state, "Did you mean") 28 high, pill | `--canvas-bg`, 1 px `--border-control` | `--hover-bg`, border `--text-muted` | `--pressed-bg` | — | — |
 | Dropdown row 36 high | transparent | `--hover-bg` | — | keyboard-highlighted `--active-bg` (`aria-selected`) | — |
@@ -1240,7 +1242,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
    **Proven:** `e2e/editor-a11y.spec.ts` (keyboard-only walkthrough, every tool and option by arrows and Enter, selection actions, Esc from the name dropdown and both editors, rings on every button, names against tooltips, `role` and `aria-*` wiring), `e2e/editor-keyboard.spec.ts` (tab order, roving stops), shots `E33/keyboard-walkthrough-*.png`, `E33/focus-*.png`. Not literally proven for every K1 row: Ctrl+Shift+L is asserted to run without changing a clean structure; its geometry is covered by reducer tests only.
 6. Contrast pairs pass (`tests/tooling/editor-tokens.test.ts`); lifted `tokens.css` and
    `icons.svg` equal the mock-up files; hit targets ≥ 24 px (`e2e/editor-layout.spec.ts` boxes).
-   **Proven:** `tests/tooling/editor-tokens.test.ts` (spec pairs plus every colour pair `editor.css` uses), `e2e/editor-a11y.spec.ts` (hit targets). One deviation, open for the owner: the two preset segments are 64 x 20 (mock-up, Control states) against 24 px in Accessibility; the test pins 64 x 20.
+   **Proven:** `tests/tooling/editor-tokens.test.ts` (spec pairs plus every colour pair `editor.css` uses), `e2e/editor-a11y.spec.ts` (hit targets). The preset segments are 64 x 24 (R41), so every status-bar control meets 24 px; `--border-control` reaches 3 : 1 on rest, hover and pressed (R42).
 7. The window matches the approved mock-ups: `e2e/editor-layout.spec.ts` measures the region and
    control boxes in "Layout" at 1280×800 and 960×640 (±1 px), and the named shots of every UI task
    exist for side-by-side review with `out/mockups/*.png`.

@@ -298,7 +298,7 @@ async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
   near(w - (redo.x + redo.width), 12);
   await expect(page.getByTestId('undo')).toHaveAttribute('aria-disabled', 'true');
 
-  // Status bar controls: 24 high, readout 48 wide, preset segments 64x20, 2 px apart.
+  // Status bar controls: 24 high, readout 48 wide, preset segments 64x24, 2 px apart.
   const ids = ['zoom-out', 'zoom-reset', 'zoom-in', 'zoom-fit'] as const;
   const zoom: Box[] = [];
   for (const id of ids) zoom.push(await box(page.getByTestId(id)));
@@ -314,12 +314,17 @@ async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
   const handout = await box(page.getByTestId('preset-handout'));
   for (const b of [slides, handout]) {
     near(b.width, 64);
-    near(b.height, 20);
+    near(b.height, 24);
   }
   near(handout.x - (slides.x + slides.width), 0);
   const group = await box(page.getByRole('radiogroup', { name: 'Style' }));
-  near(group.height, 24);
+  near(group.height, 28);
   near(group.width, 132);
+  // Centred in the 28 px bar, the outline inside it.
+  const bar = await box(page.getByTestId('statusbar'));
+  near(group.y + group.height / 2, bar.y + 1 + 14);
+  expect(group.y).toBeGreaterThanOrEqual(bar.y + 1 - 0.5);
+  expect(group.y + group.height).toBeLessThanOrEqual(bar.y + bar.height + 0.5);
   near((zoom[0] as Box).x - (group.x + group.width), 16);
   await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByTestId('zoom-reset')).toHaveText('150%');

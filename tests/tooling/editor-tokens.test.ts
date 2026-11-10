@@ -50,7 +50,7 @@ const PAIRS: [string[], string[], number][] = [
   [['--warning'], ['--canvas-bg', '--chrome-bg', '--warning-bg'], 4.5],
   [['--tooltip-fg', '--tooltip-muted'], ['--tooltip-bg'], 4.5],
   [['--accent'], ['--canvas-bg', '--chrome-bg', '--active-bg'], 3],
-  [['--border-control'], ['--canvas-bg', '--chrome-bg'], 3],
+  [['--border-control'], ['--canvas-bg', '--chrome-bg', '--hover-bg', '--pressed-bg'], 3],
   // The text editor on the canvas (editor.css .textbox-edit) is black on white, like canvas text.
   [['--ink'], ['--canvas-bg'], 4.5],
 ];
@@ -180,10 +180,8 @@ describe('every colour pair used in editor.css is checked', () => {
     }
   });
 
-  it('--border-control is at least 3 : 1 on the bars and the canvas, and on hover', () => {
-    // Pressed (2.96 : 1) is transient and the border's outer neighbour is the canvas; the spec
-    // asks for the bars and the canvas only.
-    for (const bg of ['--chrome-bg', '--canvas-bg', '--hover-bg']) {
+  it('--border-control is at least 3 : 1 on the bars, the canvas, hover and pressed', () => {
+    for (const bg of ['--chrome-bg', '--canvas-bg', '--hover-bg', '--pressed-bg']) {
       expect(
         contrast(t.get('--border-control') as string, t.get(bg) as string),
         bg,

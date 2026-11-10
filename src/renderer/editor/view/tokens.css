@@ -8,7 +8,7 @@
   --chrome-bg: #f5f6f8;
   --canvas-bg: #ffffff;
   --border: #dadde3;
-  --border-control: #7a828e;
+  --border-control: #79818c;
   --text: #1f2328;
   --text-muted: #5b6270;
   --text-disabled: #9aa1ad;
@@ -88,7 +88,7 @@
   --namefield-max: 360px;
   --zoom-readout-w: 48px;
   --preset-seg-w: 64px;
-  --preset-seg-h: 20px;
+  --preset-seg-h: 24px;
   --radius-xs: 3px;
   --empty-art-size: 96px;
   --tooltip-max-w: 240px;

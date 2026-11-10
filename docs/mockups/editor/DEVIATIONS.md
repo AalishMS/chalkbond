@@ -74,5 +74,12 @@ device scale 1; `--serve` serves the folder on 127.0.0.1, since Chromium blocks
 | Atom options "·" between elements and marks; selection actions in one run | 1 × 20 px `--border` separator; selection actions grouped Clean up / Kekulé / Tidy │ flips (│ Expand, see iteration 2) | Grouping instead of one long row of equal-weight buttons |
 | (tokens) | added `--radius-pill` 14 px, `--tooltip-kbd-border`, `--tooltip-muted`, overlay alphas, layout sizes | Values the spec states in prose, named once |
 
+### Accessibility corrections (2026-11-10)
+
+| Spec | Mock-up | Why |
+|---|---|---|
+| Preset segments 64×20 (iteration 1 mock-up) | 64×24 (`--preset-seg-h: 24px`); the group is 28 px (1 px padding, 1 px outline), filling the 28 px status bar | Status-bar controls must be at least 24 px (SPEC-editor R41) |
+| `--border-control` `#7a828e` (2.96 : 1 on `--pressed-bg`) | `#79818c`: 3.64 chrome, 3.94 canvas, 3.30 hover, 3.00 pressed | Control borders need 3 : 1 on every state background (SPEC-editor R42) |
+
 Not UI: the mouse pointers drawn on screens 02 and 08 only show where the pointer is in a still
 picture.

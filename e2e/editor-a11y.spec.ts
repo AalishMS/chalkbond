@@ -470,12 +470,11 @@ test('every pointer target is at least 24 x 24 CSS px, at the sizes the spec lis
         .filter((b) => b.w > 0 && b.h > 0),
     );
     expect(boxes.length).toBeGreaterThan(20);
-    // The two preset segments are 64 x 20 in the approved mock-up (SPEC-editor "Control states"),
-    // 4 px under the 24 px of "Accessibility": reported to the owner, pinned here so a change
-    // to either number is noticed.
+    // The two preset segments are 64 x 24 (SPEC-editor "Control states", Decisions 2026-11-10),
+    // so every status-bar control meets the 24 px of "Accessibility".
     const presets = boxes.filter((b) => b.id.startsWith('preset-'));
     expect(presets).toHaveLength(2);
-    for (const b of presets) expect([b.w, b.h], b.id).toEqual([64, 20]);
+    for (const b of presets) expect([b.w, b.h], b.id).toEqual([64, 24]);
     for (const b of boxes.filter((x) => !x.id.startsWith('preset-'))) {
       expect(b.w, `${b.id} width`).toBeGreaterThanOrEqual(24);
       expect(b.h, `${b.id} height`).toBeGreaterThanOrEqual(24);
