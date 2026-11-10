@@ -257,7 +257,7 @@ export function createEditorController(options: EditorOptions): EditorController
           break;
         }
         case 'paste':
-          store.dispatch({ type: 'paste', at: pointerAt });
+          store.dispatch({ type: 'paste', at: null });
           break;
         case 'duplicate':
           store.dispatch({ type: 'duplicate' });

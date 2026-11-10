@@ -8,6 +8,7 @@ import {
   scaling,
   transformItems,
   translation,
+  type Doc,
   type Selection,
   type SubDoc,
 } from '@core/doc-model';
@@ -155,10 +156,24 @@ export function canPaste(state: EditorState): boolean {
   return state.gesture === null && state.editing === null && state.clipboard !== null;
 }
 
-/** CB1 Copy: the extracted selection goes to the in-app clipboard; the document is untouched. */
+/** The centre of the selection's bounds (BLU): where `extract` centred the fragment. */
+function sourceCentre(doc: Doc, selection: Selection): Point {
+  const box = bounds(doc, selection);
+  return box === null ? { x: 0, y: 0 } : { x: box.x + box.w / 2, y: box.y + box.h / 2 };
+}
+
+/**
+ * CB1 Copy: the extracted selection goes to the in-app clipboard, remembering where it came from
+ * (the next paste lands 1.0 BLU right and down of it); the document is untouched.
+ */
 export function copySelection(state: EditorState): EditorState {
   if (!canCopy(state)) return state;
-  return { ...state, clipboard: extract(current(state.history), state.selection) };
+  const doc = current(state.history);
+  return {
+    ...state,
+    clipboard: extract(doc, state.selection),
+    clipboardSource: { centre: sourceCentre(doc, state.selection), next: 1 },
+  };
 }
 
 /** CB1 Cut: Copy, then delete with the orphan rule (E2), one "Cut" commit. */
@@ -169,7 +184,11 @@ export function cutSelection(
   if (!canCopy(state)) return state;
   const sel = state.selection;
   const copied = copySelection(state);
-  const done = commit(copied, {
+  // After a cut the first paste puts the fragment back where it was.
+  const source = copied.clipboardSource;
+  const afterCut =
+    source === null ? copied : { ...copied, clipboardSource: { ...source, next: 0 } };
+  const done = commit(afterCut, {
     type: 'commit',
     label: 'Cut',
     recipe: (doc) => deleteWithOrphans(doc, sel),
@@ -194,9 +213,10 @@ function afterInsert(before: EditorState, done: EditorState, derive: Derive): Ed
 }
 
 /**
- * CB1 Paste: `insert` at the pointer (`at`, canvas px) or, with the pointer off the canvas, at the
- * canvas centre; one "Paste" commit, the pasted items selected, then V5. `sub` is a fragment the
- * host read from the system clipboard; without it the in-app clipboard is pasted.
+ * CB1 Paste of the in-app clipboard: with `at === null` the copy lands at its source shifted by
+ * (n, n) BLU, n rising by 1 with every paste; with a point (`at`, canvas px) the copy is centred
+ * there. A fragment `sub` from the host has no source: it goes to `at`, else the canvas centre.
+ * One "Paste" commit, the pasted items selected, then V5.
  */
 export function pasteFragment(
   state: EditorState,
@@ -209,18 +229,22 @@ export function pasteFragment(
   if (fragment === null || state.gesture !== null || state.editing !== null) return state;
   const { scene } = derive.committed(current(state.history));
   const size = state.viewport.size;
-  const target = screenToBlu(
-    state.viewport,
-    at ?? { x: size.w / 2, y: size.h / 2 },
-    scene.style.bondLength,
-  );
+  const source = sub === undefined && at === null ? state.clipboardSource : null;
+  const target =
+    source === null
+      ? screenToBlu(state.viewport, at ?? { x: size.w / 2, y: size.h / 2 }, scene.style.bondLength)
+      : { x: source.centre.x + source.next, y: source.centre.y + source.next };
   const done = commit(state, {
     type: 'commit',
     label: 'Paste',
     recipe: (doc) => insert(doc, fragment, target)[0],
     selection: 'inserted',
   });
-  return afterInsert(state, done, derive);
+  const next =
+    source === null || done.history === state.history
+      ? done
+      : { ...done, clipboardSource: { ...source, next: source.next + 1 } };
+  return afterInsert(state, next, derive);
 }
 
 /** CB1 Duplicate: a copy of the selection 1.0 BLU right and down of it, selected, then V5. */

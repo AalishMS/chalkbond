@@ -42,6 +42,7 @@ test('E18 clipboard: copy and paste at the pointer, duplicate', async () => {
     await page.mouse.move(820, 520);
     await page.waitForTimeout(100);
     await page.keyboard.press('Control+v');
+    await page.keyboard.press('Control+v');
     await page.mouse.move(820, 700);
     await shot(page, 'E18', 'pasted');
     await page.keyboard.press('Control+d');

@@ -89,13 +89,46 @@ describe('CB1 paste', () => {
     expect(docOf({ ...s, history: undo(s.history) })).toEqual(docOf(s0));
   });
 
-  it('without a pointer position it goes to the centre of the canvas', () => {
+  it('with no point, lands exactly +1.0 BLU right and down of the source', () => {
     const s0 = run(ethanol(), { type: 'copy' });
+    const source = centreOf(docOf(s0), Object.keys(docOf(s0).atoms) as AtomId[]);
     const s = run(s0, { type: 'paste', at: null });
     const c = centreOf(docOf(s), added(docOf(s0), docOf(s)));
-    const want = screenToBlu(s.viewport, { x: 600, y: 350 }, BL);
-    expect(c.x).toBeCloseTo(want.x, 9);
-    expect(c.y).toBeCloseTo(want.y, 9);
+    expect(c.x).toBeCloseTo(source.x + 1, 9);
+    expect(c.y).toBeCloseTo(source.y + 1, 9);
+    expect(undoLabel(s.history)).toBe('Paste');
+    expect(s.tool).toBe('select');
+  });
+
+  it('repeated pastes cascade by another (1, 1) each; a new copy resets the cascade', () => {
+    let s = run(ethanol(), { type: 'copy' });
+    const source = centreOf(docOf(s), Object.keys(docOf(s).atoms) as AtomId[]);
+    for (const n of [1, 2, 3]) {
+      const before = docOf(s);
+      s = run(s, { type: 'paste', at: null });
+      const c = centreOf(docOf(s), added(before, docOf(s)));
+      expect(c.x).toBeCloseTo(source.x + n, 9);
+      expect(c.y).toBeCloseTo(source.y + n, 9);
+    }
+    // The last paste is selected; copy it again: the next paste is +1 from that copy.
+    s = run(s, { type: 'copy' });
+    const again = centreOf(docOf(s), [...s.selection.atoms]);
+    const before = docOf(s);
+    s = run(s, { type: 'paste', at: null });
+    const c = centreOf(docOf(s), added(before, docOf(s)));
+    expect(c.x).toBeCloseTo(again.x + 1, 9);
+    expect(c.y).toBeCloseTo(again.y + 1, 9);
+  });
+
+  it('an explicit point centres the copy there and does not advance the cascade', () => {
+    let s = run(ethanol(), { type: 'copy' });
+    const source = centreOf(docOf(s), Object.keys(docOf(s).atoms) as AtomId[]);
+    s = run(s, { type: 'paste', at: { x: 900, y: 500 } });
+    const before = docOf(s);
+    s = run(s, { type: 'paste', at: null });
+    const c = centreOf(docOf(s), added(before, docOf(s)));
+    expect(c.x).toBeCloseTo(source.x + 1, 9);
+    expect(c.y).toBeCloseTo(source.y + 1, 9);
   });
 
   it('the paste keeps the clipboard: pasting twice gives two copies', () => {
@@ -139,6 +172,19 @@ describe('CB1 cut', () => {
     expect(s.selection).toBe(EMPTY_SELECTION);
     const back = run(s, { type: 'paste', at: { x: 600, y: 350 } });
     expect(Object.keys(docOf(back).atoms)).toHaveLength(3);
+  });
+
+  it('after a cut the first paste lands at the original position, later ones cascade', () => {
+    const s0 = ethanol();
+    const source = centreOf(docOf(s0), Object.keys(docOf(s0).atoms) as AtomId[]);
+    let s = run(s0, { type: 'cut' });
+    for (const n of [0, 1]) {
+      const before = docOf(s);
+      s = run(s, { type: 'paste', at: null });
+      const c = centreOf(docOf(s), added(before, docOf(s)));
+      expect(c.x).toBeCloseTo(source.x + n, 9);
+      expect(c.y).toBeCloseTo(source.y + n, 9);
+    }
   });
 
   it('does nothing with nothing selected', () => {

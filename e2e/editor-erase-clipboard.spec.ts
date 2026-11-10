@@ -75,29 +75,43 @@ test('Erase: a click erases the bond under the pointer', async () => {
   }
 });
 
-test('Ctrl+C, move the pointer, Ctrl+V: a second ethanol at the pointer, selected', async () => {
+test('Ctrl+C, Ctrl+V, Ctrl+V: three ethanols, each 80 px right and down of the last, last selected', async () => {
   const { app, page } = await openApp();
   try {
     await insertName(page, 'ethanol');
     await page.getByTestId('canvas').focus();
     const before = await readDocument(page);
     await page.keyboard.press('Control+c');
+    // The pointer rests far from the molecule: it plays no part.
     await page.mouse.move(900, 600);
     await page.waitForTimeout(100);
     await page.keyboard.press('Control+v');
+    await page.keyboard.press('Control+v');
     const after = await readDocument(page);
-    const fresh = Object.keys(after.atoms).filter((id) => !(id in before.atoms));
-    expect(fresh).toHaveLength(3);
-    // The new atoms are centred on the pointer.
-    const pts = await Promise.all(fresh.map((id) => canvasPoint(page, atomPoint(after, id))));
-    const cx = (Math.min(...pts.map((p) => p.x)) + Math.max(...pts.map((p) => p.x))) / 2;
-    const cy = (Math.min(...pts.map((p) => p.y)) + Math.max(...pts.map((p) => p.y))) / 2;
-    expect(Math.abs(cx - 900)).toBeLessThan(1.5);
-    expect(Math.abs(cy - 600)).toBeLessThan(1.5);
-    // The paste is what is selected: two bonds are banded.
+    expect(Object.keys(after.atoms)).toHaveLength(9);
+    const sorted = (doc: Doc): string[] =>
+      Object.keys(doc.atoms).sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+    // The view may pan to reveal the copies: measure the original again on the same view.
+    const origin = await Promise.all(
+      sorted(before).map((id) => canvasPoint(page, atomPoint(after, id))),
+    );
+    const fresh = sorted(after).filter((id) => !(id in before.atoms));
+    expect(fresh).toHaveLength(6);
+    for (const [copy, k] of [
+      [fresh.slice(0, 3), 1],
+      [fresh.slice(3), 2],
+    ] as const) {
+      const pts = await Promise.all(copy.map((id) => canvasPoint(page, atomPoint(after, id))));
+      pts.forEach((p, i) => {
+        expect(Math.abs(p.x - ((origin[i] as Pt).x + 80 * k))).toBeLessThan(0.5);
+        expect(Math.abs(p.y - ((origin[i] as Pt).y + 80 * k))).toBeLessThan(0.5);
+      });
+    }
+    // The last paste is what is selected: two bonds are banded.
     await expect(page.getByTestId('overlay-selection').locator('path')).toHaveCount(2);
-    expect(fragments(after)).toHaveLength(2);
-    // One undo step takes it away.
+    expect(fragments(after)).toHaveLength(3);
+    // One undo step per paste.
+    await page.keyboard.press('Control+z');
     await page.keyboard.press('Control+z');
     expect(await readDocument(page)).toEqual(before);
   } finally {

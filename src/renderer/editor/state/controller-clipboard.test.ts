@@ -71,35 +71,21 @@ describe('clipboard commands (CB1)', () => {
     expect(atomCount(c)).toBe(3);
   });
 
-  it('paste lands at the pointer the view reported', () => {
+  it('paste lands 1 BLU right and down of the source, wherever the pointer is', () => {
     const c = make();
     selectAll(c);
+    const xs0 = Object.values(c.getDoc().atoms).map((a) => a.x);
     c.run('copy');
-    const at = { x: 900, y: 500 };
-    c.setPointer(at);
+    c.setPointer({ x: 900, y: 500 });
     c.run('paste');
     expect(atomCount(c)).toBe(6);
     const fresh = [...c.getSelection().atoms];
     const xs = fresh.map((id) => c.getDoc().atoms[id]?.x ?? 0);
-    const centre = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const want =
-      (at.x - c.store.getState().viewport.pan.x) /
-      (c.store.getState().viewport.zoom * (4 / 3) * BL);
-    expect(centre).toBeCloseTo(want, 6);
-  });
-
-  it('with the pointer off the canvas, paste goes to the canvas centre', () => {
-    const c = make();
-    selectAll(c);
-    c.run('copy');
-    c.setPointer({ x: 900, y: 500 });
-    c.setPointer(null);
+    const mid = (v: number[]): number => (Math.min(...v) + Math.max(...v)) / 2;
+    expect(mid(xs)).toBeCloseTo(mid(xs0) + 1, 9);
     c.run('paste');
-    const fresh = [...c.getSelection().atoms];
-    const xs = fresh.map((id) => c.getDoc().atoms[id]?.x ?? 0);
-    const centre = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const v = c.store.getState().viewport;
-    expect(bluToScreen(v, { x: centre, y: 0 }, BL).x).toBeCloseTo(600, 6);
+    const again = [...c.getSelection().atoms].map((id) => c.getDoc().atoms[id]?.x ?? 0);
+    expect(mid(again)).toBeCloseTo(mid(xs0) + 2, 9);
   });
 
   it('paste-sub pastes a host fragment and can always run', () => {

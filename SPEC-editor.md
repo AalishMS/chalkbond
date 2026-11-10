@@ -124,6 +124,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R22 | After a name or scheme insert the whole drawing is framed (V7): zoom `min(current, fit)` and the drawing's ink box centred. Supersedes Decision 8's reveal for inserts | The third molecule ended at the right edge with the left half of the canvas empty | 2026-11-10 |
 | R23 | Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z act on the document while the name field is focused and empty; with text in it they are the field's text undo | After typing a name and Enter the field is empty and focused, and undoing the insert is the natural next key | 2026-11-10 |
 | R24 | Shift is additive everywhere in Select: Shift+click on empty canvas keeps the selection (it no longer clears it); Shift+drag from empty canvas draws a marquee whose result is added to the selection; Shift+click on an item toggles it | One modifier, one meaning: a slipped Shift never throws a careful selection away | 2026-11-10 |
+| R25 | Ctrl+V and Ctrl+D place the copy at the source's position + (1.0, 1.0) BLU; further pastes cascade by another (1.0, 1.0); a cut's first paste lands in place; an explicit point (context menu) centres the copy there (rule CB1) | A paste at the pointer usually landed on the original, as if nothing had happened | 2026-11-10 |
 
 ---
 
@@ -1009,12 +1010,19 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 
 ### Clipboard (in-app)
 
-- **CB1** Copy: `extract(doc, selection)` into `state.clipboard`, then `onCopy?.(sub, doc,
-  selection)`. Cut = copy + delete (E2), "Cut". Paste: `insert(doc, clipboard, at)` with `at` =
-  the pointer position if the pointer is over the canvas, else the canvas centre; "Paste"; the
-  pasted items become the selection; then V5. Duplicate: `insert` of `extract` at the selection's
-  centre + (1.0, 1.0) BLU, "Duplicate". `paste-sub` / `insert-text` commands follow the same
-  placement (text via N2/N3).
+- **CB1** Copy: `extract(doc, selection)` into `state.clipboard`, remembering the centre of the
+  copied selection, then `onCopy?.(sub, doc, selection)`. Cut = copy + delete (E2), "Cut".
+  Paste (Ctrl+V): `insert(doc, clipboard, at)` with `at` = the source's centre shifted by
+  **+1.0 BLU in x and +1.0 BLU in y** (right and down; 80 px at the default zoom), as in
+  PowerPoint, wherever the pointer is. Each further paste of the same clipboard is shifted another
+  (+1.0, +1.0) from the previous one; a new copy or cut resets this. After a cut the first paste
+  lands at the original position (no shift), later ones cascade from there. A paste with an
+  explicit point (`paste {at}`, the context-menu path) centres the copy's bounds on that point
+  and does not advance the cascade. "Paste"; the pasted items become the selection, the tool
+  becomes Select; then V5. Duplicate (Ctrl+D): `insert` of `extract` at the selection's centre +
+  (1.0, 1.0) BLU, "Duplicate" (the copy is the selection, so repeating cascades). `paste-sub` /
+  `insert-text` commands follow the same placement (text via N2/N3); a `paste-sub` fragment has no
+  source and goes to the pointer, else the canvas centre.
 
 ### Context menu
 

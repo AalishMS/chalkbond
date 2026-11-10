@@ -119,6 +119,11 @@ export interface EditorState {
   noticeSeq: number;
   /** What Copy or Cut last took (CB1); null until something is copied. */
   clipboard: SubDoc | null;
+  /**
+   * Where the clipboard came from (CB1): the centre of the copied selection (BLU) and the shift,
+   * in BLU along x and y, of the next paste: 1 after a copy, 0 after a cut, +1 after each paste.
+   */
+  clipboardSource: { readonly centre: Point; readonly next: number } | null;
   spaceHeld: boolean;
 }
 
@@ -142,6 +147,7 @@ export function initialState(doc: Doc, clock: () => string): EditorState {
     notice: null,
     noticeSeq: 0,
     clipboard: null,
+    clipboardSource: null,
     spaceHeld: false,
   };
 }
