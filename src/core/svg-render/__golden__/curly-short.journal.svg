@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="214.922pt" height="47.17pt" viewBox="0 0 214.922 47.17">
+<g transform="translate(24.081 27.07)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M-1.296 0L-1.296 -9.236" stroke="#000000" stroke-width="0.6"/>
+<path d="M1.296 0L1.296 -9.236" stroke="#000000" stroke-width="0.6"/>
+<path d="M0 0L12.471 7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M0 0L-6.997 4.04" stroke="#000000" stroke-width="0.6"/>
+<path d="M43.2 0L30.729 7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M43.2 0L55.671 7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M43.2 0L43.2 -9.236" stroke="#000000" stroke-width="0.6"/>
+<path d="M85.504 0L87.296 0" stroke="#000000" stroke-width="0.6"/>
+<path d="M115.2 0L127.671 -7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M127.671 -7.2L134.668 -3.16" stroke="#000000" stroke-width="0.6"/>
+<path d="M127.671 -7.2L127.671 -21.6" stroke="#000000" stroke-width="0.6"/>
+<path d="M165.6 0L165.6 9.236" stroke="#000000" stroke-width="0.6"/>
+<path d="M165.6 0L178.071 -7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M178.071 -7.2L178.071 -16.436" stroke="#000000" stroke-width="0.6"/>
+<path d="M165.6 0L153.129 -7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M178.071 -7.2L190.542 0" stroke="#000000" stroke-width="0.6"/>
+<text x="-3.89" y="-10.82" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="-23.581" y="10.78" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="-16.361" y="10.78" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="38.48" y="-10.82" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<text x="74.48" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<text x="88.88" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<text x="136.252" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="144.032" y="-0.42" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">−</text>
+<text x="161.99" y="17.98" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="173.351" y="-18.02" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<path d="M0 -7.2C-8.621 -7.2 -11.287 -10.636 -7.997 -12.761" stroke="#000000" stroke-width="0.6"/>
+<polygon points="-5.042,-13.904 -8.464,-13.97 -7.529,-11.552" fill="#000000" stroke="none"/>
+<path d="M43.2 -7.2C35.278 -7.2 32.385 -10.101 34.52 -12.22" stroke="#000000" stroke-width="0.6"/>
+<polygon points="37.328,-13.687 33.92,-13.369 35.12,-11.072" fill="#000000" stroke="none"/>
+<path d="M86.4 0C86.4 8.85 82.78 11.424 80.673 7.723" stroke="#000000" stroke-width="0.6"/>
+<polygon points="79.629,4.732 80.673,7.723 79.45,8.15" fill="#000000" stroke="none"/>
+<path d="M86.4 0C86.4 -8.85 90.02 -11.424 92.127 -7.723" stroke="#000000" stroke-width="0.6"/>
+<polygon points="93.171,-4.732 92.127,-7.723 93.35,-8.15" fill="#000000" stroke="none"/>
+<path d="M136.585 4.732C132.481 8.621 129.613 5.921 132.477 -0.773" stroke="#000000" stroke-width="0.6"/>
+<polygon points="133.906,-3.6 131.32,-1.357 133.633,-0.188" fill="#000000" stroke="none"/>
+<path d="M165.6 7.2C172.043 10.92 177.562 3.428 174.192 -1.483" stroke="#000000" stroke-width="0.6"/>
+<polygon points="171.835,-3.6 173.326,-0.519 175.058,-2.447" fill="#000000" stroke="none"/>
+</g>
+</svg>

@@ -1,0 +1,403 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0,
+        "y": -1,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": 0.866025,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a4": {
+        "id": "a4",
+        "x": -0.866025,
+        "y": 0.5,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a9": {
+        "id": "a9",
+        "x": 3,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a10": {
+        "id": "a10",
+        "x": 2.133975,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a11": {
+        "id": "a11",
+        "x": 3.866025,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a12": {
+        "id": "a12",
+        "x": 3,
+        "y": -1,
+        "charge": 0,
+        "element": "Cl",
+        "radical": 0
+      },
+      "a17": {
+        "id": "a17",
+        "x": 5.5,
+        "y": 0,
+        "charge": 0,
+        "element": "Cl",
+        "radical": 0
+      },
+      "a18": {
+        "id": "a18",
+        "x": 6.5,
+        "y": 0,
+        "charge": 0,
+        "element": "Cl",
+        "radical": 0
+      },
+      "a22": {
+        "id": "a22",
+        "x": 8,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a23": {
+        "id": "a23",
+        "x": 8.866025,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a24": {
+        "id": "a24",
+        "x": 9.73205,
+        "y": 0,
+        "charge": -1,
+        "element": "O",
+        "radical": 0
+      },
+      "a25": {
+        "id": "a25",
+        "x": 8.866025,
+        "y": -1.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a30": {
+        "id": "a30",
+        "x": 11.5,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a31": {
+        "id": "a31",
+        "x": 11.5,
+        "y": 1,
+        "charge": 0,
+        "element": "H",
+        "radical": 0
+      },
+      "a32": {
+        "id": "a32",
+        "x": 12.366025,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a33": {
+        "id": "a33",
+        "x": 12.366025,
+        "y": -1.5,
+        "charge": 0,
+        "element": "Cl",
+        "radical": 0
+      },
+      "a34": {
+        "id": "a34",
+        "x": 10.633975,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a35": {
+        "id": "a35",
+        "x": 13.23205,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b5": {
+        "id": "b5",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 2,
+        "stereo": "none"
+      },
+      "b6": {
+        "id": "b6",
+        "a1": "a1",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b7": {
+        "id": "b7",
+        "a1": "a1",
+        "a2": "a4",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b13": {
+        "id": "b13",
+        "a1": "a9",
+        "a2": "a10",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b14": {
+        "id": "b14",
+        "a1": "a9",
+        "a2": "a11",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b15": {
+        "id": "b15",
+        "a1": "a9",
+        "a2": "a12",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b19": {
+        "id": "b19",
+        "a1": "a17",
+        "a2": "a18",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b26": {
+        "id": "b26",
+        "a1": "a22",
+        "a2": "a23",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b27": {
+        "id": "b27",
+        "a1": "a23",
+        "a2": "a24",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b28": {
+        "id": "b28",
+        "a1": "a23",
+        "a2": "a25",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b36": {
+        "id": "b36",
+        "a1": "a30",
+        "a2": "a31",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b37": {
+        "id": "b37",
+        "a1": "a30",
+        "a2": "a32",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b38": {
+        "id": "b38",
+        "a1": "a32",
+        "a2": "a33",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b39": {
+        "id": "b39",
+        "a1": "a30",
+        "a2": "a34",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b40": {
+        "id": "b40",
+        "a1": "a32",
+        "a2": "a35",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-10T00:00:00.000Z",
+      "modified": "2026-11-10T00:00:00.000Z",
+      "title": "curly-short"
+    },
+    "nextId": 42,
+    "objects": {
+      "o8": {
+        "id": "o8",
+        "type": "curved-arrow",
+        "bend": 2.6,
+        "from": {
+          "kind": "bond",
+          "bond": "b5",
+          "t": 0.5
+        },
+        "head": "full",
+        "to": {
+          "kind": "atom",
+          "atom": "a2"
+        }
+      },
+      "o16": {
+        "id": "o16",
+        "type": "curved-arrow",
+        "bend": 2.6,
+        "from": {
+          "kind": "bond",
+          "bond": "b15",
+          "t": 0.5
+        },
+        "head": "full",
+        "to": {
+          "kind": "atom",
+          "atom": "a12"
+        }
+      },
+      "o20": {
+        "id": "o20",
+        "type": "curved-arrow",
+        "bend": 2.6,
+        "from": {
+          "kind": "bond",
+          "bond": "b19",
+          "t": 0.5
+        },
+        "head": "fishhook",
+        "to": {
+          "kind": "atom",
+          "atom": "a17"
+        }
+      },
+      "o21": {
+        "id": "o21",
+        "type": "curved-arrow",
+        "bend": 2.6,
+        "from": {
+          "kind": "bond",
+          "bond": "b19",
+          "t": 0.5
+        },
+        "head": "fishhook",
+        "to": {
+          "kind": "atom",
+          "atom": "a18"
+        }
+      },
+      "o29": {
+        "id": "o29",
+        "type": "curved-arrow",
+        "bend": 2.6,
+        "from": {
+          "kind": "atom",
+          "atom": "a24"
+        },
+        "head": "full",
+        "to": {
+          "kind": "bond",
+          "bond": "b27",
+          "t": 0.5
+        }
+      },
+      "o41": {
+        "id": "o41",
+        "type": "curved-arrow",
+        "bend": -1.0392,
+        "from": {
+          "kind": "bond",
+          "bond": "b36",
+          "t": 0.5
+        },
+        "head": "full",
+        "to": {
+          "kind": "bond",
+          "bond": "b37",
+          "t": 0.5
+        }
+      }
+    },
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o8",
+      "o16",
+      "o20",
+      "o21",
+      "o29",
+      "o41"
+    ]
+  }
+}

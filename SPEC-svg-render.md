@@ -136,6 +136,18 @@ Resolved during review (they replace the draft's open questions); binding until 
     perception; the editor spec may request it after profiling); the `ink`, `style` and
     `background` options; `contentBounds` (use `render(...).bounds`); a public `measureRuns`
     (internal; the editor reads text extents from `Scene.extents`).
+13. **Short curved arrows (2026-11-10):** above `|bend| 0.5` a curved arrow is a symmetric cubic
+    whose end handles turn from the quadratic's towards square to the chord (reached at
+    `|bend| 1`), instead of a quadratic whose control point runs away. A tall quadratic is a
+    narrow V whose ends run back along its own chord: over a bond-to-own-atom chord (0.5 BLU) the
+    label clip ate the far leg and left a stub with a head pointing away from the atom. With
+    square handles the arc leaves its source sideways and arrives at its target head-on, so the
+    label clip cuts a leg that already points at the label's centre. Up to `|bend| 0.5` the curve
+    and its markup are unchanged (every stored document drawn before keeps its bytes), and the
+    curve's `t = 0.5` point is `chord midpoint + bend × chord / 2 × n` for every bend, so the
+    editor's bend handle stays on the drawn apex. `curveControls` is exported so the editor's
+    hit-testing and hover band follow the drawn curve, and `isLabelled` so the editor's default
+    bend knows which ends are clipped out of a label (`SPEC-editor.md` R37).
 
 ## Data Model
 
@@ -199,6 +211,14 @@ render(doc: Doc, opts?: RenderOptions): Scene
 toSvg(scene: Scene, opts?: SvgOptions): SvgDocument
 renderSvg(doc: Doc, opts?: RenderOptions & SvgOptions): SvgDocument
     // = toSvg(render(doc, opts), opts). Whole document, or a subset via `only`.
+
+// geometry shared with the editor (Decision 13)
+curveControls(from: Point, to: Point, bend: number): [Point, Point, Point, Point]
+    // the cubic control points of a curved arrow's whole (unclipped) curve between its resolved
+    // anchors, in any one unit; for |bend| ≤ 0.5 the degree-raised quadratic (same point set)
+isLabelled(atom: Atom, bondCount: number): boolean
+    // whether the atom is drawn with a text label (so curved-arrow ends are clipped out of it):
+    // element ≠ C, a custom label, an isotope, explicit H, or no bonds
 ```
 
 `render` of an empty document (or an empty subset) gives `parts: []`, `bounds: null`; `toSvg`
@@ -353,7 +373,7 @@ Text positions `at` are in BLU and become pt. Text, caption, callout and bracket
 | `arrow` `resonance` | one shaft, solid triangular heads at both ends |
 | `arrow` `no-go` | a forward arrow with a cross (two lines, half-size `noGoHalf`) centred on the shaft midpoint |
 | `arrow` length | head length is clamped to `0.5 × length` (`0.25 ×` for resonance); `from = to` draws nothing |
-| `curved-arrow` | Quadratic Bézier from `resolveAnchor(from)` to `resolveAnchor(to)`. Control point = chord midpoint + `bend × chordLength × n`, `n` = left normal of `from→to`; `bend 0` is a straight line (positive bends bulge to the visual left). An atom anchor **without** `offset` on a labelled atom is clipped out of the label's anchor box grown by `curvedGap` (bisection, 40 fixed steps); on a skeleton vertex, and for an offset (lone pair), bond and point anchors, the end is used as given. `full`: solid triangular head at the end; the shaft stops at the head base. `fishhook`: the head is the half on the convex side (the side the curve bulges toward) only (Decision 3). The head length is clamped to `0.5 ×` the length of the clipped chord; the shaft ends where the curve is one head length from the tip; a fishhook with `bend 0` has its barb on the right of travel. An anchor that cannot be resolved (missing atom or bond, non-finite number) skips the object with a `skipped-item` notice |
+| `curved-arrow` | A curve from `resolveAnchor(from)` = p₀ to `resolveAnchor(to)` = p₃; `c` = chord `p₃ − p₀`, `n` = its left normal. `|bend| ≤ 0.5`: quadratic Bézier, control point = chord midpoint + `bend × |c| × n` (drawn `M … Q …`); `bend 0` is a straight line (positive bends bulge to the visual left). `|bend| > 0.5` (Decision 13): cubic Bézier (drawn `M … C …`) with `c₁ = p₀ + a·c + (2/3)·bend·|c|·n`, `c₂ = p₃ − a·c + (2/3)·bend·|c|·n`, `a = (1/3)·clamp(2 − 2·|bend|, 0, 1)`: at 0.5 it is the same curve as the quadratic, from 1 on its handles are square to the chord; its `t = 0.5` point is the chord midpoint + `bend × |c| / 2 × n` like the quadratic's. The shaft is the piece of the same curve (de Casteljau), the head is placed as below. An atom anchor **without** `offset` on a labelled atom is clipped out of the label's anchor box grown by `curvedGap` (bisection, 40 fixed steps); on a skeleton vertex, and for an offset (lone pair), bond and point anchors, the end is used as given. `full`: solid triangular head at the end; the shaft stops at the head base. `fishhook`: the head is the half on the convex side (the side the curve bulges toward) only (Decision 3). The head length is clamped to `0.5 ×` the length of the clipped chord; the shaft ends where the curve is one head length from the tip; a fishhook with `bend 0` has its barb on the right of travel. An anchor that cannot be resolved (missing atom or bond, non-finite number) skips the object with a `skipped-item` notice |
 | `plus` | two lines crossing at `at`, arm `plusArm` |
 | `text` | each run is its own `<text>` at an absolute x,y computed from measurement (no reliance on the renderer's inline layout); `align` places each line relative to `at.x`; the first line's cap-height box is vertically centred on `at.y`; `\n` in a run starts a new line (`lineHeight`). Runs: `sub`/`sup` at `subScale`, shifted by `subShift`/`supShift`; `bold`, `italic`; `color ?? INK`. `attachedTo` is ignored |
 | `caption` | centred horizontally on the union of the target atoms' ink extents (labels and satellites included; a bare skeleton vertex counts as its position), top edge `captionGap` below that union; multi-line allowed. Targets missing from the doc are skipped; none left → nothing drawn |
@@ -514,7 +534,9 @@ The editor owns the canvas; this module supplies the following and nothing more.
   `Ph`/`OMe`/`NO2`/`CO2H` attached on the left and on the right, `R` pseudo-atom, isotopes
   (`¹³C`, `D`), radical (1 and 2), carbanion with lone pair, HCl with δ+/δ−, atom numbers,
   coloured atoms and bonds (coloured ring circle); each arrow kind; a reaction scheme with
-  conditions text (sub/sup/bold/italic); the mechanism with `full` and `fishhook` arrows; plus
+  conditions text (sub/sup/bold/italic); the mechanism with `full` and `fishhook` arrows; the
+  short curly arrows of Decision 13 (`curly-short`: π bond → O, σ bond → Cl, homolysis
+  fishhooks, lone pair → bond, bond → adjacent bond, with the editor's default bends); plus
   signs; caption; callout; square/round/curly brackets with `corner`; shapes with fill opacity;
   3 scenes in each preset; a style-override scene; a subset scene. A test scans the inputs and
   asserts every `BondOrder`, `BondStereo`, `DoublePlacement`, `ArrowKind`, curved-arrow `head`,

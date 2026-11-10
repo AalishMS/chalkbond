@@ -1,12 +1,14 @@
 // Curved electron-pushing arrows (SPEC-svg-render.md "Objects", `curved-arrow`): a quadratic
-// Bezier between two resolved anchors, cut out of label boxes by bisection, ending in a full
-// triangular head or a fishhook (one barb). Pure geometry in pt; the caller resolves the anchors
-// and checks that they are finite.
+// Bezier (a symmetric cubic above |bend| 0.5) between two resolved anchors, cut out of label
+// boxes by bisection, ending in a full triangular head or a fishhook (one barb). Pure geometry in
+// pt; the caller resolves the anchors and checks that they are finite.
 import type { Point, Rect } from '../doc-model';
 import { halfHead, triangle } from './arrows';
 import { pathD, polygonEl, strokeEl, type Drawn } from './draw';
 import {
   add,
+  cubicAt,
+  cubicBounds,
   dist,
   growRect,
   leftNormal,
@@ -76,13 +78,110 @@ export function clipRange(
 const finite = (pts: readonly Point[]): boolean =>
   pts.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
 
+/** Up to this |bend| the curve is the quadratic; above it, the symmetric cubic (Decision 13). */
+export const QUADRATIC_MAX_BEND = 0.5;
+
 /**
- * Draws a curved arrow from `from` to `to`. The control point is the chord midpoint plus
- * `bend x chordLength x n`, `n` the left normal of `from -> to` (a positive bend bulges to the
- * visual left; 0 is a straight line). The curve is cut out of the end boxes, the shaft stops at the
- * base of the head, and the head length is at most half the cut chord. A fishhook has only the
- * barb on the convex side, the side the curve bulges toward (on the right of travel when the bend is 0). `null` when
- * nothing is drawn: no chord, nothing left after the cut, or a non-finite result.
+ * The cubic control points of a curved arrow's whole curve for `bend` over `p0 -> p3`, in any one
+ * unit: `c1 = p0 + a·chord + (2/3)·bend·|chord|·n`, `c2 = p3 - a·chord + (2/3)·bend·|chord|·n`,
+ * `n` the left normal, `a = (1/3)·clamp(2 - 2|bend|, 0, 1)`. Up to |bend| 0.5 this is the
+ * degree-raised quadratic (control `midpoint + bend·|chord|·n`); from |bend| 1 the handles are
+ * square to the chord. The `t = 0.5` point is `midpoint + bend·|chord|/2·n` for every bend.
+ */
+export function curveControls(p0: Point, p3: Point, bend: number): [Point, Point, Point, Point] {
+  const chord = sub(p3, p0);
+  const n = leftNormal(chord) ?? { x: 0, y: 0 };
+  const a = Math.min(1, Math.max(0, 2 - 2 * Math.abs(bend))) / 3;
+  const up = scale(n, (2 / 3) * bend * length(chord));
+  return [p0, add(add(p0, scale(chord, a)), up), add(sub(p3, scale(chord, a)), up), p3];
+}
+
+/** The piece `[a, b]` of the cubic `q`, again a cubic (de Casteljau, twice). */
+function cubicPiece(q: readonly [Point, Point, Point, Point], a: number, b: number): Point[] {
+  const split = (p: readonly Point[], t: number): [Point[], Point[]] => {
+    const [p0, p1, p2, p3] = p as [Point, Point, Point, Point];
+    const p01 = lerp(p0, p1, t);
+    const p12 = lerp(p1, p2, t);
+    const p23 = lerp(p2, p3, t);
+    const p012 = lerp(p01, p12, t);
+    const p123 = lerp(p12, p23, t);
+    const mid = lerp(p012, p123, t);
+    return [
+      [p0, p01, p012, mid],
+      [mid, p123, p23, p3],
+    ];
+  };
+  const right = split(q, a)[1];
+  return split(right, a < 1 ? (b - a) / (1 - a) : 0)[0];
+}
+
+/** The whole curve: a point at `t`, and the shaft from `a` to `stop` as path points. */
+interface Curve {
+  readonly at: (t: number) => Point;
+  readonly shaft: (a: number, stop: number) => { points: Point[]; d: string; box: Rect };
+}
+
+/** The quadratic of |bend| ≤ 0.5 (a straight line at 0), exactly as drawn before Decision 13. */
+function quadratic(
+  p0: Point,
+  p2: Point,
+  n: Point,
+  bend: number,
+  chordLength: number,
+): Curve | null {
+  const p1 = add(lerp(p0, p2, 0.5), scale(n, bend * chordLength));
+  if (!finite([p1])) return null;
+  const at = (t: number): Point => quadAt(p0, p1, p2, t);
+  return {
+    at,
+    shaft: (a, stopT) => {
+      const start = at(a);
+      const base = at(stopT);
+      // The part of the curve from a to stopT is again a quadratic: its control point lies on the
+      // start tangent, `(stopT - a)` of the way along the derivative.
+      const control = add(
+        start,
+        scale(add(scale(sub(p1, p0), 1 - a), scale(sub(p2, p1), a)), stopT - a),
+      );
+      if (bend === 0) {
+        return {
+          points: [start, base],
+          d: pathD([start, base], ['M']),
+          box: rectFromPoints([start, base]) as Rect,
+        };
+      }
+      return {
+        points: [start, control, base],
+        d: pathD([start, control, base], ['M', 'Q', ' ']),
+        box: quadBounds(start, control, base),
+      };
+    },
+  };
+}
+
+/** The symmetric cubic of |bend| > 0.5. */
+function cubic(p0: Point, p3: Point, bend: number): Curve | null {
+  const q = curveControls(p0, p3, bend);
+  if (!finite(q)) return null;
+  return {
+    at: (t) => cubicAt(q[0], q[1], q[2], q[3], t),
+    shaft: (a, stopT) => {
+      const points = cubicPiece(q, a, stopT);
+      const [s0, s1, s2, s3] = points as [Point, Point, Point, Point];
+      return { points, d: pathD(points, ['M', 'C', ' ', ' ']), box: cubicBounds(s0, s1, s2, s3) };
+    },
+  };
+}
+
+/**
+ * Draws a curved arrow from `from` to `to` (SPEC-svg-render.md, `curved-arrow`). Up to |bend| 0.5
+ * the curve is a quadratic whose control point is the chord midpoint plus `bend x chordLength x
+ * n`, `n` the left normal of `from -> to` (a positive bend bulges to the visual left; 0 is a
+ * straight line); above it, the cubic of `curveControls`. The curve is cut out of the end boxes,
+ * the shaft stops at the base of the head, and the head length is at most half the cut chord. A
+ * fishhook has only the barb on the convex side, the side the curve bulges toward (on the right
+ * of travel when the bend is 0). `null` when nothing is drawn: no chord, nothing left after the
+ * cut, or a non-finite result.
  */
 export function layoutCurvedArrow(
   head: 'full' | 'fishhook',
@@ -94,11 +193,12 @@ export function layoutCurvedArrow(
   const chord = sub(to.point, from.point);
   const n = leftNormal(chord);
   if (!n) return null;
-  const p0 = from.point;
-  const p2 = to.point;
-  const p1 = add(lerp(p0, p2, 0.5), scale(n, bend * length(chord)));
-  if (!finite([p1])) return null;
-  const at = (t: number): Point => quadAt(p0, p1, p2, t);
+  const curve =
+    Math.abs(bend) > QUADRATIC_MAX_BEND
+      ? cubic(from.point, to.point, bend)
+      : quadratic(from.point, to.point, n, bend, length(chord));
+  if (!curve) return null;
+  const { at } = curve;
 
   const range = clipRange(at, from.clip, to.clip);
   if (!range) return null;
@@ -121,16 +221,7 @@ export function layoutCurvedArrow(
   const base = at(stopT);
   const u = normalize(sub(tip, base));
   if (!u) return null;
-
-  // The part of the curve from a to stopT is again a quadratic: its control point lies on the
-  // start tangent, `(stopT - a)` of the way along the derivative.
-  const control = add(
-    start,
-    scale(add(scale(sub(p1, p0), 1 - a), scale(sub(p2, p1), a)), stopT - a),
-  );
-  const straight = bend === 0;
-  const shaftPoints = straight ? [start, base] : [start, control, base];
-  const d = straight ? pathD(shaftPoints, ['M']) : pathD(shaftPoints, ['M', 'Q', ' ']);
+  const shaft = curve.shaft(a, stopT);
 
   const normal = { x: u.y, y: -u.x };
   const back = sub(tip, base);
@@ -142,14 +233,11 @@ export function layoutCurvedArrow(
           back,
           scale(normal, bend > 0 ? style.arrowHeadHalfWidth : -style.arrowHeadHalfWidth),
         );
-  if (!finite([...shaftPoints, ...headPoints])) return null;
+  if (!finite([...shaft.points, ...headPoints])) return null;
 
   const half = style.lineWidth / 2;
-  const shaftBox = straight
-    ? (rectFromPoints([start, base]) as Rect)
-    : quadBounds(start, control, base);
   return {
-    svg: [strokeEl(d, INK, style), polygonEl(headPoints, INK)].join('\n'),
-    ink: rectUnion(growRect(shaftBox, half), rectFromPoints(headPoints) as Rect),
+    svg: [strokeEl(shaft.d, INK, style), polygonEl(headPoints, INK)].join('\n'),
+    ink: rectUnion(growRect(shaft.box, half), rectFromPoints(headPoints) as Rect),
   };
 }
