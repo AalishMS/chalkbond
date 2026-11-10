@@ -7,7 +7,12 @@ import type { Drawn } from './draw';
 import { rectUnion, unionAll } from './geom';
 import { svgText } from './svg-write';
 import { INK, type ResolvedStyle } from './style';
-import { OVERHANG_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import {
+  OVERHANG_EM,
+  rightInkOverhangEm,
+  measureRuns,
+  type UnmeasuredGlyphNotice,
+} from './text-measure';
 
 export type TextAlign = 'left' | 'center' | 'right';
 
@@ -89,7 +94,7 @@ export function layoutText(
         lineInk.push({
           x: x0 + seg.x - over,
           y: baseline - line.inkAscent,
-          w: seg.width + 2 * over,
+          w: seg.width + over + rightInkOverhangEm(seg.text, seg.bold) * seg.fontSize,
           h: line.inkAscent + line.inkDescent,
         });
       }

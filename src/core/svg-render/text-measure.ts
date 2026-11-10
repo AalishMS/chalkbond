@@ -24,6 +24,12 @@ export const inkAscentEm = (bold: boolean): number => (bold ? ASCENT_BOLD_EM : A
  * box. Measured against real Arial by `e2e/font-calibration.spec.ts`.
  */
 export const OVERHANG_EM = 0.05;
+/** Liberation Sans bold bars descend farther than Arial; logical layout stays unchanged. */
+export const inkDescentEm = (text: string, bold: boolean): number =>
+  bold && /[|¦]/.test(text) ? 0.225 : DESCENT_EM;
+/** Liberation Sans bold fractions overhang their advance at the right edge. */
+export const rightInkOverhangEm = (text: string, bold: boolean): number =>
+  bold && /[¼¾]/.test(text) ? 0.075 : OVERHANG_EM;
 /** Invisible in running text; the browser gives it no advance although the font has one. */
 const SOFT_HYPHEN = 0xad;
 const DESCENDING = new Set('gjpqyQ,;()[]{}|');
@@ -154,7 +160,7 @@ export function measureRuns(
       line.ascent = Math.max(line.ascent, cap * (size / fontSize) - dy);
       line.descent = Math.max(line.descent, dy + (descends ? DESCENT_EM * size : 0));
       line.inkAscent = Math.max(line.inkAscent, inkAscentEm(bold) * size - dy);
-      line.inkDescent = Math.max(line.inkDescent, DESCENT_EM * size + dy);
+      line.inkDescent = Math.max(line.inkDescent, inkDescentEm(piece, bold) * size + dy);
     });
   }
 

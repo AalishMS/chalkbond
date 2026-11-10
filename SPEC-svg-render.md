@@ -149,6 +149,10 @@ Resolved during review (they replace the draft's open questions); binding until 
     hit-testing and hover band follow the drawn curve, and `isLabelled` so the editor's default
     bend knows which ends are clipped out of a label (`SPEC-editor.md` R37).
 
+14. **Linux ink calibration (2026-11-10):** the glyph-specific ink allowances in Text
+    measurement cover installed Liberation Sans as well as Arial, without changing advances,
+    layout boxes or other glyphs' extents. Calibration tolerances and corpus stay unchanged.
+
 ## Data Model
 
 ```ts
@@ -406,8 +410,10 @@ must be known without a browser and be identical on every machine.
   the font's full ascent 0.905 em (bold: 0.925 em, Arial Bold's accented capitals rise above the
   ascent line) above and full descent 0.212 em below its own baseline, and grown 0.05 em left and
   right (side-bearing overhang: `j` reaches 0.047 em left of its origin, `f` 0.042 em beyond its
-  advance), so glyphs taller than the caps (`δ`, accents) or overshooting the baseline (round
-  letters, `δ`) cannot be clipped by the viewBox; sub/superscript shifts extend the box. The
+  advance); bold runs containing `|` or `¦` use 0.225 em ink descent, and bold runs containing
+  `¼` or `¾` use 0.075 em right overhang to include Liberation Sans ink on Linux. Advances and
+  layout boxes are unchanged. Thus glyphs taller than the caps (`δ`, accents) or overshooting
+  the baseline (round letters, `δ`) cannot be clipped by the viewBox; sub/superscript shifts extend the box. The
   calibration e2e rasterises the corpus and proves every inked pixel lies inside this box.
 - **Generator:** `scripts/build-font-metrics.mjs <regular.ttf> <bold.ttf>` — Node, no
   dependencies, ~60 lines: reads `head.unitsPerEm`, `hhea.numberOfHMetrics`, `hmtx` and the

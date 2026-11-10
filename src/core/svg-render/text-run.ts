@@ -4,7 +4,12 @@ import type { Point, Rect, TextRun } from '../doc-model';
 import { unionAll } from './geom';
 import { svgText } from './svg-write';
 import { INK, type ResolvedStyle } from './style';
-import { OVERHANG_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import {
+  OVERHANG_EM,
+  rightInkOverhangEm,
+  measureRuns,
+  type UnmeasuredGlyphNotice,
+} from './text-measure';
 
 export interface PlacedRuns {
   /** One `<text>` element per run, separated by `\n`. */
@@ -53,7 +58,7 @@ export function placeRuns(
       (m.lines[0]?.segments ?? []).map((seg) => ({
         x: origin.x + seg.x - OVERHANG_EM * seg.fontSize,
         y: origin.y - m.inkAscent,
-        w: seg.width + 2 * OVERHANG_EM * seg.fontSize,
+        w: seg.width + (OVERHANG_EM + rightInkOverhangEm(seg.text, seg.bold)) * seg.fontSize,
         h: m.inkAscent + m.inkDescent,
       })),
     ) as Rect,

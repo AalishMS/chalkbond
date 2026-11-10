@@ -9,7 +9,8 @@ import { svgText } from './svg-write';
 import type { ResolvedStyle } from './style';
 import { INK } from './style';
 import {
-  DESCENT_EM,
+  inkDescentEm,
+  rightInkOverhangEm,
   inkAscentEm,
   OVERHANG_EM,
   measureRuns,
@@ -311,8 +312,8 @@ function buildLabel(
     segments.map((seg, i) => ({
       x: segX(seg, i) - OVERHANG_EM * seg.fontSize,
       y: baseline + seg.dy - inkAscentEm(seg.bold) * seg.fontSize,
-      w: seg.width + 2 * OVERHANG_EM * seg.fontSize,
-      h: (inkAscentEm(seg.bold) + DESCENT_EM) * seg.fontSize,
+      w: seg.width + (OVERHANG_EM + rightInkOverhangEm(seg.text, seg.bold)) * seg.fontSize,
+      h: (inkAscentEm(seg.bold) + inkDescentEm(seg.text, seg.bold)) * seg.fontSize,
     })),
   ) as Rect;
   const chargeSeg = segments[chargeAt];

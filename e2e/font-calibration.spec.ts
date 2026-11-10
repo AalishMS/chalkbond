@@ -5,7 +5,8 @@
 // actualBoundingBox*) and the SVG bounding box must lie inside the box the renderer computes.
 import { expect, test } from '@playwright/test';
 import { resolveStyle } from '../src/core/svg-render/style';
-import { OVERHANG_EM, measureRuns } from '../src/core/svg-render/text-measure';
+import { measureRuns } from '../src/core/svg-render/text-measure';
+import { placeRuns } from '../src/core/svg-render/text-run';
 import { launchApp } from './launch';
 
 const FONT_SIZE = 100;
@@ -74,6 +75,11 @@ samples.push({ text: 'Hello World δ−', bold: true, italic: true });
 const style = resolveStyle({
   preset: 'slides',
   overrides: { fontSize: FONT_SIZE, fontFamily: FAMILY },
+});
+
+const boxStyle = resolveStyle({
+  preset: 'slides',
+  overrides: { fontSize: BOX_FONT_SIZE, fontFamily: FAMILY },
 });
 
 interface Measured {
@@ -183,16 +189,17 @@ test('Arial width table and text ink boxes agree with real rendering', async () 
         widthFailures.push(`${label}: table ${expected.width}, rendered ${m.length}`);
       }
 
-      // The computed ink box about the origin: [-overhang, width + overhang] x [-ascent, descent].
+      // Compare real pixels with the renderer's actual glyph-aware ink extent at the origin.
       const ink = inks[i];
       if (!ink) return;
-      const box = measureRuns(runs, style, BOX_FONT_SIZE);
-      const over = OVERHANG_EM * BOX_FONT_SIZE;
+      const placed = placeRuns(runs, boxStyle, { x: 0, y: 0 });
+      if (!placed) throw new Error(`missing text extent for ${label}`);
+      const box = placed.ink;
       const out = Math.max(
-        -over - ink.left,
-        ink.right - (box.width + over),
-        -box.inkAscent - ink.top,
-        ink.bottom - box.inkDescent,
+        box.x - ink.left,
+        ink.right - (box.x + box.w),
+        box.y - ink.top,
+        ink.bottom - (box.y + box.h),
       );
       maxOutside = Math.max(maxOutside, out);
       if (out > EPS) {
