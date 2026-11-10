@@ -7,6 +7,7 @@ const coverage = process.argv.some((a) => a === '--coverage' || a.startsWith('--
 
 const TESTS = ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'];
 const PERF = 'src/**/perf.test.ts';
+const TOOLING = 'tests/tooling/**/*.test.ts';
 
 export default defineConfig({
   resolve: {
@@ -22,7 +23,22 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: 'unit', include: TESTS, exclude: [PERF, ...configDefaults.exclude] },
+        test: { name: 'unit', include: TESTS, exclude: [PERF, TOOLING, ...configDefaults.exclude] },
+      },
+      {
+        // ESLint probes and child processes pay a cold start (config load, type-aware setup)
+        // that blew the 5 s default when 59 files ran in parallel. They run after the unit and
+        // perf groups on a quiet CPU, with a generous timeout; probe files also warm ESLint in
+        // a beforeAll so no single probe pays for it.
+        extends: true,
+        test: {
+          name: 'tooling',
+          include: [TOOLING],
+          fileParallelism: false,
+          testTimeout: 60_000,
+          hookTimeout: 120_000,
+          sequence: { groupOrder: 2 },
+        },
       },
       {
         extends: true,

@@ -1,9 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { ESLint } from 'eslint';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 // Lints in-memory source as if it lived at `filePath`, so no probe files exist in the repo.
 const eslint = new ESLint({ cwd: process.cwd() });
+
+// Warm the config load once, under the generous hook timeout, so no probe pays the cold start.
+beforeAll(async () => {
+  await eslint.lintText('export {};', { filePath: 'src/core/doc-model/warm.ts' });
+}, 120_000);
 
 async function ruleIds(filePath: string, code: string): Promise<string[]> {
   const [result] = await eslint.lintText(code, { filePath });
