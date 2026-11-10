@@ -106,7 +106,7 @@ interface Doc {
   groups:  Record<GroupId, Group>;
   nextId:  number;                 // id counter; ids are 'a12', 'b7', 'o3', 'g1' (prefix + n)
   style:   { preset: 'slides' | 'journal'; overrides: Partial<StyleSettings> };
-                                   // StyleSettings (provisional; svg-render's spec owns it):
+                                   // StyleSettings (final; meaning defined in SPEC-svg-render.md):
                                    // bondLength, lineWidth, doubleBondSpacing, fontFamily, fontSize
   meta:    { title?: string; created: string; modified: string };  // ISO 8601
 }

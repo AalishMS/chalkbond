@@ -89,7 +89,7 @@ T2 and T3 can run in parallel; everything else is sequential (each builds on sha
 ### Checkpoint D — module complete
 - [x] All `SPEC-doc-model.md` success criteria met; coverage ≥ 95% on `src/core/doc-model` (98.6% lines)
 - [x] Commit + push
-- [ ] Human review before `chem-core` spec
+- [x] Human review before `chem-core` spec
 
 ## Risks and Mitigations
 

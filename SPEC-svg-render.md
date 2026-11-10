@@ -1,8 +1,8 @@
 # Spec: `svg-render`
 
 Shared stack, commands, style and boundaries: see `SPEC.md`. Module map: `CAPABILITY-MAP.md`.
-Depends on: `doc-model`, `chem-core` (public entries only). Status: **draft 2026-11-10, awaiting
-review**.
+Depends on: `doc-model`, `chem-core` (public entries only). Status: **approved 2026-11-10**
+(reviewed and approved by the delegated reviewer; see "Decisions").
 
 Audience: a teacher of grade 11–12 chemistry in Nepal (NEB curriculum) building slides and
 worksheets on Windows with Office 2021. Output must look like a textbook figure with no manual
@@ -15,11 +15,11 @@ the single source of truth for what a figure looks like: the editor's canvas, th
 image and every export are this module's output, so "what you see is what you paste" holds by
 construction.
 
-It draws what `chem-core` perceives (implicit H on heteroatoms, charges, aromatic circles) and
-what `doc-model` stores (bonds, arrows, text …). It decides nothing chemical and edits nothing.
+It draws what `chem-core` perceives (implicit H on heteroatoms) and what `doc-model` stores
+(bonds, arrows, text …). It decides nothing chemical and edits nothing.
 
 User stories served (from `SPEC.md`): 1 (labels such as `OH`, `CO2H`, `Ph` laid out correctly),
-2 (reaction schemes: arrows, plus signs, conditions with auto sub/superscripts), 3 (curved
+2 (reaction schemes: arrows, plus signs, conditions with sub/superscripts), 3 (curved
 electron-pushing arrows, lone pairs, radicals, charges, δ+/δ−), 4 (text, callouts, compound
 numbers, brackets, colours, highlight shapes), 6 (crisp, tight, transparent image), and the
 shared look of screen and export (success criterion 5).
@@ -28,15 +28,15 @@ shared look of screen and export (success criterion 5).
 
 **In:** layout and drawing of every `doc-model` item type; the two style presets and the final
 `StyleSettings` meaning; deterministic text measurement; ink extents (bounds including labels
-and strokes); rendering the whole document or a subset; keyed output parts and a memoising
-renderer for the editor; SVG text escaping and output safety.
+and strokes); rendering the whole document or a subset; SVG text escaping and output safety.
 
-**Out:** pointer interaction, hit-testing, selection handles/halos, valence-warning overlays,
-grid, zoom and pan (`editor`; this module only supplies per-item extents); rasterising to PNG,
-PDF, clipboard formats, embedding the document in files (`clipboard-export`; this module only
-emits an opaque `<metadata>` string it is given); chemistry (`chem-core`); positions of
-reaction-condition text (`editor` Tidy reaction; `attachedTo` is ignored when drawing); fonts
-files (none are bundled or loaded); any DOM, canvas or network use.
+**Out:** pointer interaction, hit-testing, selection handles, valence-warning overlays, grid,
+zoom and pan (`editor`; this module only supplies per-item extents); rasterising to PNG, PDF,
+clipboard formats, embedding the document in files (`clipboard-export`; this module only emits
+an opaque `<metadata>` string it is given); chemistry (`chem-core`); positions of reaction
+condition text (`editor` Tidy reaction; `attachedTo` is ignored when drawing); font files (none
+are bundled or loaded); any DOM, canvas or network use; a memoising renderer (deferred, see
+"Decisions").
 
 ## Facts relied on
 
@@ -44,11 +44,12 @@ files (none are bundled or loaded); any DOM, canvas or network use.
 |---|---|
 | Coordinates are BLU, y down, bond length 1.0 (`SPEC-doc-model.md`) | SVG user unit = **point (pt)**: `pt = BLU × bondLength`. No y flip |
 | `bounds(doc, sel)` is the geometric hull and excludes label and stroke extents | This module computes the real ink extents (below); `bounds` is used only in tests as a lower bound |
-| Rings are not stored; aromaticity is `order: 1.5` | Ring detection for circles and double-bond side is geometry-free graph work done here (`rings.ts`); chem-core exports no rings and none are needed from it |
-| `perceive(doc)` gives `AtomInfo.implicitH` (= `explicitH` when set), unknown/abbreviation atoms report `implicitH: 0` | Atom text is built from `implicitH`; no chemistry here |
-| `StyleSettings` is already in `Doc.style.overrides` and in the strict `.chalk` schema | Adding or renaming a field is a schema bump (see "Required changes") — the five fields stay |
+| Rings are not stored; aromaticity is `order: 1.5`. chem-core exports no ring information (`Perception` has per-atom/bond flags and fragments only) and its `BondInfo.aromatic` follows OCL, not the stored order | Ring finding for circles and double-bond side is done here (`rings.ts`) on stored bond orders, as `SPEC-doc-model.md` prescribes |
+| `perceive(doc)` gives `AtomInfo.implicitH` (= `explicitH` when set); abbreviation and unknown-label atoms report `implicitH: 0` | Atom text is built from `implicitH`; no chemistry here |
+| `StyleSettings` is already in `Doc.style.overrides` and in the strict `.chalk` schema | Its five fields are final here; adding or renaming one is a schema bump ("Ask first") |
 | `interpretLabel` stores `OH`, `NH3+` … as element + `explicitH` + `charge`, never as a label | Only true abbreviations (`Ph`, `CO2H`, `OMe` …) and unknown labels arrive as `Atom.label` |
-| Vitest and Electron both run V8 | `Math.sin/cos/atan2/sqrt` are bit-identical across Windows and Linux (V8's fdlibm port); see "Determinism" for what is avoided |
+| `tsconfig.core.json` has no DOM and no Node types; ESLint already restricts `svg-render` to `doc-model` + `chem-core` imports (`CORE_DEPS`, probed in `tests/tooling/lint-boundaries.test.ts`) | Nothing to add for import boundaries |
+| Vitest and Electron both run V8 | `Math.sin/cos/atan2/sqrt` are bit-identical across Windows and Linux (V8 uses its own fdlibm port, not the C library); see "Determinism" for what is avoided |
 
 ## Style
 
@@ -65,12 +66,11 @@ interface StyleSettings {
 }
 ```
 
-Presets (`STYLE_PRESETS`); numbers are first values, confirmed at the Checkpoint-G-style visual
-review of the golden sheet:
+Presets (`STYLE_PRESETS`); first values, checked at the visual review of the golden sheet:
 
 | Preset | bondLength | lineWidth | doubleBondSpacing | fontFamily | fontSize | Intent |
 |---|---|---|---|---|---|---|
-| `slides` | 40 | 2.0 | 0.18 | `Arial, Helvetica, sans-serif` | 20 | Readable from the back of a classroom |
+| `slides` | 40 | 2.0 | 0.18 | `Arial, Helvetica, sans-serif` | 28 | Readable from the back of a classroom; label-to-bond ratio (0.7) as in the journal preset |
 | `journal` | 14.4 | 0.6 | 0.18 | `Arial, Helvetica, sans-serif` | 10 | ACS Document 1996 proportions (14.4 pt bond, 0.6 pt line, 10 pt Arial, 18 % spacing) |
 
 `resolveStyle` merges `preset` then `overrides`. An override that is not a finite number in its
@@ -78,16 +78,16 @@ legal range (`bondLength` 4–400, `lineWidth` 0.05–20, `doubleBondSpacing` 0.
 2–200) is ignored (the preset value is used), never an error: a hand-edited `.chalk` must still
 render. `fontFamily` is sanitised (see "Output safety").
 
-Everything else is **derived** from the three scale fields, so a style change rescales the figure
-consistently (property: uniform scale invariance). Let `L` = bondLength, `lw` = lineWidth,
-`fs` = fontSize. Initial values, tuned during implementation (a tuning change regenerates the
-goldens and is reviewed visually):
+Everything else is **derived** from the scale fields, so a style change rescales the figure
+consistently. Let `L` = bondLength, `fs` = fontSize. Initial values; a tuning change regenerates
+the goldens and is reviewed visually:
 
 | Derived (`ResolvedStyle`) | Value |
 |---|---|
 | `doubleGap` | `doubleBondSpacing·L` |
 | `boldWidth` / `wedgeWide` (full width at the wide end) | `0.14·L` |
 | `hashSpacing` | `0.17·L` |
+| `dashOn`, `dashOff` (1.5 bond second line) | `0.25·L`, `0.15·L` |
 | `labelMargin` (gap between a bond end and a label box) | `0.11·L` |
 | `wavyAmplitude`, `wavyLength` | `0.07·L`, `0.2·L` |
 | `arrowHeadLength`, `arrowHeadHalfWidth` | `0.22·L`, `0.09·L` |
@@ -95,18 +95,52 @@ goldens and is reviewed visually):
 | `curvedGap` (curve end to label box) | `0.08·L` |
 | `circleRatio` (aromatic circle radius ÷ ring apothem) | `0.65` |
 | `bracketSerif`, `roundBulge`, `curlyDepth` | `0.2·L`, `0.12·L`, `0.2·L` |
-| `captionGap`, `calloutPad` | `0.5·L`, `0.2·fs` |
+| `captionGap`, `calloutPad`, `cornerGap` | `0.5·L`, `0.2·fs`, `0.15·fs` |
 | `subScale`, `subShift` (down), `supShift` (up) | `0.7`, `0.2·fs`, `0.4·fs` (fs of the parent run) |
-| `satelliteScale`, `satelliteGap`, `dotRadius`, `pairSeparation` | `0.7`, `0.12·fs`, `0.08·fs`, `0.16·fs` |
-| `lineHeight` (multi-line text) | `1.2·fs` |
-| `ink` | `#000000` (default colour of anything with no `color`) |
+| `satelliteScale`, `satelliteGap`, `vertexGap`, `dotRadius`, `pairSeparation` | `0.7`, `0.12·fs`, `0.3·fs`, `0.08·fs`, `0.16·fs` |
+| `capHeight`, `lineHeight` (multi-line text) | `0.716·fs`, `1.2·fs` |
+
+The default colour of anything without a `color` is the constant `INK = '#000000'`.
+
+## Decisions
+
+Resolved during review (they replace the draft's open questions); binding until a spec change.
+
+1. **Charge on a skeleton carbon** (carbocation, carbanion): the sign alone is drawn at the
+   vertex (as a satellite, with magnitude when > 1); the letter is not forced.
+2. **Text size:** every text-like object uses `fontSize`; doc-model has no per-object size. A
+   field (schema bump, "ask first") is added only if the teacher needs big titles.
+3. **Fishhook barb:** the outer side of the curve (away from the bulge).
+4. **Text stays `<text>`** in Arial for v1; no `textAsPaths` option. `clipboard-export` may ask
+   for one after testing on Office 2021 ("ask first").
+5. **Metrics source:** Liberation Sans (SIL OFL, advance-identical to Arial) read by a dev
+   script; Arial from `C:\Windows\Fonts` is equally valid input. Adobe AFM is rejected (no Greek).
+6. **Other font families** are measured with Arial's table (documented limitation); `app-shell`
+   should offer only Arial-metric families (Arial, Helvetica, Liberation Sans, Arimo).
+   **Non-Latin text** (e.g. a Devanagari caption) is drawn by the system's fallback font; its
+   width is the fallback width, so its extents and centring are approximate (a notice is
+   emitted). Per-script tables are not part of v1.
+7. **Ring finding** stays internal (`rings.ts`, ring sizes 3–8), per "Facts relied on".
+8. **Reversed-label table** lives in `svg-render` (`label-display.ts`), tied to chem-core's
+   `ABBREVIATIONS` by a test (display concern, not chemistry).
+9. **Bond colour** is `bond.color ?? INK`; bonds never inherit atom colour.
+10. **Equilibrium arrow** is two harpoons (⇌); the retro arrow is the open double line ⇒.
+11. **Padding** defaults to 0 (tight); `clipboard-export` adds any margin. **Preset numbers
+    and derived constants** are as tabled, adjusted only at the golden review. **Valence
+    warnings** are never drawn here (the editor overlays them using `extents`). **Groups** have no
+    visual effect.
+12. **Cut for v1** (nothing in `editor` / `clipboard-export` demonstrably needs them; each can
+    be added later without breaking the API): the `ids` option and `data-chalk-id`;
+    `createRenderer` (render meets the editor's budget unmemoised and chem-core already caches
+    perception; the editor spec may request it after profiling); the `ink`, `style` and
+    `background` options; `contentBounds` (use `render(...).bounds`); a public `measureRuns`
+    (internal; the editor reads text extents from `Scene.extents`).
 
 ## Data Model
 
 ```ts
 import type {
-  AtomId, BondId, ObjectId, Color, Doc, Point, Rect, Selection, StylePreset, StyleSettings,
-  TextRun,
+  AtomId, BondId, Color, Doc, ObjectId, Point, Rect, Selection, StylePreset, StyleSettings,
 } from '../doc-model';
 import type { Perception } from '../chem-core';
 
@@ -114,38 +148,30 @@ type ResolvedStyle = Readonly<StyleSettings & { /* every derived value in the ta
 
 type ItemKey =                       // stable across renders of the same ids
   | `atom:${string}` | `bond:${string}` | `obj:${string}`
-  | `ring:${string}`;                // ring circle: its sorted atom ids joined by ','
+  | `ring:${string}`;                // ring circle: its atom ids sorted by number, joined by ','
 
-type Layer = 'beneath' | 'rings' | 'bonds' | 'atoms' | 'above';
-                                     // paint order; 'beneath' = shape highlights, 'above' =
-                                     // other objects in zOrder (paintLayers decides)
-
-interface RenderPart { key: ItemKey; layer: Layer; svg: string }   // markup of one item, in
-                                     // document pt coordinates; never contains a newline except
-                                     // between elements
+interface RenderPart { key: ItemKey; svg: string }   // markup of one item, document pt coordinates;
+                                     // elements separated by '\n', no other newline
 
 interface RenderOptions {
-  style?: Doc['style'];              // draw with this style instead of doc.style (preview a
-                                     // preset switch without editing the doc)
-  only?: Selection;                  // draw a subset (see "Subsets"); default: everything
+  only?: Selection;                  // draw a subset (see "Subsets"); undefined = everything,
+                                     // empty sets = nothing
   perception?: Perception;           // must be perceive(doc) of this doc; default computed
-  ink?: Color;                       // default colour, default '#000000'
-  ids?: boolean;                     // add data-chalk-id="atom:a1" etc.; default false
 }
 interface Scene {                    // layout result; no SVG wrapper yet
   parts: RenderPart[];               // paint order
   bounds: Rect | null;               // ink extents, pt, document coordinates; null if empty
   extents: Readonly<Record<ItemKey, Rect>>;   // ink extents per drawn item, pt
   style: ResolvedStyle;
-  notices: RenderNotice[];
+  notices: RenderNotice[];           // deterministic order
 }
 type RenderNotice =
-  | { code: 'unmeasured-glyph'; chars: string }      // fallback width used for these characters
+  | { code: 'unmeasured-glyph'; chars: string }      // fallback width used; chars deduplicated,
+                                                     // sorted by code point
   | { code: 'skipped-item'; key: ItemKey; reason: string };  // e.g. non-finite coordinate
 
 interface SvgOptions {
   padding?: number;                  // pt added on every side, default 0 (tight)
-  background?: Color;                // default: none (transparent)
   metadata?: string;                 // opaque text, escaped, emitted as <metadata id="chalkbond">
 }
 interface SvgDocument {
@@ -170,33 +196,26 @@ ptToBlu(p: Point, style: ResolvedStyle): Point
 // rendering
 render(doc: Doc, opts?: RenderOptions): Scene
 toSvg(scene: Scene, opts?: SvgOptions): SvgDocument
-renderSvg(doc: Doc, opts?: RenderOptions & SvgOptions): SvgDocument & { bounds: Rect | null }
+renderSvg(doc: Doc, opts?: RenderOptions & SvgOptions): SvgDocument
     // = toSvg(render(doc, opts), opts). Whole document, or a subset via `only`.
-contentBounds(doc: Doc, opts?: Pick<RenderOptions, 'style' | 'only' | 'perception'>): Rect | null
-    // pt; the ink extents without building markup strings' wrapper (still lays out)
-
-// editor / repeated use
-createRenderer(): { render(doc: Doc, opts?: RenderOptions): Scene }
-    // identical results to render(); memoises per fragment and per object (see "Editor contract")
-
-// text
-measureRuns(runs: readonly TextRun[], style: ResolvedStyle, opts?: { size?: number }):
-  { width: number; ascent: number; descent: number; lines: number; notices: RenderNotice[] }
-    // the same function the layout uses; the editor sizes its in-place text field with it
 ```
 
 `render` of an empty document (or an empty subset) gives `parts: []`, `bounds: null`; `toSvg`
-then emits a valid, empty `<svg width="0pt" height="0pt" viewBox="0 0 0 0">` (callers guard
-against empty exports). Documents are assumed to satisfy doc-model's invariants; defensive
-checks only skip an offending item with a `skipped-item` notice, never throw.
+then emits a valid empty `<svg width="0pt" height="0pt" viewBox="0 0 0 0">` with no group
+(callers guard against empty exports). Otherwise the output is
+`<svg xmlns width="Wpt" height="Hpt" viewBox="0 0 W H">`, an optional `<metadata>`, and one
+`<g transform="translate(-ox -oy)" …>` holding the parts (so the SVG's own coordinates start at
+0,0, which Office imports reliably). Documents are assumed to satisfy doc-model's invariants;
+defensive checks only skip an offending item with a `skipped-item` notice, never throw.
 
 ## Subsets
 
-`only` follows doc-model's `extract` closure: selected bonds bring their atoms; a bond is drawn
-iff both its atoms are in the closure; objects are drawn iff selected (an arrow does **not**
-bring its attached texts here — the caller selects what it wants). **Layout is computed on the
-whole document and then filtered**: implicit H, label orientation, double-bond sides, satellite
-placement and anchor resolution see the full neighbourhood. Consequences, both tested:
+`only` uses `extract`'s atom/bond closure — selected bonds bring their atoms, and a bond is drawn
+iff both its atoms are in the closure — but objects are drawn iff selected (an arrow does **not**
+bring its attached texts; the caller selects what it wants). **Layout is computed on the whole
+document and then filtered**: implicit H, label orientation, double-bond sides, satellite
+placement and anchor resolution see the full neighbourhood (so a pasted fragment looks exactly
+as it did on screen). Consequences, both tested:
 
 - every part of a subset render is byte-identical to the same-key part of the full render;
 - a ring circle is drawn iff all of the ring's atoms are in the closure.
@@ -206,38 +225,42 @@ curved arrow still points at atoms that were not selected.
 
 ## Rendering rules
 
-Paint order: `beneath` objects (shapes, in `zOrder`) → ring circles → bonds → atoms (labels and
-satellites) → `above` objects in `zOrder`. Bonds and atoms in ascending id number. Groups have no
-visual effect. The root sets defaults (`fill="none"`, `stroke` = ink, round caps and joins);
-every filled element and every `<text>` sets `fill` (and `stroke="none"`) itself so no consumer
-depends on inheritance for correctness.
+Paint order: `paintLayers(doc).beneath` objects (shapes, in `zOrder`) → ring circles → bonds →
+atoms (labels and satellites) → `paintLayers(doc).above` objects in `zOrder`. Bonds and atoms in
+ascending id number; ids in `zOrder` that are not drawn (subset) are skipped. The one `<g>` sets
+defaults (`fill="none"`, round caps and joins); every filled element and `<text>` sets `fill` and
+`stroke="none"`, every stroked element sets `stroke` and `stroke-width`: no reliance on inheritance.
 
 ### Atoms and labels
 
-An atom is **labelled** (its text is drawn) when: element ≠ `C`; or it has a `label`; or `isotope`
-or `explicitH` is set; or it has no bonds. Otherwise it is a skeleton vertex: no letter, no H.
-Charge, radical, lone pairs, partial charge and `number` never force a letter.
+An atom is **labelled** (its text is drawn) when: element ≠ `C`; or it has a `label`; or
+`isotope` or `explicitH` is set; or it has no bonds. Otherwise it is a skeleton vertex: no
+letter, no H. Charge, radical, lone pairs, partial charge and `number` never force a letter.
 
 | Part | Rule |
 |---|---|
-| Text | `[isotope superscript][H-part][symbol][H-part][charge superscript]`, symbol = `element` (pseudo-atoms `R`, `X`, `*` as typed) or the abbreviation/unknown `label` as typed. H-part = `H` + subscript `n` when `n` > 1, `n` = `AtomInfo.implicitH`, only for non-abbreviation atoms. Digits inside abbreviation labels (`CO2H`) are subscripted. Isotope sits immediately before the symbol |
-| Side | Sum the unit vectors to the neighbours. `sx < -0.1` (neighbours left): H-part **after** the symbol (`OH`, `NH2`); `sx > 0.1` (neighbours right): **before** it (`HO`, `H2N`); otherwise after. For an abbreviation with a known reversed form (table below), `sx > 0.1` shows the reversed text; any other label is drawn as typed |
-| Anchor | The symbol glyphs (for an abbreviation: the attachment glyph range given by the display table) are the **anchor box**. The label is positioned so the anchor box's centre is the atom position; baseline = `y + capHeight/2` (`capHeight` = 0.716·fs) |
-| Bonds at a label | Bond lines end at the anchor box grown by `labelMargin` (geometric clip: no halos, no clip paths, so backgrounds stay transparent) |
-| Charge | Superscript at the end of the text: `+`, `−` (U+2212), magnitude first when > 1 (`2−`). On a skeleton vertex it is drawn only as the sign, as a satellite (below) |
-| Colour | `atom.color ?? ink` for all of the atom's text and satellites. Bonds do **not** inherit atom colour |
-| Display table | `src/core/svg-render/label-display.ts`: for every key of chem-core's `ABBREVIATIONS`: reversed text and anchor range, e.g. `OMe` ↔ `MeO`, `OEt` ↔ `EtO`, `CO2H` ↔ `HO2C`, `COOH` ↔ `HOOC`, `CO2Me` ↔ `MeO2C`, `CHO` ↔ `OHC`, `NO2` ↔ `O2N`, `SO3H` ↔ `HO3S`, `CN` ↔ `NC`, `CONH2` ↔ `H2NOC`; symmetric ones (`Me`, `Ph`, `Ac`…) have none. A test fails if `ABBREVIATIONS` gains a key with no entry |
+| Text | `[H-part][isotope superscript][symbol][H-part][charge superscript]` (one H-part, before or after). Symbol = `element` (pseudo-atoms `R`, `X`, `*` as typed) or the abbreviation/unknown `label` as typed. H-part = `H`, plus subscript `n` when `n` > 1, `n` = `AtomInfo.implicitH`, only for non-label atoms. Element `H` with isotope 2 / 3 is drawn `D` / `T` with no superscript. Digits inside labels are subscripted (`CO2H`, `R1`) |
+| Side | Sum the unit vectors to the neighbours. `sx < -0.1` (neighbours left): H-part **after** the symbol (`OH`, `NH2`); `sx > 0.1` (neighbours right): **before** it (`HO`, `H2N`); otherwise after. A label with a reversed form (table below) is drawn reversed when `sx > 0.1`; any other label is drawn as typed |
+| No bonds | A bare atom is written as a formula: H-part before the symbol for F, Cl, Br, I (`HCl`) and for O, S, Se with `n ≥ 2` (`H2O`, `H3O+`, `H2S`); otherwise after (`OH−`, `NH3`, `CH4`, `NH4+`) |
+| Anchor | The **anchor box** is the symbol glyphs; for a label without a reversed form it is the whole label text. The text is positioned so the anchor box's centre is the atom position; baseline = `y + capHeight/2`. The anchor box height is `capHeight` |
+| Bonds at a label | A bond line ends at the anchor box grown by `labelMargin`; if the bond points to a side that has more label text (H-part, charge), the box is first extended over that text (so `NH2` with a bond leaving up-right does not cross the `H2`). Geometric clip only: no halos, no clip paths, so backgrounds stay transparent |
+| Charge | Superscript at the end of the text: `+`, `−` (U+2212), magnitude first when > 1 (`2−`). On a skeleton vertex it is a satellite (below) |
+| Partial charge | Stored `δ+`, `δ-`, `δδ+`, `δδ-`; drawn with U+2212 for the minus, as a satellite |
+| Colour | `atom.color ?? INK` for all of the atom's text and satellites |
+| Display table | `src/core/svg-render/label-display.ts`: for every key of chem-core's `ABBREVIATIONS`, its reversed text and attachment glyph, or none for symmetric ones. Reversed: `OMe`↔`MeO`, `OEt`↔`EtO`, `OPh`↔`PhO`, `OAc`↔`AcO`, `CO2H`↔`HO2C`, `COOH`↔`HOOC`, `CO2Me`↔`MeO2C`, `CO2Et`↔`EtO2C`, `CHO`↔`OHC`, `COCl`↔`ClOC`, `CONH2`↔`H2NOC`, `CN`↔`NC`, `NO2`↔`O2N`, `SO3H`↔`HO3S`. None: `Me Et Pr iPr Bu tBu Ph Bn Ac`. A test fails if `ABBREVIATIONS` gains a key with no entry |
 
-**Satellites** (lone pairs, radical dots, charge on a skeleton vertex, partial charge, atom
-number) go into the angular **gaps between bond directions** (all bonds of the atom in the whole
-document). Order of assignment: charge sign, lone pairs, radical dots, `partialCharge`,
-`number`. Gaps are sorted by size (descending, ties by smaller angle), satellites are dealt
-round-robin, and the `k` satellites of one gap sit at fractions `(j+1)/(k+1)` of it. An atom with
-no bond has the single slots up, down, left, right (screen angles 270°, 90°, 180°, 0°). Distance:
-from the atom centre to the edge of its anchor box along the direction (to the centre itself for
-a vertex) plus `satelliteGap` (vertex: `0.3·fs`). A lone pair is two dots `pairSeparation` apart,
-perpendicular to the direction; a radical dot is one dot; `partialCharge` and `number` are text
-at `satelliteScale·fs`.
+**Satellites** (charge sign on a vertex, lone pairs, radical dots, partial charge, atom number)
+go into the angular **gaps between bond directions** (all bonds of the atom in the whole
+document). Order of assignment: charge, lone pairs (`lonePairs` of them), radical dots
+(`radical` of them: 1 or 2), `partialCharge`, `number`. Gaps are sorted by size (descending,
+ties by smaller start angle), satellites are dealt round-robin, and the `k` satellites of one gap
+sit at fractions `(j+1)/(k+1)` of it (one bond: the gap is the full turn, so one satellite is
+opposite the bond). An atom with no bond has the slots up, down, left, right (screen angles 270°,
+90°, 180°, 0°). Point at distance `d`: from the atom centre to the edge of the label's full text
+box along the direction (a vertex: `vertexGap`) plus `satelliteGap`. A lone pair is two dots
+`pairSeparation` apart, perpendicular to the direction; a radical dot is one dot; charge,
+`partialCharge` and `number` are text at `satelliteScale·fs` whose box is tangent to the point
+at `d`.
 
 ### Bonds
 
@@ -247,33 +270,35 @@ to `a2` on screen (y down). All lines are `lineWidth`, round caps.
 | Bond | Rule |
 |---|---|
 | Single (`order 1`, `stereo none`) | one line |
-| Double | `auto`: line on the side of the smallest ring containing the bond (towards its centroid; ties by lowest atom id); not in a ring: count the other neighbours of both atoms on each side — more on one side puts the second line there, equal counts (including 0) centre both lines. `center`: two lines at ±`doubleGap/2`. `left` / `right`: main line on the bond axis, second line `doubleGap` to that side. The shifted second line is shortened at each end by `doubleGap / tan φ` (φ = angle to the nearest neighbour bond on that side, 30°–90°; 0 if there is none), at most `0.5·L` in total |
+| Double | `auto`: second line towards the centroid of the smallest ring through the bond (see "Aromatic circles"; ties by lowest sorted atom ids); not in a ring: count the other neighbours of both atoms on each side — more on one side puts the second line there, equal counts (including 0) centre both lines. `center`: two lines at ±`doubleGap/2`. `left` / `right`: main line on the bond axis, second line `doubleGap` to that side. A shifted second line is shortened at each end by `doubleGap · cot(φ/2)`, φ = angle between the bond and the nearest neighbour bond on that side, clamped to 30°–150° (benzene: φ = 120°, 0.104·L); no neighbour on that side: no shortening; total shortening at most `0.5·L` |
 | Triple | axis line plus lines at ±`doubleGap`; `doublePlacement` ignored |
-| 1.5, ring with all bonds 1.5 | one plain line; the ring gets a circle (below) |
-| 1.5, anywhere else | solid line plus dashed line (`stroke-dasharray` 0.25·L on, 0.15·L off), placed as a double bond (`auto` → centred; solid on the left) |
+| 1.5 in a circled ring | one plain line (the ring gets a circle, below) |
+| 1.5 anywhere else | solid line plus dashed line (`dashOn`/`dashOff`), placed as a double bond (`auto` → centred; solid on the left) |
 | `wedge` | filled polygon, point at `a1`, `wedgeWide` wide at `a2` |
 | `hash` | `n = max(3, round(len / hashSpacing))` lines at `t = (i+0.5)/n`, half-length `wedgeWide/2 · t`, perpendicular to the axis |
-| `bold` | filled rectangle `boldWidth` wide (the order's lines are not drawn; order is 1) |
+| `bold` | filled rectangle `boldWidth` wide |
 | `wavy` | quadratic-Bézier sine path, amplitude `wavyAmplitude`, `2·round(len/wavyLength/2)` half-waves (min 2) |
 | Wedge/hash/bold/wavy on order ≠ 1 | stereo is ignored, drawn as its order (doc-model allows the combination; chem-core exports single bonds only) |
-| Colour | `bond.color ?? ink` |
+| Colour | `bond.color ?? INK` |
 
-Wedges and hashes are clipped at labels along the axis; their width profile follows the original
-length, truncated to the clipped span.
+Wedges and hashes are clipped at labels along the axis; their width profile follows the
+original length, truncated to the clipped span.
 
 ### Aromatic circles
 
-Smallest rings (minimal cycle basis, ring size 3–8, found by `rings.ts`) whose bonds are all
-order 1.5 get one circle each: centre = ring centroid, radius = `circleRatio` × mean distance from
-the centroid to the bond midpoints, stroke `lineWidth`, colour `ink`. Fused systems get one
-circle per ring (naphthalene: 2). Perception's `BondInfo.aromatic` is not consulted: the stored
-order rules (as `SPEC-doc-model.md` says), so a ring the user toggled partly to Kekulé is just
-lines and doubles.
+`rings.ts`: for each bond, its **smallest ring** is the shortest cycle through it of size 3–8
+(breadth-first, ties by lexicographically smallest sorted atom-id list); the rings of a doc are
+the distinct smallest rings of its bonds. (Naphthalene: two 6-rings; the 10-ring is nobody's
+smallest. Cubane: its six faces.) A ring whose bonds are all order 1.5 is **circled**: one
+circle, centre = ring centroid, radius = `circleRatio` × mean distance from the centroid to the
+bond midpoints, stroke `lineWidth`, colour = the bonds' common `color` if they all share one,
+else `INK`. Perception's `BondInfo.aromatic` is not consulted: the stored order rules, so a ring
+the user toggled partly to Kekulé is just lines and doubles.
 
 ### Objects
 
-Text positions `at` are in BLU and become pt. Text, caption and callout text use `fontSize` and
-`fontFamily` (no per-object size exists in doc-model; see Open Questions).
+Text positions `at` are in BLU and become pt. Text, caption, callout and bracket-corner text use
+`fontSize` and `fontFamily` (Decision 2).
 
 | Object | Rule |
 |---|---|
@@ -282,88 +307,91 @@ Text positions `at` are in BLU and become pt. Text, caption and callout text use
 | `arrow` `retro` | two parallel lines `equilibriumGap` apart ending in an open chevron head at `to` (the retrosynthetic ⇒) |
 | `arrow` `resonance` | one shaft, solid triangular heads at both ends |
 | `arrow` `no-go` | a forward arrow with a cross (two lines, half-size `noGoHalf`) centred on the shaft midpoint |
-| `arrow` length | head length is clamped to `0.5 × length`; `from = to` draws nothing |
-| `curved-arrow` | Quadratic Bézier from `resolveAnchor(from)` to `resolveAnchor(to)`. Control point = chord midpoint + `bend × chordLength × n`, `n` = left normal of `from→to`; `bend 0` is a straight line (positive bends bulge to the visual left). Atom anchors **without** `offset` are clipped out of the atom's anchor box by `curvedGap` along the curve; an offset (lone pair), bond and point anchors are used as given. `full`: solid triangular head at the end; the shaft stops at the head base. `fishhook`: the head is the outer half only (the barb on the side away from the bulge) |
+| `arrow` length | head length is clamped to `0.5 × length` (`0.25 ×` for resonance); `from = to` draws nothing |
+| `curved-arrow` | Quadratic Bézier from `resolveAnchor(from)` to `resolveAnchor(to)`. Control point = chord midpoint + `bend × chordLength × n`, `n` = left normal of `from→to`; `bend 0` is a straight line (positive bends bulge to the visual left). An atom anchor **without** `offset` on a labelled atom is clipped out of the label's anchor box grown by `curvedGap` (bisection, 40 fixed steps); on a skeleton vertex, and for an offset (lone pair), bond and point anchors, the end is used as given. `full`: solid triangular head at the end; the shaft stops at the head base. `fishhook`: the head is the outer half only (Decision 3) |
 | `plus` | two lines crossing at `at`, arm `plusArm` |
-| `text` | each run is its own `<text>` at an absolute x,y computed from measurement (no reliance on the renderer's inline layout); `align` places the line relative to `at.x`; the first line's cap-height box is vertically centred on `at.y`; `\n` in a run starts a new line (`lineHeight`). Runs: `sub`/`sup` at `subScale`, shifted by `subShift`/`supShift`; `bold`, `italic`; `color ?? ink`. `attachedTo` is ignored (the editor positions the text) |
+| `text` | each run is its own `<text>` at an absolute x,y computed from measurement (no reliance on the renderer's inline layout); `align` places each line relative to `at.x`; the first line's cap-height box is vertically centred on `at.y`; `\n` in a run starts a new line (`lineHeight`). Runs: `sub`/`sup` at `subScale`, shifted by `subShift`/`supShift`; `bold`, `italic`; `color ?? INK`. `attachedTo` is ignored |
 | `caption` | centred horizontally on the union of the target atoms' ink extents (labels included), top edge `captionGap` below that union; multi-line allowed. Targets missing from the doc are skipped; none left → nothing drawn |
 | `callout` | text centred at `at`; a leader line (`lineWidth`, no head) from the nearest point of the text box grown by `calloutPad` to `resolveAnchor(anchor)`, clipped out of an atom anchor's box like curved arrows |
-| `bracket` | `square`: two sides at `rect.x` and `rect.x + w`, spanning `y … y+h`, serifs `bracketSerif` (clamped to `w/2`) pointing inwards. `round`: arcs bulging outwards by `roundBulge`. `curly`: four-cubic braces, tip depth `curlyDepth`. `corner` runs: left edge `0.15·fs` right of the right bracket; bottom-right (baseline at `y+h`) unless the first run is `sup`, then top-right (cap top at `y`) |
-| `shape` | `rect` / `ellipse` of `rect`; `fill` with `fillOpacity` (`fill-opacity`), `stroke` at `lineWidth`; neither → nothing drawn. Painted in the `beneath` layer by `zOrder` |
-| `zOrder` | `paintLayers(doc)` gives the layers; ids in it that are not drawn (subset) are skipped |
+| `bracket` | `square`: two sides at `rect.x` and `rect.x + w`, spanning `y … y+h`, serifs `bracketSerif` (clamped to `w/2`) pointing inwards. `round`: arcs bulging outwards by `roundBulge`. `curly`: four-cubic braces, tip depth `curlyDepth`. `corner` runs: left edge `cornerGap` right of the right bracket; baseline at `y+h`, unless the first run is `sup`, then cap top at `y` |
+| `shape` | `rect` / `ellipse` of `rect`; `fill` with `fillOpacity` (clamped to 0–1, `fill-opacity`), `stroke` at `lineWidth`; neither → nothing drawn. Painted in the beneath layer |
 
 ## Text measurement (no DOM)
 
 **The main design risk:** label extents decide where bonds stop and where the bounds are, so they
 must be known without a browser and be identical on every machine.
 
-**Decision: a committed advance-width table.** `src/core/svg-render/font-metrics.ts` holds, in
-1/1000 em, the advance widths and the vertical metrics of **Arial** (regular and bold; italic
-uses the regular widths, as Arial's do), generated once by a dev script
-`scripts/build-font-metrics.mjs` (no dependencies; ~60 lines reading `cmap` and `hmtx` from a
-metric-identical font file passed on the command line — Liberation Sans, SIL OFL, so nothing
-proprietary is committed — the TTF itself is not committed). Coverage: U+0020–007E, U+00A0, `°
-± · × ÷ − † ‡ •`, the Greek block U+0391–03C9 (`δ`, `Δ`, `ν`, `μ`, `π` …), and the arrow
-characters that exist in Arial. Any other character gets the fallback width `0.556 em` and a
-`unmeasured-glyph` notice. Vertical: cap height 0.716 em, descent 0.212 em applied only to runs
-that contain a descending glyph (`g j p q y , ; ( ) [ ] { } |` and `Q`); no kerning.
+**Decision: a committed advance-width table.**
 
-Why this works offline on Windows: the output asks for `Arial, Helvetica, sans-serif`. Arial ships
-with every Windows 10/11 and every Office 2021, so the screen, PowerPoint and Word draw glyphs
-whose advances equal the table; Linux CI has no Arial but nothing there measures anything, it
-only compares strings. Every run is positioned absolutely, so a width error in one run cannot
-shift another; the worst case is a slightly off label (≤ 1 % in Arial-compatible fonts).
+- **Where:** `src/core/svg-render/font-metrics.ts`, generated, committed, listed in
+  `.prettierignore`. Exports `UNITS_PER_EM = 1000`, `ADVANCE_REGULAR` and `ADVANCE_BOLD`
+  (`Readonly<Record<number, number>>`: code point → integer advance in 1/1000 em, rounded from the
+  font's units), and a header comment with the font file names and their SHA-256. Italic uses the
+  regular widths (Arial's are equal); bold italic uses bold. Output is sorted by code point with
+  LF endings so regenerating from the same fonts gives identical bytes.
+- **Coverage (code points):** U+0020–007E, U+00A0–00FF, U+0391–03C9 (those the font has: `δ`,
+  `Δ`, `ν`, `μ`, `π`, `α` …), U+2013, U+2014, U+2018, U+2019, U+201C, U+201D, U+2020, U+2021,
+  U+2022, U+2026, U+2190–2195 (arrows), U+2212 (minus). Text is iterated by code point.
+- **Fallback:** any other code point has width `0.556 em` (Arial's digit width) and adds an
+  `unmeasured-glyph` notice. No kerning.
+- **Vertical:** cap height 0.716 em and descent 0.212 em (Arial's); the descent applies only to
+  runs containing a descending glyph (`g j p q y Q , ; ( ) [ ] { } |`). Ascent = cap height;
+  sub/superscript shifts extend the box.
+- **Generator:** `scripts/build-font-metrics.mjs <regular.ttf> <bold.ttf>` — Node, no
+  dependencies, ~60 lines: reads `head.unitsPerEm`, `hhea.numberOfHMetrics`, `hmtx` and the
+  `cmap` (format 4) from the two files given on the command line. It never touches the network
+  and is never run by tests or `npm run check`. The developer obtains Liberation Sans Regular
+  and Bold (2.1.x, SIL OFL, from the liberationfonts GitHub release) once, or passes Windows'
+  own `arial.ttf` / `arialbd.ttf`. The TTFs are not committed.
+- **Table test** (`tests/tooling/font-metrics.test.ts`): known widths (`W` 944, `i` 222, `0` 556,
+  `m` 833, `−` 584, bold `W` 944), every coverage range present, sorted, integer values.
 
-**Other families.** An override of `fontFamily` is measured with Arial's table anyway (documented
-limitation). The settings UI (`app-shell`) should offer only Arial-metric families (Arial,
-Helvetica, Liberation Sans, Arimo).
+Why this works offline on Windows: Arial ships with every Windows 10/11 and Office 2021, so the
+screen, PowerPoint and Word draw glyphs whose advances equal the table. Every run is positioned
+absolutely, so a width error in one run cannot shift another (worst case: a slightly off label).
 
-**Rejected alternative A: measure in the renderer** (`canvas.measureText` / SVG `getBBox`). It
-needs the DOM (forbidden in `core/*`), depends on which font the machine actually resolves, and
-cannot give identical goldens on Linux and Windows.
-**Rejected alternative B: convert text to outlines (paths)** from an embedded font. It would make
-output font-independent and is attractive for Office paste, but it needs glyph outline data (large
-table), makes text non-editable in PowerPoint and inflates files. Kept as an Open Question for
-`clipboard-export`: `RenderOptions` can grow a `textAsPaths` flag later without changing anything
-here. **Rejected alternative C: parse a font at runtime** (opentype.js): new dependency (ask
-first), and Arial itself cannot be redistributed.
+**Rejected:** measuring in the renderer (needs the DOM, machine-dependent); text as outlines
+(Decision 4); parsing a font at runtime (new dependency; Arial cannot be redistributed).
 
-A calibration test in `e2e/` loads a fixed corpus in Electron's Chromium and compares
-`getComputedTextLength()` with the table (≤ 1 %); on Windows that is real Arial, on Linux
-Liberation Sans.
+A calibration test in `e2e/` creates SVG `<text>` elements for a fixed corpus in the Electron
+window and compares `getComputedTextLength()` with the table (≤ 1 %, 20 px at font-size 100); on
+Windows that is real Arial.
 
 ## Extents (bounds including labels and strokes)
 
 `extents[key]` and `bounds` are the **ink boxes in pt**: every drawn primitive's geometry grown by
 half its stroke width (round caps included), plus: label text boxes (all glyph runs, with
 sub/superscripts, not just the anchor box), arrowheads, exact Bézier extrema for curves and
-curved arrows, wedge polygons, circles, satellites, caption/callout/bracket/text boxes (measured
-width × ascent/descent from `measureRuns`). `bounds` = union of `extents`; `padding` is added only
-in `toSvg`. `bounds ⊇ bluToPt(doc-model bounds)` always (a test). An atom with no ink (a bare
-skeleton vertex) has no extents entry; its position still contributes via its bonds.
+curved arrows (not control points), wedge polygons, circles, satellites, caption/callout/
+bracket/text boxes (measured width × ascent/descent). `bounds` = union of `extents`; `padding`
+is added only in `toSvg`. An atom with no ink (a bare skeleton vertex) has no extents entry; its
+position still contributes via its bonds.
 
 ## Determinism
 
 Identical `(doc, options)` → **byte-identical** SVG on Linux and Windows.
 
 - **Numbers:** one `fmt(n)`: `Math.round(n·1000)/1000`, printed without exponent or trailing
-  zeros, `-0` → `0`, leading `0` kept (`0.5`), non-finite never reaches output (item skipped).
+  zeros, `-0` → `0`, leading `0` kept (`0.5`). Non-finite never reaches output (item skipped).
   Coordinates are pt, 3 decimals. Angles and ratios are never printed.
 - **Maths:** only `+ − × ÷`, `Math.sqrt`, `sin`, `cos`, `atan2`, `abs`, `min`, `max`, `round`,
-  `floor`. `Math.pow`, `hypot`, `exp`, `log`, `tan` are banned in render code (a lint-free grep
-  test), the V8 versions have differed between platforms; `tan φ` is `sin/cos`.
-- **Order:** records are iterated by ascending id number, never by object-key order; objects by
+  `floor`. `Math.pow`, `**`, `hypot`, `exp`, `log`, `tan`, `random`, `Date`, `Intl`,
+  `localeCompare` and `toLocaleString` are banned in `src/core/svg-render/**` by an ESLint rule
+  block (not a grep test); V8's `pow` and `tan` have differed between platforms. `cot` is
+  `cos/sin`.
+- **Order:** records are iterated by ascending id number (numeric suffix, own comparator: doc-model exports none), never by object-key order; objects by
   `zOrder`; rings sorted by their sorted atom ids; satellites in the fixed order above; ties
   always by id.
 - **Attributes:** every element is built by a helper that writes attributes in a fixed per-element
   order (listed in `svg-write.ts`); optional ones are omitted, never `undefined`. Colours are
   lower-cased `#rrggbb`.
-- **Ids:** none are generated (no clip paths, gradients or `<use>`). Optional `data-chalk-id`
-  (opt-in) carries the item key; the only other id is `<metadata id="chalkbond">`.
+- **Ids:** none generated (no clip paths, gradients or `<use>`); the only id is
+  `<metadata id="chalkbond">`.
 - **Text:** `\n` line ends, no indentation, one element per line, trailing newline; no XML
   prolog, no comments, no timestamps, no generator string.
-- **Goldens:** stored with LF endings; `.gitattributes` marks `src/core/svg-render/__golden__/**`
-  as `text eol=lf` so Windows `autocrlf` cannot dirty them.
+- **Goldens:** stored with LF endings. The repo's `* text=auto eol=lf` already covers them; an
+  explicit `src/core/svg-render/__golden__/** text eol=lf` line is added so a later change to the
+  global rule cannot dirty them on Windows (`autocrlf`).
 
 ## Output safety
 
@@ -371,174 +399,146 @@ Identical `(doc, options)` → **byte-identical** SVG on Linux and Windows.
   (controls except tab/newline/CR, U+FFFE/U+FFFF, lone surrogates) become U+FFFD, so the output is
   always well-formed. `]]>` is covered by `>` escaping (no CDATA is used).
 - Element allow-list: `svg g path polygon circle ellipse rect text metadata`. Attribute
-  allow-list: geometry, `fill fill-opacity stroke stroke-width stroke-linecap stroke-linejoin
-  stroke-dasharray font-family font-size font-weight font-style text-anchor xml:space transform
-  xmlns width height viewBox data-chalk-id id` (`id` only on `<metadata>`).
+  allow-list: `d points cx cy r rx ry x y width height transform viewBox xmlns xml:space fill
+  fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray font-family
+  font-size font-weight font-style id` (`id` only on `<metadata>`; `xml:space="preserve"` only on
+  `<text>`).
 - Never emitted: `script`, `style`, `foreignObject`, `use`, `image`, `a`, event attributes,
   `href`/`xlink:href`, any `url(…)` or other external reference. The only URL in the output is the
   `xmlns` namespace.
 - Colours must match `^#[0-9a-fA-F]{6}$` (doc-model validates, but a doc can be built unchecked);
-  anything else falls back to `ink`.
-- `fontFamily` (user-supplied through overrides) is reduced to characters `A–Z a–z 0–9 space , - _
-  ' "` (quotes stripped), at most 200 characters; empty after that → the preset's family.
+  anything else falls back to `INK`.
+- `fontFamily` (user-supplied through overrides) is reduced to the characters `A–Z a–z 0–9`,
+  space, `,`, `-`, `_` (everything else, quotes included, is removed), at most 200 characters;
+  empty after that → the preset's family.
 - `metadata` is text content, escaped; it is the only free-text channel and is never parsed here.
 - Text run content is only ever placed in `<text>` nodes; user text can never become markup.
 
-## Editor contract (incremental / screen use)
+## Editor contract (screen use)
 
-The editor owns the canvas; this module supplies the following and promises nothing more.
-
+The editor owns the canvas; this module supplies the following and nothing more.
 1. **Keyed parts.** `Scene.parts` is the paint-ordered list; each part has a stable `key` and its
-   markup string. The editor mounts parts in order and, on the next scene, replaces only parts
-   whose `svg` string changed, adds new keys and drops missing ones (a bond's markup changes when
-   a neighbour moves, and the string comparison catches that — no dependency tracking needed in
-   the editor). `parts.map(p => p.svg).join('\n')` inside a transformed `<g>` is exactly the
-   export content.
-2. **Coordinates.** Parts are in document pt (`bluToPt`); no viewBox shift, no zoom. The editor
-   applies pan/zoom with its own `transform` on a wrapping element. Pointer → BLU is
-   `ptToBlu`.
+   markup. The editor mounts parts in order and, on the next scene, replaces only parts whose
+   `svg` string changed, adds new keys and drops missing ones (string comparison catches a
+   bond whose markup changed because a neighbour moved). `parts.map(p => p.svg).join('\n')`
+   inside a translated `<g>` is exactly the export content.
+2. **Coordinates.** Parts are in document pt (`bluToPt`); no zoom. The editor applies pan/zoom
+   with its own `transform` on a wrapping element. Pointer → BLU is `ptToBlu`.
 3. **Extents.** `extents[key]` gives each item's ink box for hit-testing, marquee selection and
    selection halos. Finer hit-testing (distance to a bond segment, arrow path) is the editor's,
-   using document geometry; this module offers boxes only.
-4. **`createRenderer()`** memoises per fragment (keyed by the identity and contents of its atoms,
-   bonds, perception and style — Immer's structural sharing makes unchanged items `===`) and per
-   object. Result is **deep-equal to `render`** (property test), so correctness never depends on
-   the cache. It also holds a `createPerceiver()` unless `opts.perception` is passed.
-5. **Overlays are the editor's:** selection, handles, valence warnings (`Perception.warnings`
-   with `extents` for placement), snapping guides, ghost previews (render a scratch doc built with
-   `insert(emptyDoc, sub, at)` and wrap its parts in a `<g opacity>`), grid, rulers.
-6. **No async, no side effects, no DOM** — the editor may call `render` inside a React render or
-   a web worker; a render of a given doc is the same everywhere.
-7. **Preset switching** is `render(doc, { style: { preset, overrides } })` (preview) or an edit of
-   `doc.style` through doc-model (commit); both give the same bytes once committed.
+   using document geometry.
+4. **Overlays are the editor's:** selection, handles, valence warnings (`Perception.warnings`
+   with `extents` for placement), snapping guides, ghost previews (render a scratch doc built
+   with `insert(emptyDoc, sub, at)`), grid, rulers. Pass `perception` from `createPerceiver()` to
+   avoid recomputing it.
+5. **Preset switching** is an edit of `doc.style` through doc-model; the editor spec decides
+   whether it wants a `setStyle` op there (additive, not a schema change). `render` is
+   synchronous and effect-free, so it may run inside a React render or a worker.
 
 ## Required changes to other modules
 
-Stated explicitly; nothing is assumed.
-
 | Module | Change | Needed? |
 |---|---|---|
-| `doc-model` | `StyleSettings` **stays** in `doc-model/types.ts` and in the `.chalk` schema (it is part of `Doc`; moving it to `svg-render` would make `doc-model` import a downstream module, which the capability map forbids). Its five fields are final: **no code, schema or `schemaVersion` change.** Docs only: replace "Provisional field set" in the `types.ts` JSDoc and "(provisional; svg-render's spec owns it)" in `SPEC-doc-model.md` with "final; meaning defined in `SPEC-svg-render.md`" | Docs only |
-| `chem-core` | None. This module consumes `perceive`, `createPerceiver`, `AtomInfo.implicitH`, `Perception`, and `ABBREVIATIONS` (for the display-table coverage test) | No |
-| Tooling | `eslint.config.mjs` dependency table: `svg-render` may import `doc-model` and `chem-core` only; `.gitattributes` rule for goldens; `scripts/build-font-metrics.mjs`; an `npm run golden:sheet` Node script writing `out/golden-sheet.html` (not committed) for visual review; the metrics calibration test under `e2e/` | Yes |
-| Future | A per-object font size or a `textAsPaths` option would add `doc-model` fields (schema bump, "ask first") — not part of v1 | No |
+| `doc-model` | `StyleSettings` **stays** in `doc-model/types.ts` and in the `.chalk` schema (moving it would make `doc-model` import a downstream module, which the capability map forbids). Its five fields are final: **no code, schema or `schemaVersion` change.** Docs only: "(provisional; svg-render's spec owns it)" in `SPEC-doc-model.md` becomes "(final; meaning defined in `SPEC-svg-render.md`)" (done at approval); the "Provisional field set" JSDoc in `types.ts` gets the same wording in the first implementation task | Docs only |
+| `chem-core` | None. Consumes `perceive`, `Perception`, `AtomInfo.implicitH`, `ABBREVIATIONS` (display-table coverage test) | No |
+| Tooling | ESLint block for `src/core/svg-render/**` banning the non-deterministic APIs above (the boundary entry already exists); `.gitattributes` golden line; `scripts/build-font-metrics.mjs`; `scripts/golden-sheet.mjs` + `npm run golden:sheet` (reads the committed `__golden__/*.svg`, writes `out/golden-sheet.html`, not committed; optional `--png <file>` screenshots it with Playwright's Chromium); `.prettierignore` entry for `font-metrics.ts`; the calibration test under `e2e/` | Yes |
 
 ## Testing
 
 - **Golden set** (`src/core/svg-render/__golden__/*.svg`, written with `toMatchFileSnapshot`,
-  reviewed visually through the golden sheet at the checkpoint, because a byte snapshot cannot
-  tell a wrong picture from a right one). Inputs are committed `.chalk` fixtures
+  reviewed visually through the golden sheet at checkpoints, because a byte snapshot cannot tell
+  a wrong picture from a right one). Inputs are committed `.chalk` fixtures
   (`__golden__/inputs/`, produced once from chem-core's parsers and then frozen, so an OCL layout
   change never moves a golden; plus doc-model's `benzene`, `two-step-reaction`, `mechanism`,
   `kitchen-sink`). ≥ 30 scenes: benzene (circle), toluene, naphthalene (two circles), pyridine,
   Kekulé benzene (inside-ring double bonds), cyclohexane, ethanol (`OH`, side flip both ways),
-  acetic acid (`C=O` placement, `CO2H`), acetate (1.5 pair), ammonium, nitro with charges, alkene
-  cis and trans, propyne, wedge/hash/bold/wavy (alanine), `Ph`/`OMe`/`NO2`/`CO2H` attached on
-  the left and on the right, `R` pseudo-atom, isotopes (`¹³C`, `D`), radical, carbanion with lone
-  pair, HCl with δ+/δ−, atom numbers, coloured atoms and bonds; each arrow kind; a reaction
-  scheme with conditions text (sub/sup/bold/italic); the mechanism with `full` and `fishhook`
-  arrows; plus signs; caption; callout; square/round/curly brackets with `corner`; shapes with
-  fill opacity; an empty-label-only doc; 3 scenes in each preset; a style-override scene; a
-  subset scene.
+  water and HCl (bare atoms), acetic acid (`C=O` placement, `CO2H`), acetate (1.5 pair),
+  ammonium, nitro with charges, alkene cis and trans, propyne, wedge/hash/bold/wavy (alanine),
+  `Ph`/`OMe`/`NO2`/`CO2H` attached on the left and on the right, `R` pseudo-atom, isotopes
+  (`¹³C`, `D`), radical (1 and 2), carbanion with lone pair, HCl with δ+/δ−, atom numbers,
+  coloured atoms and bonds (coloured ring circle); each arrow kind; a reaction scheme with
+  conditions text (sub/sup/bold/italic); the mechanism with `full` and `fishhook` arrows; plus
+  signs; caption; callout; square/round/curly brackets with `corner`; shapes with fill opacity;
+  3 scenes in each preset; a style-override scene; a subset scene. A test scans the inputs and
+  asserts every `BondOrder`, `BondStereo`, `DoublePlacement`, `ArrowKind`, curved-arrow `head`,
+  bracket `shape`, shape `shape`, text `align`, run `script` value and every object type occurs.
 - **Unit:** every public function; `fmt`; each row of every rule table; ring finder (benzene,
-  naphthalene, cubane, spiro, bicyclic, 12-ring); satellite placement; double-bond side
-  decision table; clipping against boxes from all 8 directions; measurement against known
-  Helvetica/Arial widths (`W` 944, `i` 222, `0` 556, `m` 833 …) and a fallback-notice case;
-  `resolveStyle` with every kind of bad override; escaping of `<`, `&`, `"`, `]]>`, control
-  characters, lone surrogates, emoji; the allow-lists.
-- **Properties (fast-check, reusing doc-model's command generator and chem-core's):**
-  1. `render` never throws on any doc reachable by doc-model ops; output parses as XML (a test
-     file with the jsdom environment uses `DOMParser`; the source stays DOM-free) and uses only
-     allow-listed elements and attributes;
+  naphthalene, cubane, spiro, bicyclic, a 10-ring gets no circle); satellite placement; double-bond
+  side decision table; clipping against boxes from all 8 directions; text measurement (known
+  widths, fallback notice, descent rule); `resolveStyle` with every kind of bad override;
+  escaping of `<`, `&`, `"`, `]]>`, control characters, lone surrogates, emoji; the allow-lists.
+- **Test helpers (no DOM, no new dependency):** `__fixtures__/xml-check.ts`, a ~60-line
+  well-formedness checker (balanced tags, attribute syntax, only the five entities, no illegal
+  characters) that also returns elements and attributes for allow-list checks; and
+  `__fixtures__/ink-scan.ts`, an independent ink-box computation from the markup (path vertices,
+  curves sampled at 64 steps, polygon/circle/rect/ellipse geometry, stroke half-widths, `<text>`
+  boxes from the font table).
+- **Properties (fast-check, reusing doc-model's `arbitraries.ts` command generator):**
+  1. `render` never throws on any doc reachable by doc-model ops; output passes `xml-check` and
+     uses only allow-listed elements and attributes;
   2. determinism: same input twice, `parse(serialize(doc))`, and the doc rebuilt with reversed
      record key order all give identical bytes;
-  3. every number in the output matches `^-?\d+(\.\d{1,3})?$` (no exponent, no `-0`);
+  3. every numeric attribute token (after stripping the `pt` unit; `<text>` and `<metadata>`
+     content excluded) matches `^-?\d+(\.\d{1,3})?$` (no exponent, no `-0`);
   4. subset: each part of `render(doc, { only })` equals the same-key part of `render(doc)`;
-  5. cache: `createRenderer().render` deep-equals `render` across an edit sequence;
-  6. bounds: `bounds` contains the pt image of doc-model's `bounds`, equals the union of
-     `extents`, and translating the whole doc by `(dx,dy)` BLU translates `bounds` by
-     `(dx,dy)·L` with the same size (±0.002 pt);
-  7. uniform scale: scaling `bondLength`, `lineWidth`, `fontSize` by `k` scales `bounds` by `k`
-     (±0.005·k pt);
-  8. safety: runs, labels, titles and `metadata` drawn from arbitrary Unicode (including `<script>`,
-     `"onload=`, `]]>`) keep the output well-formed with no new elements, and the text round-trips
-     through the parsed output (except illegal characters → U+FFFD).
-- **Visual regression for the shipped pipeline** is manual (`docs/windows-checklist.md`): paste
-  three goldens into PowerPoint/Word 2021 and check labels, bond ends and the circle look right.
-- **Perf** (separate perf project like the other modules, skipped under `--coverage`):
-  slide-sized scheme (4 molecules ≈ 40 atoms, 3 arrows, 6 texts) `render` < 8 ms median; 500-atom
-  single fragment + 20 objects < 40 ms median; `createRenderer` re-render after moving one of ten
-  50-atom fragments < 5 ms median.
-- **Coverage:** `src/core/svg-render` line coverage ≥ 90 % (`SPEC.md` target; the generated
-  metrics table and `__golden__/` excluded).
+  5. bounds: `bounds` equals the union of `extents`; contains the pt image of doc-model's
+     `bounds` of the drawn items (the selection of keys that produced parts); translating the
+     whole doc by `(dx,dy)` BLU translates `bounds` by `(dx,dy)·L` with the same size (±0.002 pt);
+  6. uniform scale: scaling `bondLength`, `lineWidth`, `fontSize` by a power of two `k` scales
+     `bounds` by `k` (±0.005·k pt);
+  7. safety: runs, labels, `number` and `metadata` drawn from arbitrary Unicode (including
+     `<script>`, `"onload=`, `]]>`) keep the output well-formed with no new elements, and the text
+     round-trips through the parsed output (except illegal characters → U+FFFD).
+- **Tooling tests** (`tests/tooling/`, may use Node): `font-metrics.test.ts` (above); the ESLint
+  determinism block rejects `Math.pow`, `**`, `Math.tan`, `Date.now`, `localeCompare` in
+  `src/core/svg-render`; `.gitattributes` contains the golden line and no committed golden
+  contains `\r`.
+- **Shipped pipeline** is checked manually (`docs/windows-checklist.md`): paste three goldens
+  into PowerPoint/Word 2021; labels, bond ends and circles must look right.
+- **Perf** (separate perf project like the other modules, skipped under `--coverage`; `perception`
+  supplied, since `perceive` has its own budget): slide-sized scheme (4 molecules ≈ 40 atoms, 3
+  arrows, 6 texts) `render` < 8 ms median; 500-atom single fragment + 20 objects < 40 ms median.
+- **Coverage:** `src/core/svg-render` line coverage ≥ 90 % (`SPEC.md` target; the generated metrics
+  table and `__golden__/` excluded).
 
 ## Success Criteria
 
 1. Every function in "Public API" exists with tests; line coverage ≥ 90 %.
-2. Every doc-model item type and every `BondOrder`/`BondStereo`/`ArrowKind`/bracket/shape variant
-   has a rendering rule above and a golden scene; the exhaustive `switch`es end in `never`.
-3. Golden outputs are byte-identical on Linux and Windows (`npm test` passes on both with no
-   `-u`), including after a Windows `git checkout` with `autocrlf`.
-4. Same input → same bytes: determinism property passes at 1,000 runs.
-5. `bounds` of every golden scene contains all drawn ink within 0.01 pt (checked by a test that
-   rasterisation-free scans every number pair in the markup) and is tight to within 0.5 pt of
-   the farthest drawn primitive.
-6. Aromatic rings with all-1.5 bonds get circles (naphthalene: 2); a 1.5 bond elsewhere is a solid
-   plus dashed line; Kekulé rings get inside-ring double bonds.
+2. Every doc-model item type and every `BondOrder`/`BondStereo`/`DoublePlacement`/`ArrowKind`/
+   curved-arrow head/bracket/shape variant has a rendering rule above and appears in a golden
+   input (scan test); the exhaustive `switch`es end in `never` (`npm run typecheck`).
+3. Goldens are stable: `npm test` passes with no `-u`, goldens are LF (tooling test), and render
+   code uses only the allowed maths (ESLint block, tooling test). Cross-OS byte identity rests on
+   that rule set and the V8 argument in "Facts relied on"; tests run on the Windows dev machine.
+4. Same input → same bytes: determinism property passes at 1,000 runs (explicit test timeout).
+5. For every golden scene, `bounds` equals the ink box computed independently by `ink-scan` within
+   0.01 pt (so it contains all drawn ink and is tight: a transparent export with `padding: 0`
+   has no margin, `SPEC.md` success criterion 4); property 5 holds.
+6. Circled rings and Kekulé rules: a ring of all-1.5 bonds gets one circle (naphthalene: 2); a
+   1.5 bond outside a circled ring is a solid plus dashed line; Kekulé rings get inside-ring
+   double bonds with the shortening rule.
 7. Heteroatom labels show implicit H from `perceive` and flip so the text reads away from the
-   bonds (`OH` / `HO`, `NH2` / `H2N`); `CO2H`, `OMe`, `NO2` attach through the correct glyph.
+   bonds (`OH` / `HO`, `NH2` / `H2N`); bare atoms read `H2O`, `HCl`, `NH3`; `CO2H`, `OMe`, `NO2`
+   attach through the correct glyph (bond end position tested); no bond line crosses its label's
+   text.
 8. Subset rendering equals the matching slice of the full rendering (property 4).
 9. Output is well-formed XML containing only allow-listed elements/attributes and no external
-   reference, for any user text (property 8).
-10. Presets: `slides` and `journal` render the same doc with identical structure at different
-    scale; uniform-scale invariance holds (property 7).
-11. `createRenderer` agrees with `render` and meets its perf budget (properties 5, perf).
-12. A transparent-background export of the slide-sized golden scheme has bounds within
-    `lineWidth/2` of its ink on all four sides (tight bounds, success criterion 4 of `SPEC.md`).
-13. No DOM, Node or Electron import in the module (lint and `tsconfig.core.json` pass); no
-    network access.
-14. Perf budgets met on Windows.
+   reference, for any user text (properties 1 and 7).
+10. `slides` and `journal` render the same doc with identical element and attribute-name
+    sequences at different scale; uniform-scale invariance holds (property 6).
+11. Perf budgets met on Windows (both rows).
+12. No DOM, Node or Electron import in the module (lint and `tsconfig.core.json` pass).
+13. Text measurement: the table test passes; the calibration e2e test agrees with real Arial
+    within 1 % on Windows.
 
 ## Boundaries (module-specific)
 
 - **Always:** render from `doc-model` types and `chem-core`'s public API only; keep every number
   through `fmt`; keep user text out of markup; update goldens only with a reviewed visual diff.
 - **Ask first:** adding a `StyleSettings` field or a `DrawObject`/`Atom` field (schema bump);
-  bundling a font or emitting outlines; adding a dependency (e.g. a font parser); changing a
-  derived constant after the golden review (it moves goldens).
+  bundling a font or emitting outlines; adding a dependency (e.g. a font parser, jsdom);
+  changing a derived constant after the golden review (it moves goldens); adding options or a
+  memoising renderer.
 - **Never:** use a DOM, canvas or `getBBox`; emit scripts, styles or external references; rely on
   object-key order; embed timestamps or random ids; read or write files; draw interaction state
   (selection, warnings) into the output.
-
-## Open Questions
-
-Each needs a human decision; the default is what the plan will assume unless told otherwise.
-
-1. **Charge on a skeleton carbon (carbocation, carbanion):** sign only at the vertex (default,
-   ChemDraw-like) or `C⁺` with the letter shown?
-2. **Text size:** all text-like objects use `fontSize`; doc-model has no per-object size. Default:
-   keep, and add a field (schema bump) only if the teacher asks for big titles.
-3. **Fishhook barb side:** default the outer side of the curve (away from the bulge). Confirm
-   against textbook figures at the golden review.
-4. **Text as outlines for Office paste:** default `<text>` in Arial for v1; `clipboard-export`
-   decides after testing on Office 2021 whether to ask for a `textAsPaths` flag.
-5. **Metrics source font:** default Liberation Sans via the dev script (OFL, metric-identical to
-   Arial). Alternative: the Adobe Helvetica AFM (ASCII only, no Greek).
-6. **Fonts other than Arial:** default measured with Arial widths and the UI offers only
-   metric-compatible families. Alternative: a second table for Segoe UI / Calibri.
-7. **Ring perception location:** default a small internal `rings.ts` (cycle basis, sizes 3–12).
-   Alternative: ask chem-core to export rings (adds a public function there).
-8. **Reversed-label table ownership:** default in `svg-render` (`label-display.ts`) with a test
-   tying it to `ABBREVIATIONS`. Alternative: put `reversed`/`anchor` data in chem-core's table.
-9. **Bond colour inheritance:** default none (bonds are `bond.color ?? ink`). Alternative: a bond
-   whose two atoms share a colour takes it, half-and-half when they differ.
-10. **Equilibrium arrow:** default two harpoons; alternative two full arrowheads. Retro arrow is
-    the open double-line ⇒.
-11. **Padding:** default `padding: 0` in `toSvg` (tight); `clipboard-export` adds any margin.
-12. **Preset numbers and derived constants** (Slides 40 pt / 2 pt / 20 pt, wedge width,
-    arrowhead size …): default as tabled; adjust after the visual golden review.
-13. **Valence warnings in output:** default never drawn here; the editor overlays them using
-    `extents`. Alternative: an opt-in `showWarnings` that draws a red underline.
-14. **Group rendering:** default none (groups affect selection only).
-15. **`ids` option:** default off, so exported SVG carries no `data-chalk-id`; the editor opts in
-    if it wants DOM-level hit-testing instead of boxes.
