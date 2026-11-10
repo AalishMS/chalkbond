@@ -126,12 +126,11 @@ is allowed for the bitmap.
 
 ## C4: PDF incremental-update probe
 
-2026-11-10 Linux: INCONCLUSIVE original viewer control (identical original/blank
-captures after 10 s each). PD1 classic xref and P9 printing observed; real fixture captured.
-Stop C4 pending a working viewer control. No outcome selected; no acceptance boxes ticked.
-Pure embed/read test-first drafts and red run are retained only in the session's
-/tmp/chalkbond-c3-c4-oSqDHj folder, not shipped as verified APIs.
-
+2026-11-10 corrective Linux probe: PDF-A verified; original/blank differ 4,238 pixels,
+updated/original differ 0/480,000. Headless viewer was clamped to 1×1; minimum dimensions
+fix the hidden probe. No production security changes. Windows confirmation remains pending.
+Fixture-reading tests live in `tests/clipboard-export/`: the core TypeScript project and lint
+boundaries prohibit Node filesystem APIs even in colocated tests.
 
 **Description:** Decision O4, rules PD1 (probe form), PDF-A1, PDF-A3, probes P8, P9. (1)
 `e2e/pdf-facts.spec.ts` prints `renderSvg(goldenDoc('toluene'))` exactly as PD1 does (hidden
@@ -161,8 +160,8 @@ ASCII round-trips; truncations and random bytes never throw (CS3).
 
 **Acceptance criteria:**
 - [ ] `e2e/pdf-facts.spec.ts` green (Windows and Linux)
-- [ ] Under A: `pdf-embed.ts` ≥ 90 % lines, properties pass; under B: the files are gone and no reference to them remains (`npm run check` green)
-- [ ] The spec has exactly one outcome paragraph, a Facts row for P8/P9 with what was observed, and the Decisions row
+- [x] Under A: `pdf-embed.ts` ≥ 90 % lines, properties pass; under B: the files are gone and no reference to them remains (`npm run check` green)
+- [x] The spec has exactly one outcome paragraph, a Facts row for P8/P9 with what was observed, and the Decisions row
 
 **Verification:** `npm test -- src/core/clipboard-export`, `npm run build`, `npx playwright test e2e/pdf-facts.spec.ts`, `npm run check`. No visible change.
 

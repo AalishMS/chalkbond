@@ -42,14 +42,14 @@ the selection only (Copy covers parts of a drawing); batch export; print.
 
 ## Facts relied on
 
-C4 Linux observation (2026-11-10, Electron 45.2.3): PD1 prints toluene with a classic
-xref table (no XRef stream or Encrypt); P9 20×20 pt prints a PDF. Original PDF viewer
-control in the private probe-pdf partition is INCONCLUSIVE: its capture and a blank
-PDF capture are identical (0 differing pixels), each polled for the unchanged 10 s.
-Dark viewer pixels alone are insufficient evidence. Windows P8/P9 remain UNRUN.
-Probe windows are destroyed and the temporary print folder removed in finally;
-one application window remains and default SEC4 stays zero.
-Both PDF outcomes remain pending; no embedding outcome is selected.
+C4 Linux observation (2026-11-10, Electron 45.2.3): **PDF-A applies**. P8 fresh PD1
+print and committed fixture have classic xref tables (no XRef stream or Encrypt); P9
+20×20 pt prints a PDF. Hidden original-vs-blank control differs by 4,238 pixels;
+original-vs-incremental-update differs by 0 / 480,000 pixels (≤ 0.5%). Payload reads back.
+Headless Linux clamps an unconstrained probe viewer to 1×1; minimum 800×600 dimensions
+restore actual page rendering. Private probe-pdf session, hidden windows and SEC2/SEC4
+remain intact. Readiness stops at stable page ink, within the unchanged 10 s maximum.
+Windows P8/P9 remain UNRUN. All probe windows/folders are cleaned up; default SEC4 stays zero.
 
 
 C3 preparation (2026-11-10): P1–P7 including P2b are **UNRUN on Linux; needs Windows**.
@@ -74,6 +74,7 @@ this table is amended in the probe's own commit.
 | The Windows format names Office reads (`PNG`, `image/svg+xml`) can be listed outside Electron with .NET `System.Windows.Forms.Clipboard.GetDataObject().GetFormats()` in `powershell -STA` | **UNRUN Linux; needs Windows (P2b)** lists the formats a CB-W1 write leaves, exactly as Office sees them |
 | Which format PowerPoint and Word 2021 prefer and whether they honour `pHYs` **cannot be established from the repo** | Write vector and bitmap; never `text/plain`, `text/html`, `text/rtf` (Office would paste text). Human check: "Windows checks" |
 | 19400, `printToPDF(options: PrintToPDFOptions): Promise<Buffer>`; 12004–12080 `PrintToPDFOptions`: `margins?: PrintToPDFMargins`, `pageSize?: ('A0' … 'Ledger') \| (Size)`, `preferCSSPageSize?: boolean`, `printBackground?: boolean`, `generateTaggedPDF?: boolean` | PDF = a hidden window printing one inline SVG on a page the size of the drawing (rule PD1). Whether Chromium writes a classic cross-reference table (needed by rule PDF-A) is **probe P8** |
+| P8 / P9 corrective probe, Linux Electron 45.2.3 (2026-11-10) | Classic xref in fresh print and fixture; hidden page ink proven against blank; embedded capture identical (0/480,000); payload readback equal; 20×20 pt print accepted. **PDF-A applies; Windows confirmation unrun** |
 | svg-render `index.ts`: `renderSvg(doc, opts: RenderOptions & SvgOptions): SvgDocument`; `RenderOptions.only?: Selection` ("selected bonds bring their atoms; objects only when selected"); `SvgOptions { padding?: number /* default 0 (tight) */; metadata?: string /* "Opaque text, escaped, emitted as <metadata id="chalkbond">" */ }`; `SvgDocument { svg, width, height /* pt */, origin }`; `svgMetadata` writes `escapeText(content)` | The SVG export, the clipboard SVG and the raster source are one `renderSvg` call; the drawing travels in the existing `<metadata>`. **No svg-render change** |
 | doc-model `index.ts`: `serialize`, `parse` → `Result<Doc, ParseError>` (codes `too-large invalid-json not-chalkbond newer-version unsupported-version migration-failed schema invariants`), `MAX_FILE_BYTES` (= 20 × 1024 × 1024, `serialize.ts:10`), `extract(source, sel): SubDoc`, `insert(doc, sub, at): [Doc, Selection]` (a tuple), `everything`, `emptyDoc`, `setStyle(doc, patch)` | The embedded drawing is `.chalk` text read back only through `parse`. **No doc-model change** |
 | Editor `controller.ts`: `run('copy' \| 'cut')` calls `onCopy(taken, docBefore, selectionBefore)` only when something was taken; `canRun('copy')` = no gesture, no label/text editor, selection non-empty (`commands.ts` `canCopy`); `run('paste')` = in-app paste with CB1 cascade; `run({type:'paste-sub', sub})` places at the pointer, else the canvas centre; `canRun({type:'insert-text'})` is always true; `subscribe` events are `doc selection dirty history notice context-menu` only (no event when a label editor opens or a gesture starts); `notice-show {kind: 'info' \| 'error', text}` exists in the reducer but not on the controller | Copy of a selection goes through the editor; whole-drawing copy and every paste are the host's. The Copy button needs editor changes 1–2 ("Required changes") |
@@ -90,7 +91,7 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 | O1 | The **Copy** button sits at the right end of the top bar, after Undo/Redo (mock-ups A01, A02): a filled primary button with icon and label; after a copy it reads "Copied" with a check for 2 s; below 1100 px window width it shows the label "Copy" with no icon (never icon-only) and the name field narrows to 204 px (A15b) | The top-right corner is where Office and browsers put "send it on"; a word is self-explanatory, two overlapping sheets are not | 2026-11-10 |
 | O2 | Ctrl+C, the Copy button and Edit > Copy copy the selection, or the whole drawing when nothing is selected, writing the picture formats and the editable drawing in one clipboard write. PNG transparent, tight, 300 dpi; SVG written too. Paste reads the system clipboard and follows the editor's cascade rule when the content is the editor's own last copy. Plain text pastes as a name or SMILES through the name-insert path | One shortcut for PowerPoint, Word and Chalkbond; the teacher never chooses a format | 2026-11-10 |
 | O3 | Export dialog exactly as mock-ups A08a–c: three format cards; Size as Screen / Print / Poster in teacher language with the live pixel line and no "dpi"; "White background" off by default and remembered; one Save… button. Selection-only export is out | PNG needs two choices a Save dialog cannot ask; plain words | 2026-11-10 |
-| C4-control | PDF outcome remains pending: Linux original-vs-blank viewer control has identical captures; stop C4 as inconclusive, never infer B | Real PD1 print succeeds; viewer control does not prove content rendering | 2026-11-10 |
+| C4 | PDF-A applies (probe C4, 2026-11-10, Linux); Windows confirmation pending | Hidden viewer control renders with minimum dimensions; embedded capture equals original | 2026-11-10 |
 | O4 | Exports reopen as editable: PNG via a text chunk, SVG via svg-render's metadata. PDF: an early probe (C4) tries a standard incremental update; outcome A embeds, outcome B exports without embedding and says so (rule PDF-A / PDF-B) | Do not accept "no embedding" without evidence | 2026-11-10 |
 | O5 | Accepted defaults: SVG stays on the clipboard even if Office ignores it; if Office ignores 300 dpi, accept for v1; plain error wording without codes | Costs nothing; newer Office and other apps use SVG; lowering the resolution would break "sharp at 400 %" | 2026-11-10 |
 | O6 | All notice wordings as mock-up A17 | Teacher language, no "dpi", "clipboard" or "insert" | 2026-11-10 |
@@ -470,14 +471,6 @@ check, size limits). Request limits are enforced by the schema.
 - **PDF-A4** `fileKindOf` accepts `.pdf`; app-shell's Open filter and drop list include `.pdf`;
   the Export dialog's PDF reopen line is the PNG one.
 
-**Outcome B (probe C4 fails: cross-reference streams, or Chromium's viewer rejects the update).**
-
-- **PDF-B1** PDF export writes the printed bytes unchanged. `pdf-embed.ts` and its tests are
-  deleted; `DrawingFileKind` has no `'pdf'`; Open and drop do not accept `.pdf`; the PDF reopen
-  line is A08c's caution.
-
-Task C4 records which outcome applies (Facts row P8, a Decisions row) and deletes the other
-outcome's paragraph from this spec in the same commit.
 
 ### Security (module rules; app-shell SEC1–SEC12 also apply)
 
