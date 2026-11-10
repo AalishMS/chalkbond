@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { globalCommand, type KeyInfo } from './keymap';
+import { fieldCommand, globalCommand, type KeyInfo } from './keymap';
 
 const key = (k: string, over: Partial<KeyInfo> = {}): KeyInfo => ({
   key: k,
@@ -56,5 +56,24 @@ describe('K1 zoom keys', () => {
     expect(globalCommand(key('='), 'canvas-only')).toBeNull();
     expect(globalCommand(key('0', { ctrlKey: false }), 'all')).toBeNull();
     expect(globalCommand(key('0', { altKey: true }), 'all')).toBeNull();
+  });
+});
+
+describe('K1 undo and redo in the name field (R23)', () => {
+  it('act on the document while the field is empty', () => {
+    expect(fieldCommand(key('z'), 'all', '')).toBe('undo');
+    expect(fieldCommand(key('y'), 'all', '')).toBe('redo');
+    expect(fieldCommand(key('Z', { shiftKey: true }), 'all', '')).toBe('redo');
+  });
+
+  it('are the fields own text undo while it holds text', () => {
+    expect(fieldCommand(key('z'), 'all', 'e')).toBeNull();
+    expect(fieldCommand(key('y'), 'all', 'ethanol')).toBeNull();
+  });
+
+  it('no other shortcut is taken from the field, and canvas-only leaves them to the host', () => {
+    expect(fieldCommand(key('f'), 'all', '')).toBeNull();
+    expect(fieldCommand(key('='), 'all', '')).toBeNull();
+    expect(fieldCommand(key('z'), 'canvas-only', '')).toBeNull();
   });
 });

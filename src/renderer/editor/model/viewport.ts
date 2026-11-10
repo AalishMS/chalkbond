@@ -156,6 +156,16 @@ export function reveal(v: Viewport, ink: Rect, bondLength: number): Viewport {
   return zoom < v.zoom ? centredOn(zoom, inkCentre(ink), v.size) : v;
 }
 
+/**
+ * V7: after a name or scheme insert. The zoom is the lower of the current zoom and the fit zoom
+ * (so it never zooms in, and zooms out only when the drawing does not fit with the margin), and
+ * the whole drawing's ink box `ink` (pt) is centred.
+ */
+export function frame(v: Viewport, ink: Rect, bondLength: number): Viewport {
+  const zoom = Math.min(v.zoom, fitZoom(ink, v.size, bondLength));
+  return centredOn(zoom, inkCentre(ink), v.size);
+}
+
 /** One axis of V4: the pan range that keeps `keep` px of the content [lo, lo + len) visible. */
 function clampAxis(pan: number, lo: number, len: number, limit: number): number {
   const keep = Math.min(PAN_KEEP, len);

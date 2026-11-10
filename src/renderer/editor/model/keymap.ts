@@ -11,6 +11,20 @@ export interface KeyInfo {
 }
 
 /**
+ * R23: in the name field only Undo and Redo reach the document, and only while the field is
+ * empty; with text in it Ctrl+Z / Ctrl+Y are the field's own text undo.
+ */
+export function fieldCommand(
+  e: KeyInfo,
+  shortcuts: 'all' | 'canvas-only',
+  text: string,
+): EditorCommand | null {
+  if (text !== '') return null;
+  const command = globalCommand(e, shortcuts);
+  return command === 'undo' || command === 'redo' ? command : null;
+}
+
+/**
  * The K1 command for a key press, or `null`. With `canvas-only` the Ctrl rows belong to the
  * host's menu and nothing matches.
  */

@@ -665,6 +665,11 @@ kbd {
   color: var(--warning);
 }
 
+/* An info notice is plain text in the normal colour, with no icon (R20). */
+.hint-info {
+  color: var(--text);
+}
+
 .formula {
   flex: none;
   white-space: nowrap;

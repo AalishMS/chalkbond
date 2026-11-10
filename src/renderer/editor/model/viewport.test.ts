@@ -7,6 +7,7 @@ import {
   defaultZoom,
   fitViewport,
   fitZoom,
+  frame,
   initialViewport,
   ptToScreen,
   PX_PER_PT,
@@ -419,5 +420,40 @@ describe('V6 preset switch keeps the on-screen bond length', () => {
       ),
       { numRuns: 100 },
     );
+  });
+});
+
+describe('V7 frame', () => {
+  const px = PX_PER_PT;
+  const centreOf = (v: Viewport, ink: { x: number; y: number; w: number; h: number }) => {
+    const a = ptToScreen(v, { x: ink.x, y: ink.y });
+    const b = ptToScreen(v, { x: ink.x + ink.w, y: ink.y + ink.h });
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
+
+  it('keeps the current zoom when the ink box fits, and centres the box', () => {
+    const ink = { x: 900, y: 40, w: 100, h: 50 };
+    const r = frame(vp(1.5, 17, 9), ink, SLIDES);
+    expect(r.zoom).toBe(1.5);
+    expect(centreOf(r, ink).x).toBeCloseTo(canvas.w / 2, 9);
+    expect(centreOf(r, ink).y).toBeCloseTo(canvas.h / 2, 9);
+  });
+
+  it('never zooms in: a lower current zoom stays', () => {
+    const ink = { x: 0, y: 0, w: 100, h: 50 };
+    expect(frame(vp(0.9), ink, SLIDES).zoom).toBe(0.9);
+  });
+
+  it('zooms out to the fit zoom when the box does not fit with the margin', () => {
+    const ink = { x: 0, y: 0, w: 1000 / px, h: 100 / px }; // 1000 px wide at zoom 1
+    const r = frame(vp(1.5), ink, SLIDES);
+    expect(r.zoom).toBe(fitZoom(ink, canvas, SLIDES));
+    expect(r.zoom).toBeLessThan(1.5);
+    expect(centreOf(r, ink).x).toBeCloseTo(canvas.w / 2, 9);
+  });
+
+  it('zooms out from a high zoom to at most the default zoom', () => {
+    const ink = { x: 0, y: 0, w: 100, h: 50 };
+    expect(frame(vp(4), ink, SLIDES).zoom).toBe(1.5);
   });
 });

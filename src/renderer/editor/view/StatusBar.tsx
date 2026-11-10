@@ -70,7 +70,7 @@ export function StatusBar({
   return (
     <footer className="statusbar" data-testid="statusbar">
       <div
-        className={notice?.kind === 'error' ? 'hint hint-error' : 'hint'}
+        className={notice === null ? 'hint' : `hint hint-${notice.kind}`}
         id={HINT_ID}
         role="status"
         aria-live="polite"
@@ -83,7 +83,7 @@ export function StatusBar({
           )
         ) : (
           <>
-            <Icon name="warning" size={16} />
+            {notice.kind === 'error' && <Icon name="warning" size={16} />}
             <span className="hint-text">{notice.text}</span>
           </>
         )}

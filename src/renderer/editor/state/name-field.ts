@@ -2,7 +2,7 @@
 import { structureFromText } from '@core/chem-core';
 import { current, insert, type Doc } from '@core/doc-model';
 import { insertPosition } from '../model/placement';
-import { reveal, screenToBlu } from '../model/viewport';
+import { frame, screenToBlu } from '../model/viewport';
 import { nameError, suggestionRows } from '../model/suggestions';
 import type { EditorState, NameField } from './editor-state';
 import type { EditorAction, ReducerContext } from './reducer';
@@ -57,7 +57,7 @@ export function nameEnter(
 
 /**
  * N2: insert a structure from text (a name, SMILES, Molfile). Success: one "Insert <name>"
- * commit placed by P7, the inserted items selected, Select active, the view revealed (V5), the
+ * commit placed by P7, the inserted items selected, Select active, the view framed (V7), the
  * field cleared, "Inserted <name>" announced. Failure: nothing changes but the not-found state.
  */
 export function insertText(
@@ -97,7 +97,7 @@ export function insertText(
   const viewport =
     after.bounds === null || size.w === 0 || size.h === 0
       ? done.viewport
-      : reveal(done.viewport, after.bounds, after.style.bondLength);
+      : frame(done.viewport, after.bounds, after.style.bondLength);
   const id = done.noticeSeq + 1;
   return {
     ...done,

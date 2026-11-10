@@ -399,7 +399,7 @@ a Hill formula in real `<sub>` at 10 px, ↑/↓/Enter/click/Esc), N2 (insert vi
 `structureFromText`, P7 placement, "Insert ethanol" label, live-region "Inserted ethanol",
 selection = inserted, tool → Select), not-found row with ≤ 3 "Did you mean" chips (closest first,
 from E2) per "Notices" and screen 07, field border states, K5 field focus rules (keeps focus,
-cleared after insert; Esc ladder), Ctrl+F, N5. V5 reveal after insert. `model/formula.ts`:
+cleared after insert; Esc ladder), Ctrl+F, N5. V7 frame after insert (was V5 until the 2026-11-10 correction). `model/formula.ts`:
 Hill string / `Formula` → display runs; status-bar formula C5 (selection's atoms, else the single
 fragment). Empty-state chips run N2 (the reaction chip completes in E29). `e2e/harness.ts` gains
 `insertName(page, text)` and `canvasPoint(page, bluPoint)` (from the content transform).
@@ -417,7 +417,7 @@ click "ethanol" chip → inserted; "eth" shows 8 rows with the first highlighted
 - [x] Ethanol inserts centred at 150 % (C–C bond 80 px on screen ±1, from part boxes) and is selected
 - [x] Inserting benzene then acetic acid places acetic acid to the right (its box left edge 1.0 BLU = 80 px right of benzene's ink box ±1 px)
 - [x] Not-found row and chips exactly as screen 07; dropdown rows as screen 06 (row height 36, `min-width` 320)
-- [x] A molecule inserted off-screen triggers V5 (e2e: zoom to 400 %, pan away, insert; the readout and transform show the reveal)
+- [x] A molecule inserted off-screen frames the drawing (V7, replacing V5 for inserts; e2e: zoom to 400 %, pan away, insert; the readout reads 150 % and the drawing is centred)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E13` → `E13/dropdown-eth.png` (scripted: type "eth"; compare `06-name-dropdown.png`), `E13/notfound-ethanl.png` (scripted: type "ethanl" + Enter; compare `07-name-nomatch.png`), `E13/ethanol-inserted.png` (scripted: insert ethanol; formula visible), `E13/three-inserted.png` (scripted: insert ethanol, benzene, acetic acid in a row)
 

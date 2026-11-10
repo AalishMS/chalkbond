@@ -51,6 +51,15 @@ const allKeys = (page: Page): Promise<string[]> =>
 const contentTransform = async (page: Page): Promise<string | null> =>
   page.locator('[data-layer="content"]').getAttribute('transform');
 
+/** The drawing's ink box is centred in the canvas (geometry boxes: within 3 px). */
+async function expectCentred(page: Page): Promise<void> {
+  const canvas = await page.getByTestId('canvas').boundingBox();
+  if (!canvas) throw new Error('no canvas');
+  const all = await inkOf(page, await allKeys(page));
+  near(all.x + all.width / 2, canvas.x + canvas.width / 2, 3);
+  near(all.y + all.height / 2, canvas.y + canvas.height / 2, 3);
+}
+
 async function expectInView(page: Page): Promise<void> {
   const canvas = await page.getByTestId('canvas').boundingBox();
   if (!canvas) throw new Error('no canvas');
@@ -71,6 +80,9 @@ test('typing ethanol + Enter draws it centred, selected, with its formula', asyn
     await expect(field(page)).toBeFocused();
     await expect(page.getByTestId('undo')).not.toHaveAttribute('aria-disabled', 'true');
     await expect(page.getByRole('status')).toContainText('Inserted ethanol');
+    // R20: an info notice is plain text, no warning icon.
+    await expect(page.getByRole('status').locator('svg')).toHaveCount(0);
+    // R21: what was inserted is selected and Select is the active tool.
     await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');
 
     // Centred on the canvas at 150 %: the C-C bond is 80 px between its atoms.
@@ -85,10 +97,16 @@ test('typing ethanol + Enter draws it centred, selected, with its formula', asyn
     if (!bond) throw new Error('no bond');
     near(Math.hypot(bond.width, bond.height), 80, 1);
 
-    // K1: Ctrl+Z is not a document shortcut while a text input has focus, so use the button.
-    await page.getByTestId('undo').click();
+    // R23: the field is empty and focused, so Ctrl+Z undoes the insert and Ctrl+Y brings it back.
+    await page.keyboard.press('Control+z');
     await expect(page.getByTestId('empty-state')).toBeVisible();
     await expect(parts(page, 'atom:')).toHaveCount(0);
+    await page.keyboard.press('Control+y');
+    await expect(page.getByTestId('empty-state')).toHaveCount(0);
+    expect(await parts(page, 'bond:').count()).toBe(2);
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+Shift+z');
+    expect(await parts(page, 'bond:').count()).toBe(2);
   } finally {
     await app.close();
   }
@@ -98,9 +116,10 @@ test('inserting benzene next puts it to the right, 1.0 BLU (80 px) clear', async
   const { app, page } = await openApp();
   try {
     await insertName(page, 'ethanol');
-    const before = await inkOf(page, await allKeys(page));
     const known = new Set(await allKeys(page));
     await insertName(page, 'benzene');
+    // The view is re-framed by the insert (V7), so measure ethanol again after it.
+    const before = await inkOf(page, [...known]);
     const fresh = (await allKeys(page)).filter((k) => !known.has(k));
     expect(fresh.length).toBeGreaterThan(0);
     const benzene = await inkOf(page, fresh);
@@ -114,6 +133,24 @@ test('inserting benzene next puts it to the right, 1.0 BLU (80 px) clear', async
       .evaluate((c) => getComputedStyle(c).fill);
     expect(fill).toBe('none');
     await expectInView(page);
+    // R22: both molecules, as one group, are centred at 150 %.
+    await expect(page.getByTestId('zoom-reset')).toHaveText('150%');
+    await expectCentred(page);
+  } finally {
+    await app.close();
+  }
+});
+
+test('three inserted structures are framed as a group (R22, V7)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await insertName(page, 'ethanol');
+    await insertName(page, 'benzene');
+    await insertName(page, 'acetic acid');
+    await expectCentred(page);
+    await expectInView(page);
+    const percent = Number.parseInt((await page.getByTestId('zoom-reset').textContent()) ?? '', 10);
+    expect(percent).toBeLessThanOrEqual(150);
   } finally {
     await app.close();
   }
@@ -225,7 +262,7 @@ test('the empty-state chips insert ethanol and benzene', async () => {
   }
 });
 
-test('a molecule inserted off-screen is revealed (V5)', async () => {
+test('a molecule inserted while zoomed in and panned away frames the drawing (V7)', async () => {
   const { app, page } = await openApp();
   try {
     await insertName(page, 'ethanol');
@@ -237,6 +274,8 @@ test('a molecule inserted off-screen is revealed (V5)', async () => {
     await insertName(page, 'benzene');
     expect(await contentTransform(page)).not.toBe(before);
     await expectInView(page);
+    await expectCentred(page);
+    await expect(page.getByTestId('zoom-reset')).toHaveText('150%');
   } finally {
     await app.close();
   }

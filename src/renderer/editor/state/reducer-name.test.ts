@@ -103,6 +103,33 @@ describe('name-enter and insert-text (N2)', () => {
     expect(s.selection.atoms.size).toBe(6);
   });
 
+  it('frames the whole drawing: centred as one group at 150 % (R22, V7)', () => {
+    const mid = (s: EditorState) => {
+      const b = inkOf(s);
+      const a = ptToScreen(s.viewport, { x: b.x, y: b.y });
+      const c = ptToScreen(s.viewport, { x: b.x + b.w, y: b.y + b.h });
+      return { x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 };
+    };
+    let s = run(sized(), { type: 'insert-text', text: 'ethanol' });
+    s = run(s, { type: 'insert-text', text: 'benzene' });
+    expect(s.viewport.zoom).toBe(1.5);
+    expect(Math.abs(mid(s).x - 1215 / 2)).toBeLessThan(1);
+    expect(Math.abs(mid(s).y - 722 / 2)).toBeLessThan(1);
+    s = run(s, { type: 'insert-text', text: 'acetic acid' });
+    expect(Math.abs(mid(s).x - 1215 / 2)).toBeLessThan(1);
+    expect(Math.abs(mid(s).y - 722 / 2)).toBeLessThan(1);
+    // Selection is what was inserted, tool is Select.
+    expect(s.tool).toBe('select');
+    expect(s.selection.atoms.size).toBe(4);
+  });
+
+  it('selects the inserted items and switches to Select even from another tool', () => {
+    let s = run(sized(), { type: 'select-tool', tool: 'ring' });
+    s = run(s, { type: 'insert-text', text: 'benzene' });
+    expect(s.tool).toBe('select');
+    expect(s.selection.atoms.size).toBe(6);
+  });
+
   it('a drawing too wide for the view zooms out, never in', () => {
     let s = run(sized(), { type: 'canvas-resized', size: { w: 400, h: 400 } });
     s = run(s, { type: 'insert-text', text: 'benzene' });

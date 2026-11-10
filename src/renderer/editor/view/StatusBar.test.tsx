@@ -145,8 +145,11 @@ describe('StatusBar notice', () => {
     expect(html).toContain('role="status" aria-live="polite"');
   });
 
-  it('shows an info notice in the normal text colour', () => {
-    expect(notice('info')).toContain('class="hint"');
+  it('shows an info notice in the normal text colour, with no icon', () => {
+    const html = notice('info');
+    expect(html).toContain('class="hint hint-info"');
+    expect(html).toContain('<span class="hint-text">That edit is not possible.</span>');
+    expect(html).not.toContain('<use href="#warning"></use>');
   });
 });
 

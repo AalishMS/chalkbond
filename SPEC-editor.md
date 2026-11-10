@@ -91,7 +91,7 @@ resolutions of the draft's open questions and of problems found in review.
 | 5 | At launch: Bond (single) is the active tool, canvas focused | The first click draws, as in screen 01 | 2026-11-10 |
 | 6 | Select: a click on an atom or bond selects its whole fragment; a second click (press and release without a drag) on an atom or bond of an already fully selected fragment narrows the selection to that atom or bond (PowerPoint group model). Alt+click selects one atom or bond directly. A drag always moves the current selection | A teacher clicking a molecule wants to move it; the second click reaches the parts, as in PowerPoint groups | 2026-11-10 |
 | 7 | Tool rail 64 px wide, buttons 56×48 with one-word captions under the icons (Select, Erase, Bond, Chain, Ring, Atom, Arrow, Plus, Curly, Text); sizes as in the mock-ups | The rail explains itself without tooltips | 2026-11-10 |
-| 8 | Default zoom 150 % for Slides; Handout keeps the same on-screen bond length (rule V2). After a name insert or Tidy reaction, if the drawing's ink box no longer fits the viewport with a 48 px margin, zoom out to fit; never zoom in automatically, never above the default | Bonds of 80 px are comfortable to click; the drawing never runs off screen | 2026-11-10 |
+| 8 | Default zoom 150 % for Slides; Handout keeps the same on-screen bond length (rule V2). After a name insert or Tidy reaction, if the drawing's ink box no longer fits the viewport with a 48 px margin, zoom out to fit; never zoom in automatically, never above the default (name inserts: see V7 and R22) | Bonds of 80 px are comfortable to click; the drawing never runs off screen | 2026-11-10 |
 | 9 | Select options bar: Clean up, Show Kekulé / Show circle (icon + label, `min-width` of the longer label so the bar never jumps), Tidy reaction, divider, Flip horizontal, Flip vertical. "Number" is cut (rule C4 removed). "Expand" is rendered only when the selection contains an abbreviation | Screens 03 / 03b; compound numbers can be typed as text | 2026-11-10 |
 | 10 | Text and label editing is WYSIWYG, no markup ever shown: real sub/superscripts while editing; x₂ / x² toggle sub/sup on the selection; B / I toggle the object; auto-formatting (formula subscripts, `->` to →, trailing charge) applied on commit to characters the user did not format explicitly; `^` / `_` typed shortcuts honoured on commit; re-opening shows the text formatted. Implementation: a `contenteditable` element that is a projection of a pure editing model (rule T2) | Teachers know Word, not markup; the model-first design keeps every rule pure and testable | 2026-11-10 |
 | 11 | Name suggestions are ordered closest match first ("ethanl" offers ethanol first). Fixed in chem-core (required change 2) | The intended word must be the first chip | 2026-11-10 |
@@ -119,6 +119,10 @@ resolutions of the draft's open questions and of problems found in review.
 | R17 | Rotate handle, arrow end handles and curved-arrow handles stay; scale handles, grid, rulers, group/z-order UI stay out | Rotating and re-aiming arrows are everyday edits; the rest is noise for this user | 2026-11-10 |
 | R18 | Text size stays one `fontSize` per document (svg-render Decision 2); no schema bump | Titles belong in PowerPoint | 2026-11-10 |
 | R19 | `createRenderer` is not requested now; it is requested (svg-render spec change first) only if the profiling task measures a budget miss with the drag fast path in place | Measure before asking | 2026-11-10 |
+| R20 | An info notice (such as "Inserted ethanol") is plain `--text` with no icon; only warnings and errors carry the `warning` icon, in `--warning` | A warning triangle on a success message reads as a problem | 2026-11-10 |
+| R21 | A name insert selects what it inserted and switches to Select, like pasting an object into PowerPoint; the name field keeps focus and is cleared. Applies to single names, chips and reaction text | The teacher can drag the new structure at once | 2026-11-10 |
+| R22 | After a name or scheme insert the whole drawing is framed (V7): zoom `min(current, fit)` and the drawing's ink box centred. Supersedes Decision 8's reveal for inserts | The third molecule ended at the right edge with the left half of the canvas empty | 2026-11-10 |
+| R23 | Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z act on the document while the name field is focused and empty; with text in it they are the field's text undo | After typing a name and Enter the field is empty and focused, and undoing the insert is the natural next key | 2026-11-10 |
 
 ---
 
@@ -336,7 +340,7 @@ No modal dialogs. Two places only:
 | Kind | Where | Behaviour |
 |---|---|---|
 | Name not found, scheme part not found, invalid SMILES | the name-field dropdown (screen 07): a `--warning-bg` row with the `warning` icon: `No compound named “ethanl”.`; below it "Did you mean" (`--type-xs`) and ≤ 3 chips from `suggestions`, closest first; `role="alert"`; dropdown `min-width` 320 | Stays while the text is unchanged; editing the text, Esc or blur clears it; a chip replaces the failing part (the whole text for a single name) and inserts |
-| Everything else (Kekulé impossible, nothing to tidy, Expand on a non-abbreviation, a recipe that threw) | the status bar's hint slot: `warning` icon + text in `--warning` (errors) or `--text` (info); the slot has `role="status"` `aria-live="polite"` | Replaces the hint; cleared by the next canvas action, Esc, or after 8 s |
+| Everything else (Kekulé impossible, nothing to tidy, Expand on a non-abbreviation, a recipe that threw; the "Inserted ethanol" announcement) | the status bar's hint slot. An error or warning: `warning` icon + text in `--warning`. An info notice: plain text in `--text`, **no icon**. The slot has `role="status"` `aria-live="polite"` | Replaces the hint; cleared by the next canvas action, Esc, or after 8 s |
 
 Wording: sentence case, plain, says what happened and what to do, never blames, no codes:
 "This ring can't be shown with alternating double bonds." · "Nothing to tidy: draw an arrow
@@ -373,7 +377,7 @@ Esc, Enter and K3 apply; with `shortcuts: 'canvas-only'` the Ctrl rows are left 
 
 | Keys | Command |
 |---|---|
-| Ctrl+Z / Ctrl+Y, Ctrl+Shift+Z | Undo / Redo |
+| Ctrl+Z / Ctrl+Y, Ctrl+Shift+Z | Undo / Redo. In the name field they act on the document while the field is empty; while it holds text they are the field's own text undo |
 | Ctrl+C / Ctrl+X / Ctrl+V | Copy / Cut / Paste (in-app, rule CB1) |
 | Ctrl+D | Duplicate selection |
 | Ctrl+A | Select all (switches to Select) |
@@ -708,13 +712,20 @@ Numbered so tasks can cite them.
   48 px on every side fit the canvas; centred.
 - **V4** Wheel pans vertically, Shift+wheel horizontally; Space+drag and middle-drag pan. Pan is
   clamped so at least 64 px of the content's bounds stay on screen.
-- **V5** **Reveal** after a name insert, scheme insert, paste, duplicate or Tidy reaction: if the
+- **V5** **Reveal** after a paste, duplicate or Tidy reaction (a name or scheme insert uses V7): if the
   document's ink box is fully visible inside a 48 px margin, nothing; else if it fits at the
   current zoom, pan by the smallest amount that brings it inside the margin; else set zoom to
   `min(fit zoom, z₀)` when that is below the current zoom, centred on the ink box (Decision 8).
   Pans animate over `--motion-pan` (none under reduced motion).
 - **V6** Preset switch keeps the drawing's on-screen size: zoom × oldBondLength / newBondLength
   (not snapped to steps, clamped to the range), about the canvas centre.
+- **V7** **Frame** after a name insert or a scheme insert (N2, N3): zoom = `min(current zoom, fit
+  zoom)` (R13: fit with the 48 px margin, never above z₀), and the ink box of the whole drawing
+  (not only the new structure) is centred in the canvas. Starting from an empty document at 1280 ×
+  800: ethanol is centred at 150 %; benzene added: both, as one group, centred at 150 %; acetic acid
+  added: all three centred as a group, 150 % if they fit with 48 px margins, else the fit zoom.
+  Placement of the new structure (P7, N3) does not change. Pasting, duplicating and Tidy reaction
+  keep V5.
 
 ### Hover
 
@@ -817,7 +828,8 @@ atom, so a wedge's narrow end is where the gesture started.
 - **P7** **Insert placement** (a single structure from the name field, a chip or `insert-text`):
   empty doc → centred on the canvas centre. Otherwise its ink box's left edge 1.0 BLU right of the
   document's ink box right edge, vertically centred on the centre of the rightmost fragment or
-  object. Then V5. The inserted items are selected and the tool becomes Select.
+  object. Then V7 (frame). The inserted items are selected and the tool becomes Select, as when an
+  object is pasted into PowerPoint, so the teacher can drag it at once; the name field keeps focus.
 
 ### Ring templates
 
@@ -957,7 +969,8 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
   `<sub>` at 10 px). ↑/↓ highlight, Enter inserts the highlighted entry (or the typed text if
   none), click inserts, Esc closes.
 - **N2** Insert: `structureFromText(text, names)`; success → `insert` placed by P7, labelled
-  "Insert ethanol" (entry name, else "Insert structure"), announced "Inserted ethanol". Failure →
+  "Insert ethanol" (entry name, else "Insert structure"), announced "Inserted ethanol" (an info notice, no icon). The inserted items become the selection and
+  the tool becomes Select; the field keeps focus and is cleared; the view is framed (V7). Failure →
   the not-found row (`not-found`, `invalid-smiles`, `invalid-molfile`); `too-large` → that
   message in the row; `empty` → nothing.
 - **N3** **Reaction text**: if the text contains an arrow token (R14) outside brackets and
@@ -968,7 +981,7 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
   Otherwise the scheme (structures, coefficient texts, pluses, arrows of kind `forward`, or
   `equilibrium` for `<=>`/`⇌`) is laid out by TR2–TR5 as one "Insert reaction" commit, placed:
   empty doc → centred on the canvas centre; else its ink box's left edge at the document's left
-  edge and its top 1.5 BLU below the document's bottom. Then V5; the inserted items are selected
+  edge and its top 1.5 BLU below the document's bottom. Then V7; the inserted items are selected
   and the tool becomes Select.
 - **N4** Empty-state chips and `insert-text` commands go through N2/N3 exactly.
 - **N5** The dictionary is imported as JSON and `createNameIndex` is called once per controller

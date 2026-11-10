@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { canRedo, canUndo, current } from '@core/doc-model';
 import { statusFormula } from '../model/formula';
-import { globalCommand } from '../model/keymap';
+import { fieldCommand, globalCommand } from '../model/keymap';
 import { suggestionRows } from '../model/suggestions';
 import type { EditorController } from '../state/controller';
 import { isEmptyDoc } from '../state/empty-doc';
@@ -52,8 +52,12 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
     return () => clearTimeout(timer);
   }, [noticeId, dispatch]);
   const onKeyDown = (e: React.KeyboardEvent): void => {
-    if (isTextTarget(e.target)) return;
-    const command = globalCommand(e, controller.shortcuts);
+    // K1: a text input keeps its keys, except Undo / Redo in the empty name field (R23).
+    const command = isTextTarget(e.target)
+      ? isNameField(e.target)
+        ? fieldCommand(e, controller.shortcuts, state.nameField.text)
+        : null
+      : globalCommand(e, controller.shortcuts);
     if (command === null) return;
     e.preventDefault();
     if (command === 'focus-name-field') {
