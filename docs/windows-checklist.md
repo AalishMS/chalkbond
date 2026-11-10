@@ -42,3 +42,18 @@ Open `src/core/svg-render/__golden__/` and paste three goldens into PowerPoint a
 - [ ] Word 2021: the same three checks on the same three pictures
 - [ ] The image background is transparent in both applications (no white box)
 - [x] `npm run test:e2e` passes: 2 tests, including the font calibration against real Arial
+
+## Checkpoint E32 — editor performance
+
+Run on the owner's laptop (the machine the teacher uses), with the app built (`npm run build`):
+
+```
+npx vitest run --project perf
+npx playwright test e2e/editor-perf.spec.ts
+```
+
+Compare the `PERF` lines with the table in `docs/editor-perf.md` and add a row for the laptop.
+
+- [ ] `npx vitest run --project perf` passes on the owner's laptop (bond-drag preview < 10 ms, tidyReaction < 25 ms, createNameIndex < 30 ms, hit-test < 0.5 ms)
+- [ ] `e2e/editor-perf.spec.ts` passes on the owner's laptop (drag frames p95 <= 16 ms, commit <= 50 ms, cold start < 3 s); the numbers are added to `docs/editor-perf.md`
+- [ ] Dragging a molecule of a 40-atom scheme and drawing a bond feel smooth by eye

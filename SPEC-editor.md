@@ -139,6 +139,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R37 | Short curly arrows (E25 follow-up; svg-render Decision 13 draws `\|bend\| > 0.5` as a cubic whose ends are square to the chord): when either anchor is an atom drawn with a label, the default apex height is at least `0.9 − 0.5 × chord` BLU (chord 0.5: 0.65, bend 2.6; from chord 0.9 on R33 alone decides, so chord ≥ 0.9 arrows are unchanged). Hit-testing (H1), the hover band and the bend handle use svg-render's `curveControls`, so they follow the drawn curve | At bend 1.8 the label's clearance (≈ 0.3 BLU) ate the return leg and the head sat beside the O pointing away from it; with 0.65 the arc leaves the bond sideways and the head arrives at the label edge pointing at it (head within 20° of the label centre, visible arc ≥ 5 head lengths in both presets) | 2026-11-10 |
 | R38 | The viewport follows the document's preset whenever a change alters the style's bond length: the preset switch, undo and redo all call `switchPreset(viewport, old, new)` (zoom × old / new bond length, drawing centre kept). The viewport is still not part of history; `load` keeps its own default-zoom rule. Replaces "the zoom stays" in PR1 | Undoing a Handout switch left the Slides style at the Handout zoom, so the drawing looked 2.8 times too big | 2026-11-10 |
 | R39 | A structure inserted through the name field (single names, chips, reaction parts; N2, N3) with exactly two atoms and one bond is rotated about its centre so the bond is horizontal, first atom on the left; done in the editor's insert path, not in chem-core | `2 H2 + O2 -> 2 H2O` drew H-H and O=O at the zig-zag angle, wrong beside "H₂O" | 2026-11-10 |
+| R40 | E32 measured every performance budget with room to spare on the development machine (worst e2e p95 3.5 ms against 16 ms), so the drag fast path and the keyed patch are enough and `createRenderer` is not requested (R19 stays as the rule for a future miss). A frame sample is script + forced style and layout on the main thread, one event per frame; raster and vsync are not in it | Measure before asking; the owner's laptop run is on the Windows checklist | 2026-11-10 |
 
 ---
 
@@ -1198,6 +1199,21 @@ reach it.
 The profiling task records medians and p95 in `docs/editor-perf.md`. A miss after the fast path
 leads to a request for svg-render's `createRenderer` (svg-render spec change first, R19); budgets
 are never loosened.
+
+Measured 2026-11-10 (E32; Intel Core i5-11400H, 16 GB, Windows 11; details and the definition of a
+frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer` is not requested.
+
+| Scenario | Budget | Measured | Date |
+|---|---|---|---|
+| `hitTest`, 500-atom document (node, median) | < 0.5 ms | 0.14 ms | 2026-11-10 |
+| One bond-drag preview step, 40-atom scheme (node, median) | < 10 ms | 0.62 ms | 2026-11-10 |
+| `tidy` on the 4-molecule scheme (node, median) | < 25 ms | 1.5 ms | 2026-11-10 |
+| `createNameIndex(compounds.json)` (node, median) | < 30 ms | 0.56 ms | 2026-11-10 |
+| Whole-fragment drag, 40-atom scheme (e2e, p95) | <= 16 ms | 3.5 ms | 2026-11-10 |
+| Bond-drag preview, 100-atom doc (e2e, p95) | <= 16 ms | 2.9 ms | 2026-11-10 |
+| Partial-selection drag, 100-atom doc (e2e, p95) | <= 16 ms | 1.8 ms | 2026-11-10 |
+| Commit to paint, 100-atom doc (e2e, worst of 9) | <= 50 ms | 12 ms | 2026-11-10 |
+| Cold start to usable canvas (e2e) | < 3 s | 0.44 s | 2026-11-10 |
 
 ## Success Criteria
 

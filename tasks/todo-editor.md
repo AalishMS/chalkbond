@@ -958,9 +958,9 @@ proposal in the report and stop (R19); never loosen a budget.
 **Tests first:** the perf tests themselves.
 
 **Acceptance criteria:**
-- [ ] Node perf budgets pass (timings skipped under `--coverage`)
-- [ ] e2e budgets measured on this machine and recorded in `docs/editor-perf.md`; any miss recorded with the proposed svg-render change, budgets unchanged
-- [ ] A Windows checklist item asks for the run on the owner's laptop
+- [x] Node perf budgets pass (timings skipped under `--coverage`)
+- [x] e2e budgets measured on this machine and recorded in `docs/editor-perf.md`; any miss recorded with the proposed svg-render change, budgets unchanged (no miss)
+- [x] A Windows checklist item asks for the run on the owner's laptop
 
 **Verification:** `npm test`, `npm run test:e2e`
 

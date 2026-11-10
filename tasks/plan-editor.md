@@ -129,7 +129,7 @@ Everything else is sequential: each phase builds on the previous one.
 ### Phase 6: preset, hardening, acceptance
 - [x] E30: Preset switch
 - [x] E31: Property suite and controller completeness
-- [ ] E32: Performance measurement
+- [x] E32: Performance measurement
 - [ ] E33: Coverage and accessibility pass
 - [ ] E34: Windows checklist, AGENTS.md, success-criteria sweep
 
