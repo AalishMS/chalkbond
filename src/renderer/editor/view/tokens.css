@@ -1,0 +1,84 @@
+/*
+ * Chalkbond editor design tokens (SPEC-editor.md "Visual language").
+ * Lift as-is into src/renderer/editor/view/tokens.css. Deviations from the spec are listed in
+ * DEVIATIONS.md next to this file.
+ */
+:root {
+  /* Colour */
+  --chrome-bg: #f5f6f8;
+  --canvas-bg: #ffffff;
+  --border: #dadde3;
+  --border-control: #7a828e;
+  --text: #1f2328;
+  --text-muted: #5b6270;
+  --text-disabled: #9aa1ad;
+  --hover-bg: #e9ebef;
+  --pressed-bg: #dde1e7;
+  --accent: #1f5fd1;
+  --active-bg: #e3ecfb;
+  --active-fg: #1a4fb0;
+  --active-hover-bg: #d2e0f8;
+  --warning: #b42318;
+  --warning-bg: #fdecea;
+  --tooltip-bg: #1f2328;
+  --tooltip-fg: #ffffff;
+  --tooltip-kbd-border: #5b6270;
+  --tooltip-muted: #c9ced6;
+  --empty-art: #c9ced6;
+
+  /* Canvas overlays: --accent at these alphas (applied as group opacity, see DEVIATIONS.md) */
+  --overlay-hover: 0.45;
+  --overlay-selection: 0.24;
+  --overlay-marquee: 0.08;
+  --overlay-merge: 0.32;
+  --ghost-opacity: 0.45;
+  --guide-opacity: 0.6;
+
+  /* Type */
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --type-xs: 400 12px / 16px var(--font-ui);
+  --type-sm: 400 13px / 18px var(--font-ui);
+  --type-md: 400 14px / 20px var(--font-ui);
+  --type-rail: 600 18px / 24px var(--font-ui);
+  --type-caption: 500 11px / 14px var(--font-ui);
+  --type-hint: 400 13px / 18px var(--font-ui);
+
+  /* Spacing scale */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 24px;
+  --space-7: 32px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-pill: 14px;
+
+  /* Elevation */
+  --shadow-1: 0 4px 12px rgba(31, 35, 40, 0.12), 0 0 0 1px #dadde3;
+  --shadow-2: 0 2px 6px rgba(31, 35, 40, 0.2);
+
+  /* Motion */
+  --motion-fade: 120ms ease-out;
+  --motion-pan: 160ms ease-out;
+
+  /* Layout */
+  --topbar-h: 48px;
+  --rail-w: 64px;
+  --statusbar-h: 28px;
+  --rail-btn-w: 56px;
+  --rail-btn-h: 48px;
+  --option-btn: 32px;
+  --topbar-btn: 32px;
+  --status-btn: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fade: 0ms;
+    --motion-pan: 0ms;
+  }
+}

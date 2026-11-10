@@ -1,0 +1,217 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<!--
+  Chalkbond editor icon sprite (SPEC-editor.md "Icons"). Grid 24x24, stroke 1.5, round caps and
+  joins, currentColor, 2 px safe margin. One <symbol> per icon; the id is the icon name in the
+  spec. The real implementation turns each symbol into a named export in icons.tsx.
+  Use: <svg class="icon"><use href="icons.svg#bond-single"/></svg>
+-->
+
+<!-- Pick -->
+<symbol id="select" viewBox="0 0 24 24">
+  <path d="M6 3L6 19L10.5 14.8L13.5 21L16 19.8L13 13.8L19 13.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+<symbol id="erase" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.5 15.5L13.5 6.5Q15 5 16.5 6.5L19.5 9.5Q21 11 19.5 12.5L12 20H7.5Z"/>
+    <path d="M9 11L14 16"/>
+    <path d="M12 20H20"/>
+  </g>
+</symbol>
+
+<!-- Bonds -->
+<symbol id="bond-single" viewBox="0 0 24 24">
+  <path d="M5 19L19 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="bond-double" viewBox="0 0 24 24">
+  <path d="M4 16.5L16.5 4M7.5 20L20 7.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="bond-triple" viewBox="0 0 24 24">
+  <path d="M3.5 15.5L15.5 3.5M5 19L19 5M8.5 20.5L20.5 8.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="bond-wedge" viewBox="0 0 24 24">
+  <path d="M5 19L17.6 4.4L19.6 6.4Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+</symbol>
+<symbol id="bond-hash" viewBox="0 0 24 24">
+  <path d="M5.75 17.42L6.58 18.25M7.83 14.83L9.17 16.17M9.9 12.24L11.76 14.1M11.98 9.64L14.36 12.02M14.05 7.05L16.95 9.95M16.12 4.46L19.54 7.88" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="chain" viewBox="0 0 24 24">
+  <path d="M3 16L7.5 8L12 16L16.5 8L21 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+
+<!-- Rings -->
+<symbol id="ring-benzene" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z"/>
+    <circle cx="12" cy="12" r="4.2"/>
+  </g>
+</symbol>
+<symbol id="ring-6" viewBox="0 0 24 24">
+  <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+</symbol>
+<symbol id="ring-5" viewBox="0 0 24 24">
+  <path d="M12 4.8L19.61 10.33L16.7 19.27H7.3L4.39 10.33Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+</symbol>
+<symbol id="ring-4" viewBox="0 0 24 24">
+  <path d="M6 6H18V18H6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+</symbol>
+<symbol id="ring-3" viewBox="0 0 24 24">
+  <path d="M12 4L20 18.5H4Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+</symbol>
+
+<!-- Atom marks -->
+<symbol id="mark-plus" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <circle cx="12" cy="12" r="7"/>
+    <path d="M12 8.5V15.5M8.5 12H15.5"/>
+  </g>
+</symbol>
+<symbol id="mark-minus" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <circle cx="12" cy="12" r="7"/>
+    <path d="M8.5 12H15.5"/>
+  </g>
+</symbol>
+<symbol id="mark-lone-pair" viewBox="0 0 24 24">
+  <g fill="currentColor">
+    <circle cx="8.5" cy="12" r="2.2"/>
+    <circle cx="15.5" cy="12" r="2.2"/>
+  </g>
+</symbol>
+<symbol id="mark-radical" viewBox="0 0 24 24">
+  <circle cx="12" cy="12" r="2.6" fill="currentColor"/>
+</symbol>
+
+<!-- Reaction -->
+<symbol id="arrow-forward" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12H16" fill="none"/>
+    <path d="M21 12L15.5 9V15Z" fill="currentColor"/>
+  </g>
+</symbol>
+<symbol id="arrow-equilibrium" viewBox="0 0 24 24">
+  <path d="M3 9.5H21L17 6.5M21 14.5H3L7 17.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+<symbol id="arrow-resonance" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 12H17" fill="none"/>
+    <path d="M3 12L8 9V15Z" fill="currentColor"/>
+    <path d="M21 12L16 9V15Z" fill="currentColor"/>
+  </g>
+</symbol>
+<symbol id="arrow-nogo" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12H16M7 8.5L12 15.5M12 8.5L7 15.5" fill="none"/>
+    <path d="M21 12L15.5 9V15Z" fill="currentColor"/>
+  </g>
+</symbol>
+<symbol id="plus" viewBox="0 0 24 24">
+  <path d="M12 5V19M5 12H19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="curved-full" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 19Q6 5 17 8.2" fill="none"/>
+    <path d="M21 9.5L16.2 5.6L15.4 11Z" fill="currentColor"/>
+  </g>
+</symbol>
+<symbol id="curved-fishhook" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 19Q6 5 17 8.2" fill="none"/>
+    <path d="M21 9.5L16.2 5.6L17.2 8.6Z" fill="currentColor"/>
+  </g>
+</symbol>
+<symbol id="text" viewBox="0 0 24 24">
+  <path d="M6 5H18M12 5V19M9.5 19H14.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+
+<!-- Top bar and status bar -->
+<symbol id="search" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <circle cx="10.5" cy="10.5" r="6"/>
+    <path d="M15 15L20 20"/>
+  </g>
+</symbol>
+<symbol id="undo" viewBox="0 0 24 24">
+  <path d="M9 5L4 10L9 15M4 10H14.5A5 5 0 0 1 14.5 20H11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+<symbol id="redo" viewBox="0 0 24 24">
+  <path d="M15 5L20 10L15 15M20 10H9.5A5 5 0 0 0 9.5 20H13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+<symbol id="zoom-in" viewBox="0 0 24 24">
+  <path d="M6 12H18M12 6V18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="zoom-out" viewBox="0 0 24 24">
+  <path d="M6 12H18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="fit" viewBox="0 0 24 24">
+  <path d="M4 9V4H9M15 4H20V9M20 15V20H15M9 20H4V15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+<symbol id="warning" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3.5L21 19.5H3Z" fill="none"/>
+    <path d="M12 9.5V14" fill="none"/>
+    <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>
+  </g>
+</symbol>
+
+<!-- Selection actions -->
+<symbol id="clean-up" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9.5 6.5L15.56 10V17L9.5 20.5L3.44 17V10Z"/>
+  </g>
+  <path d="M18.5 2Q19 5 22 5.5Q19 6 18.5 9Q18 6 15 5.5Q18 5 18.5 2Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+</symbol>
+<symbol id="tidy" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.5 9H6.5V15H2.5ZM17.5 9H21.5V15H17.5ZM8.5 12H14M2 20H22" fill="none"/>
+    <path d="M16 12L13.5 10.5V13.5Z" fill="currentColor"/>
+  </g>
+</symbol>
+<!-- Show Kekulé: hexagon with three inner double-bond strokes. Show circle: the benzene glyph. -->
+<symbol id="show-kekule" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z"/>
+    <path d="M12.7 7L16 8.9M16 15.1L12.7 17M7.6 13.9V10.1"/>
+  </g>
+</symbol>
+<symbol id="show-circle" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z"/>
+    <circle cx="12" cy="12" r="4.2"/>
+  </g>
+</symbol>
+<!-- Expand: a label box opening, by an arrow, into a ring. -->
+<symbol id="expand" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.5 3.5H9.5V8.5H2.5Z" fill="none"/>
+    <path d="M6 8.5V14.5H7.5" fill="none"/>
+    <path d="M9.6 14.5L7.4 13V16Z" fill="currentColor"/>
+    <path d="M10.5 14.5L13.25 9.74H18.75L21.5 14.5L18.75 19.26H13.25Z" fill="none"/>
+  </g>
+</symbol>
+<!-- Flip: one isosceles triangle, filled, and its outline mirror image across a dashed axis
+     (butt-capped dashes so the gaps stay open). flip-v is flip-h turned so the axis is
+     horizontal; with isosceles triangles the turned pair is still a true mirror pair. -->
+<symbol id="flip-h" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3V21" fill="none" stroke-linecap="butt" stroke-dasharray="2 2"/>
+    <path d="M9.5 5V19L3 12Z" fill="currentColor"/>
+    <path d="M14.5 5V19L21 12Z" fill="none"/>
+  </g>
+</symbol>
+<symbol id="flip-v" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12H21" fill="none" stroke-linecap="butt" stroke-dasharray="2 2"/>
+    <path d="M5 9.5H19L12 3Z" fill="currentColor"/>
+    <path d="M5 14.5H19L12 21Z" fill="none"/>
+  </g>
+</symbol>
+
+<!-- Text-editing inserts drawn to match the 14 px / 600 "Δ" beside them (stroke 2 in the grid,
+     1.67 px at 20 px): degree ring at cap height, arrow on the x-height middle. -->
+<symbol id="glyph-degree" viewBox="0 0 24 24">
+  <circle cx="12" cy="9.2" r="2.9" fill="none" stroke="currentColor" stroke-width="2"/>
+</symbol>
+<symbol id="glyph-arrow" viewBox="0 0 24 24">
+  <path d="M4.5 13H19M14.5 8.5L19 13L14.5 17.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+</svg>

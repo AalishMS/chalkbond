@@ -1,10 +1,13 @@
+import { useState } from 'react';
+import { createEditorController, Editor } from '../editor';
+
 export function App(): React.JSX.Element {
+  const [controller] = useState(() =>
+    createEditorController({ clock: () => new Date().toISOString() }),
+  );
   return (
-    <div className="app">
-      <header className="toolbar" aria-label="Toolbar">
-        <span className="app-name">Chalkbond</span>
-      </header>
-      <main className="canvas-area" aria-label="Drawing canvas" data-testid="canvas-area" />
+    <div className="app" data-testid="canvas-area">
+      <Editor controller={controller} />
     </div>
   );
 }

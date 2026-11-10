@@ -167,7 +167,7 @@ first") when `out/main/index.js` is missing (checked at the top of the helper).
 `src/renderer/editor/view/`. `Icon.tsx` renders `<svg aria-hidden><use href="#id"/></svg>` at
 16/20/24 px; `Editor.tsx` injects the sprite once (hidden, from `icons.svg?raw`) and lays out the
 grid of `mockup.css` ("Window grid"): top bar 48 + 1, rail 64 + 1, status 28 + 1, canvas the rest,
-all from tokens, in `editor.css`. `App.tsx` mounts `<Editor controller={createEditorController()}>`
+all from tokens, in `editor.css`. `App.tsx` mounts `<Editor controller={createEditorController({ clock })}>`
 inside the element with `data-testid="canvas-area"` filling the window; the scaffold toolbar and
 its CSS go (required change 5). A minimal `createEditorController` and `index.ts` exist (later
 tasks fill them).
@@ -179,10 +179,10 @@ boxes at 1280×800 and 960×640 — top bar height 48 and border 1, rail width 6
 fills the rest (±1 px). `e2e/smoke.spec.ts` still passes.
 
 **Acceptance criteria:**
-- [ ] Lifted files byte-identical (test); contrast pairs pass (SC6)
-- [ ] Region boxes match "Layout" at both sizes (SC7)
-- [ ] No raw colour or px value in `editor.css` outside the 1 px borders (grep check in the tooling test)
-- [ ] Smoke e2e green
+- [x] Lifted files byte-identical (test); contrast pairs pass (SC6)
+- [x] Region boxes match "Layout" at both sizes (SC7)
+- [x] No raw colour or px value in `editor.css` outside the 1 px borders (grep check in the tooling test)
+- [x] Smoke e2e green
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E6` → `E6/shell.png`, `E6/shell-960.png` (scripted: resize the window to 960×640 before capturing)
 

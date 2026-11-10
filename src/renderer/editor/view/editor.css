@@ -1,0 +1,124 @@
+/* Editor window grid (mock-up "Window grid"); every value comes from tokens.css. */
+
+.editor,
+.editor *,
+.editor *::before,
+.editor *::after {
+  box-sizing: border-box;
+}
+
+.editor {
+  position: relative;
+  display: grid;
+  grid-template-areas:
+    'top top'
+    'rail canvas'
+    'status status';
+  grid-template-rows: calc(var(--topbar-h) + 1px) 1fr calc(var(--statusbar-h) + 1px);
+  grid-template-columns: calc(var(--rail-w) + 1px) 1fr;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--chrome-bg);
+  color: var(--text);
+  font: var(--type-sm);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.editor button {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+}
+
+.editor button:focus {
+  outline: none;
+}
+
+.editor button:focus-visible {
+  outline: var(--space-1) solid var(--accent);
+  outline-offset: var(--space-1);
+}
+
+.editor input {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-md);
+  outline: none;
+}
+
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icon {
+  display: block;
+  flex: none;
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
+.icon-20 {
+  width: calc(var(--space-6) - var(--space-2));
+  height: calc(var(--space-6) - var(--space-2));
+}
+
+.icon-16 {
+  width: var(--space-5);
+  height: var(--space-5);
+}
+
+.topbar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.canvas {
+  position: relative;
+  grid-area: canvas;
+  overflow: hidden;
+  background: var(--canvas-bg);
+}
+
+.statusbar {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-4);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font: var(--type-xs);
+  font-variant-numeric: tabular-nums;
+}
