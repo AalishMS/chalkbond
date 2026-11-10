@@ -96,8 +96,8 @@ plain, bold, italic, sub/sup and multi-line runs; fallback notice for an uncover
 **Scope:** M
 
 ### ✅ Checkpoint H — foundations
-- [ ] `npm run check` green
-- [ ] Commit + push
+- [x] `npm run check` green
+- [x] Commit + push
 
 ---
 
@@ -106,7 +106,7 @@ plain, bold, italic, sub/sup and multi-line runs; fallback notice for an uncover
 **Description:** `geom.ts`: vector helpers, unit normals ("left" with y down), ray/segment exit
 from a box, segment clipping against a box, quadratic and cubic Bézier evaluation and exact
 extrema, rect union and growth. `rings.ts`: per-bond smallest ring (size 3–8, breadth-first, ties
-by lexicographically smallest sorted atom-id list), the doc's distinct rings, circled-ring
+by lexicographically smallest sorted atom-id list), the doc's distinct rings (every tied minimum ring counts: cubane has 6 faces), circled-ring
 detection (all bonds order 1.5), ring centroid. Pure functions over doc-model data.
 
 **Tests first:** clip from all 8 directions; Bézier extrema against dense sampling; rings for
@@ -115,9 +115,9 @@ benzene, naphthalene (2 rings, not the 10-ring), cubane (6 faces), spiro, bicycl
 only when every bond is 1.5.
 
 **Acceptance criteria:**
-- [ ] Ring finder gives the spec's answers on the listed molecules (SC6)
-- [ ] Clipping and extrema helpers are exact to 1e-9 on the test set
-- [ ] No banned maths (lint passes) (SC3)
+- [x] Ring finder gives the spec's answers on the listed molecules (SC6)
+- [x] Clipping and extrema helpers are exact to 1e-9 on the test set
+- [x] No banned maths (lint passes) (SC3)
 
 **Verification:** `npm test -- src/core/svg-render`
 

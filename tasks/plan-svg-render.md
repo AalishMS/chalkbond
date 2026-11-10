@@ -73,11 +73,11 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 - [x] S3: font metrics generator, committed table, `text-measure`
 
 ### Checkpoint H — foundations
-- [ ] `npm run check` green; presets, escaping and text widths (`W` 944, `i` 222) pass
-- [ ] Commit + push
+- [x] `npm run check` green; presets, escaping and text widths (`W` 944, `i` 222) pass
+- [x] Commit + push
 
 ### Phase 2: molecules
-- [ ] S4: geometry helpers and `rings.ts` (smallest-ring finder)
+- [x] S4: geometry helpers and `rings.ts` (smallest-ring finder)
 - [ ] S5: atom labels: `label-display.ts`, text, side, bare atoms, anchor boxes, clip boxes
 - [ ] S6: bonds (single, double, triple, 1.5, stereo) and aromatic circles
 - [ ] S7: `render`, `toSvg`, `renderSvg`, subsets, extents and bounds for atoms and bonds; `ink-scan` helper

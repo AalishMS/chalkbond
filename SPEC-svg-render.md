@@ -287,9 +287,11 @@ original length, truncated to the clipped span.
 ### Aromatic circles
 
 `rings.ts`: for each bond, its **smallest ring** is the shortest cycle through it of size 3–8
-(breadth-first, ties by lexicographically smallest sorted atom-id list); the rings of a doc are
-the distinct smallest rings of its bonds. (Naphthalene: two 6-rings; the 10-ring is nobody's
-smallest. Cubane: its six faces.) A ring whose bonds are all order 1.5 is **circled**: one
+(breadth-first, ties by lexicographically smallest sorted atom-id list); this single ring is the
+one the double-bond side rule uses. The rings of a doc are the distinct rings that are a smallest
+ring of some bond, **counting every tied minimum ring** (a single tie-broken ring per bond would
+drop one cube face, since the greatest face loses every tie). (Naphthalene: two 6-rings; the
+10-ring is nobody's smallest. Cubane: its six faces.) A ring whose bonds are all order 1.5 is **circled**: one
 circle, centre = ring centroid, radius = `circleRatio` × mean distance from the centroid to the
 bond midpoints, stroke `lineWidth`, colour = the bonds' common `color` if they all share one,
 else `INK`. Perception's `BondInfo.aromatic` is not consulted: the stored order rules, so a ring
