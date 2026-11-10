@@ -86,6 +86,9 @@ edit with no gesture emits none; `controller-commands.test.ts` still agrees for 
 
 ## C3: Windows clipboard probe
 
+Preparation only (2026-11-10, Linux): probe and typed selector written; P1–P7 UNRUN,
+needs Windows. Preferred constants UNVERIFIED; no fallback selected. C3 remains incomplete.
+
 **Description:** rule R1, probes P1–P7 (spec "Testing"). Write
 `e2e/win/clipboard-facts.spec.ts`, which runs the clipboard API in main through `app.evaluate`
 with a small real PNG (made in the page with a `<canvas>`), an SVG (`renderSvg` of
