@@ -21,8 +21,10 @@ import { screenToBlu, stepZoom } from '../model/viewport';
 import { initialState, type EditorState } from './editor-state';
 import { handleHit } from '../model/handles';
 import { HIT_ALL, hitTest } from '../model/hit-test';
+import { selectionScope } from '../model/scope';
 import { canCopy, canDelete, canPaste } from './commands';
 import { isDirty, type ReducerContext } from './reducer';
+import { selectionActions } from './selection-actions';
 import { createStore, type Store } from './store';
 
 /** Commands the host sends with `run` (SPEC-editor.md "Seam to the host"). */
@@ -212,6 +214,15 @@ export function createEditorController(options: EditorOptions): EditorController
         return canPaste(s);
       case 'select-all':
         return s.editing === null;
+      case 'clean-up':
+      case 'toggle-kekulé': {
+        if (s.gesture !== null || s.editing !== null) return false;
+        const doc = current(s.history);
+        const actions = selectionActions(
+          selectionScope(doc, derive.committed(doc).perception, s.selection),
+        );
+        return cmd === 'clean-up' ? actions.cleanUp.enabled : actions.kekule.enabled;
+      }
       default:
         if (typeof cmd === 'object' && cmd.type === 'insert-text') return true;
         if (typeof cmd === 'object' && cmd.type === 'paste-sub') {
@@ -270,6 +281,12 @@ export function createEditorController(options: EditorOptions): EditorController
           break;
         case 'select-all':
           store.dispatch({ type: 'select-all' });
+          break;
+        case 'clean-up':
+          store.dispatch({ type: 'clean-up' });
+          break;
+        case 'toggle-kekulé':
+          store.dispatch({ type: 'toggle-kekule' });
           break;
         default:
           if (typeof cmd === 'object' && cmd.type === 'insert-text') {

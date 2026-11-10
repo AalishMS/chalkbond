@@ -8,6 +8,7 @@ import {
   type ObjectId,
   type Selection,
 } from '@core/doc-model';
+import type { Perception } from '@core/chem-core';
 import type { Scene } from '@core/svg-render';
 import type { GestureState, Hit, Preview } from '../state/editor-state';
 import { curveControl } from './hit-test';
@@ -15,6 +16,7 @@ import { FRAME_GROW, frameRect, screenRect, selectionInk } from './frame';
 import { growRect, type Point, type Rect } from './geometry';
 import { selectionHandles } from './handles';
 import { isEmptySelection } from './selection';
+import { warningGroups } from './warnings';
 import { bluToScreen, PX_PER_PT, ptToScreen, type Viewport } from './viewport';
 
 export { FRAME_GROW, selectionInk };
@@ -63,7 +65,9 @@ export interface OverlayGroup {
     | 'marquee'
     | 'guide'
     | 'handle'
-    | 'count';
+    | 'count'
+    | 'warning'
+    | 'warning-bond';
   readonly shapes: readonly OverlayShape[];
 }
 
@@ -277,6 +281,8 @@ export interface OverlayView {
   readonly doc: Doc;
   readonly scene: Scene;
   readonly viewport: Viewport;
+  /** Its warnings are drawn (E24); none when absent. */
+  readonly perception?: Perception;
 }
 
 /**
@@ -295,6 +301,9 @@ export function canvasOverlay(view: OverlayView): OverlayGroup[] {
   if (preview?.mergeTarget !== undefined) {
     const shape = hoverShape({ kind: 'atom', id: preview.mergeTarget }, doc, scene, v);
     if (shape !== null) groups.push({ kind: 'merge', shapes: [shape] });
+  }
+  if (view.perception !== undefined) {
+    groups.push(...warningGroups(doc, view.perception, scene, v));
   }
   const marquee = gesture?.overlay?.marquee;
   if (marquee !== undefined) {

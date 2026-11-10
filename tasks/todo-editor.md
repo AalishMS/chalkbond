@@ -734,9 +734,9 @@ undo step; C2 on `Ph` → 6 more carbons, formula unchanged; Expand hidden witho
 (markup).
 
 **Acceptance criteria:**
-- [ ] Warnings never exported (SC8 unit); warnings button hidden at 0, shows the count otherwise
-- [ ] Show Kekulé / Show circle label flips without the bar moving (e2e: the next button's x is unchanged ±0.5 px)
-- [ ] C1–C3 one undo step each; notices word for word
+- [x] Warnings never exported (SC8 unit); warnings button hidden at 0, shows the count otherwise
+- [x] Show Kekulé / Show circle label flips without the bar moving (e2e: the next button's x is unchanged ±0.5 px)
+- [x] C1–C3 one undo step each; notices word for word
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E24` → `E24/warning-h20.png` (scripted: insert water, set the O label to "H20" via the label editor; warnings button "1"), `E24/warning-tooltip.png` (scripted: hover the H20 atom 600 ms; compare `08-reaction.png` tooltip), `E24/kekule.png` (scripted: insert benzene, Select, Show Kekulé), `E24/expand.png` (scripted: insert benzyl alcohol drawn with a `Ph` label via the label editor, select it; Expand shown as in `03b-select-abbrev.png`)
 
@@ -747,7 +747,7 @@ undo step; C2 on `Ph` → 6 more carbons, formula unchanged; Expand hidden witho
 **Scope:** M
 
 ### Checkpoint P — structures
-- [ ] `npm run check` green; `e2e/editor-structures.spec.ts`: ethanol by gestures, benzene, toluene in 3 actions
+- [x] `npm run check` green; `e2e/editor-structures.spec.ts`: ethanol by gestures, benzene, toluene in 3 actions
 - [ ] Commit + push
 
 ---

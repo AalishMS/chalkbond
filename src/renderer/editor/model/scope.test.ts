@@ -90,4 +90,15 @@ describe('selectionScope (the options bar enablement)', () => {
     const doc = drawn({ name: 'methane', x: 0, y: 0 });
     expect(selectionScope(doc, perceive(doc), EMPTY_SELECTION).hasFragment).toBe(false);
   });
+
+  it('an order-1.5 bond chem-core does not read as aromatic still offers Show Kekulé (C3)', () => {
+    const doc = drawn({ name: 'cyclopentane', x: 0, y: 0 });
+    const circle = Object.keys(doc.bonds).reduce(
+      (d, id) => updateBond(d, id as BondId, { order: 1.5 }),
+      doc,
+    );
+    const perception = perceive(circle);
+    expect(Object.values(perception.bonds).some((b) => b.aromatic)).toBe(false);
+    expect(selectionScope(circle, perception, EMPTY_SELECTION).hasAromatic15).toBe(true);
+  });
 });

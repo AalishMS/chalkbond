@@ -13,6 +13,7 @@ import sprite from './icons.svg?raw';
 import { StatusBar } from './StatusBar';
 import { ToolRail } from './ToolRail';
 import { TooltipHost } from './Tooltip';
+import { WarningTip } from './WarningTip';
 import { TopBar } from './TopBar';
 import { useEditorState } from './use-store';
 import './tokens.css';
@@ -145,6 +146,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
         zoom={state.viewport.zoom}
         dispatch={dispatch}
         formula={formula}
+        warnings={perception.warnings.length}
         nameFieldFocused={nameFocused}
         hover={state.hover}
         gesture={state.gesture?.kind ?? null}
@@ -152,6 +154,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
         notice={state.notice}
       />
       <TooltipHost />
+      <WarningTip controller={controller} state={state} />
     </div>
   );
 }

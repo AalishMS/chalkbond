@@ -674,3 +674,36 @@ test('Chain count badge stays inside the canvas: flipped left of the pointer nea
     await app.close();
   }
 });
+
+test('Checkpoint P: ethanol by gestures, benzene and toluene, each in three actions or fewer', async () => {
+  const { app, page } = await openApp();
+  try {
+    // Ethanol: click, click on the new end, hover it and press O.
+    const doc = await threeCarbonsFromClicks(page);
+    const end = await px(page, doc, atomIds(doc)[2] as AtomId);
+    await page.mouse.move(end.x, end.y);
+    await page.keyboard.press('o');
+    await expect(formulaText(page)).toHaveText('C2H6O · 46.07 g/mol');
+    // Benzene: the Ring tool and one click. Toluene: hover a ring atom and press 1.
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Delete');
+    await page.getByTestId('tool-ring').click();
+    await page.mouse.click(600, 400);
+    await expect(formulaText(page)).toHaveText('C6H6 · 78.11 g/mol');
+    const ring = await readDocument(page);
+    const top = await px(page, ring, atomIds(ring)[0] as AtomId);
+    await page.mouse.move(top.x, top.y);
+    await page.keyboard.press('1');
+    await expect(formulaText(page)).toHaveText('C7H8 · 92.14 g/mol');
+  } finally {
+    await app.close();
+  }
+});
+
+/** Two clicks on the Bond tool: a first bond, then a bond from its end atom: three carbons. */
+async function threeCarbonsFromClicks(page: Page): Promise<Doc> {
+  const first = await firstBond(page);
+  const end = await px(page, first, atomIds(first)[1] as AtomId);
+  await page.mouse.click(end.x, end.y);
+  return readDocument(page);
+}

@@ -42,6 +42,8 @@ import {
   selectEverything,
 } from './commands';
 import { differs } from './dirty';
+import { showNotice } from './notice';
+import { cleanUp, expandLabels, showWarning, toggleKekule } from './structure-commands';
 import { cancelEditing, commitEditing, openLabelEditor, setEditModel } from './editing';
 import {
   EMPTY_SELECTION,
@@ -107,6 +109,14 @@ export type EditorAction =
   | { type: 'paste'; at: Point | null; sub?: SubDoc }
   | { type: 'duplicate' }
   | { type: 'escape' }
+  /** C1: Clean up the scope (the selection, else everything). */
+  | { type: 'clean-up' }
+  /** C3: Show Kekulé or Show circle, whichever the scope offers. */
+  | { type: 'toggle-kekule' }
+  /** C2: Expand the abbreviations in the selection. */
+  | { type: 'expand' }
+  /** C6: select the next warning and reveal it. */
+  | { type: 'show-warning' }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'notice-show'; kind: 'info' | 'error'; text: string }
@@ -153,11 +163,6 @@ export function errorText(error: unknown): string {
 }
 
 const docOf = (state: EditorState): Doc => current(state.history);
-
-function showNotice(state: EditorState, kind: 'info' | 'error', text: string): EditorState {
-  const id = state.noticeSeq + 1;
-  return { ...state, notice: { id, kind, text }, noticeSeq: id };
-}
 
 /** Selection, hover, preview and gesture are not carried across history or a new document. */
 const settled = (state: EditorState): EditorState => ({
@@ -306,6 +311,14 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return flipSelection(state, action.axis, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'escape':
       return escape(state);
+    case 'clean-up':
+      return cleanUp(state, ctx.derive, (s, a) => commit(s, a, ctx));
+    case 'toggle-kekule':
+      return toggleKekule(state, ctx.derive, (s, a) => commit(s, a, ctx));
+    case 'expand':
+      return expandLabels(state, ctx.derive, (s, a) => commit(s, a, ctx));
+    case 'show-warning':
+      return showWarning(state, ctx.derive);
     case 'name-text':
       return nameText(state, action.text, ctx);
     case 'name-highlight':

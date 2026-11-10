@@ -26,9 +26,11 @@ export function selectionScope(
   let hasAromaticNon15 = false;
   for (const id of bonds) {
     const bond = doc.bonds[id];
-    if (bond === undefined || perception.bonds[id]?.aromatic !== true) continue;
+    if (bond === undefined) continue;
+    // C3: any order-1.5 bond offers Show Kekulé (a system with no Kekulé structure then says so);
+    // Show circle needs a bond chem-core reads as aromatic.
     if (bond.order === 1.5) hasAromatic15 = true;
-    else hasAromaticNon15 = true;
+    else if (perception.bonds[id]?.aromatic === true) hasAromaticNon15 = true;
   }
   const hasAbbreviation =
     !whole &&

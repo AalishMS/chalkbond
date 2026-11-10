@@ -33,8 +33,10 @@ function ActionButton(props: {
   /** Shortcut shown in the tooltip. */
   shortcut?: string;
   className?: string;
+  /** Runs when the button is pressed and enabled. */
+  onPress?: () => void;
 }): React.JSX.Element {
-  const { id, icon, label, state, roving, shortcut, className } = props;
+  const { id, icon, label, state, roving, shortcut, className, onPress } = props;
   return (
     <button
       type="button"
@@ -43,6 +45,10 @@ function ActionButton(props: {
       aria-disabled={state.enabled ? undefined : true}
       {...roving.item(id)}
       {...tipProps(actionTip(label, shortcut, state), 'below')}
+      onClick={() => {
+        // A disabled button stays focusable (aria-disabled), so the click is checked here.
+        if (state.enabled) onPress?.();
+      }}
     >
       <Icon name={icon} size={20} />
       <span>{label}</span>
@@ -96,6 +102,7 @@ function SelectionBar({
         state={a.cleanUp}
         roving={roving}
         shortcut="Ctrl+Shift+L"
+        onPress={() => dispatch({ type: 'clean-up' })}
       />
       <ActionButton
         id="act-kekule"
@@ -105,6 +112,7 @@ function SelectionBar({
         roving={roving}
         shortcut="Ctrl+Shift+K"
         className="btn-kekule"
+        onPress={() => dispatch({ type: 'toggle-kekule' })}
       />
       <ActionButton
         id="act-tidy"
@@ -138,6 +146,7 @@ function SelectionBar({
             label="Expand"
             state={{ enabled: true, help: '' }}
             roving={roving}
+            onPress={() => dispatch({ type: 'expand' })}
           />
         </>
       )}

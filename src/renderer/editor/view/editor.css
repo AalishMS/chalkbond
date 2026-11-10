@@ -859,3 +859,19 @@ kbd {
 .textbox-caption[data-tone='warning'] {
   color: var(--warning);
 }
+
+/* Valence warnings (E24): dashed, never exported. A skeleton atom gets a circle, a label a box,
+   a bond that cannot be Kekulé-ised a heavier dashed line. */
+.overlay-warning circle,
+.overlay-warning rect {
+  fill: none;
+  stroke: var(--warning);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+
+.overlay-warning-bond line {
+  stroke: var(--warning);
+  stroke-width: 3;
+  stroke-dasharray: 3 2;
+}

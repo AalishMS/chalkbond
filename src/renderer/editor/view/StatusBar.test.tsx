@@ -197,3 +197,37 @@ describe('StatusBar zoom cluster', () => {
     expect(zoomed(1.5)).not.toContain('aria-disabled');
   });
 });
+
+describe('StatusBar warnings button (C6)', () => {
+  const withWarnings = (n: number | undefined): string =>
+    renderToStaticMarkup(
+      <StatusBar
+        tool="select"
+        preset="slides"
+        zoom={1.5}
+        dispatch={noop}
+        {...(n === undefined ? {} : { warnings: n })}
+      />,
+    );
+
+  it('is hidden without warnings', () => {
+    expect(withWarnings(undefined)).not.toContain('data-testid="warnings"');
+    expect(withWarnings(0)).not.toContain('data-testid="warnings"');
+  });
+
+  it('shows the icon and the count, named for a screen reader', () => {
+    const one = withWarnings(1);
+    expect(one).toContain('data-testid="warnings"');
+    expect(one).toContain('aria-label="1 warning"');
+    expect(one).toContain('<span>1</span>');
+    expect(one).toContain('href="#warning"');
+    const two = withWarnings(2);
+    expect(two).toContain('aria-label="2 warnings"');
+    expect(two).toContain('<span>2</span>');
+  });
+
+  it('sits between the formula and the preset switch', () => {
+    const html = withWarnings(1);
+    expect(html.indexOf('data-testid="warnings"')).toBeLessThan(html.indexOf('preset-slides'));
+  });
+});

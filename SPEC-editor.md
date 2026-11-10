@@ -411,7 +411,7 @@ Hover keys work with every tool except Erase and Text.
 | atom | `L` → Cl, `B` → Br | set element |
 | atom | `+` / `=`, `-` | charge +1 / −1 (clamped −4…4) |
 | atom | `1` `2` `3` | sprout a single / double / triple bond in P1's direction (R5) |
-| atom | Enter | open the label editor (hook only until the label editor exists, E23: no effect) |
+| atom | Enter | open the label editor (L1) |
 | bond | `1` `2` `3` | set order single / double / triple (stereo cleared) |
 | bond | `W` / `H` | wedge / hash; again reverses the direction (rule B5) |
 | atom or bond | Delete, Backspace | erase it (rule E2) |

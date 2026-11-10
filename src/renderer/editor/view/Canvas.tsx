@@ -58,6 +58,9 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
   const { scene } = drawsPreview
     ? controller.derive.preview(doc)
     : controller.derive.committed(doc);
+  const { perception } = drawsPreview
+    ? controller.derive.preview(doc)
+    : controller.derive.committed(doc);
   const parts = useMemo(() => {
     if (!showPreview || !hovering) return scene.parts;
     const have = new Set<string>(scene.parts.map((p) => p.key));
@@ -205,6 +208,8 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
           doc,
           scene,
           viewport,
+          // Warnings are overlay only; while an editor is open the box stands alone.
+          ...(state.editing === null ? { perception } : {}),
         })}
       />
       {children}

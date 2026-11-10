@@ -26,6 +26,8 @@ interface StatusBarProps {
   hover?: Hit | null;
   /** Kind of the running gesture, if any: a bond drag changes the hint. */
   gesture?: string | null;
+  /** How many warnings the document has (C6); the button shows only when there are some. */
+  warnings?: number;
   /** An editor is open: its hint replaces the tool's. */
   editing?: 'label' | 'text' | null;
   /** The name field has focus: its hint replaces the tool's. */
@@ -67,6 +69,7 @@ export function StatusBar({
   zoom,
   dispatch,
   formula = null,
+  warnings = 0,
   nameFieldFocused = false,
   editing = null,
   hover = null,
@@ -101,6 +104,26 @@ export function StatusBar({
           <FormulaText runs={formulaRuns(formula.hill, formula.charge)} />
           {formula.mw === null ? '' : ` · ${formula.mw.toFixed(2)} g/mol`}
         </div>
+      )}
+      {warnings > 0 && (
+        <button
+          type="button"
+          className="btn btn-status btn-warnings"
+          data-testid="warnings"
+          aria-label={`${warnings} warning${warnings === 1 ? '' : 's'}`}
+          onMouseDown={pressKeepsFocus}
+          onClick={() => dispatch({ type: 'show-warning' })}
+          {...tipProps(
+            {
+              title: `${warnings} warning${warnings === 1 ? '' : 's'}`,
+              help: 'Click to select the next one.',
+            },
+            'above',
+          )}
+        >
+          <Icon name="warning" size={16} />
+          <span>{warnings}</span>
+        </button>
       )}
       <div className="segmented" role="group" aria-label="Style" onMouseDown={pressKeepsFocus}>
         <button
