@@ -72,6 +72,11 @@ export interface AtomLabel {
    * superscript would stand, so `layoutSatellites` places the sign as a satellite instead.
    */
   readonly chargeSatellite: boolean;
+  /**
+   * The formal charge stands before the label text (`⁺H3N`): the label writes its hydrogens
+   * first and a bond crosses the trailing position.
+   */
+  readonly chargeLeading: boolean;
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
@@ -152,21 +157,27 @@ const FAR = 1e6;
  * sign is left out and becomes a satellite.
  */
 export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): AtomLabel {
-  const label = buildLabel(input, style, false);
-  const box = label.chargeBox;
-  if (!box) return label;
+  const label = buildLabel(input, style, 'trailing');
+  if (!label.chargeBox) return label;
   const { x, y } = input.position;
-  const crossed = input.neighbors.some((v) => {
-    const u = normalize(v);
-    return u !== null && segmentBoxInterval({ x, y }, { x: x + u.x * FAR, y: y + u.y * FAR }, box);
-  });
-  return crossed ? buildLabel(input, style, true) : label;
+  const crossed = (box: Rect): boolean =>
+    input.neighbors.some((v) => {
+      const u = normalize(v);
+      return (
+        u !== null && segmentBoxInterval({ x, y }, { x: x + u.x * FAR, y: y + u.y * FAR }, box)
+      );
+    });
+  if (!crossed(label.chargeBox)) return label;
+  // Hydrogens written first (`H3N`): the mirror image of the trailing sign, before the text.
+  const leading = buildLabel(input, style, 'leading');
+  if (leading.chargeLeading && leading.chargeBox && !crossed(leading.chargeBox)) return leading;
+  return buildLabel(input, style, 'satellite');
 }
 
 function buildLabel(
   input: AtomLabelInput,
   style: ResolvedStyle,
-  chargeAsSatellite: boolean,
+  chargeMode: 'trailing' | 'leading' | 'satellite',
 ): AtomLabel {
   const { atom, position } = input;
   const dirs = input.neighbors.flatMap((v) => normalize(v) ?? []);
@@ -209,7 +220,9 @@ function buildLabel(
   const n =
     !hasLabel && Number.isFinite(input.implicitH) ? Math.max(0, Math.floor(input.implicitH)) : 0;
   const hBefore = bonded ? sx > SIDE_DEAD_ZONE : bareHydrogenFirst(atom.element, n);
-  const chargeSatellite = atom.charge !== 0 && chargeAsSatellite;
+  const chargeSatellite = atom.charge !== 0 && chargeMode === 'satellite';
+  const chargeLeading =
+    atom.charge !== 0 && chargeMode === 'leading' && hBefore && hRuns(n).length > 0;
   const chargeRuns: TextRun[] =
     atom.charge === 0 || chargeSatellite
       ? []
@@ -220,8 +233,14 @@ function buildLabel(
           },
         ];
 
-  const before = [...(hBefore ? hRuns(n) : []), ...isotopeRuns, ...symbolBefore];
-  const after = [...symbolAfter, ...(hBefore ? [] : hRuns(n)), ...chargeRuns];
+  const trailingRuns = chargeLeading ? [] : chargeRuns;
+  const before = [
+    ...(chargeLeading ? chargeRuns : []),
+    ...(hBefore ? hRuns(n) : []),
+    ...isotopeRuns,
+    ...symbolBefore,
+  ];
+  const after = [...symbolAfter, ...(hBefore ? [] : hRuns(n)), ...trailingRuns];
   const runs = [...before, ...anchor, ...after];
   const anchorFrom = before.length;
   const anchorTo = anchorFrom + anchor.length;
@@ -236,8 +255,8 @@ function buildLabel(
   const baseline = position.y + style.capHeight / 2;
   const fill = atom.color ?? INK;
 
-  const shift = input.chargeShift ?? 0;
-  const chargeAt = chargeRuns.length > 0 ? runs.length - 1 : -1;
+  const shift = chargeLeading ? 0 : (input.chargeShift ?? 0);
+  const chargeAt = chargeRuns.length === 0 ? -1 : chargeLeading ? 0 : runs.length - 1;
   /** Left edge of a segment, the charge moved by `chargeShift`. */
   const segX = (seg: (typeof segments)[number], i: number): number =>
     originX + seg.x + (i === chargeAt ? shift : 0);
@@ -311,6 +330,7 @@ function buildLabel(
     },
     chargeBox: chargeSeg ? capBox(chargeSeg, chargeAt) : null,
     chargeSatellite,
+    chargeLeading,
     textBox: {
       x: originX,
       y: baseline - measure.ascent,

@@ -290,6 +290,63 @@ describe('isotopes, hydrogen isotopes and charge', () => {
     expect(build({ element: 'O' }, [up30], 0).chargeSatellite).toBe(false);
   });
 
+  describe('leading superscript on labels with the hydrogens written first', () => {
+    const upRight: Point = { x: Math.cos(Math.PI / 6), y: -0.5 };
+    const plus = (l: AtomLabel) => texts(l).find((t) => t.content === '+')!;
+
+    it('puts the sign before the H of H3N when a bond crosses the trailing position', () => {
+      const l = build({ element: 'N', charge: 1 }, [upRight], 3);
+      expect(l.text).toBe('+H3N');
+      expect(l.chargeLeading).toBe(true);
+      expect(l.chargeSatellite).toBe(false);
+      const t = texts(l);
+      const sign = t.find((x) => x.content === '+')!;
+      const h = t.find((x) => x.content === 'H')!;
+      // Mirror image of the trailing form: same size and height as the trailing sign, its
+      // glyph box ends where the H begins.
+      const trailing = plus(build({ element: 'N', charge: 1 }, [{ x: -upRight.x, y: -0.5 }], 3));
+      near(sign.size, trailing.size);
+      near(sign.y, trailing.y);
+      near(l.chargeBox!.x + l.chargeBox!.w, h.x);
+      // The sign is part of the text box, ink box and bond clipping.
+      expect(l.textBox.x).toBeCloseTo(l.chargeBox!.x, 5);
+      expect(l.inkBox.x).toBeLessThan(l.chargeBox!.x);
+      expect(bondClipBoxes(l, style)).toContainEqual(growRect(l.chargeBox!, style.labelMargin));
+      // The symbol stays centred on the atom.
+      near(l.anchorBox.x + l.anchorBox.w / 2, POS.x);
+    });
+
+    it('does the same for a bare halogen: +HCl', () => {
+      const l = build({ element: 'Cl', charge: 1 }, [upRight], 1);
+      expect(l.text).toBe('+HCl');
+      expect(l.chargeLeading).toBe(true);
+    });
+
+    it('leaves the trailing form alone when no bond crosses it', () => {
+      const l = build({ element: 'N', charge: 1 }, [{ x: -upRight.x, y: -0.5 }], 3);
+      expect(l.text).toBe('NH3+');
+      expect(l.chargeLeading).toBe(false);
+    });
+
+    it('leaves a label with only the element symbol on the satellite path', () => {
+      const l = build({ element: 'O', charge: -1 }, [upRight], 0);
+      expect(l.text).toBe('O');
+      expect(l.chargeLeading).toBe(false);
+      expect(l.chargeSatellite).toBe(true);
+    });
+
+    it('falls through to the satellite slots when a second bond crosses the leading box', () => {
+      const l = build(
+        { element: 'N', charge: 1 },
+        [upRight, { x: -1, y: -0.15 }, { x: 1, y: 0.5 }],
+        3,
+      );
+      expect(l.text).toBe('H3N');
+      expect(l.chargeLeading).toBe(false);
+      expect(l.chargeSatellite).toBe(true);
+    });
+  });
+
   it('puts the charge after a reversed label too', () => {
     expect(text({ label: 'NO2', charge: 1 }, RIGHT)).toBe('O2N+');
   });

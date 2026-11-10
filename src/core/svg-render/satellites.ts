@@ -382,7 +382,7 @@ export function layoutSatellites(
     notices.push(...placed.notices);
 
     // A dot between the symbol and the charge pushes the charge out: it starts `gap` beyond it.
-    if (movesCharge && slot === 'E' && label?.chargeBox) {
+    if (movesCharge && slot === 'E' && label?.chargeBox && !label.chargeLeading) {
       const start = placed.box.x + placed.box.w + gap;
       if (start > label.chargeBox.x + chargeShift) {
         chargeShift = start - label.chargeBox.x;

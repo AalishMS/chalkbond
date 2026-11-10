@@ -232,6 +232,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-10 | Editor zoom: a bond is 80 screen px at the default zoom (150 % Slides, 416.67 % Handout); range 25–800 %; automatic zoom only ever zooms out to fit, never above the default. |
 | 2026-11-10 | Editor text and label editing is WYSIWYG: a `contenteditable` projection of a pure editing model; auto-formatting (formula subscripts, `->`, charges, `^`/`_`) applied on commit to characters the user did not format. No right-click menu in the editor; it emits a `context-menu` event for app-shell's native menu. |
 | 2026-11-10 | Approved changes for the editor: doc-model `setStyle` op (additive, no schema bump); chem-core `NameIndex.closest` orders near spellings closest first ("ethanl" → ethanol); Zustand dropped from the stack (hand-written store on `useSyncExternalStore`); no jsdom — editor views are tested with `react-dom/server` markup in node plus Playwright e2e; scaffold window minimum 960×640 with no default application menu; ESLint renderer import-boundary and DOM-free rules. |
+| 2026-11-10 | Charge on a hydrogens-first label (`H3N–`, `HCl–`): when a bond crosses the trailing superscript, the sign is tried next as a leading superscript (`⁺H3N`, as textbooks write it) before the satellite slots, so it no longer floats above the hydrogens. Labels with only the element symbol and skeleton atoms are unchanged. |
 
 ## Open Questions
 
