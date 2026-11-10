@@ -178,8 +178,8 @@ keyboard model as a pure function (`model/radio-keys.ts`: ↑/↓/←/→ wrap, 
 tests.
 
 **Acceptance criteria:**
-- [ ] Tooling and markup tests pass; `src/renderer/app/model` ≥ 90 % lines so far
-- [ ] No hex or `rgb(` colour literal in `src/renderer/app/**/*.css` (V2 e)
+- [x] Tooling and markup tests pass; `src/renderer/app/model` ≥ 90 % lines so far
+- [x] No hex or `rgb(` colour literal in `src/renderer/app/**/*.css` (V2 e)
 
 **Verification:** `npm run check`. No visible change (primitives are first mounted by C8, C10, A12;
 their shots are there).

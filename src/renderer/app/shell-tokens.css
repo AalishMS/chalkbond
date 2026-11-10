@@ -1,0 +1,38 @@
+/*
+ * Chalkbond shell and export tokens (SPEC-app-shell.md "Visual language additions",
+ * SPEC-clipboard-export.md "UI design"). Adds names only; every editor token in
+ * ../editor/tokens.css applies unchanged. Values that differ from the specs are listed in
+ * DEVIATIONS.md next to this file. Merge target: src/renderer/app/app-tokens.css (or tokens.css).
+ */
+:root {
+  /* Primary action (Copy, Save… in dialogs). --primary-bg is the editor's --accent. */
+  --primary-bg: #1f5fd1;
+  --primary-hover-bg: #1a4fb0;
+  --primary-pressed-bg: #163f8c;
+  --primary-fg: #ffffff;
+
+  /* Layers */
+  --scrim: rgba(31, 35, 40, 0.32);
+  --drop-bg: rgba(227, 236, 251, 0.94);
+  --shadow-dialog: 0 12px 32px rgba(31, 35, 40, 0.2), 0 0 0 1px #dadde3;
+
+  /* Type */
+  --type-title: 600 16px / 24px var(--font-ui);
+
+  /* Dialogs */
+  --dialog-w-sm: 400px;
+  --dialog-w-md: 560px;
+  --dialog-top: 96px;
+  --dialog-bottom: 32px;
+  --control-h: 32px;
+
+  /* Copy button */
+  --copy-min-w: 84px;
+  --copy-compact-w: 56px;
+
+  /* Form controls */
+  --radio-size: 16px;
+  --check-size: 16px;
+  --kbd-h: 20px;
+  --namefield-compact: 204px;
+}

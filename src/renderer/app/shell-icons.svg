@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<!--
+  Chalkbond shell icon sprite (SPEC-app-shell.md "Visual language additions"). Same rules as
+  ../editor/icons.svg: grid 24x24, stroke 1.5, round caps and joins, currentColor, 2 px safe
+  margin. These symbols are additions; merge them into the editor sprite or icons.tsx.
+  Use: <svg class="icon"><use href="shell-icons.svg#copy"/></svg>
+-->
+
+<!-- Copy: back sheet top-right, front sheet bottom-left (spec geometry). -->
+<symbol id="copy" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="8" width="11" height="12" rx="2"/>
+    <path d="M8 8V6A2 2 0 0 1 10 4H18A2 2 0 0 1 20 6V14A2 2 0 0 1 18 16H15"/>
+  </g>
+</symbol>
+
+<!-- Copied: a plain tick. -->
+<symbol id="check" viewBox="0 0 24 24">
+  <path d="M5 12.5L10 17.5L19 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+
+<!-- Info: the PDF "can't be opened again" line in the Export dialog. -->
+<symbol id="info" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="8.5" fill="none"/>
+    <path d="M12 11V16.5" fill="none"/>
+    <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none"/>
+  </g>
+</symbol>
+</svg>
