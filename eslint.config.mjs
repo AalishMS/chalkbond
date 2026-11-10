@@ -86,6 +86,94 @@ const OCL_ADAPTER_ONLY = {
   message: 'Within chem-core only ocl.ts may import openchemlib; use its adapter.',
 };
 
+/**
+ * Renderer code reaches core only through a module's public index (`@core/<module>`), never by a
+ * relative path into src/core or a deep file. Fixtures are the one exception, in tests only.
+ * A block that sets no-restricted-imports REPLACES the earlier one for its files, so every block
+ * below repeats the openchemlib ban and these patterns.
+ */
+function rendererImportRules(allowFixtures, extraPaths = [], extraPatterns = []) {
+  return [
+    'error',
+    {
+      paths: [OCL_CHEM_CORE_ONLY, ...extraPaths],
+      patterns: [
+        {
+          regex: '(^|/)core/',
+          message: 'Import core modules as @core/<module>, not by a relative path into src/core.',
+        },
+        {
+          regex: allowFixtures ? '^@core/[^/]+/(?!__fixtures__/)' : '^@core/[^/]+/',
+          message:
+            'Import core modules through their index (@core/<module>); deep paths are not public.',
+        },
+        ...extraPatterns,
+      ],
+    },
+  ];
+}
+
+/** Editor logic (model, tools, state) must run in plain node: no React, DOM, clock or timers. */
+const EDITOR_PURE_GLOBALS = [
+  'window',
+  'document',
+  'navigator',
+  'requestAnimationFrame',
+  'performance',
+  'setTimeout',
+  'Date',
+];
+
+function rendererConfigs() {
+  const pureFiles = ['model', 'tools', 'state'].map(
+    (d) => `src/renderer/editor/${d}/**/*.{ts,tsx}`,
+  );
+  const pureTestFiles = ['model', 'tools', 'state'].map(
+    (d) => `src/renderer/editor/${d}/**/*.test.{ts,tsx}`,
+  );
+  const domMessage = 'Editor model, tools and state must stay DOM-free (SPEC-editor.md).';
+  const pureImports = (allowFixtures) =>
+    rendererImportRules(
+      allowFixtures,
+      ['react', 'react-dom', 'electron'].map((name) => ({ name, message: domMessage })),
+      [{ regex: '^(react|react-dom|electron)/', message: domMessage }],
+    );
+  return [
+    {
+      files: ['src/renderer/**/*.{ts,tsx}'],
+      rules: { 'no-restricted-imports': rendererImportRules(false) },
+    },
+    {
+      files: ['src/renderer/**/*.test.{ts,tsx}'],
+      rules: { 'no-restricted-imports': rendererImportRules(true) },
+    },
+    {
+      files: pureFiles,
+      rules: {
+        'no-restricted-imports': pureImports(false),
+        'no-restricted-globals': [
+          'error',
+          ...EDITOR_PURE_GLOBALS.map((name) => ({
+            name,
+            message: `${name} is banned in editor model, tools and state (pure logic).`,
+          })),
+        ],
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector: 'ExportDefaultDeclaration',
+            message: 'Use named exports (SPEC.md code style).',
+          },
+        ],
+      },
+    },
+    {
+      files: pureTestFiles,
+      rules: { 'no-restricted-imports': pureImports(true) },
+    },
+  ];
+}
+
 export default tseslint.config(
   {
     ignores: ['out/**', 'dist/**', 'coverage/**', 'playwright-report/**', 'test-results/**'],
@@ -136,6 +224,7 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', { paths: [OCL_CHEM_CORE_ONLY] }] },
   },
   ...CORE_MODULES.flatMap(coreModuleConfig),
+  ...rendererConfigs(),
   {
     // svg-render output must be byte-identical on every machine (SPEC-svg-render.md
     // "Determinism"): no maths whose V8 results have differed between platforms, no clock,

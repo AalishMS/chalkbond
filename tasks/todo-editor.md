@@ -115,8 +115,8 @@ ESLint in `beforeAll`): rejects `@core/doc-model/history` and `../../core/doc-mo
 `react` in `src/renderer/editor/view/x.tsx`.
 
 **Acceptance criteria:**
-- [ ] Every probe above passes; existing `lint-boundaries` and `svg-render-lint` probes still pass
-- [ ] `npm run lint` clean on the current tree
+- [x] Every probe above passes; existing `lint-boundaries` and `svg-render-lint` probes still pass
+- [x] `npm run lint` clean on the current tree
 
 **Verification:** `npm test -- tests/tooling` then `npm run check`
 
