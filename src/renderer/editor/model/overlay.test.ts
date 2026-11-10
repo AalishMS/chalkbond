@@ -1,0 +1,151 @@
+import { createNameIndex, structureFromText } from '@core/chem-core';
+import {
+  addAtom,
+  addBond,
+  addObject,
+  emptyDoc,
+  insert,
+  type AtomId,
+  type BondId,
+  type Doc,
+  type ObjectId,
+} from '@core/doc-model';
+import { render } from '@core/svg-render';
+import { describe, expect, it } from 'vitest';
+import type { Hit } from './hit-test';
+import { overlayGroups, type OverlayShape } from './overlay';
+import { bluToScreen, ptToScreen, type Viewport } from './viewport';
+
+const BL = 40;
+const NOW = '2026-01-01T00:00:00.000Z';
+const v: Viewport = { zoom: 1.5, pan: { x: 200, y: 100 }, size: { w: 1200, h: 700 } };
+const shapesOf = (hit: Hit | null, doc: Doc): readonly OverlayShape[] =>
+  overlayGroups(hit, doc, render(doc), v).flatMap((g) => g.shapes);
+
+function chainDoc(): { doc: Doc; a: AtomId; b: AtomId; bond: BondId } {
+  const [d1, a] = addAtom(emptyDoc(NOW), { element: 'C', x: 0, y: 0 });
+  const [d2, b] = addAtom(d1, { element: 'C', x: 1, y: 0 });
+  const [doc, bond] = addBond(d2, a, b);
+  return { doc, a, b, bond };
+}
+
+describe('hover shapes (Canvas appearance)', () => {
+  it('has no group without a hover, or for a hit whose item is gone', () => {
+    const { doc } = chainDoc();
+    expect(overlayGroups(null, doc, render(doc), v)).toEqual([]);
+    expect(shapesOf({ kind: 'atom', id: 'a99' as AtomId }, doc)).toEqual([]);
+    expect(shapesOf({ kind: 'bond', id: 'b99' as BondId }, doc)).toEqual([]);
+    expect(shapesOf({ kind: 'object', id: 'o99' as ObjectId, type: 'plus' }, doc)).toEqual([]);
+  });
+
+  it('one hover group', () => {
+    const { doc, a } = chainDoc();
+    const groups = overlayGroups({ kind: 'atom', id: a }, doc, render(doc), v);
+    expect(groups.map((g) => g.kind)).toEqual(['hover']);
+  });
+
+  it('a skeleton vertex gets a circle of diameter 18 on the atom', () => {
+    const { doc, a } = chainDoc();
+    expect(shapesOf({ kind: 'atom', id: a }, doc)).toEqual([
+      { kind: 'circle', c: bluToScreen(v, { x: 0, y: 0 }, BL), r: 9 },
+    ]);
+  });
+
+  it('a labelled atom gets its extents box grown 3 px, radius 4', () => {
+    const names = createNameIndex({
+      format: 'chalkbond-compounds',
+      version: 1,
+      source: 'test',
+      entries: [{ name: 'ethanol', synonyms: [], smiles: 'CCO', formula: 'C2H6O', mw: 46.07 }],
+    });
+    const r = structureFromText('ethanol', names);
+    if (!r.ok) throw new Error('no ethanol');
+    const doc = insert(emptyDoc(NOW), r.value.sub, { x: 0, y: 0 })[0];
+    const oxygen = Object.values(doc.atoms).find((x) => x.element === 'O');
+    if (!oxygen) throw new Error('no O');
+    const ink = render(doc).extents[`atom:${oxygen.id}`];
+    if (!ink) throw new Error('no extents');
+    const a = ptToScreen(v, { x: ink.x, y: ink.y });
+    const b = ptToScreen(v, { x: ink.x + ink.w, y: ink.y + ink.h });
+    expect(shapesOf({ kind: 'atom', id: oxygen.id }, doc)).toEqual([
+      {
+        kind: 'box',
+        rect: { x: a.x - 3, y: a.y - 3, w: b.x - a.x + 6, h: b.y - a.y + 6 },
+        radius: 4,
+      },
+    ]);
+  });
+
+  it('a bond gets an 8 px band between its atoms', () => {
+    const { doc, bond } = chainDoc();
+    expect(shapesOf({ kind: 'bond', id: bond }, doc)).toEqual([
+      {
+        kind: 'band',
+        from: bluToScreen(v, { x: 0, y: 0 }, BL),
+        to: bluToScreen(v, { x: 1, y: 0 }, BL),
+        width: 8,
+      },
+    ]);
+  });
+
+  it('a straight arrow gets an 8 px band along its path', () => {
+    const [doc, id] = addObject(emptyDoc(NOW), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 1, y: 1 },
+      to: { x: 4, y: 1 },
+    });
+    expect(shapesOf({ kind: 'object', id, type: 'arrow' }, doc)).toEqual([
+      {
+        kind: 'band',
+        from: bluToScreen(v, { x: 1, y: 1 }, BL),
+        to: bluToScreen(v, { x: 4, y: 1 }, BL),
+        width: 8,
+      },
+    ]);
+  });
+
+  it('a curved arrow gets a band along its curve (control point of the layout)', () => {
+    const [doc, id] = addObject(emptyDoc(NOW), {
+      type: 'curved-arrow',
+      head: 'full',
+      from: { kind: 'point', p: { x: 0, y: 0 } },
+      to: { kind: 'point', p: { x: 2, y: 0 } },
+      bend: 0.5,
+    });
+    const [shape] = shapesOf({ kind: 'object', id, type: 'curved-arrow' }, doc);
+    expect(shape).toMatchObject({ kind: 'band', width: 8 });
+    // Travelling east, a positive bend bulges up: the control point is above the chord.
+    const control = shape?.kind === 'band' ? shape.control : undefined;
+    const mid = bluToScreen(v, { x: 1, y: 0 }, BL);
+    expect(control?.x).toBeCloseTo(mid.x, 6);
+    expect(control?.y).toBeCloseTo(mid.y - 1 * BL * 2, 6);
+  });
+
+  it('a plus or a text gets its extents grown 3 px, radius 4', () => {
+    const [d1, plus] = addObject(emptyDoc(NOW), { type: 'plus', at: { x: 2, y: 2 } });
+    const [d2, text] = addObject(d1, {
+      type: 'text',
+      at: { x: 5, y: 5 },
+      runs: [{ text: 'H2O' }],
+      align: 'center',
+    });
+    const scene = render(d2);
+    for (const [id, type] of [
+      [plus, 'plus'],
+      [text, 'text'],
+    ] as const) {
+      const ink = scene.extents[`obj:${id}`];
+      if (!ink) throw new Error('no extents');
+      const a = ptToScreen(v, { x: ink.x, y: ink.y });
+      const b = ptToScreen(v, { x: ink.x + ink.w, y: ink.y + ink.h });
+      expect(shapesOf({ kind: 'object', id, type }, d2)).toEqual([
+        {
+          kind: 'box',
+          rect: { x: a.x - 3, y: a.y - 3, w: b.x - a.x + 6, h: b.y - a.y + 6 },
+          radius: 4,
+        },
+      ]);
+    }
+  });
+});

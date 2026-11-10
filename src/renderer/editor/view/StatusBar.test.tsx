@@ -1,8 +1,9 @@
 import type { Formula } from '@core/chem-core';
+import type { AtomId, BondId, ObjectId } from '@core/doc-model';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { HINTS } from '../state/catalog';
-import { TOOL_IDS, type ToolId } from '../state/editor-state';
+import { TOOL_IDS, type Hit, type ToolId } from '../state/editor-state';
 import { StatusBar } from './StatusBar';
 
 const noop = (): undefined => undefined;
@@ -77,6 +78,37 @@ describe('StatusBar markup', () => {
     expect(render('bond', 'slides', ethanol)).toContain(
       'data-testid="formula">C<sub>2</sub>H<sub>6</sub>O · 46.07 g/mol<',
     );
+  });
+});
+
+describe('StatusBar hover hints (K2 hover keys)', () => {
+  const atom: Hit = { kind: 'atom', id: 'a1' as AtomId };
+  const bond: Hit = { kind: 'bond', id: 'b1' as BondId };
+  const arrow: Hit = { kind: 'object', id: 'o1' as ObjectId, type: 'arrow' };
+  const withHover = (tool: ToolId, hover: Hit | null, extra = {}): string =>
+    renderToStaticMarkup(
+      <StatusBar tool={tool} preset="slides" zoom={1.5} dispatch={noop} hover={hover} {...extra} />,
+    );
+
+  it('an atom shows the element-key hint, a bond the order-key hint', () => {
+    expect(withHover('bond', atom)).toContain(
+      'Type O, N, Cl… to change this atom. Enter for any label.',
+    );
+    expect(withHover('select', bond)).toContain('Press 1, 2 or 3 for single, double, triple.');
+  });
+
+  it('keeps the tool hint over an object, with no hover, and with Erase or Text', () => {
+    expect(withHover('select', arrow)).toContain(HINTS.select);
+    expect(withHover('bond', null)).toContain(HINTS.bond);
+    expect(withHover('erase', atom)).toContain(HINTS.erase);
+    expect(withHover('text', atom)).toContain(HINTS.text);
+  });
+
+  it('a notice or the name field hint wins over the hover hint', () => {
+    expect(withHover('bond', atom, { nameFieldFocused: true })).toContain('Enter inserts.');
+    expect(
+      withHover('bond', atom, { notice: { id: 1, kind: 'info', text: 'Inserted ethanol' } }),
+    ).toContain('Inserted ethanol');
   });
 });
 

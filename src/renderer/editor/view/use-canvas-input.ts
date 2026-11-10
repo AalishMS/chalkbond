@@ -1,6 +1,10 @@
 import { useEffect, type RefObject } from 'react';
+import { current } from '@core/doc-model';
+import { canvasEvent } from '../model/canvas-event';
 import { createCoalescer } from '../model/coalesce';
+import type { Derive } from '../model/derive';
 import type { Point } from '../model/geometry';
+import { hoverAt } from '../state/hover';
 import type { Store } from '../state/store';
 
 /** Runs `run` on the next animation frame; returns the cancel function. */
@@ -12,9 +16,14 @@ const nextFrame = (run: () => void): (() => void) => {
 /**
  * Pan and zoom input on the canvas element (V1, V4): wheel and Shift+wheel pan, Ctrl+wheel and
  * touchpad pinch zoom about the pointer, Space+drag and middle-drag pan. Pointer-move deltas are
- * summed and delivered once per frame; the reducer clamps the pan.
+ * summed and delivered once per frame; the reducer clamps the pan. Pointer moves otherwise
+ * update the hover (HV1): converted by `canvasEvent`, one hit-test per frame, latest move wins.
  */
-export function useCanvasInput(canvas: RefObject<HTMLElement | null>, store: Store): void {
+export function useCanvasInput(
+  canvas: RefObject<HTMLElement | null>,
+  store: Store,
+  derive: Derive,
+): void {
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
@@ -54,6 +63,11 @@ export function useCanvasInput(canvas: RefObject<HTMLElement | null>, store: Sto
       (a, b) => ({ x: a.x + b.x, y: a.y + b.y }),
       (d) => dispatch({ type: 'pan-by', dx: d.x, dy: d.y }),
     );
+    const hover = createCoalescer<Point>(
+      nextFrame,
+      (_pending, latest) => latest,
+      (screen) => dispatch({ type: 'set-hover', hover: hoverAt(store.getState(), derive, screen) }),
+    );
     let drag: { id: number; at: Point } | null = null;
     const onPointerDown = (e: PointerEvent): void => {
       const pans = e.button === 1 || (e.button === 0 && store.getState().spaceHeld);
@@ -64,7 +78,21 @@ export function useCanvasInput(canvas: RefObject<HTMLElement | null>, store: Sto
       el.dataset['pan'] = '';
     };
     const onPointerMove = (e: PointerEvent): void => {
-      if (drag?.id !== e.pointerId) return;
+      if (drag === null) {
+        const state = store.getState();
+        const rect = el.getBoundingClientRect();
+        const bondLength = derive.committed(current(state.history)).scene.style.bondLength;
+        const ev = canvasEvent(
+          'move',
+          e,
+          { x: rect.left, y: rect.top },
+          state.viewport,
+          bondLength,
+        );
+        if (ev.type === 'move') hover.push(ev.screen);
+        return;
+      }
+      if (drag.id !== e.pointerId) return;
       panDelta.push({ x: e.clientX - drag.at.x, y: e.clientY - drag.at.y });
       drag.at = { x: e.clientX, y: e.clientY };
     };
@@ -75,6 +103,10 @@ export function useCanvasInput(canvas: RefObject<HTMLElement | null>, store: Sto
       delete el.dataset['pan'];
     };
     // A middle press starts browser autoscroll unless the mouse-down is cancelled too.
+    const onPointerLeave = (): void => {
+      hover.cancel();
+      dispatch({ type: 'set-hover', hover: null });
+    };
     const onMouseDown = (e: MouseEvent): void => {
       if (e.button === 1) e.preventDefault();
     };
@@ -87,9 +119,11 @@ export function useCanvasInput(canvas: RefObject<HTMLElement | null>, store: Sto
     el.addEventListener('pointermove', onPointerMove);
     el.addEventListener('pointerup', endDrag);
     el.addEventListener('pointercancel', endDrag);
+    el.addEventListener('pointerleave', onPointerLeave);
     el.addEventListener('mousedown', onMouseDown);
     return () => {
       panDelta.cancel();
+      hover.cancel();
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('keydown', onKeyDown);
       el.removeEventListener('keyup', onKeyUp);
@@ -98,7 +132,8 @@ export function useCanvasInput(canvas: RefObject<HTMLElement | null>, store: Sto
       el.removeEventListener('pointermove', onPointerMove);
       el.removeEventListener('pointerup', endDrag);
       el.removeEventListener('pointercancel', endDrag);
+      el.removeEventListener('pointerleave', onPointerLeave);
       el.removeEventListener('mousedown', onMouseDown);
     };
-  }, [canvas, store]);
+  }, [canvas, store, derive]);
 }

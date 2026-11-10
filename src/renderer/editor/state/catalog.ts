@@ -1,4 +1,4 @@
-import type { EditorState, ToolId, VariantTool } from './editor-state';
+import type { EditorState, Hit, ToolId, VariantTool } from './editor-state';
 
 export interface ToolDef {
   id: ToolId;
@@ -136,6 +136,24 @@ export function railFace(state: EditorState, tool: ToolDef): RailFace {
 /** The status-bar hint while the name field has focus (SPEC-editor.md "Status-bar hints"). */
 export const NAME_FIELD_HINT =
   'Enter inserts. Write a reaction like: ethanol + acetic acid -> ethyl acetate';
+
+/** Hints while hovering an atom or a bond with hover keys active (K2). */
+export const HOVER_HINTS = {
+  atom: 'Type O, N, Cl… to change this atom. Enter for any label.',
+  bond: 'Press 1, 2 or 3 for single, double, triple.',
+} as const;
+
+/**
+ * The status-bar hint for `tool` and the hovered item: hover keys work with every tool except
+ * Erase and Text (K2), so only there does an atom or a bond change the hint.
+ */
+export function hintFor(tool: ToolId, hover: Hit | null): string {
+  if (hover !== null && tool !== 'erase' && tool !== 'text') {
+    if (hover.kind === 'atom') return HOVER_HINTS.atom;
+    if (hover.kind === 'bond') return HOVER_HINTS.bond;
+  }
+  return HINTS[tool];
+}
 
 export const HINTS: Readonly<Record<ToolId, string>> = {
   select: 'Click a molecule to select it. Drag to move. Drag on empty space to select an area.',

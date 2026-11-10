@@ -2,8 +2,8 @@ import type { Formula } from '@core/chem-core';
 import type { StylePreset } from '@core/doc-model';
 import { formulaRuns } from '../model/formula';
 import { stepZoom, zoomPercent } from '../model/viewport';
-import { HINTS, NAME_FIELD_HINT } from '../state/catalog';
-import type { Notice, ToolId } from '../state/editor-state';
+import { hintFor, NAME_FIELD_HINT } from '../state/catalog';
+import type { Hit, Notice, ToolId } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
 import { STATUS_TIPS, type TipContent } from '../state/tips';
 import { FormulaText } from './FormulaText';
@@ -22,6 +22,8 @@ interface StatusBarProps {
   /** The viewport zoom (1 = 100 %), shown in the readout. */
   zoom: number;
   dispatch: (action: EditorAction) => void;
+  /** The item under the pointer: an atom or a bond changes the hint (K2). */
+  hover?: Hit | null;
   /** The name field has focus: its hint replaces the tool's. */
   nameFieldFocused?: boolean;
   /** Replaces the hint while set (X1 and the other notices). */
@@ -62,6 +64,7 @@ export function StatusBar({
   dispatch,
   formula = null,
   nameFieldFocused = false,
+  hover = null,
   notice = null,
 }: StatusBarProps): React.JSX.Element {
   return (
@@ -76,7 +79,7 @@ export function StatusBar({
           nameFieldFocused ? (
             NAME_FIELD_HINT
           ) : (
-            HINTS[tool]
+            hintFor(tool, hover)
           )
         ) : (
           <>

@@ -283,6 +283,39 @@
   pointer-events: none;
 }
 
+/* Cursors per tool (Canvas appearance); a pan below overrides them. */
+.canvas[data-cursor='default'] {
+  cursor: default;
+}
+
+.canvas[data-cursor='move'] {
+  cursor: move;
+}
+
+.canvas[data-cursor='crosshair'] {
+  cursor: crosshair;
+}
+
+.canvas[data-cursor='text'] {
+  cursor: text;
+}
+
+.canvas[data-cursor='erase'] {
+  cursor: var(--cursor-erase, crosshair);
+}
+
+/* Hover highlight: one group at --overlay-hover, so overlapping shapes do not compound. */
+.overlay-hover {
+  opacity: var(--overlay-hover);
+  fill: var(--accent);
+}
+
+.overlay-hover .overlay-band {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+
 /* Space held, or a middle-drag in progress (V4). */
 .canvas[data-space] {
   cursor: grab;

@@ -1,10 +1,13 @@
 import { current } from '@core/doc-model';
 import type { ItemKey } from '@core/svg-render';
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { cursorFor } from '../model/cursor';
 import { mountParts, type PartHost } from '../model/mount';
+import { overlayGroups } from '../model/overlay';
 import type { Mounted } from '../model/patch';
 import { PX_PER_PT } from '../model/viewport';
 import type { EditorController } from '../state/controller';
+import { cssCursor } from './cursors';
 import { Overlay } from './Overlay';
 import { HINT_ID } from './StatusBar';
 import { useCanvasInput } from './use-canvas-input';
@@ -40,7 +43,8 @@ interface CanvasProps {
 export function Canvas({ controller, children }: CanvasProps): React.JSX.Element {
   const state = useEditorState(controller.store);
   const { viewport } = state;
-  const { scene } = controller.derive.committed(current(state.history));
+  const doc = current(state.history);
+  const { scene } = controller.derive.committed(doc);
   const { dispatch } = controller.store;
 
   const ref = useRef<HTMLElement>(null);
@@ -91,15 +95,22 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
     return () => observer.disconnect();
   }, [dispatch]);
 
-  useCanvasInput(ref, controller.store);
+  useCanvasInput(ref, controller.store, controller.derive);
 
   const k = viewport.zoom * PX_PER_PT;
+  const cursor = cursorFor(state.tool, state.hover, state.spaceHeld);
   return (
     <main
       ref={ref}
       className="canvas"
       data-testid="canvas"
       data-space={state.spaceHeld ? '' : undefined}
+      data-cursor={cursor}
+      style={
+        cursor === 'erase'
+          ? ({ '--cursor-erase': cssCursor('erase') } as React.CSSProperties)
+          : undefined
+      }
       role="application"
       aria-label="Drawing canvas"
       aria-describedby={HINT_ID}
@@ -115,7 +126,7 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
           strokeLinejoin="round"
         />
       </svg>
-      <Overlay size={viewport.size} />
+      <Overlay size={viewport.size} groups={overlayGroups(state.hover, doc, scene, viewport)} />
       {children}
     </main>
   );

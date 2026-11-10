@@ -91,6 +91,28 @@ export async function loadDocument(page: Page, doc: Doc): Promise<void> {
   }, doc);
 }
 
+/** The editor's current document, read through the controller as the host's `getDoc` does. */
+export async function readDocument(page: Page): Promise<Doc> {
+  return page.evaluate(() => {
+    interface Fiber {
+      return: Fiber | null;
+      memoizedProps: unknown;
+    }
+    const root = document.querySelector('.editor');
+    if (!root) throw new Error('no editor root');
+    const key = Object.keys(root).find((k) => k.startsWith('__reactFiber$'));
+    if (key === undefined) throw new Error('no React fiber on the editor root');
+    let fiber: Fiber | null = (root as unknown as Record<string, Fiber>)[key] ?? null;
+    for (; fiber; fiber = fiber.return) {
+      const props = fiber.memoizedProps as { controller?: { getDoc?: () => unknown } } | null;
+      if (props?.controller && typeof props.controller.getDoc === 'function') {
+        return props.controller.getDoc() as never;
+      }
+    }
+    throw new Error('no controller in the React tree');
+  });
+}
+
 /** Types `text` into the name field and presses Enter (the field keeps focus after an insert). */
 export async function insertName(page: Page, text: string): Promise<void> {
   const input = page.getByTestId('namefield-input');

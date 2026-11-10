@@ -8,6 +8,7 @@ import {
   type Selection,
 } from '@core/doc-model';
 import { resolveStyle } from '@core/svg-render';
+import type { Hit } from '../model/hit-test';
 import { initialViewport, type Viewport } from '../model/viewport';
 
 /** Tool ids in rail order (SPEC-editor.md "Tool rail"). */
@@ -35,18 +36,7 @@ export const EMPTY_SELECTION: Selection = {
   objects: new Set<ObjectId>(),
 };
 
-/** What the pointer is over (SPEC-editor.md "Hit-testing"); `hitTest` arrives with E14. */
-export type Hit =
-  | { readonly kind: 'atom'; readonly id: AtomId }
-  | { readonly kind: 'bond'; readonly id: BondId }
-  | { readonly kind: 'object'; readonly id: ObjectId; readonly type: string }
-  | {
-      readonly kind: 'handle';
-      readonly handle:
-        'rotate' | 'arrow-from' | 'arrow-to' | 'curve-from' | 'curve-to' | 'curve-bend';
-      readonly id?: ObjectId;
-    }
-  | { readonly kind: 'slot'; readonly arrow: ObjectId; readonly slot: 'above' | 'below' };
+export type { Hit } from '../model/hit-test';
 
 /**
  * The active tool's machine state. Each tool refines `kind` into its own union member; the store

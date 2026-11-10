@@ -448,9 +448,9 @@ objects need whole extents). Overlay shapes for a hovered vertex / labelled atom
 `perf.test.ts`: `hitTest` on a 500-atom doc < 0.5 ms median.
 
 **Acceptance criteria:**
-- [ ] H1–H4 covered by named tests; property 5 (atom's own point hits it) passes
-- [ ] Hover appearance as screen 02 (atom Ø 18 at 0.45) — e2e reads the overlay circle's `r` = 9 and group opacity 0.45
-- [ ] Perf budget met
+- [x] H1–H4 covered by named tests; property 5 (atom's own point hits it) passes
+- [x] Hover appearance as screen 02 (atom Ø 18 at 0.45) — e2e reads the overlay circle's `r` = 9 and group opacity 0.45
+- [x] Perf budget met
 
 **Verification:** `npm test -- src/renderer/editor`, `npm run check`, `npm run shots -- E14` → `E14/hover-atom.png` (scripted: insert propan-1-ol, hover the O end atom with Bond active; compare `02-drawing.png` hover), `E14/hover-bond.png` (scripted: hover a C–C bond)
 

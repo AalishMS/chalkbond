@@ -109,6 +109,12 @@ export function errorText(error: unknown): string {
   return "That edit isn't possible here.";
 }
 
+/** Two hits name the same thing. */
+function sameHit(a: Hit | null, b: Hit | null): boolean {
+  if (a === null || b === null) return a === b;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 const docOf = (state: EditorState): Doc => current(state.history);
 
 function showNotice(state: EditorState, kind: 'info' | 'error', text: string): EditorState {
@@ -228,6 +234,7 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
         tool: action.tool,
         gesture: null,
         preview: null,
+        hover: null,
         selection: action.tool === 'select' ? state.selection : EMPTY_SELECTION,
       };
     case 'select-variant': {
@@ -275,7 +282,7 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
     case 'set-selection':
       return { ...state, selection: action.selection };
     case 'set-hover':
-      return { ...state, hover: action.hover };
+      return sameHit(state.hover, action.hover) ? state : { ...state, hover: action.hover };
     case 'set-gesture':
       return { ...state, gesture: action.gesture };
     case 'set-preview':
