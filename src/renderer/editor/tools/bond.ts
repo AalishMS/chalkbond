@@ -16,6 +16,7 @@ import {
 import type { CanvasEvent } from '../model/canvas-event';
 import { distance, type Point } from '../model/geometry';
 import { mergeTarget } from '../model/hit-test';
+import { atomDrawsLabel } from '../model/overlay';
 import type { GestureState, Hit, Preview } from '../state/editor-state';
 import { DRAG_PX, type Tool, type ToolCommit, type ToolContext, type ToolStep } from './tool';
 
@@ -162,6 +163,8 @@ export const bondTool: Tool = {
   hover(ev, ctx) {
     const hit = ctx.hit?.kind === 'atom' ? ctx.hit : null;
     if (ctx.hit !== null && hit === null) return null;
+    // HV4: no ghost through the letters of a label.
+    if (hit !== null && atomDrawsLabel(ctx.scene, hit.id as AtomId)) return null;
     return ghostOf(ctx.doc, clickEdit(ctx.doc, hit, ev.p, bondSpec(ctx.variant)), true);
   },
 };

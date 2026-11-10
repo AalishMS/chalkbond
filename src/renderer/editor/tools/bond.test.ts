@@ -7,6 +7,7 @@ import {
   current,
   emptyDoc,
   transact,
+  updateAtom,
   type AtomId,
   type BondId,
   type Doc,
@@ -483,6 +484,18 @@ describe('B6 hover ghost', () => {
     const r = rig(d4);
     const ghost = bondTool.hover?.(move(screenPos(d4, b)), context(r, { kind: 'atom', id: b }));
     expect(ghost?.mergeTarget).toBe(x);
+  });
+
+  it('over an atom that draws a label: no ghost (HV4), the click still sprouts a bond', () => {
+    const r = rig();
+    click(r, CLICK);
+    const end = atomsOf(r.doc)[1] as AtomId;
+    r.doc = updateAtom(r.doc, end, { element: 'O' });
+    const hit = { kind: 'atom', id: end } as const;
+    expect(bondTool.hover?.(move(screenPos(r.doc, end)), context(r, hit))).toBeNull();
+    const before = Object.keys(r.doc.bonds).length;
+    click(r, screenPos(r.doc, end));
+    expect(Object.keys(r.doc.bonds)).toHaveLength(before + 1);
   });
 
   it('over a bond: no ghost', () => {

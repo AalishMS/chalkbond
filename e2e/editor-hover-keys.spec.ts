@@ -95,7 +95,7 @@ test('Hover keys on an atom: element letters, L is Cl, B is Br, + and - change t
     for (let i = 0; i < 3; i++) await page.keyboard.press('-');
     expect(await charge()).toBe(-1);
     // The atom is still hovered after every change.
-    await expect(page.getByTestId('overlay-hover')).toHaveCount(1);
+    await expect(page.locator('[data-testid^="overlay-hover"]')).toHaveCount(1);
   } finally {
     await app.close();
   }

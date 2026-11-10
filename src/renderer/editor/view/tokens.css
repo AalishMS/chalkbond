@@ -28,6 +28,7 @@
 
   /* Canvas overlays: --accent at these alphas (applied as group opacity, see DEVIATIONS.md) */
   --overlay-hover: 0.45;
+  --overlay-hover-label: 0.25;
   --overlay-selection: 0.24;
   --overlay-marquee: 0.08;
   --overlay-merge: 0.32;

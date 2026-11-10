@@ -43,7 +43,7 @@ test('E14 hover: a skeleton vertex, a label, a bond', async () => {
 
     const o = await canvasPoint(page, oxygen);
     await page.mouse.move(o.x, o.y);
-    await page.locator('[data-testid="overlay-hover"] rect').waitFor();
+    await page.locator('[data-testid="overlay-hover-label"] rect').waitFor();
     await shot(page, 'E14', 'hover-label-atom');
 
     const a = await canvasPoint(page, end);

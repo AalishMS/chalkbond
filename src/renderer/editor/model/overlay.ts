@@ -25,6 +25,8 @@ export const HOVER_CIRCLE_R = 9;
 export const HOVER_BAND = 8;
 /** Hover: px an `extents` box is grown by. */
 export const HOVER_GROW = 3;
+/** Hover of a labelled atom: px its label's `extents` box is grown by (R27). */
+export const HOVER_LABEL_GROW = 2;
 /** Hover: corner radius of a box. */
 export const HOVER_RADIUS = 4;
 /** Selection: circle radius on an atom, width of a bond or arrow band, `extents` growth. */
@@ -50,13 +52,19 @@ export type OverlayShape =
 
 /** Shapes drawn together at one group opacity. */
 export interface OverlayGroup {
-  readonly kind: 'selection' | 'frame' | 'hover' | 'merge' | 'marquee' | 'guide' | 'handle';
+  readonly kind:
+    'selection' | 'frame' | 'hover' | 'hover-label' | 'merge' | 'marquee' | 'guide' | 'handle';
   readonly shapes: readonly OverlayShape[];
 }
 
 /** An `extents` box (pt) in screen px, grown by `grow` px. */
 function boxShape(v: Viewport, ink: Rect, grow = HOVER_GROW): OverlayShape {
   return { kind: 'box', rect: growRect(screenRect(v, ink), grow), radius: HOVER_RADIUS };
+}
+
+/** True when the atom's rendered part is text (O, OH, Cl, an abbreviation): it has `extents`. */
+export function atomDrawsLabel(scene: Scene, id: AtomId): boolean {
+  return scene.extents[`atom:${id}`] !== undefined;
 }
 
 /** The shape that highlights `hit`, or null when the item is gone or has none. */
@@ -69,7 +77,7 @@ function hoverShape(hit: Hit, doc: Doc, scene: Scene, v: Viewport): OverlayShape
       const ink = scene.extents[`atom:${hit.id}`];
       return ink === undefined
         ? { kind: 'circle', c: bluToScreen(v, atom, bl), r: HOVER_CIRCLE_R }
-        : boxShape(v, ink);
+        : boxShape(v, ink, HOVER_LABEL_GROW);
     }
     case 'bond': {
       const bond = doc.bonds[hit.id];
@@ -122,7 +130,10 @@ export function overlayGroups(
 ): OverlayGroup[] {
   if (hover === null) return [];
   const shape = hoverShape(hover, doc, scene, viewport);
-  return shape === null ? [] : [{ kind: 'hover', shapes: [shape] }];
+  if (shape === null) return [];
+  // A label keeps its letters legible under a lighter box (R27).
+  const label = hover.kind === 'atom' && shape.kind === 'box';
+  return [{ kind: label ? 'hover-label' : 'hover', shapes: [shape] }];
 }
 
 const shiftPoint = (p: Point, by: Point): Point => ({ x: p.x + by.x, y: p.y + by.y });

@@ -96,17 +96,19 @@ test('hovering a bond draws an 8 px band between its atoms, with the bond hint',
   }
 });
 
-test('hovering the O of OH draws its label box grown 3 px', async () => {
+test('hovering the O of OH draws its label box grown 2 px, light', async () => {
   const { app, page } = await openApp();
   try {
     const { atoms } = await ethanolWithBondTool(page);
     const oxygen = atoms.find((a) => a.element === 'O');
     if (!oxygen) throw new Error('no O');
     await page.mouse.move(oxygen.at.x, oxygen.at.y);
-    const rect = hoverGroup(page).locator('rect');
+    const group = page.getByTestId('overlay-hover-label');
+    const rect = group.locator('rect');
     await expect(rect).toHaveCount(1);
+    expect(await group.evaluate((g) => getComputedStyle(g).opacity)).toBe('0.25');
     expect(await rect.getAttribute('rx')).toBe('4');
-    // The scene's ink box for the label, in client px, grown 3 px.
+    // The scene's ink box for the label, in client px, grown 2 px.
     const ink = render(goldenDoc('ethanol')).extents[`atom:${oxygen.id}`];
     const canvas = await page.getByTestId('canvas').boundingBox();
     if (!ink || !canvas) throw new Error('no extents or canvas');
@@ -115,10 +117,10 @@ test('hovering the O of OH draws its label box grown 3 px', async () => {
       x: (ink.x + ink.w) / 40,
       y: (ink.y + ink.h) / 40,
     });
-    near(Number(await rect.getAttribute('x')), topLeft.x - canvas.x - 3);
-    near(Number(await rect.getAttribute('y')), topLeft.y - canvas.y - 3);
-    near(Number(await rect.getAttribute('width')), bottomRight.x - topLeft.x + 6);
-    near(Number(await rect.getAttribute('height')), bottomRight.y - topLeft.y + 6);
+    near(Number(await rect.getAttribute('x')), topLeft.x - canvas.x - 2);
+    near(Number(await rect.getAttribute('y')), topLeft.y - canvas.y - 2);
+    near(Number(await rect.getAttribute('width')), bottomRight.x - topLeft.x + 4);
+    near(Number(await rect.getAttribute('height')), bottomRight.y - topLeft.y + 4);
   } finally {
     await app.close();
   }

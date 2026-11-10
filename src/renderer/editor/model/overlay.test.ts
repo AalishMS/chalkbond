@@ -13,7 +13,7 @@ import {
 import { render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import type { Hit } from './hit-test';
-import { overlayGroups, type OverlayShape } from './overlay';
+import { atomDrawsLabel, overlayGroups, type OverlayShape } from './overlay';
 import { bluToScreen, ptToScreen, type Viewport } from './viewport';
 
 const BL = 40;
@@ -51,7 +51,7 @@ describe('hover shapes (Canvas appearance)', () => {
     ]);
   });
 
-  it('a labelled atom gets its extents box grown 3 px, radius 4', () => {
+  it('a labelled atom gets its extents box grown 2 px, radius 4, in the light hover-label group', () => {
     const names = createNameIndex({
       format: 'chalkbond-compounds',
       version: 1,
@@ -67,13 +67,21 @@ describe('hover shapes (Canvas appearance)', () => {
     if (!ink) throw new Error('no extents');
     const a = ptToScreen(v, { x: ink.x, y: ink.y });
     const b = ptToScreen(v, { x: ink.x + ink.w, y: ink.y + ink.h });
-    expect(shapesOf({ kind: 'atom', id: oxygen.id }, doc)).toEqual([
+    const groups = overlayGroups({ kind: 'atom', id: oxygen.id }, doc, render(doc), v);
+    expect(groups.map((g) => g.kind)).toEqual(['hover-label']);
+    expect(groups[0]?.shapes).toEqual([
       {
         kind: 'box',
-        rect: { x: a.x - 3, y: a.y - 3, w: b.x - a.x + 6, h: b.y - a.y + 6 },
+        rect: { x: a.x - 2, y: a.y - 2, w: b.x - a.x + 4, h: b.y - a.y + 4 },
         radius: 4,
       },
     ]);
+    expect(atomDrawsLabel(render(doc), oxygen.id)).toBe(true);
+  });
+
+  it('a skeleton vertex does not draw a label', () => {
+    const { doc, a } = chainDoc();
+    expect(atomDrawsLabel(render(doc), a)).toBe(false);
   });
 
   it('a bond gets an 8 px band between its atoms', () => {

@@ -322,6 +322,12 @@
   fill: var(--accent);
 }
 
+/* A labelled atom: a lighter box so the letters stay legible (R27). */
+.overlay-hover-label {
+  opacity: var(--overlay-hover-label);
+  fill: var(--accent);
+}
+
 /* Selection (screen 03): bands, circles and label boxes in one group at --overlay-selection. */
 .overlay-selection {
   opacity: var(--overlay-selection);

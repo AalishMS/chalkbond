@@ -312,19 +312,28 @@ test('Bond tool: hovering shows the ghost of the click, at 0.45; leaving the can
   }
 });
 
-test('Bond tool: the ghost over a labelled atom adds only its own parts; the label does not jump', async () => {
+test('Bond tool: over a labelled atom no ghost and a light box; over a skeleton carbon the ghost and the circle (HV4)', async () => {
   const { app, page } = await openApp();
   try {
     const doc = goldenDoc('ethanol');
     await loadDocument(page, doc);
     const oxygen = Object.values(doc.atoms).find((a) => a.element === 'O') as Doc['atoms'][AtomId];
+    const carbon = Object.values(doc.atoms).find((a) => a.element === 'C') as Doc['atoms'][AtomId];
     const label = page.locator(`[data-layer="content"] > [data-key="atom:${oxygen.id}"]`);
     const before = await label.innerHTML();
-    const at = await canvasPoint(page, oxygen);
-    await page.mouse.move(at.x, at.y);
-    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
+    const onO = await canvasPoint(page, oxygen);
+    await page.mouse.move(onO.x, onO.y);
+    const box = page.getByTestId('overlay-hover-label');
+    await expect(box.locator('rect')).toHaveCount(1);
+    expect(await box.evaluate((g) => getComputedStyle(g).opacity)).toBe('0.25');
+    await expect(page.getByTestId('overlay-hover')).toHaveCount(0);
+    expect(await ghosts(page)).toEqual([]);
     expect(await label.innerHTML()).toBe(before);
-    expect((await ghosts(page)).every((k) => !k.includes(oxygen.id))).toBe(true);
+    // The terminal carbon keeps its ghost and its circle.
+    const onC = await canvasPoint(page, carbon);
+    await page.mouse.move(onC.x, onC.y);
+    await expect(page.getByTestId('overlay-hover').locator('circle')).toHaveCount(1);
+    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
   } finally {
     await app.close();
   }

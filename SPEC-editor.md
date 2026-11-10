@@ -126,6 +126,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R24 | Shift is additive everywhere in Select: Shift+click on empty canvas keeps the selection (it no longer clears it); Shift+drag from empty canvas draws a marquee whose result is added to the selection; Shift+click on an item toggles it | One modifier, one meaning: a slipped Shift never throws a careful selection away | 2026-11-10 |
 | R25 | Ctrl+V and Ctrl+D place the copy at the source's position + (1.0, 1.0) BLU; further pastes cascade by another (1.0, 1.0); a cut's first paste lands in place; an explicit point (context menu) centres the copy there (rule CB1) | A paste at the pointer usually landed on the original, as if nothing had happened | 2026-11-10 |
 | R26 | P1 tie-break for a one-neighbour atom whose neighbour has no other neighbours: the candidate nearer horizontal, then more upward, then more rightward (draft: more upward first, which sprouted straight up from the end of a lone bond and drew a bent chain, not the propane zig-zag) | Propane by two clicks must be the textbook zig-zag (E19) | 2026-11-10 |
+| R27 | A hovered labelled atom gets a box around its label's ink (2 px padding, radius 4) at alpha 0.25 (`--overlay-hover-label`), not the 0.45 box, and no hover ghost (HV4). Skeleton atoms keep the Ø 18 circle at 0.45, bonds the 8 px band at 0.45 | The heavy box hid the letters and the ghost bond ran through the H of "OH" | 2026-11-10 |
 
 ---
 
@@ -304,7 +305,8 @@ Content: title (600) then the key in a `kbd` chip (18 px tall), then optionally 
 |---|---|
 | Background | `--canvas-bg`; no page border |
 | Document parts | svg-render parts, unchanged |
-| Hover (group opacity `--overlay-hover`) | skeleton vertex: filled circle Ø 18; labelled atom: its `extents` box grown 3 px, radius 4; bond: 8 px round-capped band between the atoms; straight or curved arrow: 8 px band along the path; text, plus and other objects: `extents` grown 3 px, radius 4 |
+| Hover (group opacity `--overlay-hover`, 0.45) | skeleton vertex: filled circle Ø 18; bond: 8 px round-capped band between the atoms; straight or curved arrow: 8 px band along the path; text, plus and other objects: `extents` grown 3 px, radius 4 |
+| Hover of a labelled atom (O, N, Cl, OH, an abbreviation: any atom whose part is text; group opacity `--overlay-hover-label`, 0.25) | its `extents` box grown 2 px, radius 4, so the letters stay legible |
 | Selection (group opacity `--overlay-selection`) | atoms: circle r 12 (labelled: `extents` + 3 px box), omitted for a skeleton vertex whose selected bonds already cover it; bonds: 12 px round-capped bands; objects: as hover but 12 px bands / `extents` + 4 px. Plus the **frame**: union of the selected items' `extents` and vertex points, grown 8 px, 1 px dashed (`4 3`) |
 | Rotate handle | circle Ø 10, white fill, 1.5 px stroke, 24 px above the frame's top centre, joined by a 1 px line; hit Ø 20 |
 | Arrow end handles | 8×8 squares, white fill, 1.5 px stroke, at `from` and `to`; hit 16×16 |
@@ -742,6 +744,10 @@ Numbered so tasks can cite them.
   next moves: `V` then `O` over an atom works without wiggling the mouse. Not while a gesture
   runs (Esc cancels it; the release brings the hover back). A held key does not repeat a hover or
   tool key.
+- **HV4** A hovered atom that draws a label (its `extents` has an `atom:` entry) is highlighted
+  with the light box of Canvas appearance (R27) and shows **no hover ghost**: a ghost bond through
+  the letters is noise. A click still does what its tool does; only the ghost is suppressed.
+  Skeleton atoms and empty canvas keep their ghosts.
 
 ### Select tool
 
