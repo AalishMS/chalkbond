@@ -84,9 +84,9 @@ the window is created.
 `Menu.getApplicationMenu()` is `null` (via `app.evaluate`).
 
 **Acceptance criteria:**
-- [ ] `SPEC.md` has no Zustand row; the Component row names node tests, `react-dom/server` markup and Playwright
-- [ ] Smoke e2e asserts min size 960×640 and no application menu, and passes
-- [ ] Ctrl+0 / Ctrl+= no longer zoom the page (no menu accelerators): asserted in the smoke test by pressing Ctrl+= and reading `webContents.getZoomFactor() === 1`
+- [x] `SPEC.md` has no Zustand row; the Component row names node tests, `react-dom/server` markup and Playwright
+- [x] Smoke e2e asserts min size 960×640 and no application menu, and passes
+- [x] Ctrl+0 / Ctrl+= no longer zoom the page (no menu accelerators): asserted in the smoke test by pressing Ctrl+= and reading `webContents.getZoomFactor() === 1`
 
 **Verification:** `npm run check` then `npm run test:e2e`
 

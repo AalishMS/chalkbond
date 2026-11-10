@@ -46,7 +46,6 @@ Versions are the current stable releases as of 2026-11-09; pin exact versions in
 | Build tooling | electron-vite (Vite 8) | 6.x |
 | Language | TypeScript, `strict` | **6.0.x** (not 7.x — typescript-eslint supports `<6.1`) |
 | UI chrome | React | 19.x |
-| UI state | Zustand | 5.x |
 | Immutable edits + undo patches | Immer | latest 10.x+ |
 | File validation | Zod | latest |
 | Chemistry | OpenChemLib (BSD-3-Clause) | 9.x |
@@ -150,7 +149,7 @@ export function setCharge(doc: Doc, atomId: AtomId, charge: number): Doc {
 | Unit | Vitest | every `core/*` function | colocated `*.test.ts` |
 | Property | fast-check | doc-model invariants under random edit sequences; undo/redo round-trips; serialize/parse round-trips | colocated `*.prop.test.ts` |
 | Golden | Vitest snapshot | `svg-render` output for a fixed set of reference structures | `src/core/svg-render/__golden__/` |
-| Component | Vitest + jsdom | editor tool state machines (pointer event sequences → document) | colocated |
+| Component | Vitest (node) | editor tool state machines and reducer (event sequences → document); view markup via `react-dom/server`; DOM behaviour in Playwright e2e | colocated |
 | E2E | Playwright `_electron` | launch, draw, undo, save/open, copy (clipboard read back), export | `e2e/` |
 | Manual (Windows) | user checklist | paste into PowerPoint/Word, installer, fonts | `docs/windows-checklist.md` |
 

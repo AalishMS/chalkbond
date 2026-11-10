@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, Menu, shell } from 'electron';
 
 const APP_ID = 'com.chalkbond.app';
 
@@ -7,8 +7,8 @@ function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 800,
-    minHeight: 500,
+    minWidth: 960,
+    minHeight: 640,
     title: 'Chalkbond',
     show: false,
     webPreferences: {
@@ -41,6 +41,8 @@ function createMainWindow(): BrowserWindow {
 app.setAppUserModelId(APP_ID);
 
 void app.whenReady().then(() => {
+  // No default menu: its accelerators (Ctrl+0, Ctrl+=) would zoom the page and steal editor keys.
+  Menu.setApplicationMenu(null);
   createMainWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

@@ -37,6 +37,19 @@ test('launches one secure window titled Chalkbond', async () => {
       sandbox: true,
       nodeIntegration: false,
     });
+
+    // Scaffold window: 960x640 minimum, no default application menu (no zoom accelerators).
+    const shell = await app.evaluate(({ BrowserWindow, Menu }) => ({
+      minSize: BrowserWindow.getAllWindows()[0]?.getMinimumSize(),
+      menu: Menu.getApplicationMenu(),
+    }));
+    expect(shell).toEqual({ minSize: [960, 640], menu: null });
+
+    await page.keyboard.press('Control+=');
+    const zoom = await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0]?.webContents.getZoomFactor(),
+    );
+    expect(zoom).toBe(1);
   } finally {
     await app.close();
   }
