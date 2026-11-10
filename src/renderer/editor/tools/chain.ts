@@ -1,5 +1,5 @@
 // The Chain tool (SPEC-editor.md P2, P6): drag to grow a zig-zag of carbons, one bond for every
-// cos 30 BLU of travel, shown as a ghost with a count label at the pointer. A click is one bond.
+// cos 30 BLU of travel, shown as a ghost with a carbon-count badge by the pointer. A click is one bond.
 import type { AtomId } from '@core/doc-model';
 import { newBond, sprout, bondSpec, type BondStart } from '../model/bond-ops';
 import type { CanvasEvent } from '../model/canvas-event';
@@ -28,8 +28,6 @@ type PointerEv = Extract<CanvasEvent, { type: 'down' | 'move' | 'up' }>;
 
 const IDLE: ToolStep = { gesture: null };
 const LABEL = 'Add chain';
-/** The count label sits this many px below and right of the pointer. */
-const COUNT_OFFSET = 12;
 const SINGLE = bondSpec('single');
 
 const asPress = (g: GestureState | null): Press | null =>
@@ -44,10 +42,8 @@ function dragStep(start: BondStart, ev: PointerEv, ctx: ToolContext): ToolStep {
     edit === null
       ? undefined
       : {
-          count: {
-            at: { x: ev.screen.x + COUNT_OFFSET, y: ev.screen.y + COUNT_OFFSET },
-            n: edit.count,
-          },
+          // The badge counts carbons: the bonds plus the start atom (R31).
+          count: { at: ev.screen, n: edit.count + 1 },
         };
   const drag: Drag = { kind: 'chain-drag', start, ...(overlay === undefined ? {} : { overlay }) };
   return { gesture: drag, preview: ghostOf(ctx.doc, edit, false) };

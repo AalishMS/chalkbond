@@ -129,6 +129,8 @@ resolutions of the draft's open questions and of problems found in review.
 | R27 | A hovered labelled atom gets a box around its label's ink (2 px padding, radius 4) at alpha 0.25 (`--overlay-hover-label`), not the 0.45 box, and no hover ghost (HV4). Skeleton atoms keep the Ø 18 circle at 0.45, bonds the 8 px band at 0.45 | The heavy box hid the letters and the ghost bond ran through the H of "OH" | 2026-11-10 |
 | R28 | Chain and Ring corrections (E21): P2 counts one bond per cos 30 BLU, so a 4 BLU drag is 5 bonds; P4 with one neighbour points the ring straight away from it (mock-up 04), not along P1; P5 gives a pointer within 4 px of the bond line no choice of side, so a click on a ring bond fuses outside it; templates are vertex lists, not SubDocs | The first draft of each rule contradicted its own mock-up or example (a ring bond along the existing bond; a click inside the ring it fuses to) | 2026-11-10 |
 | R29 | Atom tool (E22): a mark clicked on empty canvas gives its info notice through the tool step (`ToolStep.notice`), not a document change; lone pairs store 0 explicitly after 4 (the cycle returns to 0); radical toggles 0 and 1 (a stored 2 becomes 0) | The tool machine must be able to tell the user why nothing happened; the cycle needs a defined end | 2026-11-10 |
+| R30 | Empty state hides while something is drawn (E22 fix): it shows only when the document is empty AND no gesture runs AND no preview exists. Hover ghosts count as previews: on an empty document a ghost (Bond and Ring tools) can land on the centred block, which must never be overlapped by a ghost. Consequence: moving the pointer over the canvas with a ghost-showing tool hides the block; the name field and the Chain tool are unaffected | The first bond's ghost drew over the art and the sentence; the rule is the function `emptyStateVisible(doc, gesture, preview)` | 2026-11-10 |
+| R31 | Chain count badge shows carbon atoms including the start atom (`bonds + 1`: pentane reads 5; three bonds from an existing atom read 4), as a tooltip-style badge with the same colour tokens, kept inside the canvas | A teacher counts carbons, not bonds; the tiny tinted digit was unreadable | 2026-11-10 |
 
 ---
 
@@ -318,7 +320,7 @@ Content: title (600) then the key in a `kbd` chip (18 px tall), then optionally 
 | Snapping guide | 1 px dashed (`4 4`) line at `--guide-opacity`, across the visible canvas |
 | Valence warning | atom: circle r 13 (labelled: `extents` + 4 px, radius 4), 1.5 px `--warning` stroke, dash `3 2`, no fill; `cannot-kekulize` bonds: 3 px dashed `--warning` line along each bond. Never exported |
 | Condition slot (Text tool near an arrow) | dashed rounded rect (radius 4), 2 BLU wide × `capHeight` + 8 px, centred where the text will go |
-| Chain count | "n" in `--type-xs` `--text-muted`, 12 px below-right of the pointer |
+| Chain count | the number of carbon atoms of the zig-zag, start atom included (R31), in a tooltip-style badge: `--tooltip-bg` / `--tooltip-fg`, 12 px weight 600, padding 2 px top and bottom and 6 px left and right, radius 4 px; top-left corner 14 px right of and 14 px below the pointer, flipped to the left of or above the pointer when it would cross the canvas edge |
 
 **Cursors**: Select: `default` on empty canvas, `move` over an item or the selection; handles:
 `pointer` (arrow ends, bend), `grab`/`grabbing` (rotate); Bond, Chain, Ring, Atom, Arrow, Plus,
@@ -328,7 +330,7 @@ Curly: `crosshair`; Erase: 20×20 `data:` SVG of the `erase` path, hotspot 4,18,
 
 ### Empty state
 
-Shown when the document has no atoms and no objects (screen 01); removed on the first item.
+Shown when the document has no atoms and no objects (screen 01), no gesture is in progress and no preview exists (R30: the first bond, chain or ring being dragged, or a ghost following the pointer, replaces it; it returns when the gesture is cancelled and nothing was added); removed on the first item.
 Centred in the canvas, the block (art to chips) centred 16 px above the canvas centre (the mock-up pads the bottom by 32 px), `pointer-events` only on the chips:
 
 1. The benzene outline (`ring-benzene` geometry) at 96 px, stroke width 1 in the 24 grid,
@@ -841,7 +843,7 @@ atom, so a wedge's narrow end is where the gesture started.
   0.5 BLU off it; bond length 1.0), n = round(projected drag length / cos 30°), 1 ≤ n ≤ 20 (a
   drag of 4 BLU is 5 bonds). First bond: when the start atom has a neighbour, the direction nearest
   P1's default direction (the zig-zag continues); otherwise the more upward, then the more
-  rightward. The count label follows the pointer. A click (no drag) adds one bond as B1/B3; a
+  rightward. The count badge (carbons, start atom included) follows the pointer. A click (no drag) adds one bond as B1/B3; a
   press on a bond starts nothing. One "Add chain" commit.
 - **P3** **Ring onto empty canvas**: the template centred at the click, canonical orientation
   (vertex up for 3, 5, 6; square axis-aligned).

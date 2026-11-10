@@ -60,7 +60,7 @@ export interface GestureOverlay {
   /** Opposite corners of the marquee, BLU. */
   readonly marquee?: { readonly from: Point; readonly to: Point };
   readonly guides?: readonly Guide[];
-  /** Chain: the number of bonds, drawn at `at` (canvas px) by the pointer. */
+  /** Chain: the carbons of the zig-zag (start atom included), badged by the pointer `at` (canvas px). */
   readonly count?: { readonly at: Point; readonly n: number };
 }
 

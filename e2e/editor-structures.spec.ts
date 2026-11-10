@@ -351,7 +351,33 @@ test('Chain tool: a drag of 280 px grows a pentane zig-zag, 80 px bonds, 120 deg
     await page.mouse.move(START.x + 140, START.y, { steps: 4 });
     await page.mouse.move(START.x + 280, START.y, { steps: 4 });
     // Mid-drag: the ghost, the bond count by the pointer, the angle hint.
-    await expect(page.getByTestId('overlay-count').locator('text')).toHaveText('4');
+    // R31: five carbons (four bonds), in a tooltip-style badge 14 px right of and below the pointer.
+    const badge = page.getByTestId('overlay-count');
+    await expect(badge.locator('text')).toHaveText('5');
+    const rect = await badge.locator('rect').boundingBox();
+    expect(rect?.x).toBeCloseTo(START.x + 280 + 14, 0);
+    expect(rect?.y).toBeCloseTo(START.y + 14, 0);
+    expect(rect?.height).toBeCloseTo(20, 0);
+    const look = await badge.evaluate((g) => {
+      const r = getComputedStyle(g.querySelector('rect') as Element);
+      const t = getComputedStyle(g.querySelector('text') as Element);
+      const tip = getComputedStyle(document.documentElement);
+      return {
+        fill: r.fill,
+        radius: r.rx,
+        color: t.fill,
+        size: t.fontSize,
+        weight: t.fontWeight,
+        bg: tip.getPropertyValue('--tooltip-bg').trim(),
+        fg: tip.getPropertyValue('--tooltip-fg').trim(),
+      };
+    });
+    expect(look.radius).toBe('4px');
+    expect(look.size).toBe('12px');
+    expect(look.weight).toBe('600');
+    expect(look.bg).toBe('#1f2328');
+    expect(look.fill).toBe('rgb(31, 35, 40)');
+    expect(look.color).toBe('rgb(255, 255, 255)');
     expect(await ghosts(page)).not.toEqual([]);
     await expect(hint(page)).toHaveText('Hold Shift for any angle.');
     await page.mouse.up();
@@ -588,6 +614,50 @@ test('Atom tool marks: charges step with Shift reversing, lone pairs cycle, radi
       page.getByRole('status').filter({ hasText: 'Click an atom to add this.' }),
     ).toBeVisible();
     expect(atomIds(await readDocument(page))).toHaveLength(1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Empty state hides as soon as a drag starts and is back after Esc (R30)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-chain').click();
+    await expect(page.getByTestId('empty-state')).toBeVisible();
+    await page.mouse.move(START.x, START.y);
+    await page.mouse.down();
+    await page.mouse.move(START.x + 140, START.y, { steps: 4 });
+    await expect(page.getByTestId('overlay-count')).toHaveCount(1);
+    await expect(page.getByTestId('empty-state')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await page.mouse.move(30, 300);
+    await expect(page.getByTestId('empty-state')).toBeVisible();
+    expect(Object.keys((await readDocument(page)).atoms)).toHaveLength(0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Chain count badge stays inside the canvas: flipped left of the pointer near the right edge', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-chain').click();
+    const box = (await page.getByTestId('canvas').boundingBox()) as {
+      x: number;
+      y: number;
+      width: number;
+    };
+    const y = START.y;
+    await page.mouse.move(box.x + box.width - 560, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width - 8, y, { steps: 8 });
+    const rect = await page.getByTestId('overlay-count').locator('rect').boundingBox();
+    expect(rect).not.toBeNull();
+    expect((rect?.x ?? 0) + (rect?.width ?? 0)).toBeLessThanOrEqual(
+      box.x + box.width - 8 - 14 + 0.5,
+    );
+    await page.mouse.up();
   } finally {
     await app.close();
   }

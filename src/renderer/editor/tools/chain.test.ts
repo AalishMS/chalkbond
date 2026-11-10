@@ -46,16 +46,17 @@ describe('P2 chain drag', () => {
     expect(r.preview).toBeNull();
   });
 
-  it('the count label follows the pointer, 12 px below and right of it', () => {
+  it('the badge follows the pointer and counts carbons, the start atom included (R31)', () => {
     const r = chainRig();
     send(r, at(START, 'down'));
     const to = { x: START.x + 2.5 * BOND_PX, y: START.y };
     send(r, at(to, 'move'));
     const count = r.gesture?.overlay?.count;
-    expect(count?.n).toBe(3);
-    expect(count?.at).toEqual({ x: to.x + 12, y: to.y + 12 });
+    // 2.5 BLU along: 3 bonds, 4 carbons. The overlay places the badge from the pointer.
+    expect(count?.n).toBe(4);
+    expect(count?.at).toEqual(to);
     send(r, at({ x: to.x + 70, y: to.y }, 'move'));
-    expect(r.gesture?.overlay?.count?.n).toBe(4);
+    expect(r.gesture?.overlay?.count?.n).toBe(5);
   });
 
   it('Shift keeps the pointer angle instead of snapping to 30 degrees', () => {

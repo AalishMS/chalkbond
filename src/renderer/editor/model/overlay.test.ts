@@ -13,7 +13,13 @@ import {
 import { render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import type { Hit } from './hit-test';
-import { atomDrawsLabel, overlayGroups, type OverlayShape } from './overlay';
+import {
+  atomDrawsLabel,
+  COUNT_BADGE_H,
+  countBadge,
+  overlayGroups,
+  type OverlayShape,
+} from './overlay';
 import { bluToScreen, ptToScreen, type Viewport } from './viewport';
 
 const BL = 40;
@@ -155,5 +161,38 @@ describe('hover shapes (Canvas appearance)', () => {
         },
       ]);
     }
+  });
+});
+
+describe('chain count badge (R31)', () => {
+  const canvas = { w: 800, h: 600 };
+
+  it('puts its top left 14 px right of and below the pointer, 20 px high, 12 px of padding wide', () => {
+    const b = countBadge({ x: 100, y: 200 }, '5', canvas);
+    expect(b.rect).toEqual({ x: 114, y: 214, w: 19, h: COUNT_BADGE_H });
+    expect(COUNT_BADGE_H).toBe(20);
+    expect(b.text).toBe('5');
+    expect(countBadge({ x: 100, y: 200 }, '12', canvas).rect.w).toBe(26);
+  });
+
+  it('flips to the left of the pointer when it would cross the right edge', () => {
+    const r = countBadge({ x: 790, y: 200 }, '5', canvas).rect;
+    expect(r.x).toBe(790 - 14 - 19);
+    expect(r.y).toBe(214);
+  });
+
+  it('flips above the pointer when it would cross the bottom edge', () => {
+    const r = countBadge({ x: 100, y: 590 }, '5', canvas).rect;
+    expect(r.y).toBe(590 - 14 - 20);
+    expect(r.x).toBe(114);
+  });
+
+  it('stays inside the canvas in both flips and when the canvas is tiny', () => {
+    const r = countBadge({ x: 799, y: 599 }, '20', canvas).rect;
+    expect(r.x + r.w).toBeLessThanOrEqual(800);
+    expect(r.y + r.h).toBeLessThanOrEqual(600);
+    const t = countBadge({ x: 5, y: 5 }, '20', { w: 10, h: 10 }).rect;
+    expect(t.x).toBeGreaterThanOrEqual(0);
+    expect(t.y).toBeGreaterThanOrEqual(0);
   });
 });

@@ -1,5 +1,5 @@
 import type { Size } from '../model/geometry';
-import type { OverlayGroup, OverlayShape } from '../model/overlay';
+import { COUNT_BADGE_RADIUS, type OverlayGroup, type OverlayShape } from '../model/overlay';
 
 /** Two decimals are plenty for screen px and keep the markup short. */
 const n = (x: number): number => Math.round(x * 100) / 100;
@@ -26,12 +26,23 @@ function Shape({ shape }: { shape: OverlayShape }): React.JSX.Element {
       const points = `${n(c.x)},${n(c.y - h)} ${n(c.x + h)},${n(c.y)} ${n(c.x)},${n(c.y + h)} ${n(c.x - h)},${n(c.y)}`;
       return <polygon points={points} />;
     }
-    case 'text':
+    case 'badge': {
+      const { rect } = shape;
       return (
-        <text x={n(shape.at.x)} y={n(shape.at.y)}>
-          {shape.text}
-        </text>
+        <>
+          <rect
+            x={n(rect.x)}
+            y={n(rect.y)}
+            width={n(rect.w)}
+            height={n(rect.h)}
+            rx={COUNT_BADGE_RADIUS}
+          />
+          <text x={n(rect.x + rect.w / 2)} y={n(rect.y + rect.h / 2)}>
+            {shape.text}
+          </text>
+        </>
       );
+    }
     case 'box':
       return (
         <rect

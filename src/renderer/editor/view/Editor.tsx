@@ -5,7 +5,7 @@ import { selectionScope } from '../model/scope';
 import { canvasKey, fieldCommand, globalCommand, hoverKeys } from '../model/keymap';
 import { suggestionRows } from '../model/suggestions';
 import type { EditorController } from '../state/controller';
-import { isEmptyDoc } from '../state/empty-doc';
+import { emptyStateVisible } from '../state/empty-doc';
 import { Canvas } from './Canvas';
 import { EmptyState } from './EmptyState';
 import sprite from './icons.svg?raw';
@@ -125,7 +125,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
       />
       <ToolRail state={state} dispatch={dispatch} />
       <Canvas controller={controller}>
-        {isEmptyDoc(doc) && <EmptyState dispatch={dispatch} />}
+        {emptyStateVisible(doc, state.gesture, state.preview) && <EmptyState dispatch={dispatch} />}
       </Canvas>
       <StatusBar
         tool={state.tool}

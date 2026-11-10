@@ -328,11 +328,17 @@
   fill: var(--accent);
 }
 
-/* The chain bond count: --type-xs in --text-muted, 12 px below and right of the pointer. */
+/* The chain carbon count: a tooltip-style badge (R31); its size and place come from the model. */
+.overlay-count rect {
+  fill: var(--tooltip-bg);
+}
+
 .overlay-count text {
   font: var(--type-xs);
-  fill: var(--text-muted);
-  dominant-baseline: hanging;
+  font-weight: 600;
+  fill: var(--tooltip-fg);
+  text-anchor: middle;
+  dominant-baseline: central;
   user-select: none;
 }
 

@@ -45,12 +45,16 @@ describe('Overlay markup', () => {
     expect(html).toContain('<rect x="1" y="2" width="30" height="40" rx="4"></rect>');
   });
 
-  it('draws the chain count as text at its point', () => {
+  it('draws the chain count as a badge: a rounded rect and its centred text', () => {
     const html = render([
-      { kind: 'count', shapes: [{ kind: 'text', at: { x: 10.126, y: 20 }, text: '4' }] },
+      {
+        kind: 'count',
+        shapes: [{ kind: 'badge', rect: { x: 10.126, y: 20, w: 19, h: 20 }, text: '5' }],
+      },
     ]);
     expect(html).toContain('<g class="overlay-count" data-testid="overlay-count">');
-    expect(html).toContain('<text x="10.13" y="20">4</text>');
+    expect(html).toContain('<rect x="10.13" y="20" width="19" height="20" rx="4"></rect>');
+    expect(html).toContain('<text x="19.63" y="30">5</text>');
   });
 
   it('draws a guide line, a square frame and a selection group per kind', () => {

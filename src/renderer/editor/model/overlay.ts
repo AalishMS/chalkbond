@@ -49,8 +49,8 @@ export type OverlayShape =
   | { readonly kind: 'line'; readonly from: Point; readonly to: Point }
   /** A square turned 45 degrees, `size` px along each side. */
   | { readonly kind: 'diamond'; readonly c: Point; readonly size: number }
-  /** A short text whose top left is at `at` (the chain's bond count). */
-  | { readonly kind: 'text'; readonly at: Point; readonly text: string };
+  /** A tooltip-style badge: a rounded `rect` with `text` centred in it (the chain's carbons). */
+  | { readonly kind: 'badge'; readonly rect: Rect; readonly text: string };
 
 /** Shapes drawn together at one group opacity. */
 export interface OverlayGroup {
@@ -65,6 +65,34 @@ export interface OverlayGroup {
     | 'handle'
     | 'count';
   readonly shapes: readonly OverlayShape[];
+}
+
+/** The count badge: px from the pointer to its corner, text height with padding, side padding. */
+export const COUNT_BADGE_OFFSET = 14;
+export const COUNT_BADGE_H = 20;
+const COUNT_BADGE_PAD_X = 6;
+const COUNT_BADGE_DIGIT_W = 7;
+export const COUNT_BADGE_RADIUS = 4;
+
+/**
+ * R31: the chain count badge for a pointer at `pointer` (canvas px). Its top left is 14 px right
+ * of and below the pointer; it flips to the left of / above the pointer where it would cross the
+ * canvas edge, and never leaves the canvas.
+ */
+export function countBadge(
+  pointer: Point,
+  text: string,
+  size: { readonly w: number; readonly h: number },
+): Extract<OverlayShape, { kind: 'badge' }> {
+  const w = 2 * COUNT_BADGE_PAD_X + COUNT_BADGE_DIGIT_W * text.length;
+  const h = COUNT_BADGE_H;
+  let x = pointer.x + COUNT_BADGE_OFFSET;
+  if (x + w > size.w) x = pointer.x - COUNT_BADGE_OFFSET - w;
+  let y = pointer.y + COUNT_BADGE_OFFSET;
+  if (y + h > size.h) y = pointer.y - COUNT_BADGE_OFFSET - h;
+  x = Math.max(0, Math.min(x, size.w - w));
+  y = Math.max(0, Math.min(y, size.h - h));
+  return { kind: 'badge', rect: { x, y, w, h }, text };
 }
 
 /** An `extents` box (pt) in screen px, grown by `grow` px. */
@@ -166,8 +194,8 @@ function shifted(shape: OverlayShape, by: Point): OverlayShape {
       return { ...shape, from: shiftPoint(shape.from, by), to: shiftPoint(shape.to, by) };
     case 'diamond':
       return { ...shape, c: shiftPoint(shape.c, by) };
-    case 'text':
-      return { ...shape, at: shiftPoint(shape.at, by) };
+    case 'badge':
+      return { ...shape, rect: { ...shape.rect, x: shape.rect.x + by.x, y: shape.rect.y + by.y } };
   }
 }
 
@@ -296,7 +324,7 @@ export function canvasOverlay(view: OverlayView): OverlayGroup[] {
   }
   const count = gesture?.overlay?.count;
   if (count !== undefined) {
-    groups.push({ kind: 'count', shapes: [{ kind: 'text', at: count.at, text: String(count.n) }] });
+    groups.push({ kind: 'count', shapes: [countBadge(count.at, String(count.n), v.size)] });
   }
   const handles = selectionHandles(doc, scene, v, view.selection, offset);
   if (handles.length > 0) {

@@ -27,6 +27,22 @@ test('E21 chain: mid-drag with the count label, then committed', async () => {
   }
 });
 
+test('E21 chain count badge flips left of the pointer near the right canvas edge', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-chain').click();
+    const box = (await page.getByTestId('canvas').boundingBox()) as { x: number; width: number };
+    await page.mouse.move(box.x + box.width - 560, START.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width - 8, START.y, { steps: 8 });
+    await page.waitForTimeout(150);
+    await shot(page, 'E21', 'chain-count-edge');
+    await page.mouse.up();
+  } finally {
+    await app.close();
+  }
+});
+
 test('E21 the five ring templates, each on empty canvas', async () => {
   const { app, page } = await openApp();
   try {
