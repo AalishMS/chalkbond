@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
-import { openApp } from './harness';
+import { openApp } from '../harness';
 
 interface Point {
   x: number;

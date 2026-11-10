@@ -42,6 +42,7 @@ npm run check             # typecheck && lint && format:check && test
 npm test                  # vitest run (all three projects)
 npm test -- --coverage    # coverage report; perf timings are skipped
 npm run test:e2e          # electron-vite build, then playwright test
+npm run test:e2e:os-input  # opt-in: the one test that moves the real mouse cursor (Windows only; not in test:e2e)
 npm run golden:sheet      # out/golden-sheet.html; add -- --png out/sheet.png for PNGs
 npm run shots             # electron-vite build, then e2e/shots/*.shot.ts -> out/shots/<task>/<name>.png
 npm run shots -- E21      # (playwright args pass through; or: npx playwright test --project=shots e2e/shots/E21.shot.ts)
@@ -183,7 +184,11 @@ Vitest projects (`vitest.config.mts`):
   Playwright's Chromium: run `npx playwright install chromium` if it is missing.
 - E2E windows are real OS windows. Every launch must go through `e2e/launch.ts`, which preloads
   `e2e/no-os-mouse.mjs` so the physical cursor cannot send real pointer events into a test window
-  and cancel a synthetic hover. `e2e/os-mouse.spec.ts` moves the real cursor briefly (restored).
+  and cancel a synthetic hover. `e2e/no-os-mouse.spec.ts` (default project) asserts, through the
+  guard's registry on `globalThis`, that every window was made ignore OS mouse input. The test that
+  moves the real cursor, `e2e/os-input/os-mouse.spec.ts`, is its own Playwright project `os-input`
+  (`npm run test:e2e:os-input`, Windows only, not part of `test:e2e` or `shots`): run it by hand
+  when you change the guard, and do not touch the mouse while it runs.
 - Put temporary files and logs in the OS temp directory, never in the repo root or the drive
   root. `out/`, `coverage/`, `test-results/` and `dist/` are git-ignored.
 - Keep the project green on Windows and Linux: no POSIX-only syntax in npm scripts and LF line

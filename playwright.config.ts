@@ -7,7 +7,9 @@ export default defineConfig({
   reporter: [['list']],
   use: { trace: 'retain-on-failure' },
   projects: [
-    { name: 'e2e', testMatch: /.*\.spec\.ts/ },
+    // `os-input` moves the real mouse cursor, so it has its own project and script.
+    { name: 'e2e', testMatch: /.*\.spec\.ts/, testIgnore: /[\\/]os-input[\\/]/ },
     { name: 'shots', testMatch: /.*\.shot\.ts/ },
+    { name: 'os-input', testMatch: /[\\/]os-input[\\/].*\.spec\.ts/ },
   ],
 });
