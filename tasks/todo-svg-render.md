@@ -203,10 +203,10 @@ list, paint order, `xml-check`); `bounds` equals `ink-scan` within 0.01 pt on th
 doc.
 
 **Acceptance criteria:**
-- [ ] `render`, `toSvg`, `renderSvg`, `STYLE_PRESETS`, `resolveStyle`, `bluToPt`, `ptToBlu` exported and tested (SC1)
-- [ ] Bounds equal the independent ink scan on the molecule scenes (SC5)
-- [ ] A subset part equals the matching full-render part; a ring circle appears iff all its atoms are in the closure (SC8)
-- [ ] Output is well-formed and allow-listed (SC9)
+- [x] `render`, `toSvg`, `renderSvg`, `STYLE_PRESETS`, `resolveStyle`, `bluToPt`, `ptToBlu` exported and tested (SC1)
+- [x] Bounds equal the independent ink scan on the molecule scenes (SC5)
+- [x] A subset part equals the matching full-render part; a ring circle appears iff all its atoms are in the closure (SC8)
+- [x] Output is well-formed and allow-listed (SC9)
 
 **Verification:** `npm test -- src/core/svg-render`
 

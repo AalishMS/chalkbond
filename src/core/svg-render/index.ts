@@ -1,3 +1,14 @@
 // Public entry for the svg-render module. Other modules import only from here.
-// See SPEC-svg-render.md. Grows with each task; render/toSvg/renderSvg arrive with S7.
+// See SPEC-svg-render.md. Grows with each task.
 export { STYLE_PRESETS, resolveStyle, bluToPt, ptToBlu, INK, type ResolvedStyle } from './style';
+export { render } from './render';
+export { toSvg, renderSvg } from './to-svg';
+export type {
+  ItemKey,
+  RenderNotice,
+  RenderOptions,
+  RenderPart,
+  Scene,
+  SvgDocument,
+  SvgOptions,
+} from './types';

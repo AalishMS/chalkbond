@@ -80,7 +80,7 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 - [x] S4: geometry helpers and `rings.ts` (smallest-ring finder)
 - [x] S5: atom labels: `label-display.ts`, text, side, bare atoms, anchor boxes, clip boxes
 - [x] S6: bonds (single, double, triple, 1.5, stereo) and aromatic circles
-- [ ] S7: `render`, `toSvg`, `renderSvg`, subsets, extents and bounds for atoms and bonds; `ink-scan` helper
+- [x] S7: `render`, `toSvg`, `renderSvg`, subsets, extents and bounds for atoms and bonds; `ink-scan` helper
 
 ### Checkpoint I — molecules render
 - [ ] `npm run check` green; benzene, ethanol and acetic acid render to well-formed SVG whose bounds match `ink-scan`; a subset part equals the full-render part
