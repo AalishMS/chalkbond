@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Selection</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="mockup.css" />
+  </head>
+  <body>
+    <div class="window">
+      <header class="topbar">
+        <label class="namefield"
+          ><svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#search" /></svg
+          ><input
+            type="text"
+            aria-label="Compound name"
+            placeholder="Type a compound name…"
+            value=""
+        /></label>
+        <div class="divider-v" role="separator"></div>
+        <div class="options" role="toolbar" aria-label="Tool options">
+          <button class="btn btn-action" id="act-clean">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#clean-up" /></svg
+            ><span>Clean up</span>
+          </button>
+          <button class="btn btn-action label-only btn-kekule" id="act-kekule">
+            <span>Show Kekulé</span>
+          </button>
+          <button class="btn btn-action" id="act-tidy" aria-disabled="true">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#tidy" /></svg
+            ><span>Tidy reaction</span>
+          </button>
+          <div class="options-sep" role="separator"></div>
+          <button class="btn btn-action" id="act-number">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#number" /></svg
+            ><span>Number</span>
+          </button>
+          <button class="btn btn-opt" id="act-flip-h" aria-label="Flip horizontal">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#flip-h" /></svg>
+          </button>
+          <button class="btn btn-opt" id="act-flip-v" aria-label="Flip vertical">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#flip-v" /></svg>
+          </button>
+          <div class="options-sep" role="separator"></div>
+          <button class="btn btn-action label-only" id="act-expand" aria-disabled="true">
+            <span>Expand</span>
+          </button>
+        </div>
+        <div class="history">
+          <button class="btn btn-top" id="undo" aria-label="Undo (Ctrl+Z)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#undo" /></svg>
+          </button>
+          <button class="btn btn-top" id="redo" aria-label="Redo (Ctrl+Y)" aria-disabled="true">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#redo" /></svg>
+          </button>
+        </div>
+      </header>
+      <nav class="rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+        <button class="btn btn-rail" id="tool-select" aria-label="Select (V)" aria-pressed="true">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#select" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-erase" aria-label="Erase (E)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#erase" /></svg>
+        </button>
+        <div class="rail-sep" role="separator"></div>
+        <button class="btn btn-rail" id="tool-bond" aria-label="Bond (B)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-chain" aria-label="Chain (Z)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#chain" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-ring" aria-label="Ring (R)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#ring-benzene" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-atom" aria-label="Atom (L)" aria-pressed="false">
+          <span class="rail-glyph">C</span>
+        </button>
+        <div class="rail-sep" role="separator"></div>
+        <button class="btn btn-rail" id="tool-arrow" aria-label="Arrow (A)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#arrow-forward" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-plus" aria-label="Plus (+)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#plus" /></svg>
+        </button>
+        <button
+          class="btn btn-rail"
+          id="tool-curved"
+          aria-label="Curved arrow (M)"
+          aria-pressed="false"
+        >
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#curved-full" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-text" aria-label="Text (T)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#text" /></svg>
+        </button>
+      </nav>
+      <main class="canvas" role="application" aria-label="Drawing canvas">
+        <img class="canvas-art" src="canvas/03-select.svg" alt="" />
+      </main>
+      <footer class="statusbar">
+        <div class="hint" role="status" aria-live="polite">
+          Click a molecule to select it. Drag to move. Drag on empty space to select an area.
+        </div>
+        <div class="formula" data-testid="formula">C₆H₆ · 78.11 g/mol</div>
+        <div class="segmented" role="group" aria-label="Style">
+          <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+          ><button class="btn btn-status" id="preset-handout" aria-pressed="false">Handout</button>
+        </div>
+        <div class="zoom">
+          <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="icons.svg#zoom-out" />
+            </svg></button
+          ><button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100% (Ctrl+1)">
+            100%</button
+          ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="icons.svg#zoom-in" />
+            </svg></button
+          ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+            <svg class="icon icon-16" aria-hidden="true"><use href="icons.svg#fit" /></svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+    <script src="mockup.js"></script>
+  </body>
+</html>

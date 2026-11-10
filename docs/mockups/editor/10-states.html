@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Control states</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="mockup.css" />
+    <link rel="stylesheet" href="specimen.css" />
+  </head>
+  <body class="specimen">
+    <h1>Control states</h1>
+    <div class="spec-grid">
+      <div class="spec-head"></div>
+      <div class="spec-head">Rest</div>
+      <div class="spec-head">Hover</div>
+      <div class="spec-head">Pressed</div>
+      <div class="spec-head">Selected</div>
+      <div class="spec-head">Disabled</div>
+      <div class="spec-head">Keyboard focus</div>
+      <div class="spec-label">Rail button</div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-rail" id="tool-bond" aria-label="Bond (B)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-rail is-hover"
+          id="tool-bond"
+          aria-label="Bond (B)"
+          aria-pressed="false"
+        >
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-rail is-pressed"
+          id="tool-bond"
+          aria-label="Bond (B)"
+          aria-pressed="false"
+        >
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-rail">
+          <button class="btn btn-rail" id="tool-bond" aria-label="Bond (B)" aria-pressed="true">
+            <svg class="icon" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+          </button>
+        </div>
+      </div>
+      <div class="spec-cell on-chrome">
+        <span class="spec-na">—</span><span class="spec-note">never disabled</span>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-rail is-focus"
+          id="tool-bond"
+          aria-label="Bond (B)"
+          aria-pressed="false"
+        >
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+        </button>
+      </div>
+      <div class="spec-label">Rail button, glyph</div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-rail" id="tool-atom" aria-label="Atom (L)" aria-pressed="false">
+          <span class="rail-glyph">C</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-rail is-hover"
+          id="tool-atom"
+          aria-label="Atom (L)"
+          aria-pressed="false"
+        >
+          <span class="rail-glyph">C</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-rail is-pressed"
+          id="tool-atom"
+          aria-label="Atom (L)"
+          aria-pressed="false"
+        >
+          <span class="rail-glyph">C</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-rail">
+          <button
+            class="btn btn-rail is-hover"
+            id="tool-atom"
+            aria-label="Atom (L)"
+            aria-pressed="true"
+          >
+            <span class="rail-glyph">N</span>
+          </button>
+        </div>
+        <span class="spec-note">and hovered</span>
+      </div>
+      <div class="spec-cell on-chrome"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-rail is-focus"
+          id="tool-atom"
+          aria-label="Atom (L)"
+          aria-pressed="false"
+        >
+          <span class="rail-glyph">C</span>
+        </button>
+      </div>
+      <div class="spec-label">Option, icon</div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt" aria-label="Cyclopentane" aria-pressed="false">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#ring-5" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt is-hover" aria-label="Cyclopentane" aria-pressed="false">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#ring-5" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt is-pressed" aria-label="Cyclopentane" aria-pressed="false">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#ring-5" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt" aria-label="Cyclopentane" aria-pressed="true">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#ring-5" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt" aria-label="Flip horizontal" aria-disabled="true">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#flip-h" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt is-focus" aria-label="Cyclopentane" aria-pressed="false">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#ring-5" /></svg>
+        </button>
+      </div>
+      <div class="spec-label">Option, text</div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt text" aria-label="Chlorine" aria-pressed="false">Cl</button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt text is-hover" aria-label="Chlorine" aria-pressed="false">
+          Cl
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt text is-pressed" aria-label="Chlorine" aria-pressed="false">
+          Cl
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt text" aria-label="Chlorine" aria-pressed="true">Cl</button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt text" aria-label="Chlorine" aria-disabled="true">Cl</button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-opt text is-focus" aria-label="Chlorine" aria-pressed="false">
+          Cl
+        </button>
+      </div>
+      <div class="spec-label">Action button</div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-action">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#clean-up" /></svg
+          ><span>Clean up</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-action is-hover">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#clean-up" /></svg
+          ><span>Clean up</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-action is-pressed">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#clean-up" /></svg
+          ><span>Clean up</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-action" aria-disabled="true">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#tidy" /></svg
+          ><span>Tidy reaction</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-action is-focus">
+          <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#clean-up" /></svg
+          ><span>Clean up</span>
+        </button>
+      </div>
+      <div class="spec-label">Chip, on the canvas</div>
+      <div class="spec-cell on-canvas"><button class="chip">ethanol</button></div>
+      <div class="spec-cell on-canvas"><button class="chip is-hover">ethanol</button></div>
+      <div class="spec-cell on-canvas"><button class="chip is-pressed">ethanol</button></div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas"><button class="chip is-focus">ethanol</button></div>
+      <div class="spec-label">Name field</div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-field">
+          <label class="namefield"
+            ><svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#search" /></svg
+            ><input
+              type="text"
+              aria-label="Compound name"
+              placeholder="Type a compound name…"
+              value=""
+          /></label>
+        </div>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-field">
+          <label class="namefield is-hover"
+            ><svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#search" /></svg
+            ><input
+              type="text"
+              aria-label="Compound name"
+              placeholder="Type a compound name…"
+              value=""
+          /></label>
+        </div>
+      </div>
+      <div class="spec-cell on-chrome"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-field">
+          <label class="namefield is-focus"
+            ><svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#search" /></svg
+            ><span class="field-value">benz</span><span class="caret"></span
+          ></label>
+        </div>
+        <span class="spec-note">focused</span>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-field">
+          <label class="namefield is-notfound"
+            ><svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#search" /></svg
+            ><input
+              type="text"
+              aria-label="Compound name"
+              placeholder="Type a compound name…"
+              value="ethanl"
+          /></label>
+        </div>
+        <span class="spec-note">not found</span>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-field">
+          <label class="namefield is-focus is-notfound"
+            ><svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#search" /></svg
+            ><span class="field-value">ethanl</span><span class="caret"></span
+          ></label>
+        </div>
+        <span class="spec-note">focused, not found</span>
+      </div>
+      <div class="spec-label">Status controls</div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-pair">
+          <button class="btn btn-status" aria-label="Zoom in">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="icons.svg#zoom-in" />
+            </svg></button
+          ><button class="btn btn-status btn-zoom">100%</button>
+        </div>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-pair">
+          <button class="btn btn-status is-hover" aria-label="Zoom in">
+            <svg class="icon icon-16" aria-hidden="true"><use href="icons.svg#zoom-in" /></svg>
+          </button>
+        </div>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-pair">
+          <button class="btn btn-status is-pressed" aria-label="Zoom in">
+            <svg class="icon icon-16" aria-hidden="true"><use href="icons.svg#zoom-in" /></svg>
+          </button>
+        </div>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="segmented">
+          <button class="btn btn-status" aria-pressed="true">Slides</button
+          ><button class="btn btn-status" aria-pressed="false">Handout</button>
+        </div>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-pair">
+          <button class="btn btn-status" aria-label="Zoom in" aria-disabled="true">
+            <svg class="icon icon-16" aria-hidden="true"><use href="icons.svg#zoom-in" /></svg>
+          </button>
+        </div>
+        <span class="spec-note">at 400 %</span>
+      </div>
+      <div class="spec-cell on-chrome">
+        <div class="spec-pair">
+          <button class="btn btn-status btn-warnings is-focus" aria-label="2 warnings">
+            <svg class="icon icon-16" aria-hidden="true"><use href="icons.svg#warning" /></svg
+            ><span>2</span>
+          </button>
+        </div>
+      </div>
+      <div class="spec-label">Dropdown row</div>
+      <div class="spec-cell on-canvas">
+        <div class="spec-drop">
+          <div class="dropdown-row">
+            <span class="dropdown-name">ethanol</span><span class="dropdown-formula">C₂H₆O</span>
+          </div>
+        </div>
+      </div>
+      <div class="spec-cell on-canvas">
+        <div class="spec-drop">
+          <div class="dropdown-row is-hover">
+            <span class="dropdown-name">ethanol</span><span class="dropdown-formula">C₂H₆O</span>
+          </div>
+        </div>
+      </div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas">
+        <div class="spec-drop">
+          <div class="dropdown-row" aria-selected="true">
+            <span class="dropdown-name">ethanol</span><span class="dropdown-formula">C₂H₆O</span>
+          </div>
+        </div>
+        <span class="spec-note">arrow keys</span>
+      </div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+    </div>
+    <h2>Tooltips</h2>
+    <div class="spec-tips">
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Bond</span><kbd>B</kbd></div>
+          <div class="tooltip-help">Click to add a bond. Drag to aim it.</div>
+        </div>
+        <span class="spec-note">rail: name, key, help</span>
+      </div>
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Cyclopentane</span></div>
+        </div>
+        <span class="spec-note">option: name only</span>
+      </div>
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Flip horizontal</span></div>
+          <div class="tooltip-help">Select a molecule first.</div>
+        </div>
+        <span class="spec-note">disabled: says why</span>
+      </div>
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Undo</span><kbd>Ctrl+Z</kbd></div>
+        </div>
+        <span class="spec-note">top bar</span>
+      </div>
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Unknown label “H20”.</span></div>
+        </div>
+        <span class="spec-note">valence warning on the canvas</span>
+      </div>
+    </div>
+  </body>
+</html>

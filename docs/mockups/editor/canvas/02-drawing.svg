@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1223" height="722" viewBox="0 0 1223 722">
+<rect width="1223" height="722" fill="#FFFFFF"/>
+<g data-layer="content" transform="matrix(1.33 0 0 1.33 606 333)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<g data-key="bond:b4"><path d="M34.641 10L0 -10" stroke="#000000" stroke-width="2"/></g>
+<g data-key="bond:b5"><path d="M0 -10L-20.905 2.07" stroke="#000000" stroke-width="2"/></g>
+<g data-key="bond:b7" opacity="0.45"><path d="M34.641 10L69.281 -10" stroke="#000000" stroke-width="2"/></g>
+<g data-key="atom:a3"><text x="-61.305" y="18.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="-43.977" y="18.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text></g>
+</g>
+<g data-layer="overlay">
+<g opacity="0.16"><circle cx="652.19" cy="346.33" r="12" fill="#1F5FD1"/></g><path d="M647.5 349.5H654.5M658.5 349.5H665.5M656.5 340.5V347.5M656.5 351.5V358.5" stroke="#FFFFFF" stroke-width="3" stroke-linecap="square"/><path d="M647.5 349.5H654.5M658.5 349.5H665.5M656.5 340.5V347.5M656.5 351.5V358.5" stroke="#000000" stroke-width="1"/>
+</g>
+</svg>

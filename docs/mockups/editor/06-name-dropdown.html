@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Name suggestions</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="mockup.css" />
+  </head>
+  <body>
+    <div class="window">
+      <header class="topbar">
+        <label class="namefield is-focus"
+          ><svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#search" /></svg
+          ><span class="field-value">eth</span><span class="caret"></span
+        ></label>
+        <div class="divider-v" role="separator"></div>
+        <div class="options" role="toolbar" aria-label="Tool options">
+          <button class="btn btn-opt" id="opt-bond-single" aria-label="Single" aria-pressed="true">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+          </button>
+          <button class="btn btn-opt" id="opt-bond-double" aria-label="Double" aria-pressed="false">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#bond-double" /></svg>
+          </button>
+          <button class="btn btn-opt" id="opt-bond-triple" aria-label="Triple" aria-pressed="false">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#bond-triple" /></svg>
+          </button>
+          <button class="btn btn-opt" id="opt-bond-wedge" aria-label="Wedge" aria-pressed="false">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#bond-wedge" /></svg>
+          </button>
+          <button class="btn btn-opt" id="opt-bond-hash" aria-label="Hash" aria-pressed="false">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#bond-hash" /></svg>
+          </button>
+        </div>
+        <div class="history">
+          <button class="btn btn-top" id="undo" aria-label="Undo (Ctrl+Z)" aria-disabled="true">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#undo" /></svg>
+          </button>
+          <button class="btn btn-top" id="redo" aria-label="Redo (Ctrl+Y)" aria-disabled="true">
+            <svg class="icon icon-20" aria-hidden="true"><use href="icons.svg#redo" /></svg>
+          </button>
+        </div>
+      </header>
+      <nav class="rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+        <button class="btn btn-rail" id="tool-select" aria-label="Select (V)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#select" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-erase" aria-label="Erase (E)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#erase" /></svg>
+        </button>
+        <div class="rail-sep" role="separator"></div>
+        <button class="btn btn-rail" id="tool-bond" aria-label="Bond (B)" aria-pressed="true">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#bond-single" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-chain" aria-label="Chain (Z)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#chain" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-ring" aria-label="Ring (R)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#ring-benzene" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-atom" aria-label="Atom (L)" aria-pressed="false">
+          <span class="rail-glyph">C</span>
+        </button>
+        <div class="rail-sep" role="separator"></div>
+        <button class="btn btn-rail" id="tool-arrow" aria-label="Arrow (A)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#arrow-forward" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-plus" aria-label="Plus (+)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#plus" /></svg>
+        </button>
+        <button
+          class="btn btn-rail"
+          id="tool-curved"
+          aria-label="Curved arrow (M)"
+          aria-pressed="false"
+        >
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#curved-full" /></svg>
+        </button>
+        <button class="btn btn-rail" id="tool-text" aria-label="Text (T)" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#text" /></svg>
+        </button>
+      </nav>
+      <main class="canvas" role="application" aria-label="Drawing canvas">
+        <div class="empty">
+          <svg class="empty-art" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z" />
+            <circle cx="12" cy="12" r="4.2" />
+          </svg>
+          <p class="empty-text">Type a compound name above, or pick a tool and click here.</p>
+          <div class="empty-try">
+            <span>Try:</span>
+            <button class="chip">ethanol</button>
+            <button class="chip">benzene</button>
+            <button class="chip">ethanol + acetic acid -&gt; ethyl acetate + water</button>
+          </div>
+        </div>
+      </main>
+      <footer class="statusbar">
+        <div class="hint" role="status" aria-live="polite">
+          Enter inserts. Write a reaction like: ethanol + acetic acid -> ethyl acetate
+        </div>
+        <div class="segmented" role="group" aria-label="Style">
+          <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+          ><button class="btn btn-status" id="preset-handout" aria-pressed="false">Handout</button>
+        </div>
+        <div class="zoom">
+          <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="icons.svg#zoom-out" />
+            </svg></button
+          ><button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100% (Ctrl+1)">
+            100%</button
+          ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="icons.svg#zoom-in" />
+            </svg></button
+          ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+            <svg class="icon icon-16" aria-hidden="true"><use href="icons.svg#fit" /></svg>
+          </button>
+        </div>
+      </footer>
+      <div class="dropdown" role="listbox" aria-label="Suggestions">
+        <div class="dropdown-row" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>ane</span><span class="dropdown-formula">C₂H₆</span>
+        </div>
+        <div class="dropdown-row" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>ene</span><span class="dropdown-formula">C₂H₄</span>
+        </div>
+        <div class="dropdown-row" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>yne</span><span class="dropdown-formula">C₂H₂</span>
+        </div>
+        <div class="dropdown-row is-hover" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>anol</span
+          ><span class="dropdown-formula">C₂H₆O</span>
+        </div>
+        <div class="dropdown-row" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>ylamine</span
+          ><span class="dropdown-formula">C₂H₇N</span>
+        </div>
+        <div class="dropdown-row" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>ylbenzene</span
+          ><span class="dropdown-formula">C₈H₁₀</span>
+        </div>
+        <div class="dropdown-row" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>yl acetate</span
+          ><span class="dropdown-formula">C₄H₈O₂</span>
+        </div>
+        <div class="dropdown-row" role="option" aria-selected="false">
+          <span class="dropdown-name"><b>eth</b>yl formate</span
+          ><span class="dropdown-formula">C₃H₆O₂</span>
+        </div>
+      </div>
+    </div>
+    <script src="mockup.js"></script>
+  </body>
+</html>

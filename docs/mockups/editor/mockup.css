@@ -1,0 +1,687 @@
+/*
+ * Chalkbond editor mock-up styles. Regions and controls follow SPEC-editor.md "UI design";
+ * every value comes from tokens.css. Static states are forced with .is-hover, .is-pressed and
+ * .is-focus so a still picture can show them; the real :hover/:active/:focus-visible rules sit
+ * beside them.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--chrome-bg);
+  color: var(--text);
+  font: var(--type-sm);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+}
+
+button:focus {
+  outline: none;
+}
+
+button:focus-visible,
+button.is-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-md);
+  outline: none;
+}
+
+.icon {
+  display: block;
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+.icon-20 {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-16 {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---- Window grid ---- */
+
+.window {
+  position: relative;
+  display: grid;
+  grid-template-areas:
+    'top top'
+    'rail canvas'
+    'status status';
+  grid-template-rows: calc(var(--topbar-h) + 1px) 1fr calc(var(--statusbar-h) + 1px);
+  grid-template-columns: calc(var(--rail-w) + 1px) 1fr;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ---- Top bar ---- */
+
+.topbar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.namefield {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  width: round(down, clamp(240px, 26vw, 360px), 1px);
+  height: var(--topbar-btn);
+  padding: 0 var(--space-3) 0 var(--space-7);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--canvas-bg);
+  font: var(--type-md);
+}
+
+.namefield > .icon {
+  position: absolute;
+  left: 7px;
+  top: 5px;
+  color: var(--text-muted);
+}
+
+.namefield input {
+  width: 100%;
+  text-overflow: ellipsis;
+}
+
+.namefield input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.namefield:hover,
+.namefield.is-hover {
+  border-color: var(--text-muted);
+}
+
+.namefield.is-focus {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.namefield.is-focus > .icon {
+  color: var(--text);
+}
+
+.namefield.is-notfound {
+  border-color: var(--warning);
+}
+
+.namefield.is-focus.is-notfound {
+  box-shadow: inset 0 0 0 1px var(--warning);
+}
+
+/* Static stand-in for typed text and the caret. */
+.field-value {
+  white-space: pre;
+}
+
+.caret {
+  display: inline-block;
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin-left: 1px;
+  background: var(--text);
+}
+
+.divider-v {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 var(--space-4);
+  background: var(--border);
+}
+
+.options {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.options::-webkit-scrollbar {
+  display: none;
+}
+
+.options-sep {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 calc(var(--space-3) - var(--space-1));
+  background: var(--border);
+}
+
+.options-caption {
+  flex: none;
+  margin-right: var(--space-2);
+  color: var(--text-muted);
+}
+
+.history {
+  display: flex;
+  flex: none;
+  gap: var(--space-2);
+  margin-left: var(--space-4);
+}
+
+/* ---- Buttons ---- */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.btn:hover,
+.btn.is-hover {
+  background: var(--hover-bg);
+}
+
+.btn:active,
+.btn.is-pressed {
+  background: var(--pressed-bg);
+}
+
+.btn[aria-pressed='true'] {
+  background: var(--active-bg);
+  color: var(--active-fg);
+}
+
+.btn[aria-pressed='true']:hover,
+.btn[aria-pressed='true'].is-hover {
+  background: var(--active-hover-bg);
+}
+
+.btn[aria-disabled='true'] {
+  background: transparent;
+  color: var(--text-disabled);
+}
+
+.btn-rail {
+  width: var(--rail-btn);
+  height: var(--rail-btn);
+}
+
+/* Active tool: 3 x 20 accent bar at the rail's left edge (the non-colour cue). */
+.btn-rail[aria-pressed='true']::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-3));
+  top: 10px;
+  width: 3px;
+  height: 20px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+.rail-glyph {
+  font: var(--type-rail);
+}
+
+.btn-opt {
+  min-width: var(--option-btn);
+  height: var(--option-btn);
+}
+
+.btn-opt.text {
+  padding: 0 var(--space-3);
+  font: var(--type-md);
+  font-weight: 600;
+}
+
+/* Selected option: 2 x 16 underline, 2 px above the bottom edge. */
+.btn-opt[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 8px);
+  bottom: var(--space-1);
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.btn-action {
+  gap: var(--space-2);
+  height: var(--option-btn);
+  padding: 0 var(--space-3) 0 var(--space-2);
+  white-space: nowrap;
+}
+
+.btn-action.label-only {
+  padding: 0 var(--space-3);
+}
+
+.btn-kekule {
+  width: 104px;
+}
+
+.btn-top {
+  width: var(--topbar-btn);
+  height: var(--topbar-btn);
+}
+
+.sub,
+.sup {
+  position: relative;
+  font-size: 10px;
+  line-height: 0;
+}
+
+.sub {
+  top: 3px;
+}
+
+.sup {
+  top: -5px;
+}
+
+/* ---- Rail ---- */
+
+.rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.rail-sep {
+  flex: none;
+  width: 32px;
+  height: 1px;
+  margin: var(--space-2) 0;
+  background: var(--border);
+}
+
+/* ---- Canvas ---- */
+
+.canvas {
+  position: relative;
+  grid-area: canvas;
+  overflow: hidden;
+  background: var(--canvas-bg);
+}
+
+.canvas-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+}
+
+.canvas.is-focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  pointer-events: none;
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: var(--space-7);
+  pointer-events: none;
+}
+
+.empty-art {
+  width: 96px;
+  height: 96px;
+  color: var(--empty-art);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.empty-text {
+  margin: var(--space-5) 0 0;
+  color: var(--text-muted);
+  font: var(--type-md);
+}
+
+.empty-try {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  color: var(--text-muted);
+  pointer-events: auto;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-pill);
+  background: var(--canvas-bg);
+  color: var(--text);
+  font: var(--type-sm);
+  white-space: nowrap;
+}
+
+.chip:hover,
+.chip.is-hover {
+  border-color: var(--text-muted);
+  background: var(--hover-bg);
+}
+
+.chip:active,
+.chip.is-pressed {
+  background: var(--pressed-bg);
+}
+
+.chip.is-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Text editor (rule T2): borderless textarea over the text, 1 px accent outline. */
+.text-editor {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  outline: 1px solid var(--accent);
+  background: var(--canvas-bg);
+  color: #000000;
+  font:
+    32px/37px Arial,
+    Helvetica,
+    sans-serif;
+  white-space: pre;
+}
+
+.text-editor .caret {
+  height: 30px;
+  background: #000000;
+}
+
+.anchor {
+  position: absolute;
+}
+
+/* ---- Status bar ---- */
+
+.statusbar {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-4);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font: var(--type-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.formula {
+  flex: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 999px) {
+  .formula {
+    display: none;
+  }
+}
+
+.btn-status {
+  height: var(--status-btn);
+  min-width: var(--status-btn);
+  color: var(--text-muted);
+  font: var(--type-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-status:hover,
+.btn-status.is-hover {
+  color: var(--text);
+}
+
+.btn-warnings {
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.btn-warnings:hover,
+.btn-warnings.is-hover {
+  color: var(--warning);
+}
+
+.btn-zoom {
+  width: 48px;
+}
+
+.zoom {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.segmented {
+  display: flex;
+  flex: none;
+  padding: 1px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.segmented .btn-status {
+  width: 64px;
+  height: 20px;
+  border-radius: 3px;
+}
+
+.segmented .btn-status[aria-pressed='true'] {
+  color: var(--active-fg);
+  font-weight: 600;
+}
+
+/* ---- Tooltip ---- */
+
+.tooltip {
+  position: absolute;
+  z-index: 10;
+  max-width: 240px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--tooltip-bg);
+  box-shadow: var(--shadow-2);
+  color: var(--tooltip-fg);
+  font: var(--type-xs);
+}
+
+.tooltip-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tooltip-help {
+  margin-top: var(--space-1);
+  color: var(--tooltip-muted);
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--tooltip-kbd-border);
+  border-radius: var(--radius-sm);
+  font: var(--type-xs);
+  font-weight: 600;
+}
+
+/* ---- Name-field dropdown ---- */
+
+.dropdown {
+  position: absolute;
+  z-index: 5;
+  left: var(--space-4);
+  top: 44px;
+  width: round(down, clamp(240px, 26vw, 360px), 1px);
+  min-width: 320px;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-md);
+  background: var(--canvas-bg);
+  box-shadow: var(--shadow-1);
+}
+
+.dropdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: 36px;
+  padding: 0 var(--space-4);
+}
+
+.dropdown-row.is-hover {
+  background: var(--hover-bg);
+}
+
+.dropdown-row[aria-selected='true'] {
+  background: var(--active-bg);
+}
+
+.dropdown-name {
+  font: var(--type-md);
+  white-space: nowrap;
+}
+
+.dropdown-name b {
+  font-weight: 600;
+}
+
+.dropdown-formula {
+  color: var(--text-muted);
+  font: var(--type-sm);
+  white-space: nowrap;
+}
+
+.notfound {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: 0 var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--warning-bg);
+  font: var(--type-md);
+}
+
+.notfound .icon {
+  margin-top: 1px;
+  color: var(--warning);
+}
+
+.suggest {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+.suggest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.suggest .chip.is-hover {
+  border-color: var(--text-muted);
+}
+
+.dropdown-foot {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+.editor-row {
+  position: absolute;
+  left: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.editor-row .text-editor {
+  position: static;
+}
