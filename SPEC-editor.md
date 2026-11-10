@@ -2,12 +2,13 @@
 
 Shared stack, commands, style and boundaries: see `SPEC.md`. Module map: `CAPABILITY-MAP.md`.
 Depends on: `doc-model`, `chem-core`, `svg-render` (public `index.ts` entries only).
-Status: **draft 2026-11-10**, awaiting approval. Nothing is implemented until it is approved.
+Status: **reviewed and approved 2026-11-10** (delegated reviewer, with the orchestrator's
+decisions; see "Decisions"). The approved mock-ups in `docs/mockups/editor/` (iteration 2,
+commit ae3eecd) are part of this spec (see "Normative sources").
 
 Audience: a grade 11–12 chemistry teacher in Nepal (NEB curriculum) making slides and handouts on
 a Windows laptop, often 1366×768, no network. Not a power user of drawing software. The test for
-every choice below: *can they open the app and draw ethanol or a benzene ring without reading
-anything?*
+every choice below: *what would this teacher expect?* Fewer controls done well beat full coverage.
 
 ## Objective
 
@@ -16,46 +17,108 @@ by clicking, dragging and typing; the canvas shows exactly what svg-render will 
 editor's own overlays (hover, selection, handles, warnings, guides, ghosts) on top. Every edit is
 one doc-model transaction, so undo always works.
 
-User stories served (`SPEC.md`): 1 (bonds, labels, ring templates), 2 (name insert, arrows,
-conditions with auto-subscript, Tidy reaction), 3 (curved arrows, lone pairs, radicals, charges,
-δ+/δ−), 4 (free text, compound numbers; the rest of story 4 is deferred, see "Left out"),
-5 (formula/MW of the selection, valence warnings). Stories 6 and 7 belong to `clipboard-export`
-and `app-shell`; the editor exposes the seam they use.
+User stories served (`SPEC.md`): 1 (bonds, labels, ring templates; naphthalene by fusing two
+benzenes, pyridine by setting one ring atom to N), 2 (name insert, arrows, conditions with
+auto-subscript, Tidy reaction), 3 (curved arrows, lone pairs, radicals, charges, δ+/δ−), 4 (free
+text only; see "Left out"), 5 (formula/MW of the selection, valence warnings). Stories 6 and 7
+belong to `clipboard-export` and `app-shell`; the editor exposes the seam they use.
 
 ## Scope
 
-**In:** window chrome inside the renderer (top bar, tool rail, status bar), the canvas (pan,
+**In:** the window chrome inside the renderer (top bar, tool rail, status bar), the canvas (pan,
 zoom, mounting svg-render parts), overlays, hit-testing, selection and transforms, every tool and
-gesture in "Tools and gestures", the name/SMILES insert field, label and text editors, Clean up,
-Kekulé ⇄ circle, Expand, Number, Tidy reaction, preset switching, in-app copy/paste, undo/redo,
-keyboard shortcuts, dirty state, the controller API for the host.
+gesture in "Behaviour rules", the name/SMILES/reaction insert field, the label and text editors,
+Clean up, Kekulé ⇄ circle, Expand, Tidy reaction, preset switching, in-app copy/paste, undo/redo,
+keyboard shortcuts, dirty state, the controller API for the host, a context-menu request on the
+host seam.
 
-**Out:** menus, file dialogs, save/open, recent files, settings, window creation (`app-shell`);
-system clipboard formats, export, embedding (`clipboard-export`); any chemistry decision
-(`chem-core`); how anything looks in the export (`svg-render`); creation UI for brackets, callouts,
-highlight shapes, colours, atom numbers and isotopes (deferred, phase E7, needs approval). Items of
-those kinds that arrive in a file are drawn, hit-tested, selected, moved and deleted like any
-other object.
+**Out:** menus (including any right-click menu), file dialogs, save/open, recent files,
+settings, window creation (`app-shell`); system clipboard formats, export, embedding
+(`clipboard-export`); any chemistry decision (`chem-core`); how anything looks in the export
+(`svg-render`); creation UI for captions (compound numbers), callouts, brackets, highlight
+shapes, colours, atom numbers, isotopes and bold or wavy bonds. Objects and fields of those
+kinds that arrive in a file are drawn, hit-tested, selected, moved, rotated, flipped, copied and
+deleted like any other item; they are not edited.
+
+## Normative sources
+
+| Source | Status |
+|---|---|
+| `docs/mockups/editor/tokens.css` | **Normative.** Every colour, size, alpha, font, radius, shadow and motion value. Lifted byte-for-byte into `src/renderer/editor/view/tokens.css` (a tooling test compares the two after the header comment). This spec names tokens; it does not repeat their values |
+| `docs/mockups/editor/icons.svg` | **Normative.** Every icon, one `<symbol>` per id. Lifted byte-for-byte into `src/renderer/editor/view/icons.svg` (same tooling test) and injected once, hidden, as an inline sprite at the editor root (`?raw` import), so `<use href="#id">` is a same-document reference (Chromium blocks external sprite references on `file://`, which is how the packaged app loads) |
+| `docs/mockups/editor/NN-*.html`, `mockup.css` | **Normative for layout and appearance** (screens 01–11 at 1280×800, 11 at 960×640). `mockup.css` is the reference for region and control CSS; the implementation's `editor.css` follows it with the `.is-hover`/`.is-pressed`/`.is-focus` stand-ins dropped |
+| `docs/mockups/editor/DEVIATIONS.md` | History of how the mock-ups departed from the draft; folded into this spec |
+| This spec | Behaviour, structure and anything the mock-ups do not show. Where a mock-up and this spec disagree on appearance, the mock-up wins, except the items in "Decisions" rows 14 (status-bar formula uses `<sub>`) and R12 (zoom readout) |
+
+Reference PNGs of the mock-ups: `node docs/mockups/editor/build.mjs --png out/mockups` (needs
+Playwright's Chromium).
 
 ## Facts relied on
 
+Verified against the code on 2026-11-10.
+
 | Fact (source) | Consequence |
 |---|---|
-| Ops `addAtom`, `addBond`, `updateAtom`, `updateBond`, `addObject`, `updateObject`, `deleteItems`, `mergeAtoms`, `transformItems`, `insert`, `extract`, `everything`, `fragments`, `neighbors`, `findBond`, `resolveAnchor`, `bounds`, `paintLayers` exist and are draft-aware (`doc-model/index.ts`) | Every edit is a recipe of these ops inside one `transact` |
-| `transact(h, label, recipe, { coalesceKey })`; errors in the recipe propagate and leave `h` unchanged; a no-op recipe records nothing (`history.ts`) | One gesture = one `transact`; nudges coalesce; failures are caught by the store |
-| Undo restores `nextId`; ids may be reissued (`SPEC-doc-model.md`) | Selection, hover and editors are cleared on undo/redo; nothing holds ids across them |
-| A bond's `a1`/`a2` are immutable; the wedge narrow end is `a1` | Reversing a wedge = delete the bond and add it reversed in the same transaction |
-| No doc-model op sets `doc.style`, creates a group or reorders `zOrder` | `setStyle` is requested ("Required changes"); groups and z-order get no UI |
-| `insert(doc, sub, at)` lands the sub-doc's origin at `at`; `SubDoc`s are centred on the origin | Templates, name inserts and pastes are `SubDoc`s placed by their centre |
-| `render(doc, { perception })` → `Scene { parts, bounds, extents, style }`, pt units, keyed parts; `toSvg`; `bluToPt`, `ptToBlu`, `resolveStyle`, `STYLE_PRESETS` (`svg-render/index.ts`). No memoising renderer (cut for v1) | Canvas mounts keyed parts and patches changed ones; budgets below are measured before asking for `createRenderer` |
-| `createPerceiver()` memoises per fragment; `Perception.warnings: ChemWarning[]` with `code`, `atoms`, `bonds`, `message` | One perceiver per controller; warnings drive the warning overlay |
-| `interpretLabel(text)` → `element` (+ `hCount`, `charge`) / `abbreviation` (`key`, `element`) / `unknown` | Label editor commits through it |
-| `structureFromText(text, names)` → `Result<{ sub, source, entry? }, ChemError>`; `not-found` carries `suggestions`; `NameIndex.suggest(prefix, limit)`, `closest`; `createNameIndex(json)` | Name field: suggestions while typing, insert on Enter, "did you mean" on failure |
-| `cleanStructure(doc, atoms)`, `kekulize(doc, atoms?)` (throws `ChemError('cannot-kekulize')`), `aromatize(doc, atoms?)`, `expandLabel(doc, atom)` (throws `unknown-label`), `formulaOf(doc, atoms)` → `Formula { text, mw }` | Selection actions and the status-bar formula |
-| `emptyDoc` uses preset `slides`; presets: slides bond 40 pt, journal 14.4 pt | Default zoom per preset (rule V2) |
-| `package.json` has React 19.3.1, Immer, Zod; **no Zustand, no jsdom, no Testing Library**; Vitest `environment: 'node'` | No new dependency: a 40-line store on `useSyncExternalStore`; logic is tested in node, DOM behaviour in Playwright e2e |
-| Scaffold: `src/main/index.ts` window 1280×800, min 800×500, no `Menu` call (Electron's default menu, whose View items zoom the whole page on Ctrl+0/Ctrl+−/Ctrl+=); CSP allows inline styles and `data:` images, no inline scripts | Min size and menu changes are requested ("Required changes"); custom cursors use `data:` SVG |
-| `resources/compounds/compounds.json` (406 entries, 74 KB; has ethanol, water, benzene, acetic acid, ethyl acetate, toluene, `h2o`) | Imported as a JSON module by the editor and indexed once |
+| doc-model exports `addAtom → [Doc, AtomId]`, `addBond(doc, a1, a2, init?) → [Doc, BondId]` (throws `self-bond`, `duplicate-bond`), `updateAtom`, `updateBond` (patch cannot touch `a1`/`a2`), `addObject → [Doc, ObjectId]`, `updateObject`, `deleteItems`, `mergeAtoms(doc, keep, drop)`, `transformItems(doc, sel, m)`, `insert(doc, sub, at) → [Doc, Selection]`, `extract(doc, sel) → SubDoc`, `everything`, `fragments`, `neighbors`, `findBond`, `resolveAnchor`, `bounds` (geometric BLU, no ink), `paintLayers`, `translation`, `rotation(rad, center?)`, `scaling(sx, sy?, center?)`, `checkInvariants`, `emptyDoc(now)` (`index.ts`) | Every edit is a recipe of these ops inside one `transact`; recipes thread the returned doc and capture ids from the tuples |
+| `transact(h, label, recipe, { coalesceKey })`; the recipe gets a draft; errors propagate and leave `h` unchanged; a recipe that changes nothing records no step; a transact with a different (or no) key closes the open coalesce run; `undo`/`redo` clear it (`history.ts`) | One gesture = one `transact`; nudges coalesce; failures are caught by the store |
+| Undo restores `nextId`; ids may be reissued (`SPEC-doc-model.md`) | Selection, hover, editors and gestures are cleared on undo/redo |
+| A bond's `a1`/`a2` are immutable; the wedge narrow end is `a1`. `deleteItems` turns curved-arrow/callout anchors on a deleted bond into point anchors | Reversing a wedge = delete + add reversed + re-anchor the curved arrows that pointed at the old bond, in one recipe (rule B5) |
+| No doc-model op sets `doc.style`, creates a group or reorders `zOrder` | `setStyle` is a required change; groups and z-order get no UI |
+| `insert` lands the sub-doc's origin at `at`; `SubDoc`s (from `extract`, `parseSmiles`, `structureFromText`) are centred on the origin | Templates, name inserts and pastes are `SubDoc`s placed by their centre |
+| svg-render: `render(doc, { perception })` → `Scene { parts, bounds, extents, style, notices }` in pt; `ItemKey` = `atom:`/`bond:`/`obj:`/`ring:` + id(s); a bare skeleton vertex has no `extents` entry; `toSvg`, `renderSvg`; `bluToPt(p, style)` / `ptToBlu(p, style)` multiply/divide by `style.bondLength`; `resolveStyle(doc.style)`; `STYLE_PRESETS` (slides: bond 40 pt, font 24; journal: bond 14.4 pt, font 10); no memoising renderer (cut for v1). Text `at`: `align` places lines relative to `at.x`, the first line's cap-height box is centred on `at.y`; `attachedTo` is ignored; sub/sup at `subScale` 0.7, shifted `subShift` 0.2·fs / `supShift` 0.4·fs | Canvas mounts keyed parts and patches changed ones; condition placement reads `extents`; the WYSIWYG editor copies these text metrics |
+| svg-render's measured glyph table covers Latin, Greek, `→` (U+2192), `°`, `−`; not `⇌` (U+21CC) | Text formatting turns `->` into `→` but never produces `⇌` (it would be unmeasured and Arial has no glyph) |
+| chem-core: `createPerceiver(): (doc) => Perception` memoises per fragment; `Perception.atoms[id].valence`, `.bonds[id].aromatic`, `.fragments[i].formula`, `.warnings: ChemWarning[]` (`code`, `atoms`, `bonds`, `message`) | One perceiver per controller; warnings drive the warning overlay; "Show circle" uses `bonds[id].aromatic` |
+| `interpretLabel(text)` → `{ kind: 'element', element, hCount?, charge? }` / `{ kind: 'abbreviation', key, element }` / `{ kind: 'unknown' }` | Label editor commits through it (rule L3) |
+| `structureFromText(text, names)` → `Result<{ sub, source, entry? }, ChemError>`; failure codes `empty`, `not-found` (with `suggestions: string[]` from `NameIndex.closest`), `too-large`, `invalid-smiles`, `invalid-molfile`. `NameIndex.suggest(prefix, limit)` (exact, then display-name, then synonym prefix matches, shorter first), `closest(query, limit)`; `createNameIndex(json)`; `CompoundEntry { name, synonyms, smiles, formula (Hill), mw }` | Name field: suggestions while typing, insert on Enter, "Did you mean" on failure |
+| `closest('ethanl')` returns acetaldehyde, ethane, ethanol: all three are edit distance 1 (`ethanal` is acetaldehyde's synonym) and ties sort by name (`names.ts`) | Closest-first order needs a chem-core change (required change 2) |
+| `cleanStructure(doc, atoms)`, `kekulize(doc, atoms?)` (throws `ChemError('cannot-kekulize')`, changes nothing), `aromatize(doc, atoms?)` (idempotent; leaves rings it cannot read back unchanged), `expandLabel(doc, atom)` (throws `unknown-label`), `formulaOf(doc, atoms)` → `Formula { counts, charge, hill, text, mw, exactMass }` covering **every whole fragment touched** (SPEC.md decision); `Formula.text` carries the charge as Unicode superscripts | Selection actions; the status-bar formula is built from `hill` + `charge` with real `<sub>`/`<sup>`, and a one-atom selection shows its whole fragment's formula |
+| `package.json`: React 19.3.1, react-dom 19.3.1 (incl. `react-dom/server`), Immer, Zod, fast-check, Playwright 1.65; **no Zustand, no jsdom, no Testing Library**; Vitest `environment: 'node'`; coverage includes `src/renderer/**/*.{ts,tsx}` | No new dependency: a small store on `useSyncExternalStore`; logic tested in node; view components rendered with `react-dom/server` in node for markup tests; DOM behaviour in Playwright e2e |
+| Scaffold: `src/main/index.ts` window 1280×800, min 800×500, no `Menu` call (Electron's default menu binds Ctrl+0/Ctrl+−/Ctrl+= to page zoom); CSP allows inline styles and `data:` images, no inline scripts; `App.tsx` renders a 40 px toolbar and `canvas-area` | Required scaffold changes; custom cursors use `data:` SVG |
+| `resources/compounds/compounds.json`: 406 entries incl. ethanol, water, benzene, toluene, acetic acid, ethyl acetate, `h2o` | Imported as a JSON module by the editor and indexed once |
+| ESLint: the renderer block sets `no-restricted-imports` with only the `openchemlib` path; a later block that sets the rule for the same files replaces it | The new renderer boundary rule repeats the `openchemlib` restriction |
+
+## Decisions
+
+Binding until a spec change. Rows 1–16 are the orchestrator's; R-rows are the reviewer's
+resolutions of the draft's open questions and of problems found in review.
+
+| # | Decision | Reason | Date |
+|---|---|---|---|
+| 1 | Bond options: Single, Double, Triple, Wedge, Hash. No Wavy | Wavy bonds are rare at grade 11–12; one fewer control | 2026-11-10 |
+| 2 | Ring options, in order: Benzene, Cyclohexane, Cyclopentane, Cyclobutane, Cyclopropane. No cycloheptane, no chair | Commonest first; the chair is better drawn in a dedicated tool later than as a fixed template | 2026-11-10 |
+| 3 | Arrow options: Reaction, Equilibrium, Resonance, No reaction. No retrosynthesis | Retrosynthesis is beyond the syllabus. Files with retro arrows still render | 2026-11-10 |
+| 4 | Preset switch labels "Slides" / "Handout" (Handout = svg-render's `journal` preset) | "Journal" means nothing to a teacher; a handout is what they print | 2026-11-10 |
+| 5 | At launch: Bond (single) is the active tool, canvas focused | The first click draws, as in screen 01 | 2026-11-10 |
+| 6 | Select: a click on an atom or bond selects its whole fragment; a second click (press and release without a drag) on an atom or bond of an already fully selected fragment narrows the selection to that atom or bond (PowerPoint group model). Alt+click selects one atom or bond directly. A drag always moves the current selection | A teacher clicking a molecule wants to move it; the second click reaches the parts, as in PowerPoint groups | 2026-11-10 |
+| 7 | Tool rail 64 px wide, buttons 56×48 with one-word captions under the icons (Select, Erase, Bond, Chain, Ring, Atom, Arrow, Plus, Curly, Text); sizes as in the mock-ups | The rail explains itself without tooltips | 2026-11-10 |
+| 8 | Default zoom 150 % for Slides; Handout keeps the same on-screen bond length (rule V2). After a name insert or Tidy reaction, if the drawing's ink box no longer fits the viewport with a 48 px margin, zoom out to fit; never zoom in automatically, never above the default | Bonds of 80 px are comfortable to click; the drawing never runs off screen | 2026-11-10 |
+| 9 | Select options bar: Clean up, Show Kekulé / Show circle (icon + label, `min-width` of the longer label so the bar never jumps), Tidy reaction, divider, Flip horizontal, Flip vertical. "Number" is cut (rule C4 removed). "Expand" is rendered only when the selection contains an abbreviation | Screens 03 / 03b; compound numbers can be typed as text | 2026-11-10 |
+| 10 | Text and label editing is WYSIWYG, no markup ever shown: real sub/superscripts while editing; x₂ / x² toggle sub/sup on the selection; B / I toggle the object; auto-formatting (formula subscripts, `->` to →, trailing charge) applied on commit to characters the user did not format explicitly; `^` / `_` typed shortcuts honoured on commit; re-opening shows the text formatted. Implementation: a `contenteditable` element that is a projection of a pure editing model (rule T2) | Teachers know Word, not markup; the model-first design keeps every rule pure and testable | 2026-11-10 |
+| 11 | Name suggestions are ordered closest match first ("ethanl" offers ethanol first). Fixed in chem-core (required change 2) | The intended word must be the first chip | 2026-11-10 |
+| 12 | No right-click menu drawn by the editor. The editor emits a `context-menu` event (hit target + screen position) on its host seam so app-shell can show a native menu (Cut, Copy, Paste, Duplicate, Delete) later; the scaffold ignores it | Native menus look right on Windows and belong to app-shell | 2026-11-10 |
+| 13 | Empty-state sentence: "Type a compound name above, or click anywhere to start drawing." | Bond is active at launch, so any click draws | 2026-11-10 |
+| 14 | Hover highlight alpha 0.45 (`--overlay-hover`), status hint 13 px (`--type-hint`). Status-bar and dropdown formulas use real `<sub>` digits at ≥ 10 px, not Unicode subscript characters | Unicode subscripts rendered at about 7 px | 2026-11-10 |
+| 15 | Accepted draft defaults: bonds snap to 30°, arrows to 15°; reaction text like `A + B -> C` accepted in the name field; name-inserted structures placed automatically to the right of the drawing; minimum window 960×640; no jsdom (pure node unit tests plus Playwright e2e); switching preset keeps on-screen size; the orphan-carbon rule on erase; hover keys act on the hovered atom/bond before tool keys (L sets Cl, B sets Br on a hovered atom) | Draft open questions 2–5, 8, 9, 11, 13, 14 | 2026-11-10 |
+| 16 | Approved changes outside the editor: doc-model gains an additive `setStyle` op (no schema bump; `SPEC-doc-model.md` updated first); `SPEC.md` drops Zustand for the hand-written store and corrects the Testing table; scaffold gets min size 960×640 and no default application menu; ESLint gains renderer import-boundary and DOM-free rules with tooling probes. No new dependencies | Needed by the editor; each is specified under "Required changes" | 2026-11-10 |
+| R1 | Zoom range is 25–800 % (draft: 400 %) and the default zoom is the zoom at which a bond is 80 screen px: 150 % for Slides, 416.67 % for Handout (`150 × 40 / 14.4`) | Decision 8 puts the Handout default above 400 %; the old clamp made it impossible | 2026-11-10 |
+| R2 | Double-click opens the label/text editor **only with the Select tool**. With drawing tools, Enter over a hovered atom opens the label editor; the Text tool edits a text with a single click | With Bond, a double-click on an atom is two sprout clicks; opening an editor as well would add two bonds | 2026-11-10 |
+| R3 | Typing a letter that is not a hover key over a hovered atom does **not** open the label editor; it falls through to tool keys | Otherwise a resting pointer swallowed V, E, Z, R, A, M, T | 2026-11-10 |
+| R4 | No modifier disables snapping (draft: Alt). Alt keeps one meaning in Select: pick one atom or bond | Alt+drag (pick one atom, move it, join it) and "Alt disables snapping" collided; snapping is a 6 px pull, easy to avoid | 2026-11-10 |
+| R5 | Hovered atom + `1` / `2` / `3` sprouts a single / double / triple bond in the default direction (rule P1); hovered bond + `1` / `2` / `3` sets its order | Toluene in 3 actions (SPEC.md SC2): Ring, click, hover a ring atom + `1`. Same digit, same meaning ("this bond order here") | 2026-11-10 |
+| R6 | Hover and tool keys match `KeyboardEvent.key` (letters case-insensitive); Ctrl, Alt and Meta must be up; Shift is ignored | `+` needs Shift on most layouts; the draft said "no modifier" | 2026-11-10 |
+| R7 | Undo/Redo buttons and Ctrl+Z / Ctrl+Y act on the editing model while a label/text editor is open (local undo), and on the document otherwise; the Undo/Redo buttons are disabled while an editor is open | Undoing the document under an open editor would leave the editor pointing at changed or missing items | 2026-11-10 |
+| R8 | Text editing edits `text` objects only. Captions, callouts, brackets, shapes and bracket corners are not editable (select, move, delete only). Captions are never created | Their creation UI is cut; editing without creation is half a feature | 2026-11-10 |
+| R9 | Name-field suggestions appear only for a single name (no `+` and no arrow token outside brackets). Reaction text gets no dropdown until Enter; a part that is not found gets the not-found row and "Did you mean" chips that replace that part | One clear behaviour; replacing parts mid-typing is confusing | 2026-11-10 |
+| R10 | Suggestion rows show the matched key with the typed prefix in 600 weight: the display name when it matches the prefix, else the first matching synonym followed by `--text-muted` " — " + display name (`ethanoic acid — acetic acid`) | Teachers search by IUPAC or common names; a row must show why it matched | 2026-11-10 |
+| R11 | "Show circle" is offered when the scope has an aromatic bond (`Perception.bonds[id].aromatic`) that is not order 1.5 (draft: "a ring bond of order 2", which would offer it on cyclohexene) | Correct chemistry, read from chem-core | 2026-11-10 |
+| R12 | The zoom readout button and Ctrl+1 reset to the default zoom (150 % Slides); aria-label "Reset zoom (Ctrl+1)" (mock-up: "Zoom to 100%") | Clicking "150%" and getting 100 % would surprise; the default is what the teacher knows | 2026-11-10 |
+| R13 | Zoom to fit (button, Ctrl+0, load): the largest whole percent ≤ the default zoom that shows the ink box with a 48 px margin on every side (screen 08: 115 %) | Fitting a small molecule should not blow it up past the default | 2026-11-10 |
+| R14 | Reaction-text arrow tokens: `->`, `→`, `=>` (forward), `<=>`, `⇌` (equilibrium) | Retrosynthesis is cut; `=>` is a likely typo for `->` | 2026-11-10 |
+| R15 | View components are covered by markup tests in node with `react-dom/server` (`renderToStaticMarkup`), no jsdom | Coverage counts `view/*.tsx`; static markup proves states and ARIA without a new dependency | 2026-11-10 |
+| R16 | Screenshots for review come from a Playwright-against-Electron harness: `npm run shots` writes `out/shots/<task-id>/<name>.png` at 1280×800 content size (960×640 where named), device scale 1 | The same viewport as the mock-up PNGs, so they can be compared side by side | 2026-11-10 |
+| R17 | Rotate handle, arrow end handles and curved-arrow handles stay; scale handles, grid, rulers, group/z-order UI stay out | Rotating and re-aiming arrows are everyday edits; the rest is noise for this user | 2026-11-10 |
+| R18 | Text size stays one `fontSize` per document (svg-render Decision 2); no schema bump | Titles belong in PowerPoint | 2026-11-10 |
+| R19 | `createRenderer` is not requested now; it is requested (svg-render spec change first) only if the profiling task measures a budget miss with the drag fast path in place | Measure before asking | 2026-11-10 |
 
 ---
 
@@ -64,273 +127,225 @@ other object.
 ### Layout
 
 ```
-┌───────────────────────────────────────────────────────────────────────────────┐
-│ [⌕ Type a compound name…        ] │ (tool options, contextual)        [↶] [↷] │ 48 px top bar
-├──────┬────────────────────────────────────────────────────────────────────────┤
-│  ⬚   │                                                                        │
-│  ⌫   │                                                                        │
-│ ──── │                                                                        │
-│  ╱   │                         canvas (white)                                 │
-│  ⌇   │                                                                        │
-│  ⬡   │                                                                        │
-│  C   │                                                                        │
-│ ──── │                                                                        │
-│  →   │                                                                        │
-│  +   │                                                                        │
-│  ↷   │                                                                        │
-│  T   │                                                                        │
-├──────┴────────────────────────────────────────────────────────────────────────┤
-│ Click to add a bond. Drag to aim it.     C₂H₆O · 46.07 g/mol  ⚠ 1  Slides│Journal  − 100% + ⤢ │ 28 px
-└───────────────────────────────────────────────────────────────────────────────┘
-  56 px rail
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ [⌕ Type a compound name…     ] │ (tool options, contextual)             [↶] [↷] │ 48 px top bar
+├────────┬─────────────────────────────────────────────────────────────────────────┤
+│ Select │                                                                         │
+│ Erase  │                                                                         │
+│ ────── │                                                                         │
+│ Bond   │                         canvas (white)                                  │
+│ Chain  │                                                                         │
+│ Ring   │                                                                         │
+│ Atom   │                                                                         │
+│ ────── │                                                                         │
+│ Arrow  │                                                                         │
+│ Plus   │                                                                         │
+│ Curly  │                                                                         │
+│ Text   │                                                                         │
+├────────┴─────────────────────────────────────────────────────────────────────────┤
+│ Click to add a bond…        C₂H₆O · 46.07 g/mol  ⚠ 1  [Slides|Handout]  − 150% + ⤢ │ 28 px
+└──────────────────────────────────────────────────────────────────────────────────┘
+  64 px rail
 ```
 
-| Region | Size | Holds | Resizing |
+Sizes come from tokens (`--topbar-h`, `--rail-w`, `--statusbar-h`, `--rail-btn-w`,
+`--rail-btn-h`, `--option-btn`, `--topbar-btn`, `--status-btn`); `mockup.css` is the reference.
+The numbers below are what the e2e layout test measures at 1280×800 (and 960×640).
+
+| Region | Measured box | Holds |
+|---|---|---|
+| Top bar | full width × 48 px, then a 1 px `--border` line; padding 0 12 | name field (x = 12, width `round(down, clamp(240px, 26vw, 360px), 1px)`, height 32); a 1×24 divider with 12 px either side; the options bar (flex, gap 2, scrolls horizontally with no visible scrollbar if ever too narrow); Undo and Redo (32×32, 4 px apart, 12 px left margin, 12 px from the right edge) |
+| Tool rail | 64 px wide + 1 px `--border` line, between top bar and status bar | 10 buttons 56×48 at x = 4, first at y = 8, 2 px apart within a group; group separators 32×1 with 8 px above and below. At 960×640 the content (544 px) fits in the 562 px available; it would scroll vertically only below that |
+| Canvas | the rest | white surface, overlays, empty state, editors |
+| Status bar | full width × 28 px after a 1 px `--border` line; padding 0 12, gap 16 | left: hint or notice (flex, ellipsis); then formula (hidden below 1000 px window width), warnings button (only when there are warnings), preset switch, zoom cluster (−, readout 48 px, +, fit; 2 px apart) |
+
+- Minimum window **960 × 640** (fits a 1366×768 laptop with the taskbar); set by the scaffold.
+- No other boxes or panels. Resizing keeps the document point under the canvas centre fixed.
+
+### Tool rail
+
+| # | Group | Tool (`aria-label`) | Caption | Key | Icon | Options bar |
+|---|---|---|---|---|---|---|
+| 1 | Pick | Select | Select | `V` | `select` | Selection actions |
+| 2 | Pick | Erase | Erase | `E` | `erase` | empty |
+| 3 | Structure | Bond | Bond | `B` | current bond option's icon | Single, Double, Triple, Wedge, Hash (`bond-*`) |
+| 4 | Structure | Chain | Chain | `Z` | `chain` | empty |
+| 5 | Structure | Ring | Ring | `R` | current ring's icon | Benzene, Cyclohexane, Cyclopentane, Cyclobutane, Cyclopropane (`ring-benzene`, `ring-6`, `ring-5`, `ring-4`, `ring-3`) |
+| 6 | Structure | Atom | Atom | `L` | current element as text (`--type-rail`), or the mark's icon | C H N O S P F Cl Br I │ Positive charge, Negative charge, Lone pair, Radical (`mark-*`), δ+, δ− |
+| 7 | Reaction | Arrow | Arrow | `A` | current arrow's icon | Reaction, Equilibrium, Resonance, No reaction (`arrow-forward`, `-equilibrium`, `-resonance`, `-nogo`) |
+| 8 | Reaction | Plus | Plus | `+` | `plus` | empty |
+| 9 | Reaction | Curved arrow | Curly | `M` | current head's icon | Electron pair, Single electron (`curved-full`, `curved-fishhook`) |
+| 10 | Reaction | Text | Text | `T` | `text` | empty (text editing options while a text editor is open) |
+
+Element and δ buttons are text glyphs (`--type-md` 600); the others are 20 px icons.
+Each option button's tooltip names it (`Chlorine`, `Cyclopentane`) with one help line where the
+mock-up shows one ("Click an atom to make it Cl.").
+
+**Selection actions** (Select active), left to right (screens 03, 03b):
+
+| Control | Kind | Enabled when (else disabled with the tooltip help) | Does |
 |---|---|---|---|
-| Top bar | full width × 48 px, padding 0 12 px | name field (left, x = 12, width `clamp(240px, 26vw, 360px)`, height 32), 1 px divider (24 px tall) 12 px right of it, tool options bar (flex, left-aligned, 12 px after the divider), Undo and Redo (right, 32×32 each, 4 px apart, 12 px from the right edge) | Options bar takes the slack; if it would be narrower than its content (never at ≥ 960 px), it scrolls horizontally with no visible scrollbar |
-| Tool rail | 56 px wide, from below the top bar to above the status bar | 10 tool buttons, 40×40, centred (x = 8), first at y = 8, 4 px apart in a group; groups separated by a 1 px × 32 px divider with 8 px above and below | Fixed width; if the window is shorter than the rail content (never at ≥ 640 px), the rail scrolls vertically |
-| Canvas | the rest | white drawing surface, overlays, empty state, label/text editors | Fills; resizing keeps the document point under the canvas centre fixed |
-| Status bar | full width × 28 px, padding 0 12 px | left: hint or notice (flex, ellipsis); right, 16 px apart: formula, warnings button, preset switch, zoom cluster | Hint truncates first; formula hides below 1000 px width |
+| Clean up | `clean-up` + label | the scope has a fragment with ≥ 2 atoms ("Draw a molecule first.") | rule C1 |
+| Show Kekulé / Show circle | `show-kekule` / `show-circle` + label; `min-width` fits "Show Kekulé"; label left-aligned | scope has an order-1.5 bond → "Show Kekulé"; else an aromatic non-1.5 bond (R11) → "Show circle"; else disabled as "Show Kekulé" ("No benzene ring here.") | rule C3 |
+| Tidy reaction | `tidy` + label | the document has a straight arrow ("Draw an arrow first.") | rules TR1–TR6 |
+| divider | | | |
+| Flip horizontal / Flip vertical | `flip-h` / `flip-v` icons | selection non-empty ("Select a molecule first.") | `transformItems` with `scaling(-1, 1, c)` / `scaling(1, -1, c)`, c = centre of the selection's ink box; one "Flip" commit |
+| divider + Expand | `expand` + label; **rendered only** when the selection has an abbreviation atom | always enabled when shown | rule C2 |
 
-- Minimum window **960 × 640** (fits a 1366×768 laptop with taskbar; requested from app-shell).
-- Borders: 1 px `--border` under the top bar, right of the rail, above the status bar. No other
-  boxes or panels.
-- Rationale: a single left rail of 10 big tools mirrors what the teacher knows from Paint and
-  PowerPoint; variants of the active tool are always visible in the top bar (no hidden flyouts to
-  discover); the name field sits top-left where the eye lands first, because typing "ethanol" is
-  the fastest way to a structure for this user.
+"Scope" = the selection, or the whole document when nothing is selected.
 
-### Tool rail (visible-control inventory)
-
-| # | Group | Tool | Key | Icon | Options bar shows |
-|---|---|---|---|---|---|
-| 1 | Pick | Select | `V` | `select` | Selection actions (below) |
-| 2 | Pick | Erase | `E` | `erase` | nothing |
-| 3 | Structure | Bond | `B` | current bond variant | Single, Double, Triple, Wedge, Hash, Wavy |
-| 4 | Structure | Chain | `Z` | `chain` | nothing |
-| 5 | Structure | Ring | `R` | current template | Benzene, Cyclopropane, Cyclobutane, Cyclopentane, Cyclohexane, Cycloheptane, Chair |
-| 6 | Structure | Atom | `L` | current item (element symbol as text, or mark icon) | C H N O S P F Cl Br I · ⊕ ⊖ Lone pair, Radical, δ+, δ− |
-| 7 | Reaction | Arrow | `A` | current arrow kind | Reaction, Equilibrium, Resonance, Retrosynthesis, No reaction |
-| 8 | Reaction | Plus | `+` | `plus` | nothing |
-| 9 | Reaction | Curved arrow | `M` | current head | Electron pair, Single electron |
-| 10 | Reaction | Text | `T` | `text` | nothing (while editing any text: see "Text editing options") |
-
-Tool keys work when the canvas has focus and no atom or bond is hovered (hover keys win, rule K2).
-
-**Selection actions** (options bar when Select is active), left to right, 8 px apart:
-
-| Control | Kind | Enabled when | Does |
-|---|---|---|---|
-| Clean up | icon + label | doc has ≥ 1 fragment with ≥ 2 atoms | `cleanStructure` on the selection's atoms, or all atoms if nothing is selected |
-| Show Kekulé / Show circle | label, fixed width 104 px | scope has an order-1.5 bond (→ "Show Kekulé") or a ring bond of order 2 (→ "Show circle") | `kekulize` / `aromatize` on the scope (rule C3) |
-| Tidy reaction | icon + label | doc has ≥ 1 straight arrow | Rule T1, on the selection or everything |
-| Number | icon, tooltip "Number the molecule" | ≥ 1 fragment selected | Rule C4 |
-| Flip horizontal / Flip vertical | 2 icons | selection non-empty | `transformItems` with `scaling(-1, 1, c)` / `scaling(1, -1, c)`, c = centre of the selection's ink box |
-| Expand | label | selection contains an abbreviation atom (`Ph`, `CO2H` …) | `expandLabel` on each |
-
-**Text editing options** (replace the options bar content while a text editor is open, any tool):
-Subscript `x₂`, Superscript `x²`, Bold `B`, Italic `I`, then inserts Δ, hν, °, →.
+**Text editing options** (replace the options bar while a text editor is open, screen 09):
+Subscript (x₂), Superscript (x²), Bold (B), Italic (I), separator, muted caption "Insert", Δ, hν,
+° (`glyph-degree`), → (`glyph-arrow`). x₂ / x² / B / I are toggle buttons (`aria-pressed` shows
+the state at the caret or selection). The label editor does not change the options bar.
 
 ### Left out (deliberately not on screen)
 
 | Left out | Why |
 |---|---|
-| Grid and rulers | Angle snapping, fixed bond length and Tidy reaction give alignment; a grid is visual noise on a slide-drawing canvas |
-| Hidden flyouts / press-and-hold menus | Teachers do not discover them; the active tool's variants are always shown in the options bar |
-| Context (right-click) menu | Duplicates the options bar and keys; one place per action. Right-click does nothing (cancels a gesture) |
-| Scale handles | Bond length is the document's scale (style); stretching a molecule makes wrong bond lengths |
-| Bold bonds, δδ±, isotopes, atom numbers, colours, brackets, callouts, highlight shapes | Rare at grade 11–12 basics; each adds controls. Drawn and editable (move/delete) when present in a file. Candidate phase E7 after the owner uses v1 |
-| Style panel (bond length, line width, font) | Two presets cover slides and handouts; overrides stay possible in the file |
-| Periodic-table picker | 10 common elements in the options bar; any other element or group is typed (label editor) |
-| Group / ungroup, bring to front | doc-model has no op; clicking an atom already selects the whole molecule |
-| Template library beyond rings | Name insert covers amino acids, sugars, aspirin … (406 compounds) |
+| Grid and rulers | Angle snapping, fixed bond length and Tidy reaction give alignment; a grid is noise on a slide |
+| Hidden flyouts, press-and-hold menus | The active tool's options are always visible in the top bar |
+| Editor-drawn context menu | Decision 12: app-shell may show a native one from the `context-menu` event |
+| Scale handles | Bond length is the document's scale; stretching makes wrong bond lengths |
+| Wavy, bold bonds; chair, cycloheptane; retro arrows; captions, callouts, brackets, highlight shapes, colours, atom numbers, isotopes, δδ± | Decisions 1–3, 9; rare at grade 11–12 basics. Present in a file → drawn, movable, deletable |
+| Style panel (bond length, line width, font) | Two presets cover slides and handouts |
+| Periodic-table picker | Ten common elements in the options bar; anything else is typed in the label editor |
+| Group / ungroup, bring to front | No doc-model op; clicking an atom already selects the whole molecule |
+| Template library beyond rings | Name insert covers 406 compounds |
 | Layers, inspector, minimap, rotation readouts | Noise for this user |
-| File, print, export, copy-as-image buttons | `app-shell` / `clipboard-export` (menus and shortcuts there) |
+| File, print, export, copy-as-image buttons | `app-shell` / `clipboard-export` |
 
-### Visual language (design tokens)
+### Visual language
 
-Defined once as CSS custom properties in `src/renderer/editor/view/tokens.css`. Contrast ratios
-are WCAG 2.x, computed.
+All values live in `tokens.css` (normative). Summary:
 
-**Colour**
+- **Colour roles**: `--chrome-bg` (bars), `--canvas-bg` (canvas, fields, editors), `--border`
+  (region lines), `--border-control` (field and chip borders), `--text`, `--text-muted` (hints,
+  captions at rest, formulas, placeholders), `--text-disabled`, `--hover-bg`, `--pressed-bg`,
+  `--accent` (focus, selection, active bar, canvas overlays), `--active-bg` / `--active-fg` /
+  `--active-hover-bg` (selected tool and option), `--warning` / `--warning-bg`, tooltip colours,
+  `--empty-art`.
+- **Canvas overlay alphas** (group opacity, never per shape): `--overlay-hover` 0.45,
+  `--overlay-selection` 0.24, `--overlay-marquee` 0.08, `--overlay-merge` 0.32, `--ghost-opacity`
+  0.45, `--guide-opacity` 0.6.
+- **Type**: `--font-ui` (Segoe UI Variable Text, Segoe UI, system-ui; nothing bundled);
+  `--type-xs` 12/16 (status controls, tooltips, captions under editors), `--type-sm` 13/18
+  (action labels, chips), `--type-md` 14/20 (name field, dropdown names, option glyphs 600,
+  empty-state text), `--type-rail` 600 18/24 (Atom rail glyph), `--type-caption` 500 11/14 (rail
+  captions), `--type-hint` 13/18 (status hint). Status numbers use `tabular-nums`. Canvas text is
+  svg-render's.
+- **Spacing** `--space-1…7` = 2, 4, 8, 12, 16, 24, 32 px; no other values. **Radii** 4 / 6 /
+  14 (pill). **Shadows** `--shadow-1` (dropdown, editors), `--shadow-2` (tooltip). **Motion**
+  `--motion-fade` 120 ms (tooltip, dropdown), `--motion-pan` 160 ms (reveal pan); both 0 under
+  `prefers-reduced-motion: reduce`.
 
-| Token | Hex | Used for | Contrast |
-|---|---|---|---|
-| `--chrome-bg` | `#F5F6F8` | top bar, rail, status bar | — |
-| `--canvas-bg` | `#FFFFFF` | canvas, name field, editors | — |
-| `--border` | `#DADDE3` | region dividers (decorative) | — |
-| `--border-control` | `#7A828E` | name field and editor borders | 3.88 on `#FFFFFF`, 3.59 on chrome (≥ 3:1 non-text) |
-| `--text` | `#1F2328` | primary text and icons | 14.61 on chrome, 15.80 on white |
-| `--text-muted` | `#5B6270` | hints, formulas, placeholders | 5.67 on chrome, 6.13 on white |
-| `--text-disabled` | `#9AA1AD` | disabled controls | 2.40 (disabled controls are exempt, WCAG 1.4.3) |
-| `--hover-bg` | `#E9EBEF` | control hover | `--text` on it 13.24 |
-| `--pressed-bg` | `#DDE1E7` | control pressed | `--text` on it 12.04 |
-| `--accent` | `#1F5FD1` | focus ring, selection, active indicator bar, canvas hover/selection | 5.81 on white, 5.37 on chrome, 4.88 on `--active-bg` |
-| `--active-bg` | `#E3ECFB` | selected tool / option background | — |
-| `--active-fg` | `#1A4FB0` | selected tool / option icon and label | 6.33 on `--active-bg`, 5.65 on `--active-hover-bg` |
-| `--active-hover-bg` | `#D2E0F8` | selected + hover | — |
-| `--warning` | `#B42318` | valence warnings, error notices, not-found message | 6.57 on white, 6.08 on chrome, 5.75 on `--warning-bg` |
-| `--warning-bg` | `#FDECEA` | not-found row background | `--text` on it 13.81 |
-| `--tooltip-bg` / `--tooltip-fg` | `#1F2328` / `#FFFFFF` | tooltips | 15.80 |
-| `--empty-art` | `#C9CED6` | empty-state illustration (decorative) | — |
+**Contrast pairs** (WCAG 2.x; recomputed from `tokens.css` by `tests/tooling/editor-tokens.test.ts`):
 
-Canvas overlays use `--accent` with alpha: hover fill 16 %, selection fill 24 %, marquee fill 8 %.
-Ghost previews are the real parts at opacity 0.45.
+| Foreground | Background(s) | Minimum |
+|---|---|---|
+| `--text` | `--chrome-bg`, `--canvas-bg`, `--hover-bg`, `--pressed-bg`, `--warning-bg` | 4.5 |
+| `--text-muted` | `--chrome-bg`, `--canvas-bg`, `--hover-bg`, `--pressed-bg` | 4.5 |
+| `--active-fg` | `--active-bg`, `--active-hover-bg` | 4.5 |
+| `--warning` | `--canvas-bg`, `--chrome-bg`, `--warning-bg` | 4.5 |
+| `--tooltip-fg`, `--tooltip-muted` | `--tooltip-bg` | 4.5 |
+| `--accent` | `--canvas-bg`, `--chrome-bg`, `--active-bg` | 3.0 (focus ring, indicator) |
+| `--border-control` | `--canvas-bg`, `--chrome-bg` | 3.0 (control boundary) |
 
-**Type**: `--font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif` (all ship
-with Windows 10/11; nothing is bundled or fetched). Canvas text is svg-render's (`fontFamily`).
+`--text-disabled` is exempt (WCAG 1.4.3, disabled controls). Selected state never relies on
+colour alone: rail buttons get the 3×24 `--accent` bar at the rail's left edge; option buttons a
+2×16 underline 2 px above the bottom edge.
 
-| Token | Size / line height | Weight | Used for |
-|---|---|---|---|
-| `--type-xs` | 12 / 16 px | 400 | status bar, tooltips, editor captions |
-| `--type-sm` | 13 / 18 px | 400; 600 for element symbols and active labels | options bar, buttons, dropdown formulas |
-| `--type-md` | 14 / 20 px | 400 | name field, dropdown names, empty-state text |
-| `--type-rail` | 15 / 20 px | 600 | element symbol shown on the Atom rail button |
-
-Numbers in the status bar use `font-variant-numeric: tabular-nums`.
-
-**Spacing scale**: 2, 4, 8, 12, 16, 24, 32 px (`--space-1` … `--space-7`). No other values.
-**Radii**: `--radius-sm` 4 px (buttons, tooltips, handles), `--radius-md` 6 px (fields, editors,
-dropdown). **Elevation**: `--shadow-1` `0 4px 12px rgba(31,35,40,.12), 0 0 0 1px #DADDE3`
-(dropdown, label/text editors); `--shadow-2` `0 2px 6px rgba(31,35,40,.20)` (tooltip). Nothing
-else has a shadow. **Motion**: tooltip and dropdown fade 120 ms ease-out; viewport pans after
-insert 160 ms ease-out; none at all under `prefers-reduced-motion: reduce`.
-
-**Icons**: hand-drawn inline SVG in one file `src/renderer/editor/view/icons.tsx` (named exports,
-one component per icon, no icon library). Grid 24×24 `viewBox`, stroke 1.5, `stroke-linecap` and
-`stroke-linejoin` round, `fill="none"` unless "filled", colour `currentColor`, 2 px safe margin.
-Rendered at 24 px in the rail, 20 px in the options bar and top bar, 16 px in the status bar.
-Text-glyph buttons (elements, δ+, δ−, x₂, x², B, I, Δ, hν, °) use `--font-ui`, not SVG.
-
-| Icon | Glyph (coordinates in the 24 grid) |
-|---|---|
-| `select` | arrow cursor outline: `M6 3 L6 19 L10.5 14.8 L13.5 21 L16 19.8 L13 13.8 L19 13.5 Z` |
-| `erase` | eraser block: `M4.5 15.5 L13.5 6.5 Q15 5 16.5 6.5 L19.5 9.5 Q21 11 19.5 12.5 L12 20 H7.5 Z`; seam line 9,11 → 14,16; floor line 12,20 → 20,20 |
-| `bond-single` | line 5,19 → 19,5 |
-| `bond-double` | lines 4,16.5 → 16.5,4 and 7.5,20 → 20,7.5 |
-| `bond-triple` | lines 3.5,15.5 → 15.5,3.5; 5,19 → 19,5; 8.5,20.5 → 20.5,8.5 |
-| `bond-wedge` | filled triangle 5,19 / 17.6,4.4 / 19.6,6.4 |
-| `bond-hash` | 6 strokes perpendicular to 5,19 → 19,5 at t = 1/12, 3/12 … 11/12, half-length 0.4 + 2.2 t |
-| `bond-wavy` | `M4 20 q1.5 -3.5 3 -3 t3 -3 t3 -3 t3 -3 t3 -3` (smooth wave along the diagonal) |
-| `chain` | polyline 3,16 7.5,8 12,16 16.5,8 21,16 |
-| `ring-benzene` | hexagon, vertex up, centre 12,12, circumradius 8 (12,4 18.93,8 18.93,16 12,20 5.07,16 5.07,8); circle r 4.2 |
-| `ring-3` | triangle 12,4.5 19.5,18 4.5,18 |
-| `ring-4` | square 6,6 18,6 18,18 6,18 |
-| `ring-5` | regular pentagon, vertex up, centre 12,12.8, circumradius 8 |
-| `ring-6` | the benzene hexagon without the circle |
-| `ring-7` | regular heptagon, vertex up, centre 12,12.5, circumradius 8.5 |
-| `ring-chair` | closed polyline 3,13.5 7.5,9.5 13,11 21,9.5 16.5,14.5 11,13 (the chair template scaled) |
-| `arrow-forward` | line 3,12 → 16,12; filled head 21,12 / 15.5,9 / 15.5,15 |
-| `arrow-equilibrium` | line 3,9.5 → 21,9.5 with barb 21,9.5 → 17,6.5; line 21,14.5 → 3,14.5 with barb 3,14.5 → 7,17.5 |
-| `arrow-resonance` | line 7,12 → 17,12; filled heads 3,12 / 8,9 / 8,15 and 21,12 / 16,9 / 16,15 |
-| `arrow-retro` | lines 3,9.5 → 17,9.5 and 3,14.5 → 17,14.5; chevron 15,6 → 21,12 → 15,18 |
-| `arrow-nogo` | `arrow-forward` plus cross 7,9 → 11,15 and 11,9 → 7,15 |
-| `plus` | lines 12,5 → 12,19 and 5,12 → 19,12 |
-| `curved-full` | `M4 19 Q6 5 18 8.5`; filled head 21,9.5 / 16.2,5.6 / 15.4,11 |
-| `curved-fishhook` | same curve; one barb only: filled 21,9.5 / 16.2,5.6 / 17.5,9 |
-| `text` | lines 6,5 → 18,5; 12,5 → 12,19; 9.5,19 → 14.5,19 |
-| `mark-plus` | circle 12,12 r 7; lines 12,8.5 → 12,15.5 and 8.5,12 → 15.5,12 |
-| `mark-minus` | circle 12,12 r 7; line 8.5,12 → 15.5,12 |
-| `mark-lone-pair` | filled circles r 2.2 at 8.5,12 and 15.5,12 |
-| `mark-radical` | filled circle r 2.6 at 12,12 |
-| `search` | circle 10.5,10.5 r 6; line 15,15 → 20,20 |
-| `undo` | `M9 5 L4 10 L9 15` and `M4 10 H14.5 A5 5 0 0 1 14.5 20 H11` |
-| `redo` | `undo` mirrored about x = 12 |
-| `zoom-in` / `zoom-out` | line 6,12 → 18,12 (+ line 12,6 → 12,18 for zoom-in) |
-| `fit` | four corners: `M4 9 V4 H9`, `M15 4 H20 V9`, `M20 15 V20 H15`, `M9 20 H4 V15` |
-| `warning` | triangle `M12 3.5 L21 19.5 H3 Z`; line 12,9.5 → 12,14; filled dot 12,17 r 1 |
-| `clean-up` | hexagon centre 10,13 circumradius 6 (vertex up); sparkle lines 19,2.5 → 19,8.5 and 16,5.5 → 22,5.5 |
-| `tidy` | outline rects 2.5,9 4×6 and 17.5,9 4×6; arrow 8.5,12 → 14,12 with filled head 16,12 / 13.5,10.5 / 13.5,13.5; line 2,20 → 22,20 |
-| `number` | hexagon centre 12,8 circumradius 5 (vertex up); `M11 16 L12.5 14.5 V21` and `M10.5 21 H14.5` |
-| `flip-h` | dashed line 12,3 → 12,21 (dash 2 2); filled triangle 10,6 / 10,18 / 3,18; outline triangle 14,6 / 14,18 / 21,18 |
-| `flip-v` | `flip-h` rotated 90° about 12,12 |
+**Icons**: ids in `icons.svg`: `select erase bond-single bond-double bond-triple bond-wedge
+bond-hash chain ring-benzene ring-6 ring-5 ring-4 ring-3 mark-plus mark-minus mark-lone-pair
+mark-radical arrow-forward arrow-equilibrium arrow-resonance arrow-nogo plus curved-full
+curved-fishhook text search undo redo zoom-in zoom-out fit warning clean-up tidy show-kekule
+show-circle expand flip-h flip-v glyph-degree glyph-arrow`. Rendered by one `Icon` component at
+24 px (rail), 20 px (top bar, options), 16 px (status bar); `aria-hidden`, colour
+`currentColor`. Nothing else draws icons.
 
 ### Control states
 
-All controls are `<button>` (or `<input>`) elements with `aria-label` and, where they select,
-`aria-pressed`. Focus ring everywhere: `outline: 2px solid var(--accent); outline-offset: 2px`,
-only on `:focus-visible`.
+All controls are `<button>` (or `<input>`) with an accessible name; toggles carry `aria-pressed`;
+disabled controls use `aria-disabled="true"`, stay focusable and keep their tooltip, whose help
+line says why. Focus ring: `outline: 2px solid var(--accent)`, offset 2 px (rail buttons:
+offset 0), only on `:focus-visible`. States per control as in `mockup.css` and screen 10:
 
-| Control | Rest | Hover | Pressed | Selected / active | Disabled |
+| Control | Rest | Hover | Pressed | Selected | Disabled |
 |---|---|---|---|---|---|
-| Rail button 40×40, radius 4 | transparent, icon `--text` | `--hover-bg` | `--pressed-bg` | `--active-bg`, icon `--active-fg`, plus a 3×20 px `--accent` bar at x = 0 of the rail, vertically centred on the button (non-colour cue); selected + hover `--active-hover-bg` | never disabled |
-| Options button 28×28 (icon or text glyph; text buttons are auto-width, min 28, padding 0 8) | transparent, `--text` | `--hover-bg` | `--pressed-bg` | `--active-bg`, `--active-fg`, 600 weight for text; a 2 px `--accent` underline 16 px wide, centred, 2 px above the bottom edge | `--text-disabled`, no hover, `aria-disabled`, still focusable, tooltip says why ("Select a molecule first") |
-| Action button (icon + label, height 28, padding 0 8, gap 6) | as options button | as options | as options | — | as options |
-| Undo / Redo 32×32 | transparent, `--text` | `--hover-bg` | `--pressed-bg` | — | `--text-disabled` when `canUndo`/`canRedo` is false |
-| Name field 32 high, radius 6, padding 0 8 0 32, icon at x 8 | `--canvas-bg`, 1 px `--border-control`, placeholder `--text-muted` | border `--text-muted` | — | focused: 2 px `--accent` border (no extra outline) | — ; not-found: 1 px `--warning` border |
-| Status controls (warnings, zoom −/+, fit) 24×24; zoom % text button 48×24; preset switch two segments 64×24 | transparent, `--text-muted` | `--hover-bg`, `--text` | `--pressed-bg` | preset segment: `--active-bg`, `--active-fg`, 600 | zoom −/+ disabled at 25 % / 400 % |
-| Dropdown row 36 high | transparent | `--hover-bg` | — | keyboard-highlighted: `--active-bg` (`aria-selected`) | — |
+| Rail button 56×48 | transparent; icon `--text`, caption `--text-muted` | `--hover-bg`; caption `--text` | `--pressed-bg`; caption `--text` | `--active-bg`, icon and caption `--active-fg`, accent bar 3×24 at the rail edge, top 12; + hover `--active-hover-bg` | never |
+| Option button 32×32 (text glyphs auto width, padding 0 8) | transparent, `--text` | `--hover-bg` | `--pressed-bg` | `--active-bg`, `--active-fg`, underline 2×16 | `--text-disabled` |
+| Action button (icon + label, height 32, padding 0 8 0 4, gap 4) | as option | as option | as option | — | as option |
+| Undo / Redo 32×32 | transparent, `--text` | `--hover-bg` | `--pressed-bg` | — | `--text-disabled` when nothing to undo/redo or an editor is open (R7) |
+| Name field 32 high, radius 6, padding 0 8 0 32, `search` icon at x 7 | `--canvas-bg`, 1 px `--border-control`, placeholder `--text-muted` | border `--text-muted` | — | focused: 1 px border + 1 px inset, both `--accent` | not found: `--warning` border; focused + not found: 2 px `--warning` |
+| Status controls 24 high (readout 48 wide) | transparent, `--text-muted` | `--hover-bg`, `--text` | `--pressed-bg` | preset segment (64×20 inside a 1 px `--border` outline, radius 4): `--active-bg`, `--active-fg`, 600 | zoom −/+ at 25 % / 800 % |
+| Warnings button (auto width, padding 0 4) | `warning` icon + count, `--warning`, 600 | `--hover-bg` | `--pressed-bg` | — | hidden when there are no warnings |
+| Chip (empty state, "Did you mean") 28 high, pill | `--canvas-bg`, 1 px `--border-control` | `--hover-bg`, border `--text-muted` | `--pressed-bg` | — | — |
+| Dropdown row 36 high | transparent | `--hover-bg` | — | keyboard-highlighted `--active-bg` (`aria-selected`) | — |
 
-**Tooltips**: on every icon-only control and every rail/options button. Show after 500 ms hover
-or on keyboard focus; once one is shown, the next appears with no delay until the pointer has
-been off all tooltipped controls for 300 ms. Placement: right of rail buttons (8 px gap), below
-top-bar controls, above status-bar controls; flipped if clipped. Content: name, then the key in a
-`kbd` chip (`--type-xs`, 1 px `#5B6270` border, radius 4), then optionally one line of help in
-`--type-xs`. Example: **Bond** `B` / "Click to add a bond. Drag to aim it." Max width 240 px.
-Dismissed on pointer down, Esc, or blur. `role="tooltip"`, linked by `aria-describedby`.
+**Tooltips** (screen 10): on every rail button, option button, icon-only control and disabled
+control. Show after 500 ms hover or on keyboard focus; once one is shown, the next appears with
+no delay until the pointer has been off all tooltipped controls for 300 ms. Placement: right of
+rail buttons (8 px gap), below top-bar controls, above status-bar controls; flipped if clipped.
+Content: title (600) then the key in a `kbd` chip (18 px tall), then optionally one help line in
+`--tooltip-muted`. Example: **Bond** `B` / "Click to add a bond. Drag to aim it." Max width
+240 px, padding 4 8. Dismissed on pointer down, Esc or blur. `role="tooltip"`, linked by
+`aria-describedby`.
 
 ### Canvas appearance
 
-| Element | Appearance |
+| Element | Appearance (screen px; colours `--accent` unless stated) |
 |---|---|
-| Background | `--canvas-bg` everywhere; no page border (exports are tight and transparent; the white stands for the slide) |
+| Background | `--canvas-bg`; no page border |
 | Document parts | svg-render parts, unchanged |
-| Atom hover | skeleton vertex: circle r 12 px (screen) filled `--accent` 16 %; labelled atom: its `extents` box grown 3 px, radius 4, same fill |
-| Bond hover | line along the bond axis between the clipped ends, 12 px wide, round caps, `--accent` 16 % |
-| Object hover | arrow/curved arrow: path stroke 12 px `--accent` 16 % along the shaft; text, caption, plus, bracket, shape: `extents` box grown 4 px, radius 4, same fill |
-| Selection | each selected item drawn like hover at 24 %; plus a selection frame: the union of selected `extents` grown 8 px, 1 px dashed `--accent` (dash 4 3) |
-| Rotate handle | circle Ø 10 px, white fill, 1.5 px `--accent` stroke, 24 px above the frame's top centre, joined by a 1 px `--accent` line; hit area Ø 20 px |
-| Arrow end handles | 8×8 px squares, white fill, 1.5 px `--accent` stroke, at `from` and `to`; hit 16×16 |
-| Curved-arrow handles | end handles as circles Ø 8 px; bend handle a 9×9 px diamond at the curve's t = 0.5 point |
-| Marquee | rectangle `--accent` 8 % fill, 1 px solid `--accent` |
-| Ghost preview | the would-be parts at opacity 0.45; a merge target atom gets the hover circle at 32 % |
-| Snapping guide | 1 px dashed (`4 4`) `--accent` at 60 % opacity, spanning the visible canvas |
-| Valence warning | atom: circle r 13 px (or `extents` box grown 4 px, radius 4) stroke 1.5 px `--warning`, dash `3 2`, no fill; `cannot-kekulize` bonds: 3 px dashed `--warning` line along each bond axis. Hovering the atom shows the warning's `message` as a tooltip. Never exported |
-| Condition slot (Text tool over an arrow) | dashed `--accent` rounded rect (radius 4) 2 BLU wide × capHeight + 8 px, centred where the text will go |
+| Hover (group opacity `--overlay-hover`) | skeleton vertex: filled circle Ø 18; labelled atom: its `extents` box grown 3 px, radius 4; bond: 8 px round-capped band between the atoms; straight or curved arrow: 8 px band along the path; text, plus and other objects: `extents` grown 3 px, radius 4 |
+| Selection (group opacity `--overlay-selection`) | atoms: circle r 12 (labelled: `extents` + 3 px box), omitted for a skeleton vertex whose selected bonds already cover it; bonds: 12 px round-capped bands; objects: as hover but 12 px bands / `extents` + 4 px. Plus the **frame**: union of the selected items' `extents` and vertex points, grown 8 px, 1 px dashed (`4 3`) |
+| Rotate handle | circle Ø 10, white fill, 1.5 px stroke, 24 px above the frame's top centre, joined by a 1 px line; hit Ø 20 |
+| Arrow end handles | 8×8 squares, white fill, 1.5 px stroke, at `from` and `to`; hit 16×16 |
+| Curved-arrow handles | ends: circles Ø 8; bend: 9×9 diamond at the curve's t = 0.5 point; hit 16×16 |
+| Marquee | rectangle, fill at `--overlay-marquee`, 1 px solid stroke |
+| Ghost preview | the would-be parts at `--ghost-opacity`; a merge-target atom gets the hover circle at `--overlay-merge` |
+| Snapping guide | 1 px dashed (`4 4`) line at `--guide-opacity`, across the visible canvas |
+| Valence warning | atom: circle r 13 (labelled: `extents` + 4 px, radius 4), 1.5 px `--warning` stroke, dash `3 2`, no fill; `cannot-kekulize` bonds: 3 px dashed `--warning` line along each bond. Never exported |
+| Condition slot (Text tool near an arrow) | dashed rounded rect (radius 4), 2 BLU wide × `capHeight` + 8 px, centred where the text will go |
+| Chain count | "n" in `--type-xs` `--text-muted`, 12 px below-right of the pointer |
 
-**Cursors**
-
-| Context | Cursor |
-|---|---|
-| Select, empty canvas | `default` |
-| Select, over an item or the selection | `move` |
-| Over a handle | arrow ends and bend: `pointer`; rotate: `grab` (`grabbing` while dragging) |
-| Bond, Chain, Ring, Atom, Arrow, Plus, Curved arrow | `crosshair` |
-| Erase | custom 20×20 `data:` SVG of the `erase` icon, hotspot 4,18; fallback `crosshair` |
-| Text, or over an existing text with any tool | `text` |
-| Space held / middle button | `grab`, `grabbing` while panning |
+**Cursors**: Select: `default` on empty canvas, `move` over an item or the selection; handles:
+`pointer` (arrow ends, bend), `grab`/`grabbing` (rotate); Bond, Chain, Ring, Atom, Arrow, Plus,
+Curly: `crosshair`; Erase: 20×20 `data:` SVG of the `erase` path, hotspot 4,18, fallback
+`crosshair`; Text tool, or over a text with Select: `text`; Space held or middle button: `grab`,
+`grabbing` while panning.
 
 ### Empty state
 
-Shown when the document has no atoms and no objects; removed on the first item. Centred in the
-canvas, `pointer-events` only on the chips:
+Shown when the document has no atoms and no objects (screen 01); removed on the first item.
+Centred in the canvas, 32 px above centre, `pointer-events` only on the chips:
 
-1. The `ring-benzene` glyph drawn at 96 px in `--empty-art` (decorative, `aria-hidden`).
-2. 16 px below, `--type-md` `--text-muted`: "Type a compound name above, or pick a tool and click
-   here."
-3. 12 px below, `--type-sm`: "Try:" followed by three chips (height 28, radius 14, 1 px
-   `--border-control`, padding 0 12, 8 px apart): **ethanol**, **benzene**, **ethanol + acetic
-   acid -> ethyl acetate + water**. Clicking a chip runs that text through the name field (rule N4).
+1. The benzene outline (`ring-benzene` geometry) at 96 px, stroke width 1 in the 24 grid,
+   `--empty-art`, `aria-hidden`.
+2. 16 px below, `--type-md` `--text-muted`: "Type a compound name above, or click anywhere to
+   start drawing."
+3. 12 px below: "Try:" then three chips 8 px apart: **ethanol**, **benzene**, **ethanol + acetic
+   acid -> ethyl acetate + water**. A chip runs its text through the name field (rule N4).
 
-Why: the two fastest first successes are one click away, and the third chip teaches the reaction
-syntax by example without a help page.
+A click on the canvas outside the chips is a normal click of the active tool.
 
 ### Notices and errors
 
-No modal dialogs for anything routine. Two places only:
+No modal dialogs. Two places only:
 
 | Kind | Where | Behaviour |
 |---|---|---|
-| Name not found, scheme part not found, invalid SMILES | the name-field dropdown, one row with `warning` icon on `--warning-bg`: `No compound named “ethanl”.` then "Did you mean" chips (≤ 3, from `suggestions`) | Stays while the text is unchanged; editing the text, Esc, or blur clears it; clicking a chip replaces that part and inserts |
-| Everything else (Kekulé impossible, Expand on a non-abbreviation, nothing to tidy, an op that threw) | the status bar's left slot, `warning` icon + text in `--warning` (errors) or `--text` (info), `role="status"` `aria-live="polite"` | Replaces the hint; cleared by the next canvas action, Esc, or after 8 s |
+| Name not found, scheme part not found, invalid SMILES | the name-field dropdown (screen 07): a `--warning-bg` row with the `warning` icon: `No compound named “ethanl”.`; below it "Did you mean" (`--type-xs`) and ≤ 3 chips from `suggestions`, closest first; `role="alert"`; dropdown `min-width` 320 | Stays while the text is unchanged; editing the text, Esc or blur clears it; a chip replaces the failing part (the whole text for a single name) and inserts |
+| Everything else (Kekulé impossible, nothing to tidy, Expand on a non-abbreviation, a recipe that threw) | the status bar's hint slot: `warning` icon + text in `--warning` (errors) or `--text` (info); the slot has `role="status"` `aria-live="polite"` | Replaces the hint; cleared by the next canvas action, Esc, or after 8 s |
 
-Wording: sentence case, plain, says what happened and what to do, never blames, no codes.
-Examples: "This ring can't be shown with alternating double bonds." · "Nothing to tidy: draw an
-arrow between the molecules first." · "Only abbreviations like Ph or CO2H can be expanded." ·
-"That edit isn't possible here." (`DocError`, which the UI should never cause; also logged to the
-console). chem-core warning `message`s are shown as given.
+Wording: sentence case, plain, says what happened and what to do, never blames, no codes:
+"This ring can't be shown with alternating double bonds." · "Nothing to tidy: draw an arrow
+between the molecules first." · "Only abbreviations like Ph or CO2H can be expanded." · "That
+structure is too big to draw (over 1000 atoms)." · "That edit isn't possible here." (`DocError`,
+which the UI should never cause; also logged with `console.error`). chem-core warning `message`s
+are shown as given.
 
-### Status-bar hints (left slot, `--text-muted`)
+### Status-bar hints (`--type-hint`, `--text-muted`)
 
 | Context | Hint |
 |---|---|
@@ -344,76 +359,82 @@ console). chem-core warning `message`s are shown as given.
 | Plus | "Click to place a plus sign." |
 | Curved arrow | "Drag from an atom or bond to where the electrons go." |
 | Text | "Click to type. Click above or below an arrow for conditions." |
-| Hovering an atom (any drawing tool) | "Type O, N, Cl… to change this atom. Enter for any label." |
-| Hovering a bond (any drawing tool) | "Press 1, 2 or 3 for single, double, triple." |
+| Hovering an atom (hover keys active) | "Type O, N, Cl… to change this atom. Enter for any label." (screen 02) |
+| Hovering a bond (hover keys active) | "Press 1, 2 or 3 for single, double, triple." |
 | Name field focused | "Enter inserts. Write a reaction like: ethanol + acetic acid -> ethyl acetate" |
-| Bond/Chain drag | "Hold Shift for any angle." |
+| Bond or Chain drag | "Hold Shift for any angle." |
+| Label editor open | "Enter finishes. Esc cancels." |
+| Text editor open | "Enter finishes. Shift+Enter starts a new line. Formulas like H2SO4 get their subscripts when you finish." |
 
 ### Keyboard
 
-**K1 Global shortcuts** (any focus except inside a text input, where only Esc, Enter and the text
-editing shortcuts apply):
+**K1 Global shortcuts** (focus anywhere in the editor except a text input or editor, where only
+Esc, Enter and K3 apply; with `shortcuts: 'canvas-only'` the Ctrl rows are left to the host):
 
 | Keys | Command |
 |---|---|
 | Ctrl+Z / Ctrl+Y, Ctrl+Shift+Z | Undo / Redo |
-| Ctrl+C / Ctrl+X / Ctrl+V | Copy / Cut / Paste (in-app; see rule P1) |
+| Ctrl+C / Ctrl+X / Ctrl+V | Copy / Cut / Paste (in-app, rule CB1) |
 | Ctrl+D | Duplicate selection |
 | Ctrl+A | Select all (switches to Select) |
-| Delete, Backspace | Delete selection, else the hovered item |
+| Delete, Backspace | Delete the selection, else the hovered item |
 | Ctrl+F | Focus the name field |
-| Ctrl+= (or Ctrl++), Ctrl+− | Zoom in / out one step |
-| Ctrl+0 / Ctrl+1 | Zoom to fit / 100 % |
+| Ctrl+= (Ctrl++), Ctrl+− | Zoom in / out one step |
+| Ctrl+0 / Ctrl+1 | Zoom to fit (R13) / reset zoom (R12) |
 | Ctrl+Shift+K | Show Kekulé / Show circle |
 | Ctrl+Shift+L | Clean up |
 | Ctrl+Shift+T | Tidy reaction |
-| Arrow keys / Shift+arrow keys | Nudge selection 0.1 / 1.0 BLU (one undo step per run of nudges) |
-| Esc | Cancel gesture → close editor/dropdown → clear selection → switch to Select, one per press |
-| Space (hold) | Pan with the pointer |
+| Arrow keys / Shift+arrow keys | Nudge the selection 0.1 / 1.0 BLU (one undo step per run of nudges) |
+| Esc | One step per press: cancel gesture → close editor/dropdown → clear notice → clear selection → switch to Select |
+| Space (hold, canvas focused) | Pan with the pointer |
 
-**K2 Canvas keys** (canvas focused, no modifier). If an atom or bond is hovered, the key acts on
-it; otherwise it selects a tool.
+**K2 Canvas keys** (canvas focused; R6). If an atom or bond is hovered and the key is one of its
+hover keys, the key acts on it; otherwise a tool key selects that tool; other keys do nothing.
+Hover keys work with every tool except Erase and Text.
 
 | Hovered | Key | Effect |
 |---|---|---|
 | atom | `C` `H` `N` `O` `S` `P` `F` `I` | set element (rule A2) |
 | atom | `L` → Cl, `B` → Br | set element |
-| atom | `+` (also `=`), `-` | charge +1 / −1 |
-| atom | Enter | open label editor |
-| bond | `1` `2` `3` | order single / double / triple (stereo cleared) |
-| bond | `W` / `H` | wedge / hash; again reverses the direction |
+| atom | `+` / `=`, `-` | charge +1 / −1 (clamped −4…4) |
+| atom | `1` `2` `3` | sprout a single / double / triple bond in P1's direction (R5) |
+| atom | Enter | open the label editor |
+| bond | `1` `2` `3` | set order single / double / triple (stereo cleared) |
+| bond | `W` / `H` | wedge / hash; again reverses the direction (rule B5) |
 | atom or bond | Delete, Backspace | erase it (rule E2) |
-| nothing | `V` `E` `B` `Z` `R` `L` `A` `+` `M` `T` | select tool (table above) |
+| — | `V` `E` `B` `Z` `R` `L` `A` `+` `M` `T` | select that tool |
 
-**K3 Text editing shortcuts** (label or text editor focused): Enter commits, Shift+Enter new line
-(text editor only), Esc cancels, Ctrl+B bold, Ctrl+I italic, Ctrl+Shift+D inserts Δ,
-Ctrl+Shift+H inserts hν.
+**K3 Editor keys** (label or text editor focused): Enter commits; Shift+Enter new line (text
+only); Esc cancels; Ctrl+Z / Ctrl+Y local undo/redo (R7); text only: Ctrl+B bold, Ctrl+I italic,
+Ctrl+= subscript, Ctrl+Shift+= (Ctrl++) superscript, Ctrl+Shift+D inserts Δ, Ctrl+Shift+H
+inserts hν.
 
-**K4 Tab order**: name field → options bar (one tab stop; ←/→ move within, roving `tabindex`) →
-Undo → Redo → rail (one tab stop; ↑/↓ move, Enter/Space activates; `role="toolbar"`
+**K4 Tab order**: name field → options bar (one tab stop; ←/→ move, roving `tabindex`) → Undo
+→ Redo → rail (one tab stop; ↑/↓ move, Enter/Space activates; `role="toolbar"`
 `aria-orientation="vertical"`) → canvas (`role="application"`, `aria-label="Drawing canvas"`,
-`aria-describedby` the status hint) → status-bar controls. Shift+Tab reverses.
+`aria-describedby` the hint) → status-bar controls (warnings, Slides, Handout, zoom −, readout,
+zoom +, fit). Shift+Tab reverses. Empty-state chips sit after the canvas in tab order while shown.
 
-**K5 Focus management**: pressing a rail or options button with the mouse does not move focus
-(`mousedown` default prevented), so tool and hover keys keep working on the canvas; activating by
-keyboard keeps focus on the button. Clicking the canvas focuses it. Committing or cancelling a
-label/text editor returns focus to the canvas. After a name insert the field keeps focus and is
-cleared (several compounds in a row); Esc in an empty field returns focus to the canvas. On launch
-the canvas has focus.
+**K5 Focus**: a mouse press on a rail, options or status button does not take focus
+(`mousedown` default prevented) and, if focus was in the name field, moves it to the canvas, so
+tool and hover keys work at once; keyboard activation keeps focus on the button. Clicking the
+canvas focuses it (committing an open editor). Committing or cancelling an editor returns focus
+to the canvas. After a name insert the field keeps focus and is cleared (several compounds in a
+row); Esc in the field: close dropdown → clear text → focus the canvas. At launch the canvas has
+focus (Decision 5).
 
 ### Accessibility
 
-- Every tool and action is reachable by keyboard (K1–K4). Drawing gestures need a pointer; a
+- Every tool and action is reachable by keyboard (K1–K4). Drawing needs a pointer; a
   keyboard-only user draws through the name field and edits with select-all, delete, nudge, flip
   and the selection actions.
-- Visible focus on every control (`:focus-visible` ring); the canvas shows a 2 px inset `--accent`
-  outline when focused by keyboard.
-- Contrast per the token table (all text ≥ 4.5:1, control boundaries and indicators ≥ 3:1).
-  Selected state never relies on colour alone (indicator bar / underline).
-- Hit targets: rail 40 px, top bar 32 px, options 28 px, status 24 px (all ≥ 24 px, WCAG 2.5.8);
-  canvas hit tolerances are in screen pixels, independent of zoom (rule H1).
-- `prefers-reduced-motion: reduce` turns off every transition and animated pan.
-- Live region: the status slot announces notices and the inserted compound ("Inserted ethanol").
+- Visible focus on every control; the canvas shows a 2 px inset `--accent` outline when focused by
+  keyboard.
+- Contrast per the pairs table; hit targets: rail 56×48, top bar 32, options 32, status 24 (all
+  ≥ 24 px, WCAG 2.5.8); canvas tolerances in screen px, independent of zoom (H1).
+- `prefers-reduced-motion: reduce` turns off every transition and the reveal pan.
+- The hint slot announces notices and inserts ("Inserted ethanol"); rail captions are
+  `aria-hidden` (the button's `aria-label` carries the name and key, e.g. "Bond (B)").
 - Works at Windows display scaling 100–200 % (all sizes are CSS px).
 
 ---
@@ -422,44 +443,48 @@ the canvas has focus.
 
 ### Where the code lives
 
-`src/renderer/editor/` (coverage target 70 % lines, `SPEC.md`). Imports from core only through
-`@core/doc-model`, `@core/chem-core`, `@core/svg-render` (their `index.ts`). Never `openchemlib`.
+`src/renderer/editor/` (coverage target 70 % lines). Imports core only as `@core/doc-model`,
+`@core/chem-core`, `@core/svg-render`. Never `openchemlib`.
 
 ```
 src/renderer/editor/
   index.ts              public entry (named exports only)
   model/                pure, DOM-free, React-free: data in, data out
     geometry.ts         vectors, angles, snapping, distance to segment / quadratic
-    viewport.ts         BLU ↔ pt ↔ screen, zoom steps, fit, pan clamp
+    viewport.ts         BLU ↔ pt ↔ screen, zoom steps, default zoom, fit, reveal, pan clamp
     hit-test.ts         hitTest, marquee selection
     placement.ts        sprout direction, chain points, ring placement, insert placement
-    templates.ts        ring SubDocs (generated) and the chair (fixed coordinates)
+    templates.ts        ring SubDocs (generated)
     commands.ts         recipes: (doc, args) => Doc, built only from core ops
     cleanup.ts          orphan-carbon rule
-    selection.ts        fragment closure, scope, selection sets
-    chem-text.ts        formatChemText, runsToSource
-    scheme-text.ts      split "A + B -> C" and lay out a scheme
+    selection.ts        fragment closure, scope, narrowing, selection sets
+    text-edit.ts        editing model for the label/text editors (runs, caret, ops, local undo)
+    chem-text.ts        finishText (auto-formatting on commit), fromStored, labelDisplayRuns
+    formula.ts          Formula / Hill string → display runs (real sub/sup)
+    scheme-text.ts      split "A + B -> C", build and lay out a scheme
     tidy.ts             tidyReaction, conditionPosition
     overlay.ts          overlay shapes in screen px from state + scene
     keymap.ts           key event → command / tool / hover action
-    derive.ts           perception + scene for a doc (last-one cache)
-  tools/                pure state machines, one file per tool (+ tool.ts interface)
+    derive.ts           perception + scene for a doc (last-one caches)
+    patch.ts            keyed-part patch plan (old keys/markup → new parts)
+  tools/                pure state machines, one file per tool, plus tool.ts
   state/
     editor-state.ts     EditorState type, initial state
     reducer.ts          reduce(state, action, ctx) → state
-    store.ts            createStore: getState / dispatch / subscribe (useSyncExternalStore)
+    store.ts            createStore: getState / dispatch / subscribe
     controller.ts       createEditorController (host API)
   view/                 thin React components
-    Editor.tsx  TopBar.tsx  NameField.tsx  OptionsBar.tsx  ToolRail.tsx  StatusBar.tsx
-    Canvas.tsx  Overlay.tsx  LabelEditor.tsx  TextEditor.tsx  EmptyState.tsx  Tooltip.tsx
-    icons.tsx  tokens.css  editor.css
+    Editor.tsx TopBar.tsx NameField.tsx OptionsBar.tsx ToolRail.tsx StatusBar.tsx Canvas.tsx
+    Overlay.tsx TextBox.tsx text-dom.ts EmptyState.tsx Tooltip.tsx Icon.tsx use-store.ts
+    tokens.css icons.svg editor.css
 ```
 
-`model/`, `tools/` and `state/` (except `store.ts`'s React hook, which lives in `view/use-store.ts`)
-are DOM-free: an ESLint block bans `react`, `react-dom`, `electron` imports and the globals
-`window`, `document`, `navigator`, `requestAnimationFrame`, `performance`, `Date` there (clock is
-injected), proven by a tooling probe. React components hold no logic beyond wiring events to
-`dispatch` and mapping state to elements.
+`model/`, `tools/` and `state/` are DOM-free and React-free: an ESLint block bans `react`,
+`react-dom`, `electron` imports and the globals `window`, `document`, `navigator`,
+`requestAnimationFrame`, `performance`, `setTimeout`, `Date` there (the clock is injected),
+proven by a tooling probe. React components hold no logic beyond wiring events to `dispatch` and
+mapping state to elements; DOM-only helpers (`text-dom.ts`: selection ↔ offsets, IME reconcile)
+live in `view/` and are tested by e2e.
 
 ### State model
 
@@ -471,40 +496,43 @@ interface EditorState {
   tool: ToolId;                     // 'select' | 'erase' | 'bond' | 'chain' | 'ring' | 'atom'
                                     // | 'arrow' | 'plus' | 'curved' | 'text'
   variants: { bond: BondVariant; ring: RingTemplate; atom: AtomItem;
-              arrow: ArrowKind; curved: 'full' | 'fishhook' };
+              arrow: 'forward' | 'equilibrium' | 'resonance' | 'no-go';
+              curved: 'full' | 'fishhook' };
   hover: Hit | null;
   gesture: GestureState | null;     // the active tool's machine state (discriminated union)
-  preview: Preview | null;          // { doc: Doc; added: ReadonlySet<ItemKey>; mergeTarget?: AtomId;
+  preview: Preview | null;          // { doc; added: ReadonlySet<ItemKey>; mergeTarget?: AtomId;
                                     //   translate?: { keys: ItemKey[]; dx: number; dy: number } }
-  viewport: Viewport;               // { zoom: number; pan: { x: number; y: number } } (screen px)
-  editing: LabelEditing | TextEditing | null;
+  viewport: Viewport;               // { zoom: number; pan: Point (screen px); size: Size }
+  editing: LabelEditing | TextEditing | null;   // target + TextEditState (text-edit.ts)
   nameField: { text: string; open: boolean; highlighted: number; error: NameError | null };
-  notice: Notice | null;
-  clipboard: SubDoc | null;         // in-app clipboard
+  notice: Notice | null;            // { id: number; kind: 'info' | 'error'; text: string }
+  clipboard: SubDoc | null;
   spaceHeld: boolean;
 }
 ```
 
 | Undoable (in `history`) | Not undoable (editor state) |
 |---|---|
-| every document change, including preset switch, Clean up, Kekulé toggle, Tidy, captions | selection, hover, tool, variants, viewport, previews, editors, name-field text, notices, clipboard |
+| every document change: gestures, label/text commits, inserts, Clean up, Kekulé toggle, Expand, Tidy, preset switch | selection, hover, tool, variants, viewport, previews, editors, name-field text, notices, clipboard |
 
 The **store** is a plain object with `getState`, `dispatch(action)`, `subscribe`; the reducer is
-pure: `reduce(state, action, ctx)` where `ctx = { derive, names, clock }`. React subscribes with
-`useSyncExternalStore` and selector functions. No Zustand (listed in `SPEC.md` but never
-installed; see "Required changes").
+pure: `reduce(state, action, ctx)` with `ctx = { derive, names, clock }`. React subscribes with
+`useSyncExternalStore` (server snapshot = client snapshot, so `react-dom/server` can render
+views in node tests). Timers (notice expiry, tooltip delays, pointer-move coalescing) live in
+`view/` and dispatch actions.
 
 **Derived data** (`derive.ts`): `derive(doc) → { perception, scene }` with a one-entry cache keyed
-by doc identity and one `createPerceiver()` per controller; the preview doc gets its own
+by doc identity and one `createPerceiver()` per controller; the preview doc has its own
 one-entry cache. `scene = render(doc, { perception })`.
 
 ### Coordinates
 
-Doc in BLU (y down) → pt (`bluToPt`, × bondLength) → screen px: `s = pt · zoom · 4/3 + pan`
-(zoom 1 = 100 % = true size: 1 pt = 4/3 CSS px, as PowerPoint shows it at 100 %). Pointer
-events are converted once, at the edge, into BLU for the tools; tolerances stay in screen px.
+Doc in BLU (y down) → pt (`bluToPt(p, scene.style)`) → screen px: `s = pt · k + pan`, `k = zoom ·
+4/3` (zoom 1 = 100 % = true size: 1 pt = 4/3 CSS px, as PowerPoint shows it at 100 %; at 150 %,
+1 pt = 2 px). Pointer events are converted once, at the edge, into BLU for the tools; tolerances
+stay in screen px.
 
-### Tools and gestures (state machines)
+### Tools and gestures
 
 ```ts
 type CanvasEvent =
@@ -522,60 +550,67 @@ interface ToolContext { doc: Doc; scene: Scene; perception: Perception; selectio
 interface ToolStep<G> {
   gesture: G | null;                 // null = idle
   preview?: Preview | null;          // undefined = unchanged
-  commit?: { label: string; recipe: (d: Doc) => Doc; select?: 'inserted' | Selection };
+  commit?: { label: string; recipe: (d: Doc) => Doc; select?: 'inserted' | Selection;
+             coalesceKey?: string };
   selection?: Selection;
+  editing?: 'label' | 'text';        // open an editor on the hit after the commit
   notice?: Notice;
 }
 ```
 
-- Every tool is idle → (down) pressed → (move beyond 4 px) dragging → (up) commit, or (up within
-  4 px) click → commit. `cancel` (Esc, right button, pointer capture lost, window blur) returns to
-  idle with no commit and clears the preview.
-- **Previews never touch history**: the tool builds `preview.doc` by running the same recipe on
-  the committed doc outside `transact` (plain ops on a frozen doc). Because ids come from
-  `nextId`, preview ids equal the ids the commit will issue, so `added` (keys not in the committed
-  scene) marks the ghost parts.
+- Every tool is idle → (down, button 0) pressed → (move beyond 4 px) dragging → (up) commit, or
+  (up within 4 px) click. `cancel` (Esc, right button down, pointer capture lost, window blur)
+  returns to idle with no commit and clears the preview.
+- **Previews never touch history**: the tool runs the same recipe on the committed doc outside
+  `transact` (plain ops on a frozen doc). Because ids come from `nextId`, preview ids equal the ids
+  the commit will issue, so `added` (keys not in the committed scene) marks the ghost parts.
 - **One gesture = one `transact`**, label = the action name ("Add bond", "Add ring", "Move",
-  "Rotate", "Erase", "Change atom" …). Nudges use `coalesceKey: 'nudge'`; any other action closes
-  the run (doc-model clears `openKey` on a different key).
-- A recipe that throws (`DocError`, `ChemError`) leaves history unchanged; the store shows a
-  notice (rule X1).
+  "Rotate", "Erase", "Change atom", "Edit text" …). Nudges use `coalesceKey: 'nudge'`.
+- A recipe that throws leaves history unchanged; the store shows a notice (rule X1).
 - Pointer moves are coalesced to one dispatch per animation frame (latest event wins) in
-  `Canvas.tsx`; the reducer itself is synchronous.
+  `Canvas.tsx`; the reducer is synchronous.
 
 ### Rendering
 
 1. `Canvas.tsx` holds one `<svg>` filling the canvas with `<g data-layer="content"
-   transform="matrix(k 0 0 k panX panY)">`, k = zoom · 4/3. Inside it, one `<g data-key="…">` per
-   scene part, in paint order, whose content is set from `part.svg` (svg-render's allow-listed,
-   escaped markup; parsed in the SVG namespace).
-2. Patching follows svg-render's editor contract: keep a `Map<ItemKey, SVGGElement>`; on a new
-   scene, replace the content only where `svg` changed, insert new keys, remove missing ones,
-   and fix order with `insertBefore`. React does not own these children (a ref +
-   `useLayoutEffect`).
+   transform="matrix(k 0 0 k panX panY)">`. Inside it, one `<g data-key="…">` per scene part, in
+   paint order, whose content is `part.svg` (svg-render's allow-listed, escaped markup, set with
+   `innerHTML` on the SVG `<g>`, which parses in the SVG namespace).
+2. Patching follows svg-render's editor contract: `patch.ts` turns (mounted keys and markup, new
+   parts) into a plan — replace content where `svg` changed, insert new keys, remove missing ones,
+   reorder with `insertBefore`; `Canvas.tsx` applies it to a `Map<ItemKey, SVGGElement>` from a ref
+   in `useLayoutEffect`. React does not own these children.
 3. While a preview is active the preview scene is mounted the same way; parts whose key is in
-   `preview.added` get `opacity="0.45"`. Cancelling remounts the committed scene (only changed
-   parts are touched).
-4. **Drag fast path**: when a move drags a set of items that no unmoved part depends on (the
-   selection is whole fragments plus objects, no unselected curved arrow, callout or caption
-   refers to a moved atom or bond), the preview is `translate` only: the moved parts' `<g>` get
+   `preview.added` get `opacity` `--ghost-opacity`. Cancelling remounts the committed scene (only
+   changed parts are touched).
+4. **Drag fast path**: when a move drags a set of items no unmoved part depends on (whole
+   fragments plus objects; no unselected curved arrow, callout or caption refers to a moved atom
+   or bond), the preview is `translate` only: the moved parts' `<g>` get
    `transform="translate(dx dy)"` (pt) and nothing is re-rendered until release. Otherwise every
    frame renders `preview.doc`.
-5. **Overlay** (`Overlay.tsx`) is a second `<svg>` above the first, `pointer-events: none`
-   (handles re-enable it), in screen px with no transform; its shapes come from the pure
-   `overlayShapes(state, scene) → OverlayShape[]` (hover, selection, frame, handles, marquee,
-   guides, warnings, condition slot). Strokes are therefore crisp at every zoom.
-6. Label and text editors are absolutely positioned HTML over the canvas.
+5. **Overlay** (`Overlay.tsx`) is a second `<svg>` above the first, `pointer-events: none`, in
+   screen px with no transform; its shapes come from the pure `overlayShapes(state, scene) →
+   OverlayShape[]`, grouped by kind with group opacity. Strokes are crisp at every zoom.
+6. The label and text editors (`TextBox.tsx`) are absolutely positioned HTML over the canvas.
 
 ### Hit-testing
 
-`hitTest(doc, scene, viewport, screenPoint) → Hit | null`, pure, linear scan (budget below):
+`hitTest(doc, scene, viewport, screenPoint, opts) → Hit | null`, pure, linear scan.
+
+```ts
+type Hit =
+  | { kind: 'atom'; id: AtomId } | { kind: 'bond'; id: BondId }
+  | { kind: 'object'; id: ObjectId; type: DrawObjectType }
+  | { kind: 'handle'; handle: 'rotate' | 'arrow-from' | 'arrow-to' | 'curve-from' | 'curve-to'
+      | 'curve-bend'; id?: ObjectId }
+  | { kind: 'slot'; arrow: ObjectId; slot: 'above' | 'below' };   // Text tool only (T1)
+```
 
 | H# | Rule |
 |---|---|
-| H1 | Tolerances in screen px: atom 10 px radius around the vertex, or inside its `extents['atom:id']` grown 4 px for a labelled atom; bond 6 px from the segment between its atoms; straight arrow 6 px from `from→to`; curved arrow 6 px from the quadratic sampled at 32 steps (anchors via `resolveAnchor`); handles 8 px; text, caption, plus, bracket, shape, callout: inside `extents` grown 4 px |
-| H2 | Priority: handles of the selection > atoms > bonds > text-like objects > arrows > curved arrows > plus > brackets > shapes. Within a class, the nearest wins; ties by lower id number |
-| H3 | Merge target while dragging an atom or bond end: the nearest other atom within 12 px (screen) or 0.3 BLU, whichever is larger, excluding the atoms being moved |
+| H1 | Tolerances in screen px: atom 10 px around the vertex, or inside its `extents['atom:id']` grown 4 px for a labelled atom; bond 6 px from the segment between its atoms; straight arrow 6 px from `from→to`; curved arrow 6 px from the quadratic sampled at 32 steps (anchors via `resolveAnchor`); handles: their hit boxes; text, caption, plus, bracket, shape, callout: inside `extents` grown 4 px |
+| H2 | Priority: handles of the selection > atoms > bonds > text-like objects (text, caption, callout) > straight arrows > curved arrows > plus > brackets > shapes. Within a class the nearest wins; ties by lower id number |
+| H3 | Merge target while dragging an atom or a bond end: the nearest other atom within 12 px (screen) or 0.3 BLU, whichever is larger, excluding the atoms being moved |
 | H4 | Marquee: atoms whose position is inside; bonds whose two atoms are inside; objects whose `extents` box is entirely inside. Shift adds to the selection |
 
 ### Seam to the host (`app-shell`, `clipboard-export`)
@@ -584,7 +619,8 @@ interface ToolStep<G> {
 // src/renderer/editor/index.ts
 export { Editor } from './view/Editor';                 // <Editor controller={c} />
 export { createEditorController } from './state/controller';
-export type { EditorController, EditorOptions, EditorCommand, EditorEvent } from './state/controller';
+export type { EditorController, EditorOptions, EditorCommand, EditorEvent, HostHit }
+  from './state/controller';
 
 interface EditorOptions {
   doc?: Doc;                         // default emptyDoc(clock())
@@ -596,7 +632,7 @@ interface EditorOptions {
 interface EditorController {
   getDoc(): Doc;
   getSelection(): Selection;
-  load(doc: Doc): void;              // new history, cleared selection, marks saved, fits view
+  load(doc: Doc): void;              // new history, cleared selection, marks saved, V2 view
   markSaved(): void;                 // dirty := false
   isDirty(): boolean;                // doc differs from `saved` ignoring meta.modified
   run(cmd: EditorCommand): void;
@@ -607,92 +643,117 @@ interface EditorController {
 }
 type EditorCommand =
   | 'undo' | 'redo' | 'cut' | 'copy' | 'paste' | 'duplicate' | 'delete' | 'select-all'
-  | 'zoom-in' | 'zoom-out' | 'zoom-fit' | 'zoom-100' | 'clean-up' | 'toggle-kekule'
+  | 'zoom-in' | 'zoom-out' | 'zoom-fit' | 'zoom-reset' | 'clean-up' | 'toggle-kekule'
   | 'tidy-reaction' | 'focus-name-field'
   | { type: 'set-preset'; preset: StylePreset }
   | { type: 'paste-sub'; sub: SubDoc }        // host read a Chalkbond fragment from the clipboard
   | { type: 'insert-text'; text: string };    // host read text (name, SMILES, Molfile)
-type EditorEvent = { type: 'doc' | 'selection' | 'dirty' | 'history' | 'notice' };
+type HostHit = { kind: 'atom'; id: AtomId } | { kind: 'bond'; id: BondId }
+  | { kind: 'object'; id: ObjectId };
+type EditorEvent =
+  | { type: 'doc' | 'selection' | 'dirty' | 'history' | 'notice' }
+  | { type: 'context-menu'; target: HostHit | null; screen: Point };   // CM1
 ```
 
 - `clipboard-export` renders with svg-render from `getDoc()` and `getSelection()` (or the
   `onCopy` payload); the editor never builds export SVG.
 - `app-shell` owns save/open and calls `load` / `markSaved`; it shows the dirty marker from the
-  `dirty` event; its menus call `run` and enable items with `canRun`.
-- **Before app-shell exists** `App.tsx` (scaffold) renders `<Editor controller={…} />` inside
-  `canvas-area` with default options and `shortcuts: 'all'`; this is enough to run and e2e-test
-  everything in this spec.
-- Test hooks: every control has a `data-testid`; each mounted part's `<g>` has `data-key`; the
-  status-bar formula has `data-testid="formula"`. No test-only globals.
+  `dirty` event; its menus call `run` and enable items with `canRun`; it may answer
+  `context-menu` with a native menu.
+- **Before app-shell exists**, `App.tsx` (scaffold) renders `<Editor controller={…} />` filling
+  the window with default options and `shortcuts: 'all'`, inside an element that keeps
+  `data-testid="canvas-area"`; this is enough to run and e2e-test everything in this spec.
+- Test hooks: every control has a `data-testid` (`tool-<id>`, `opt-<variant>`, `act-<action>`,
+  `undo`, `redo`, `name-field`, `name-dropdown`, `hint`, `formula`, `warnings`, `preset-slides`,
+  `preset-handout`, `zoom-out`, `zoom-reset`, `zoom-in`, `zoom-fit`, `canvas`, `text-editor`,
+  `label-editor`, `empty-state`); each mounted part's `<g>` has `data-key`; the content layer
+  carries its transform. No test-only globals; e2e reads document geometry from part bounding
+  boxes and the content transform.
 
 ### Dependencies
 
-**None new.** Uses React 19.3.1, Immer (through doc-model), Zod (through chem-core), and the JSON
-import of `resources/compounds/compounds.json` (Vite JSON module; `resolveJsonModule` is on).
-Zustand is not added (a 40-line store does the job). jsdom/Testing Library are not added (see
-"Testing"; Open question 8 says when to ask).
+**None new.** React 19.3.1 and `react-dom/server` (installed), Immer and Zod through core, the
+JSON import of `resources/compounds/compounds.json` (`resolveJsonModule` is on), Vite `?raw`
+imports for `icons.svg`.
 
 ---
 
 ## Behaviour rules
 
-Numbered so tasks can cite them. "Scope" = the selection's atoms/objects, or the whole document
-when nothing is selected.
+Numbered so tasks can cite them.
 
 ### General
 
 - **G1** Every document change is one `transact` with a human label. No document change happens
-  outside a gesture commit, a command, or a selection action.
-- **G2** Undo/redo clear selection, hover, preview, open editors and any gesture.
-- **G3** Switching tool cancels any gesture and closes editors (committing a text/label editor
-  first); selection is kept only when switching to Select, else cleared.
-- **G4** Atoms are placed at exactly 1.0 BLU bond length by every tool; nothing scales bonds.
+  outside a gesture commit, an editor commit, a command or a selection action.
+- **G2** Undo/redo clear selection, hover, preview and any gesture; they are not available while
+  an editor is open (R7).
+- **G3** Switching tool cancels any gesture and commits an open editor; the selection is kept
+  only when switching to Select.
+- **G4** Atoms are placed at exactly 1.0 BLU bond length by every drawing tool. Only moving a
+  single atom (S2) changes bond lengths.
 
 ### Viewport
 
-- **V1** Zoom steps: 25, 33, 50, 67, 75, 90, 100, 125, 150, 200, 250, 300, 400 %. Range clamps to
-  25–400 %. Ctrl+wheel and touchpad pinch zoom continuously about the pointer (factor
-  1.0015^(−deltaY), clamped); buttons and keys step about the canvas centre.
-- **V2** New or loaded document: zoom 100 % for `slides`, 250 % for `journal` (bond ≈ 48–53 px on
-  screen); empty doc: origin at the canvas centre; non-empty: fit.
-- **V3** Fit: the scene `bounds` (pt) plus 48 px margin each side, zoom ≤ 200 %, centred.
+- **V1** Zoom steps: 25, 33, 50, 67, 75, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600, 800 %;
+  range 25–800 % (R1). Ctrl+wheel and touchpad pinch zoom continuously about the pointer (factor
+  1.0015^(−deltaY), clamped); buttons and keys step about the canvas centre to the next step
+  above/below the current zoom. The readout shows the zoom rounded to a whole percent.
+- **V2** Default zoom `z₀ = 1.5 × 40 / bondLength` (bondLength from `resolveStyle(doc.style)`),
+  clamped to the range: 150 % Slides, 416.67 % Handout. New or loaded document: zoom `z₀`; empty
+  → the doc origin at the canvas centre; non-empty → ink box centred, and if it does not fit with
+  a 48 px margin, zoom to fit (V3).
+- **V3** Fit (R13): zoom = the largest whole percent ≤ `z₀` at which the scene `bounds` (pt) plus
+  48 px on every side fit the canvas; centred.
 - **V4** Wheel pans vertically, Shift+wheel horizontally; Space+drag and middle-drag pan. Pan is
-  clamped so at least 64 px of the content's bounds stay on screen (no losing the drawing).
-- **V5** After an insert (name, paste, duplicate) whose ink box is not fully visible, pan to
-  centre it (animated 160 ms unless reduced motion); if larger than the canvas, fit.
-- **V6** Preset switch keeps the drawing's on-screen size: zoom is multiplied by
-  oldBondLength / newBondLength (unclamped to steps, clamped to range) about the canvas centre,
-  so only line weights and text change visibly.
+  clamped so at least 64 px of the content's bounds stay on screen.
+- **V5** **Reveal** after a name insert, scheme insert, paste, duplicate or Tidy reaction: if the
+  document's ink box is fully visible inside a 48 px margin, nothing; else if it fits at the
+  current zoom, pan by the smallest amount that brings it inside the margin; else set zoom to
+  `min(fit zoom, z₀)` when that is below the current zoom, centred on the ink box (Decision 8).
+  Pans animate over `--motion-pan` (none under reduced motion).
+- **V6** Preset switch keeps the drawing's on-screen size: zoom × oldBondLength / newBondLength
+  (not snapped to steps, clamped to the range), about the canvas centre.
 
 ### Hover
 
 - **HV1** With any tool except Erase and Text, hovering an atom or bond (H1/H2) highlights it and
-  enables K2 hover keys. Erase highlights what it would erase. Text highlights texts and condition
-  slots only.
-- **HV2** Hovering an atom with a warning shows the warning message tooltip after 500 ms.
+  enables K2 hover keys. Select also highlights objects. Erase highlights what it would erase.
+  Text highlights texts and condition slots only.
+- **HV2** Hovering an atom or bond with a warning shows the warning's `message` as a tooltip
+  after 500 ms (screen 08).
 
 ### Select tool
 
-- **S1** Click on an atom or bond selects its whole fragment (atoms + bonds). Alt+click selects
-  only that atom or bond. Click on an object selects it. Shift+click toggles that item (fragment
-  rule applies) in the selection. Click on empty canvas clears the selection.
-- **S2** Drag from a selected item moves the selection; drag from an unselected item first
-  selects it (S1) then moves; drag from empty canvas draws a marquee (H4).
+- **S1** Click (press and release within 4 px) — Decision 6:
+  - on an atom or bond whose fragment is **not** fully selected: the selection becomes that
+    whole fragment (atoms + bonds);
+  - on an atom or bond of a fragment that **is** fully selected: the selection becomes just that
+    atom or bond (narrowing; any other selected items are dropped);
+  - on an object: the selection becomes that object;
+  - Alt+click on an atom or bond: the selection becomes just that atom or bond;
+  - Shift+click: toggles the item's fragment (or the object, or with Alt the single atom/bond)
+    in or out of the selection;
+  - on empty canvas: clears the selection.
+- **S2** Drag: from an item in the selection moves the selection as it is (no narrowing); from an
+  item not in the selection first applies S1's click rule for that item (with its modifiers),
+  then moves; from empty canvas draws a marquee (H4); from a handle runs the handle (S5, S6).
 - **S3** Moving: `transformItems(doc, sel, translation(dx, dy))` committed once on release
   ("Move"). Shift constrains to horizontal or vertical. Snapping: if the moving ink box's centre
-  x or y comes within 6 px (screen) of the centre of another fragment's or object's ink box, it
-  snaps and a guide is shown; Alt disables snapping.
-- **S4** When the moved set is exactly one atom (Alt-selected) and it is released over a merge
-  target (H3), the commit is `mergeAtoms(doc, target, moved)` after the move ("Join atoms").
+  x or y comes within 6 px (screen) of the centre x or y of another fragment's or object's ink
+  box, it snaps and a guide is drawn.
+- **S4** When the moved set is exactly one atom and it is released over a merge target (H3), the
+  commit is the move plus `mergeAtoms(doc, target, moved)` ("Join atoms").
 - **S5** Rotate handle: rotation about the centre of the selection frame, snapped to 15°
   (Shift: free); one "Rotate" commit.
 - **S6** Arrow end handle: moves that end; the angle to the other end snaps to 15° (Shift: free);
-  attached texts are re-placed by T3. Curved-arrow end handle: re-anchors onto the hit atom
-  (atom anchor), bond (bond anchor, t = 0.5) or a point; bend handle sets
-  `bend = 2 · d / chordLength`, d = signed distance of the pointer from the chord midpoint along
-  the left normal of `from→to`.
-- **S7** Double-click: on an atom opens the label editor (any tool except Erase); on a text or
-  caption opens the text editor.
+  attached texts are re-placed by T3 in the same commit. Curved-arrow end handle: re-anchors onto
+  the hit atom (`{ kind: 'atom', atom }`), bond (`{ kind: 'bond', bond, t: 0.5 }`) or a point;
+  bend handle sets `bend = 2 · d / chordLength`, d = signed distance of the pointer from the
+  chord midpoint along the left normal of `from→to` (t = 0.5 of svg-render's quadratic lies at
+  `bend · chord / 2` from the midpoint). One "Adjust arrow" commit.
+- **S7** Double-click (Select only, R2): on an atom opens the label editor; on a `text` object
+  opens the text editor. Elsewhere it is two clicks.
 - **S8** Delete / Backspace: `deleteItems` on the selection plus the orphan rule (E2), "Delete".
 
 ### Erase tool
@@ -701,223 +762,262 @@ when nothing is selected.
   opacity 0.3 while dragging), one "Erase" commit on release.
 - **E2** **Orphan rule**: after any deletion, an atom that lost a bond in this commit and now has
   no bonds is also deleted if it is a plain skeleton carbon (element `C`, no label, charge 0,
-  radical 0, no lone pairs, isotope, explicitH, partialCharge, number or colour). Otherwise a
-  deleted bond would leave a stray "CH₄".
+  radical 0, no lone pairs, isotope, explicitH, partialCharge, number or colour), unless a curved
+  arrow, callout or caption refers to it. A deleted bond would otherwise leave a stray "CH₄".
 
-### Bond tool (variant: single · double · triple · wedge · hash · wavy)
+### Bond tool (single · double · triple · wedge · hash)
 
-The new bond gets the variant's order/stereo (`wedge`/`hash`/`wavy` are order 1); its `a1` is the
-start atom, so a wedge's narrow end is where the gesture started.
+The new bond gets the option's order/stereo (wedge and hash are order 1); its `a1` is the start
+atom, so a wedge's narrow end is where the gesture started.
 
-- **B1** Click on empty canvas: atom at p, second atom at p + (cos 30°, −sin 30°) (up-right), bond.
+- **B1** Click on empty canvas: atom at p, second atom at p + (cos 30°, −sin 30°) (up-right),
+  bond.
 - **B2** Drag from empty canvas: first atom at the press point; the second follows the pointer's
   direction snapped to multiples of 30° (Shift: free), at 1.0 BLU. If the end is over a merge
-  target (H3), the bond ends on that atom instead (no new atom).
+  target (H3), the bond ends on that atom (no new atom); if the two atoms are already bonded,
+  nothing is committed.
 - **B3** Click on an atom: sprout in the default direction (P1); if the new position is within
-  0.25 BLU of an existing atom not yet bonded to it, bond to that atom (ring closure); if bonded
-  already, use the next candidate direction of P1.
+  0.25 BLU of an existing atom not bonded to it, bond to that atom (ring closure); if bonded
+  already, use P1's next candidate.
 - **B4** Drag from an atom: as B2, starting at that atom.
-- **B5** Click on a bond: variant single: if the bond has stereo, clear it; else cycle order
-  1 → 2 → 3 → 1 (1.5 → 2). Double: if order ≠ 2, set 2; else cycle `doublePlacement` auto → left
-  → right → center → auto. Triple: set 3. Wedge/hash: if the stereo differs, set it with the
-  narrow end at the atom nearer the click (reversing as below if needed); if equal, reverse.
-  Wavy: set wavy. Reverse = delete the bond and add it with `a1`/`a2` swapped and the same fields,
-  in one commit.
-- **B6** The preview (ghost) is shown while hovering (click result) and while dragging.
+- **B5** Click on a bond (a press on a bond never drags): single: if the bond has stereo, clear
+  it; else cycle order 1 → 2 → 3 → 1 (1.5 → 2). Double: if order ≠ 2, set 2; else cycle
+  `doublePlacement` auto → left → right → center → auto. Triple: set 3. Wedge/hash: if the stereo
+  differs, set it with the narrow end at the atom nearer the click (reversing if needed); if
+  equal, reverse. **Reverse** = in one recipe: delete the bond, add it with `a1`/`a2` swapped and
+  the same fields, and point every curved arrow / callout anchor that referred to the old bond at
+  the new one with `t' = 1 − t`.
+- **B6** A ghost preview shows the click result while hovering and the drag result while
+  dragging.
 
 ### Placement rules
 
-- **P1** **Default sprout direction** from atom X with neighbour unit vectors u₁…uₙ:
-  n = 0: 30° up-right. n = 1: the two directions at ±120° from u₁; pick the one farther from the
-  neighbour's other neighbours (zig-zag continues); tie → the more upward, then the more
-  rightward. n ≥ 2: the bisector of the largest angular gap between neighbours (ties: the gap that
-  starts at the smallest angle counter-clockwise from +x). "Next candidate" = the other ±120° one,
-  then the bisector of the second-largest gap.
-- **P2** **Chain**: zig-zag of single bonds from the start along the snapped drag direction
-  (30° steps, Shift free): atom k at start + k·(cos 30°)·d̂ ± (sin 30° / 2)·n̂, alternating sides
-  (bond length 1.0 exactly), n = round(projected drag length / cos 30°), 1 ≤ n ≤ 20. When the
-  start atom has a neighbour, the first zig goes to the side that continues its zig-zag (P1's
-  choice). A small count label "n" (`--type-xs`, `--text-muted`) follows the pointer 12 px
-  below-right.
-- **P3** **Ring onto empty canvas**: the template centred at the click, in its canonical
-  orientation (vertex up for 3, 5, 6, 7; square axis-aligned; chair as stored).
+- **P1** **Default sprout direction** from atom X with neighbour unit vectors u₁…uₙ: n = 0: 30°
+  up-right. n = 1: the two directions at ±120° from u₁; pick the one farther from the neighbour's
+  other neighbours (the zig-zag continues); tie → the more upward, then the more rightward. n ≥ 2:
+  the bisector of the largest angular gap (ties: the gap starting at the smallest angle
+  counter-clockwise from +x). "Next candidate" = the other ±120° direction, then the bisector of
+  the second-largest gap.
+- **P2** **Chain**: zig-zag of single bonds from the start (empty point or atom) along the
+  snapped drag direction (30° steps, Shift free): atom k at start + k·cos 30°·d̂ ± (sin 30°/2)·n̂,
+  alternating sides (bond length 1.0), n = round(projected drag length / cos 30°), 1 ≤ n ≤ 20.
+  When the start atom has a neighbour, the first zig goes to P1's side. The count label follows
+  the pointer. A click (no drag) adds one bond as B1/B3.
+- **P3** **Ring onto empty canvas**: the template centred at the click, canonical orientation
+  (vertex up for 3, 5, 6; square axis-aligned).
 - **P4** **Ring onto an atom**: the ring shares that atom; its centre lies on P1's direction at
-  the ring's circumradius R = 1 / (2 sin(π/n)), orientation so the shared atom is a vertex.
-- **P5** **Ring onto a bond**: fused, sharing the bond; the new ring is on the side of the
-  pointer (ties: the side with fewer neighbour atoms). Benzene onto a bond of an all-1.5 ring →
-  all new bonds 1.5 (naphthalene: two circles). Benzene onto any other bond → Kekulé, with double
-  bonds alternating so that a shared double bond stays double and a shared single bond stays
-  single. The shared bond's own order is never changed.
+  the circumradius R = 1 / (2 sin(π/n)), oriented so the shared atom is a vertex.
+- **P5** **Ring onto a bond**: fused, sharing the bond, on the pointer's side (ties: the side with
+  fewer neighbour atoms). Benzene onto a bond of an all-1.5 ring → all new bonds 1.5 (naphthalene:
+  two circles). Benzene onto any other bond → Kekulé, alternating so that a shared double bond
+  stays double and a shared single bond stays single. The shared bond's order never changes.
 - **P6** **Merging coincident atoms**: after placing a template or chain, every new atom within
-  0.15 BLU of an existing atom is merged into the existing one (`mergeAtoms(keep: existing)`).
-- **P7** **Insert placement** (single structure from the name field or a chip): empty doc →
-  centred on the canvas centre. Otherwise to the right of everything: its ink box's left edge
-  1.0 BLU right of the document's ink box right edge, vertically centred on the centre of the
-  rightmost fragment or object. Then V5. The inserted items are selected and the tool becomes
-  Select.
+  0.15 BLU of an existing atom is merged into it (`mergeAtoms(doc, existing, new)`).
+- **P7** **Insert placement** (a single structure from the name field, a chip or `insert-text`):
+  empty doc → centred on the canvas centre. Otherwise its ink box's left edge 1.0 BLU right of the
+  document's ink box right edge, vertically centred on the centre of the rightmost fragment or
+  object. Then V5. The inserted items are selected and the tool becomes Select.
 
 ### Ring templates
 
-All generated in `templates.ts` as `SubDoc`s centred on the origin, bond length 1.0.
+Generated in `templates.ts` as `SubDoc`s centred on the origin, bond length 1.0: Benzene (regular
+hexagon, vertex up, all order 1.5, drawn with a circle); Cyclohexane, Cyclopentane, Cyclobutane,
+Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 
-| Template | Atoms | Bonds |
-|---|---|---|
-| Benzene | regular hexagon, vertex up | all order 1.5 (drawn with a circle) |
-| Cyclopropane … cycloheptane | regular n-gon, vertex up (square axis-aligned) | single |
-| Chair | (−1.45, 0.20), (−0.80, −0.30), (0.20, −0.10), (1.45, −0.20), (0.80, 0.30), (−0.20, 0.10); first values, tuned at the visual review | single, ring order |
+### Atom tool (C H N O S P F Cl Br I, or a mark)
 
-### Atom tool (variant: element C H N O S P F Cl Br I, or a mark)
-
-- **A1** Element variant: click an atom → set its element (A2); click empty canvas → a lone atom
+- **A1** Element option: click an atom → set its element (A2); click empty canvas → a lone atom
   of that element (a lone O renders "H₂O"); drag from an atom → bond to a new atom of that element
   (B4 geometry).
 - **A2** Setting an element: `updateAtom(element, label: undefined, explicitH: undefined)`;
   charge and marks kept. Setting the element it already has does nothing.
-- **A3** Mark variants on a clicked atom (Shift+click reverses): ⊕ charge +1, ⊖ charge −1
-  (clamped −4…4); lone pair: `lonePairs` 0 → 1 → … → 4 → 0; radical 0 ↔ 1; δ+ / δ−: set, or clear
-  if already that value. On empty canvas: nothing (hint "Click an atom").
+- **A3** Mark options on a clicked atom (Shift+click reverses): Positive / Negative charge ±1
+  (clamped −4…4); Lone pair: `lonePairs` 0 → 1 → … → 4 → 0; Radical 0 ↔ 1; δ+ / δ−: set, or clear
+  if already that value. On empty canvas: nothing, notice "Click an atom to add this." (info).
 
 ### Label editor
 
-- **L1** Opens on double-click or Enter over an atom: an input centred on the atom, min 64 px,
-  grows to 160 px, 28 px high, `--type-md` in Arial, radius 6, 2 px `--accent` border,
-  `--shadow-1`; prefilled with the atom's label, else its element (with H count if `explicitH` is
-  set, e.g. `OH`), all selected. Typing a letter over a hovered atom whose key is not a K2 quick
-  key also opens it with that letter.
+- **L1** Opens with Enter over a hovered atom (any tool except Erase and Text) or a double-click
+  with Select (S7): a `TextBox` in label mode centred on the atom, min 64 px, grows to 160 px,
+  28 px high, Arial at `--type-md`, radius 6, 2 px `--accent` border, `--shadow-1`; filled with
+  the atom's label, else its element (with H count when `explicitH` is set: `OH`), all selected.
+  Display is WYSIWYG through `labelDisplayRuns(text)`: digits after a letter or `)` as
+  subscripts, a trailing charge as superscript; typing is plain characters, nothing to toggle.
 - **L2** Below it (4 px), a caption in `--type-xs`: `--text-muted` "e.g. OH, NH2, Cl, Ph, CO2H";
   when the text interprets as `unknown`, `--warning` "Not a known group; it will be drawn as
   typed."
 - **L3** Enter commits ("Change atom") through `interpretLabel`: `element` → set `element`,
   clear `label`, `charge` = typed charge ?? 0, `explicitH` = typed H count only if it differs from
-  the automatic count (computed by perceiving the doc with `explicitH` cleared), else undefined;
+  the automatic count (perceive the doc with `explicitH` cleared), else undefined;
   `abbreviation` → `element` = its attachment element, `label` = key; `unknown` → element `*`,
   `label` = the text. Empty text → plain carbon. Esc cancels; clicking elsewhere commits.
 
 ### Arrow, Plus, Curved arrow
 
-- **R1** Arrow: drag from p₀ to p₁ → arrow of the variant kind, angle snapped to 15° (Shift free);
-  a drag shorter than 0.5 BLU counts as a click; click → arrow from p to p + (2.5, 0). Click on an
-  existing arrow sets its kind to the variant.
+- **R1** Arrow: drag from p₀ to p₁ → arrow of the option's kind, angle snapped to 15° (Shift
+  free); a drag shorter than 0.5 BLU counts as a click; click on empty canvas → arrow from p to
+  p + (2.5, 0). Click on an existing arrow sets its kind to the option.
 - **R2** Plus: click → plus at p; snapping as S3 (centre alignment with other items).
-- **R3** Curved arrow: press on an atom or bond (else nothing, hint "Start on an atom or a bond"),
-  release on an atom, a bond or empty canvas. Anchors: atom → `{ kind: 'atom', atom }`, bond →
-  `{ kind: 'bond', bond, t: 0.5 }`, empty → `{ kind: 'point', p }`. Same start and end → cancel.
-  `bend` = ±0.4, the sign that bulges away from the centroid of the atoms of the fragments the
-  anchors touch (`+` if the centroid lies on the chord). Head = variant.
+- **R3** Curved arrow: press on an atom or bond (else nothing, notice "Start on an atom or a
+  bond." (info)), release on an atom, a bond or empty canvas. Anchors: atom → `{ kind: 'atom',
+  atom }`, bond → `{ kind: 'bond', bond, t: 0.5 }`, empty → `{ kind: 'point', p }`. Same start and
+  end → cancel. `bend` = ±0.4, the sign that bulges away from the centroid of the atoms of the
+  fragments the anchors touch (`+` when the centroid lies on the chord). Head = the option.
 
 ### Text tool and conditions
 
-- **T1** Click on empty canvas → new text at p (`align: 'left'`) with the text editor open; click
-  on an existing text or caption → edit it. Hovering within 1.0 BLU of an arrow's shaft and
-  between its ends shows the condition slot on the pointer's side (above/below); clicking it
-  creates a text with `attachedTo: { arrow, slot }`, `align: 'center'`, placed by T3.
-- **T2** Text editor: a borderless auto-growing `<textarea>` over the text, Arial at
-  fontSize · zoom · 4/3 px, 1 px `--accent` outline, `--canvas-bg`. It edits the **source**
-  (`runsToSource(runs)`); the svg-render text is hidden while editing. Enter commits ("Edit
-  text"), Shift+Enter new line, Esc cancels, click elsewhere commits. Empty on commit → the text is
-  deleted (or never created). Bold/Italic apply to the whole text object (every run). Captions
-  default to bold.
-- **T3** **Condition position**: text centred on the arrow's midpoint along the shaft; above:
-  the text's ink box bottom is `0.2·bondLength` pt above the highest point of the arrow's ink
-  (shaft and heads); below: its ink top is the same distance below the lowest. Computed from
-  render `extents` (two passes: place, render, shift). For a non-horizontal arrow "above" means the
-  arrow's left side (travel direction), offset along the left normal.
-- **T4** **`formatChemText(source) → TextRun[]`** (pure):
-  1. `->` becomes `→`; `<=>` becomes `⇌`.
-  2. Explicit marks: `^{…}` / `_{…}` → sup / sub of the braced text; `^` / `_` followed by a run of
-     `[0-9+\-−]` → sup / sub of that run (`Fe^3+`, `SO4^2-`); `\^`, `\_` are literal. A `-` inside a
-     sup becomes `−`.
+- **T1** Click on empty canvas → new `text` at p (`align: 'left'`) with the text editor open;
+  click on an existing `text` → edit it. Hovering within 1.0 BLU of an arrow's shaft and between
+  its ends shows the condition slot on the pointer's side (above/below); clicking it creates a
+  `text` with `attachedTo: { arrow, slot }`, `align: 'center'`, placed by T3, or edits the text
+  already attached there.
+- **T2** **Text editor** (Decision 10). A `TextBox` in text mode over the text: a
+  `contenteditable="plaintext-only"` element showing the runs as svg-render draws them — Arial at
+  `fontSize · k` px, sub/sup spans at 0.7 × size shifted 0.2 em / 0.4 em, bold/italic as the
+  object — with padding 2 8 inside a 1 px `--accent` outline on `--canvas-bg` (screen 09); the
+  svg-render part is hidden while editing.
+  - **Model first.** The DOM is a projection of a pure `TextEditState` (`text-edit.ts`):
+    `runs: EditRun[]` (`{ text, script?: 'sub' | 'sup', explicit?: true }`), `anchor`/`focus`
+    offsets (UTF-16, never inside a surrogate pair), `pending` script, a local undo stack. Every
+    cancelable `beforeinput` (insertText, insertReplacementText, insertLineBreak,
+    insertParagraph, insertFromPaste, insertFromDrop, delete*, historyUndo/Redo) is cancelled and
+    applied to the model; the view re-renders the spans and restores the selection. IME
+    composition (not cancelable) is allowed to edit the DOM and reconciled into the model on
+    `compositionend` (`text-dom.ts`). Pasted content is plain text.
+  - Why: `execCommand`-style rich editing produces inconsistent markup (`<sub>` vs styles,
+    nested spans) and unpredictable caret affinity at run boundaries; with the model first, every
+    rule is a pure, unit-tested function and only selection ↔ offset mapping and IME reconcile
+    touch the DOM (tested by e2e). `plaintext-only` stops Chromium inserting its own formatting.
+  - Typing inherits the pending script if set, else the script and `explicit` flag of the
+    character before the caret (at offset 0: after it), else plain.
+  - x₂ / x² (and Ctrl+= / Ctrl+Shift+=) on a selection: if every selected character already has
+    that script, set them to plain, else to that script; either way they become `explicit`. On a
+    collapsed caret they toggle `pending` (shown pressed) until the caret moves.
+  - B / I (Ctrl+B / Ctrl+I) toggle bold / italic of the whole object (every run).
+  - Δ, hν, °, → insert that text at the caret (plain, not explicit).
+  - Enter commits ("Edit text" or "Add text"), Shift+Enter inserts a line break, Esc cancels,
+    clicking elsewhere commits. On commit the runs go through `finishText` (T4); an empty result
+    deletes the text (or never creates it).
+  - Re-opening a text loads it with `fromStored(runs)`: every character `explicit`, so committing
+    without changes changes nothing; only newly typed characters are auto-formatted.
+- **T3** **Condition position**: text centred on the arrow's midpoint along the shaft; above: the
+  text's ink box bottom is `0.2 · bondLength` pt above the highest point of the arrow's ink (shaft
+  and heads); below: its ink top the same distance below the lowest. Computed from render
+  `extents` (two passes: place, render, shift). For a non-horizontal arrow "above" is the arrow's
+  left side (travel direction), offset along the left normal.
+- **T4** **`finishText(runs: EditRun[], style: { bold?, italic? }) → TextRun[]`** (pure):
+  `explicit` characters keep their script; the rest are formatted:
+  1. `->` becomes `→`.
+  2. Typed shortcuts: `^{…}` / `_{…}` → sup / sub of the braced text; `^` / `_` followed by a
+     run of `[0-9+\-−]` → sup / sub of that run (`Fe^3+`, `SO4^2-`). A `-` inside a sup becomes
+     `−`. The markers are removed.
   3. Auto: a **formula token** (maximal run of `[A-Za-z0-9()\[\]]`) whose letters parse as a
-     sequence of element symbols (`PERIODIC_SYMBOLS`, e.g. `H2SO4`, `CH3COOH`, `Cu(NH3)4`,
-     `LiAlH4`) has every digit run that directly follows a letter, `)` or `]` subscripted; a `+` or
-     `-` ending such a token right after a letter, `)` or `]` becomes a superscript `+` / `−`
-     (`H3O+`, `OH-`). Exceptions, never subscripted: `SN1`, `SN2`, `SNi`, `E1`, `E2`, `E1cb`.
-     Tokens starting with a digit (`25`, `2nd`) are never formulas.
-  4. Bold/italic come from the object, not the source.
-  `runsToSource(runs)` writes plain text where T4.3 would regenerate the run, else explicit marks.
-  Property: `formatChemText(runsToSource(r)) = r` for every `r` that `formatChemText` produces.
-- **T5** Text editing options (options bar while editing): x₂ / x² wrap the textarea selection in
-  `_{}` / `^{}`; B / I toggle the object's bold/italic; Δ, hν, °, → insert that text at the caret.
+     sequence of element symbols (`PERIODIC_SYMBOLS`, case-sensitive: `H2SO4`, `CH3COOH`,
+     `Cu(NH3)4`, `LiAlH4`) has every digit run directly after a letter, `)` or `]` subscripted; a
+     `+` or `-` ending such a token right after a letter, `)` or `]` becomes a superscript `+` /
+     `−` (`H3O+`, `OH-`). Never formulas: `SN1`, `SN2`, `SNi`, `E1`, `E2`, `E1cb`, and tokens
+     starting with a digit (`25`, `2nd`). Tokens are found over the whole text (explicit
+     characters included), but only non-explicit characters change.
+  4. Adjacent runs with equal script/bold/italic merge; bold/italic come from the object.
+  `fromStored(runs)` inverts the storage form (all explicit). `labelDisplayRuns(text)` is the
+  display-only formatter of L1.
+  Properties: (a) explicit characters are never changed; (b) idempotence:
+  `finishText(asPlainScripts(finishText(r)))` = `finishText(r)`, where `asPlainScripts` keeps
+  scripts but drops `explicit`; (c) the concatenated text equals the input minus consumed
+  markers, with `->` replaced.
+- **T5** Text editing options (options bar while editing) as listed under "Text editing
+  options"; their `aria-pressed` follows the model at the caret/selection.
 
 ### Tidy reaction
 
-- **TR1** Scope: selection or everything. Row items: fragments, straight arrows, pluses, and
-  free texts (no `attachedTo`) whose ink box overlaps the horizontal band through the arrows'
-  shafts; captions and anchored objects follow their atoms. Nothing to do (no arrow) → notice
-  "Nothing to tidy: draw an arrow between the molecules first."
+- **TR1** Scope: the selection, or everything. Row items: fragments, straight arrows, pluses, and
+  free texts (no `attachedTo`); with no selection only items whose ink box intersects the band
+  [min − 1.5, max + 1.5] BLU around the arrows' shaft-midpoint y values. Captions and anchored
+  objects follow their atoms. No arrow in scope → notice "Nothing to tidy: draw an arrow between
+  the molecules first."
 - **TR2** Order: sort row items by ink-box centre x.
-- **TR3** Arrows: made horizontal (direction kept left→right as drawn, reversed if drawn
-  right→left), length = max(2.5 BLU, widest attached text ink width + 0.6 BLU).
-  Unattached texts whose centre lies within 1.0 BLU of an arrow's shaft and within its span get
-  `attachedTo` (slot by side).
+- **TR3** Arrows become horizontal, keeping their sense (`to.x ≥ from.x` stays rightward, else
+  leftward), length = max(2.5 BLU, widest attached text ink width + 0.6 BLU). Unattached texts
+  whose centre lies within 1.0 BLU of an arrow's shaft and within its span get `attachedTo` (slot
+  by side).
 - **TR4** Baseline: y = the ink-box centre y of the first row item. Every item is translated so its
-  ink-box centre y equals the baseline (arrows: the shaft).
+  ink-box centre y (arrows: the shaft) equals the baseline.
 - **TR5** Spacing: left to right, the gap between consecutive ink boxes is 0.6 BLU, except 0.4
   BLU on either side of a plus. The first item stays where it is.
-- **TR6** Attached texts are re-placed by T3. The whole tidy is one "Tidy reaction" commit; running
-  it twice changes nothing (idempotent, tested).
+- **TR6** Attached texts are re-placed by T3. The whole tidy is one "Tidy reaction" commit, then
+  V5; running it twice changes nothing (idempotent, property-tested).
 
 ### Name field and reaction text
 
-- **N1** Suggestions: from 2 typed characters, `names.suggest(text, 8)`, shown in a dropdown under
-  the field (width = field width, max 8 rows × 36 px, `--shadow-1`, radius 6). Row: name
-  (`--type-md`) left, formula (`--type-sm`, `--text-muted`, digits as Unicode subscripts) right.
-  ↑/↓ highlight, Enter inserts the highlighted entry (or the typed text if none is highlighted),
-  click inserts, Esc closes (second Esc clears; third returns focus to the canvas).
-- **N2** Insert: `structureFromText(text, names)`; success → `insert` placed by P7, "Insert
-  ethanol" (entry name, else "Insert structure"), live-region announcement "Inserted ethanol".
-  Failure → the not-found row (see "Notices"); `too-large` → "That structure is too big to draw
-  (over 1000 atoms)."
-- **N3** **Reaction text**: if the text contains `->`, `→`, `=>`, `<=>` or `⇌` outside brackets, it
-  is a scheme. Split at those arrow tokens into sides, each side at ` + ` (space, plus, space) into
-  parts; a part starting with an integer and a space (`2 H2O`) gives a coefficient text `2` before
-  the structure. Every part goes through `structureFromText`; if any fails, nothing is inserted and
-  the not-found row names that part. Otherwise the scheme is built (structures, pluses, arrows of
-  kind `forward`, or `equilibrium` for `<=>`/`⇌`; `=>` gives `retro`) and laid out by TR2–TR5 as
-  one "Insert reaction" commit, placed: empty doc → centred; else its ink box's left edge at the
-  document's left edge and its top 1.5 BLU below the document's bottom. Then V5.
+- **N1** Suggestions (single names only, R9): from 2 typed characters, `names.suggest(text, 8)`
+  in a dropdown under the field (screen 06): width = field width, `min-width` 320, ≤ 8 rows × 36
+  px, `--shadow-1`, radius 6, `role="listbox"`. Row: matched key with the typed prefix in 600
+  weight (R10) left (`--type-md`); Hill formula right (`--type-sm` `--text-muted`, digits in real
+  `<sub>` at 10 px). ↑/↓ highlight, Enter inserts the highlighted entry (or the typed text if
+  none), click inserts, Esc closes.
+- **N2** Insert: `structureFromText(text, names)`; success → `insert` placed by P7, labelled
+  "Insert ethanol" (entry name, else "Insert structure"), announced "Inserted ethanol". Failure →
+  the not-found row (`not-found`, `invalid-smiles`, `invalid-molfile`); `too-large` → that
+  message in the row; `empty` → nothing.
+- **N3** **Reaction text**: if the text contains an arrow token (R14) outside brackets and
+  parentheses, it is a scheme. Split at arrow tokens into sides, each side at `+` outside brackets
+  and parentheses (spaces optional) into parts; a part starting with an integer and a space
+  (`2 H2O`) gives a coefficient text `2` before the structure. Every part goes through
+  `structureFromText`; if any fails, nothing is inserted and the not-found row names that part.
+  Otherwise the scheme (structures, coefficient texts, pluses, arrows of kind `forward`, or
+  `equilibrium` for `<=>`/`⇌`) is laid out by TR2–TR5 as one "Insert reaction" commit, placed:
+  empty doc → centred on the canvas centre; else its ink box's left edge at the document's left
+  edge and its top 1.5 BLU below the document's bottom. Then V5; the inserted items are selected
+  and the tool becomes Select.
 - **N4** Empty-state chips and `insert-text` commands go through N2/N3 exactly.
-- **N5** The dictionary is imported as JSON and `createNameIndex` is called once when the
-  controller is created (≈ 400 entries; time measured in the perf test).
+- **N5** The dictionary is imported as JSON and `createNameIndex` is called once per controller
+  (time measured in the perf test).
 
 ### Selection actions
 
 - **C1** Clean up: `cleanStructure(doc, scopeAtoms)`, "Clean up".
-- **C2** Expand: `expandLabel` on each abbreviation atom in scope, "Expand label"; none →
-  notice "Only abbreviations like Ph or CO2H can be expanded."
-- **C3** Kekulé ⇄ circle: if the scope has a 1.5 bond → `kekulize(doc, scopeAtoms)` ("Show
-  Kekulé"); `ChemError('cannot-kekulize')` → notice "This ring can't be shown with alternating
-  double bonds." Else `aromatize(doc, scopeAtoms)` ("Show circle"); unchanged doc → notice "No
-  aromatic ring here to show as a circle."
-- **C4** Number: one caption per selected fragment, left to right, `runs: [{ text: n, bold:
-  true }]`, `target` = all its atoms; n continues from the largest integer among existing captions
-  (first is 1). A fragment that already has a caption is skipped.
-- **C5** Status-bar formula: selection non-empty → `formulaOf(doc, selectedAtoms)`; else, if the
-  document has exactly one fragment, that fragment's formula; else hidden. Shown as `Formula.text`
-  with digits as Unicode subscripts, then " · " and `mw` to 2 decimals + " g/mol" when not null.
-- **C6** Warnings button (status bar): hidden when there are none; else `warning` icon + count in
-  `--warning`; click selects the atoms of the first warning (cycling on further clicks) and pans
-  to them.
+- **C2** Expand: `expandLabel` on each abbreviation atom in the selection, "Expand label".
+- **C3** Kekulé ⇄ circle: scope has a 1.5 bond → `kekulize(doc, scopeAtoms)` ("Show Kekulé");
+  `ChemError('cannot-kekulize')` → notice "This ring can't be shown with alternating double
+  bonds." Else `aromatize(doc, scopeAtoms)` ("Show circle"); an unchanged doc records nothing and
+  shows "No benzene ring here to show as a circle." (info).
+- **C4** *(cut, Decision 9)*.
+- **C5** Status-bar formula (`data-testid="formula"`): selection has atoms →
+  `formulaOf(doc, selectedAtoms)` (whole fragments touched); else, if the document has exactly
+  one fragment, its formula; else hidden. Shown as the Hill string with digits in real `<sub>`
+  (≥ 10 px), the charge as a `<sup>` (`2−`, `+`), then " · " and `mw` to 2 decimals + " g/mol"
+  when `mw` is not null (screen 03: "C₆H₆ · 78.11 g/mol"). The element's text content reads
+  "C6H6 · 78.11 g/mol".
+- **C6** Warnings button: hidden when `perception.warnings` is empty; else `warning` icon + count;
+  click selects the atoms (and bonds) of the next warning in order, cycling, and reveals them.
 
 ### Clipboard (in-app)
 
-- **P1** Copy: `extract(doc, selection)` into `state.clipboard`, then `onCopy?.(sub, doc,
+- **CB1** Copy: `extract(doc, selection)` into `state.clipboard`, then `onCopy?.(sub, doc,
   selection)`. Cut = copy + delete (E2), "Cut". Paste: `insert(doc, clipboard, at)` with `at` =
   the pointer position if the pointer is over the canvas, else the canvas centre; "Paste"; the
-  pasted items become the selection. Duplicate: `insert` of `extract` at the selection's centre
-  + (1.0, 1.0) BLU, "Duplicate". `paste-sub` / `insert-text` commands from the host follow the same
+  pasted items become the selection; then V5. Duplicate: `insert` of `extract` at the selection's
+  centre + (1.0, 1.0) BLU, "Duplicate". `paste-sub` / `insert-text` commands follow the same
   placement (text via N2/N3).
+
+### Context menu
+
+- **CM1** A `contextmenu` event on the canvas is default-prevented; if a gesture is active it is
+  cancelled and nothing else happens; otherwise the controller emits `{ type: 'context-menu',
+  target, screen }` with the H1/H2 hit at that point (atoms, bonds, objects only; handles and
+  slots → null). The selection is not changed. The scaffold ignores the event.
 
 ### Preset
 
-- **PR1** The status-bar switch "Slides | Journal" calls `setStyle(doc, { preset })` in one
-  "Switch to Journal style" commit (undoable), then V6.
+- **PR1** The status-bar switch "Slides | Handout" calls `setStyle(doc, { preset })` in one
+  commit ("Switch to Handout style" / "Switch to Slides style"), then V6. The switch shows the
+  document's preset.
 
 ### Errors
 
 - **X1** Any exception from a commit recipe or chem-core call is caught by the store: history
-  unchanged, gesture cleared, notice (ChemError → its message, or the rule's wording above;
-  DocError → "That edit isn't possible here."). Nothing crashes the renderer.
+  unchanged, gesture cleared, notice (ChemError → the rule's wording above, else its message;
+  DocError → "That edit isn't possible here." and `console.error`). Nothing crashes the renderer.
 
 ---
 
@@ -925,148 +1025,118 @@ All generated in `templates.ts` as `SubDoc`s centred on the origin, bond length 
 
 | Item | Decision |
 |---|---|
-| Selection, hit-testing, marquee | Editor's own (`hit-test.ts`, H1–H4), using `Scene.extents` and doc geometry |
-| Overlays | Editor's own screen-space overlay layer (`overlay.ts`), never in the export |
-| `setStyle` op | **Requested** in doc-model (additive, no schema change). Preset switch is undoable |
-| `createRenderer` | **Not requested.** Keyed-part patching + drag fast path + perceiver cache; budgets below. If the E6 profiling task misses a budget, the editor asks for it via a svg-render spec change first |
-| Tidy reaction / condition positions | TR1–TR6 and T3; `attachedTo` is set by the Text tool and Tidy; reactions stay unstored (inferred from layout) |
+| Selection, hit-testing, marquee | Editor's own (`hit-test.ts`, H1–H4) from `Scene.extents` and doc geometry |
+| Overlays | Editor's own screen-space layer (`overlay.ts`), never in the export |
+| `setStyle` op | Added to doc-model (required change 1). Preset switch is undoable |
+| `createRenderer` | Not requested (R19) |
+| Tidy reaction / condition positions | TR1–TR6 and T3; `attachedTo` set by the Text tool and Tidy; reactions stay unstored (inferred from layout) |
 | Kekulé/circle, Clean Structure | Selection actions C1, C3 calling chem-core |
-| Text size | Keep one `fontSize` (svg-render Decision 2). No schema bump. Titles belong in PowerPoint |
+| Text size | One `fontSize` (R18) |
 | compounds.json | Imported as a JSON module by the editor; `createNameIndex` once per controller (N5) |
 
 ## Model gaps (not representable; no UI, listed for later)
 
 | Gap | Effect | Would need |
 |---|---|---|
-| No dotted / hydrogen bond, no dative (arrow) bond | Can't draw H-bonding diagrams or coordinate bonds | a `BondStereo` or order variant (schema bump) |
-| Curved-arrow anchors can't name a specific lone pair | Arrows start at the atom's label edge, not at a chosen pair | anchor offset convention shared with svg-render's slots |
+| No dotted / hydrogen bond, no dative bond | No H-bonding diagrams or coordinate bonds | a `BondStereo` or order variant (schema bump) |
+| Curved-arrow anchors can't name a specific lone pair | Arrows start at the atom's label edge | an anchor offset convention shared with svg-render's slots |
 | No per-object text size, no text rotation | One text size per document | schema bump |
 | No op for groups or z-order | No group/ungroup, no bring-to-front | doc-model ops |
 | Straight reaction arrows only | No curved (non-electron) reaction arrows | `DrawObject` variant |
 
 ## Required changes to finished modules and scaffold
 
-Each is specified here; the target spec is updated first by a later worker.
+Each is a task in `tasks/todo-editor.md`, done (spec first, then code) before the editor code
+that depends on it.
 
-| Target | Change | Spec edit needed |
-|---|---|---|
-| `doc-model` | Add `setStyle(doc: Doc, style: { preset?: StylePreset; overrides?: Partial<StyleSettings> }): Doc`, draft-aware like the other ops; `overrides`, when given, replaces the whole overrides object; validates `preset ∈ {'slides','journal'}` and every override value finite (else `DocError('invalid-value')`). Exported from `index.ts`. **No schema or `schemaVersion` change.** Tests: round trip through `transact`/undo, invalid values throw | `SPEC-doc-model.md` "Public API": add the signature under a `// style` heading |
-| `SPEC.md` | Tech Stack: remove the Zustand row (never installed; the editor uses a hand-written store). Testing Strategy "Component" row: "pure tool state machines (event sequences → document) in Vitest node; DOM behaviour in Playwright e2e" instead of "Vitest + jsdom". Decisions Log rows for both | `SPEC.md` |
-| `app-shell` scaffold (`src/main/index.ts`) | `minWidth: 960`, `minHeight: 640`; `Menu.setApplicationMenu(null)` until app-shell defines menus (the default menu's View → zoom items capture Ctrl+0/Ctrl+−/Ctrl+= and zoom the whole page) | none (scaffold); `SPEC-app-shell.md` later inherits: menus must not bind page zoom, and use `shortcuts: 'canvas-only'` + `run` |
-| `src/renderer/app/App.tsx` (scaffold) | Mount `<Editor>` in `canvas-area` (keep `data-testid="canvas-area"`, so `e2e/smoke.spec.ts` still passes); the top bar moves into the editor | none |
-| Tooling | ESLint: (a) `src/renderer/**` may import core only as `@core/<module>` (no deep paths), except `*.test.ts` files importing `@core/<module>/__fixtures__/*` (doc-model's `arbitraries.ts`); (b) DOM-free block for `src/renderer/editor/{model,tools,state}/**` (bans listed in "Where the code lives"; repeat the named-export restriction). Probes in `tests/tooling/editor-lint.test.ts` | none |
-| `svg-render`, `chem-core` | None | — |
+| # | Target | Change | Spec edit |
+|---|---|---|---|
+| 1 | `doc-model` | Add `setStyle(doc: Doc, patch: { preset?: StylePreset; overrides?: Partial<StyleSettings> }): Doc`, draft-aware like the other ops. `preset`, when given, must be `'slides'` or `'journal'`; `overrides`, when given, replaces the whole overrides object and is validated like the `.chalk` schema (numbers finite and > 0, `fontFamily` a string, no unknown keys); otherwise `DocError('invalid-value')`. Exported from `index.ts`. **No schema or `schemaVersion` change.** Tests: preset change through `transact` and undo, overrides replace, each invalid value throws and leaves the doc unchanged | `SPEC-doc-model.md` "Public API": add under a new `// style` heading: `setStyle(doc, patch: { preset?: StylePreset; overrides?: Partial<StyleSettings> }): Doc   // preset ∈ {'slides','journal'}; overrides replaces the whole object, validated like the schema; DocError('invalid-value') otherwise. No schema change.` |
+| 2 | `chem-core` | `NameIndex.closest` orders its near-spelling matches by: edit distance; then matches on a display name before matches only on a synonym; then keys of which the query is a subsequence (a pure omission typo) first; then display name. Prefix matches still come first. Regression: `closest('ethanl')` = `['ethanol', 'ethane', 'acetaldehyde', …]` and `structureFromText('ethanl', names)` fails with `suggestions[0] === 'ethanol'`; existing `etanol`, `benzne`, `aceton` tests unchanged | `SPEC-chem-core.md` "Public API", the `closest` comment becomes: `// (C8) prefix matches, then near spellings (edit distance ≤ max(1, ⌊len/4⌋)) ordered by distance, then display-name before synonym matches, then omission typos (query is a subsequence of the key), then name; feeds the 'not-found' suggestions (closest first)`. (The SPEC.md Decisions-log row was added at review.) |
+| 3 | `SPEC.md` | Tech Stack: remove the Zustand row (never installed; the editor uses a hand-written store on `useSyncExternalStore`). Testing Strategy "Component" row becomes: "Vitest (node) — editor tool state machines and reducer (event sequences → document); view markup via `react-dom/server`; DOM behaviour in Playwright e2e". Decisions Log rows are added at review (done) | `SPEC.md` |
+| 4 | Scaffold `src/main/index.ts` | `minWidth: 960`, `minHeight: 640`; `Menu.setApplicationMenu(null)` until app-shell defines menus (the default View menu binds Ctrl+0/Ctrl+−/Ctrl+= to page zoom and shows a menu bar) | none (scaffold). `SPEC-app-shell.md` later inherits: menus must not bind page zoom; use `shortcuts: 'canvas-only'` + `run` |
+| 5 | Scaffold `src/renderer/app/App.tsx`, `app.css` | Mount `<Editor>` filling the window inside the element with `data-testid="canvas-area"` (so `e2e/smoke.spec.ts` passes); the scaffold toolbar is removed (the editor has its own top bar) | none |
+| 6 | Tooling | ESLint: (a) `src/renderer/**` may import core only as `@core/<module>` (no deep paths, no relative paths into `src/core`), except test files importing `@core/<module>/__fixtures__/*`; the block repeats the `openchemlib` restriction; (b) a DOM-free block for `src/renderer/editor/{model,tools,state}/**` (bans in "Where the code lives"; repeats the named-export restriction). Probes in `tests/tooling/editor-lint.test.ts`. Playwright projects `e2e` and `shots`; npm script `shots` | none |
+| — | `svg-render` | None | — |
 
 ## Testing
 
 | Level | What | Where |
 |---|---|---|
-| Unit (node) | every `model/` function: geometry, viewport maths, P1–P7, templates (bond lengths 1.0 ± 1e-9, chair excepted), hit-test priority and tolerances at 25 % / 100 % / 400 %, marquee, E2 orphan rule, T4 (`H2SO4`, `CH3COOH`, `Cu(NH3)4^2+`, `H3O+`, `OH-`, `SN2`, `25 °C`, `2nd`, `Pd/C`, `->`), N3 splitting (brackets, coefficients, `[NH4+]` not split), TR1–TR6, C3–C5, overlay shapes, keymap (K2 hover precedence) | colocated `*.test.ts` |
-| Tool machines (node) | for each tool, event sequences → `ToolStep`s → doc after commit; preview ids equal commit ids; cancel leaves history untouched; every gesture is exactly one undo step | `tools/*.test.ts` |
-| Property (fast-check) | (1) any random sequence of tool events on random docs (doc-model `arbitraries.ts`) keeps `checkInvariants` empty and never throws out of the reducer; (2) undo of every committed gesture restores the previous doc exactly; (3) T4 round trip; (4) Tidy is idempotent; (5) hit-test of an atom's own screen position returns that atom when nothing overlaps it | `*.prop.test.ts` |
-| Store/controller (node) | dirty tracking through edit/undo/save, `canRun`, events, `load`, `onCopy` payload | `state/*.test.ts` |
-| Perf (node, perf project, skipped timings under `--coverage`) | `hitTest` on a 500-atom doc < 0.5 ms median; one bond-drag preview step (tool + render with cached perception) on the 40-atom scheme < 10 ms median; `tidyReaction` on the 4-molecule scheme < 25 ms; `createNameIndex(compounds.json)` < 30 ms | `src/renderer/editor/perf.test.ts` |
-| E2E (Playwright `_electron`, built app) | see list below; each test saves screenshots to `test-results/editor/<test>-<step>.png` (git-ignored) | `e2e/editor-*.spec.ts` |
-| Manual (Windows) | the "Editor" section added to `docs/windows-checklist.md`: look at the screenshots, touchpad pinch, 125 %/150 % display scaling, a keyboard-only pass, a first-use pass by the owner | checklist |
+| Unit (node) | every `model/` function: geometry, viewport maths (V1–V6), P1–P7, templates (bond lengths 1.0 ± 1e-9), hit-test priority and tolerances at 25 % / 150 % / 800 %, marquee, E2, `text-edit` ops, T4 (`H2SO4`, `CH3COOH`, `Cu(NH3)4^2+`, `H3O+`, `OH-`, `SN2`, `25 °C`, `2nd`, `Pd/C`, `->`, explicit runs kept), `labelDisplayRuns`, formula runs, N3 splitting (brackets, coefficients, `[NH4+]` not split), TR1–TR6, C3, C5, overlay shapes, keymap (K2 precedence, R5, R6), patch plans | colocated `*.test.ts` |
+| Tool machines (node) | per tool: event sequences → `ToolStep`s → doc after commit; preview ids equal commit ids; cancel leaves history untouched; every gesture is exactly one undo step | `tools/*.test.ts` |
+| Scenarios (node) | the e2e stories replayed through the reducer with exact numbers: ethanol by gestures, toluene in 3 actions, the SC3 scheme (arrow horizontal, row centres within 0.01 BLU of the baseline, conditions centred within 0.01 BLU) | `state/scenarios.test.ts` |
+| Property (fast-check) | (1) random tool-event sequences on random docs (doc-model `arbitraries.ts`) keep `checkInvariants` empty and never throw out of the reducer; (2) undo of every committed gesture restores the previous doc exactly; (3) T4 properties a–c; (4) Tidy is idempotent; (5) hit-test of an atom's own screen position returns that atom when nothing overlaps it; (6) `text-edit` ops keep offsets inside the text and never split a surrogate pair | `*.prop.test.ts` |
+| Store/controller (node) | dirty tracking through edit/undo/save, `canRun`, events (incl. `context-menu`), `load`, `onCopy` payload, R7 | `state/*.test.ts` |
+| View markup (node) | `renderToStaticMarkup` of rail, options bars, status bar, empty state, tooltips for given states: names, `aria-pressed`, `aria-disabled`, test ids, hidden/visible controls (R15) | `view/*.test.tsx` |
+| Tooling | lifted `tokens.css` / `icons.svg` identical to the mock-ups; contrast pairs; ESLint probes | `tests/tooling/editor-*.test.ts` |
+| Perf (node, perf project, timings skipped under `--coverage`) | `hitTest` on a 500-atom doc < 0.5 ms median; one bond-drag preview step (tool + render with cached perception) on the 40-atom scheme < 10 ms median; `tidyReaction` on the 4-molecule scheme < 25 ms; `createNameIndex(compounds.json)` < 30 ms | `src/renderer/editor/perf.test.ts` |
+| E2E (Playwright `_electron`, built app) | `e2e/editor-*.spec.ts`: layout boxes, focus order, drawing stories, name field, text editor DOM ↔ runs, zoom, preset, frame-time probe | `e2e/` |
+| Screenshots | `e2e/shots/<task-id>.shot.ts` → `out/shots/<task-id>/<name>.png` via `npm run shots` (R16); each UI task names its shots | `e2e/shots/` |
+| Manual (Windows) | "Editor" section of `docs/windows-checklist.md` | checklist |
 
-E2E list: (a) draw ethanol by gestures (Bond click, click atom, hover end atom + `O`) → formula
-`C₂H₆O`; (b) benzene template then toluene in ≤ 3 actions (`SPEC.md` SC2); (c) the reaction of
-`SPEC.md` SC3 via the name field + two condition texts + Tidy in ≤ 15 actions, final layout
-checked (arrow horizontal, item centres within 0.01 BLU of one baseline, conditions centred);
-(d) undo/redo of every tool's gesture; (e) Tab reaches every control, rail ↑/↓, Enter selects a
-tool, Esc ladder; (f) zoom keys and Ctrl+wheel, fit; (g) name not found → "Did you mean"; (h)
-preset switch keeps on-screen bond length within 1 px; (i) frame-time probe (performance marks
-around the pointermove handler and the next `requestAnimationFrame`) for a 40-atom scheme drag
-(fast path) and a 100-atom partial drag. The current setup supports all of this
-(`e2e/launch.ts`, `page.mouse`, `page.keyboard`, `page.screenshot`).
-
-Coverage: `src/renderer/editor` ≥ 70 % lines. The logic lives in `model/`, `tools/`, `state/`,
-covered in node; `view/` is kept thin. If coverage misses 70 % because of `view/`, raise Open
-question 8 rather than excluding files.
+Coverage: `src/renderer/editor` ≥ 70 % lines with `npm test -- --coverage`; no file excluded to
+reach it.
 
 ## Performance
 
 | Budget | Where measured |
 |---|---|
-| Pointer move → next paint, whole-fragment drag of a 40-atom scheme (fast path): p95 ≤ 16 ms | e2e (i), Windows |
-| Pointer move → next paint, bond-drag preview and partial-selection drag in a 100-atom doc: p95 ≤ 16 ms | e2e (i), Windows |
+| Pointer move → next paint, whole-fragment drag of a 40-atom scheme (fast path): p95 ≤ 16 ms | e2e frame-time probe, Windows |
+| Pointer move → next paint, bond-drag preview and partial-selection drag in a 100-atom doc: p95 ≤ 16 ms | e2e frame-time probe, Windows |
 | Commit → paint for any single gesture on a 100-atom doc: ≤ 50 ms | e2e |
-| Cold start to usable canvas (with name index): within `SPEC.md` SC1 (< 3 s) | e2e smoke timing |
+| Cold start to usable canvas (with name index): < 3 s (`SPEC.md` SC1) | e2e smoke timing |
 
-**Profiling task (E6):** run (i) on the owner's Windows laptop, record medians and p95 in
-`docs/`; if any budget fails after the fast path, write the request for svg-render's
-`createRenderer` (spec change first), do not loosen the budget.
+The profiling task records medians and p95 in `docs/editor-perf.md`. A miss after the fast path
+leads to a request for svg-render's `createRenderer` (svg-render spec change first, R19); budgets
+are never loosened.
 
 ## Success Criteria
 
-1. A first-time user draws ethanol and benzene with no instructions: e2e (a) and (b) pass, and
-   the owner's first-use pass (checklist) succeeds without help.
-2. Toluene in ≤ 3 actions; the SC3 reaction in ≤ 15 actions, perfectly aligned (e2e b, c).
+1. A first-time user draws ethanol and benzene with no instructions: `e2e/editor-structures.spec.ts`
+   draws ethanol by gestures (Bond click on empty canvas, hover the end atom, `O`) and
+   `[data-testid=formula]` reads "C2H6O · 46.07 g/mol"; a Ring click places benzene ("C6H6 ·
+   78.11 g/mol"). Shots `E20/hover-key-O.png`, `E21/toluene.png`.
+2. Toluene in ≤ 3 actions (Ring, click canvas, hover a ring atom + `1`) and the SC3 reaction
+   ("ethanol + acetic acid -> ethyl acetate + water", H₂SO₄ above, Δ below) in ≤ 15 actions,
+   aligned: `state/scenarios.test.ts` (exact, 0.01 BLU) and `e2e/editor-reaction.spec.ts`
+   (action counter; part boxes aligned within 1 screen px).
 3. Every gesture in "Behaviour rules" has a tool-machine test, commits exactly one undo step, and
    undo restores the previous doc exactly (property 2).
-4. No reachable sequence of events produces an invalid document or an uncaught exception
-   (property 1, 1,000 runs with an explicit timeout).
+4. No reachable event sequence produces an invalid document or an uncaught exception (property 1,
+   1,000 runs, explicit timeout).
 5. All ten tools, every option, every selection action and every K1 command are reachable by
-   keyboard (e2e e); every control shows a visible focus ring and has an accessible name.
-6. Text and indicator colours meet the contrast ratios in the token table (a unit test reads
-   `tokens.css` and recomputes them: `tests/tooling/editor-tokens.test.ts`, since renderer tests
-   have no Node types); hit targets ≥ 24 px.
-7. Valence warnings from `perceive` appear as overlays with their message on hover and never in
-   `toSvg` output (unit: export of a doc with warnings is byte-identical to svg-render's).
-8. Name insert: exact names insert, prefixes suggest, misspellings show "Did you mean", reaction
-   text builds a tidy scheme (unit + e2e g).
-9. Performance budgets met on Windows; node perf budgets pass.
-10. `npm run check` green with `src/renderer/editor` ≥ 70 % line coverage; the DOM-free lint block
+   keyboard, every control shows a focus ring and has an accessible name:
+   `e2e/editor-keyboard.spec.ts` (keyboard-only walkthrough inserting ethanol, selecting all,
+   flipping, undoing).
+6. Contrast pairs pass (`tests/tooling/editor-tokens.test.ts`); lifted `tokens.css` and
+   `icons.svg` equal the mock-up files; hit targets ≥ 24 px (`e2e/editor-layout.spec.ts` boxes).
+7. The window matches the approved mock-ups: `e2e/editor-layout.spec.ts` measures the region and
+   control boxes in "Layout" at 1280×800 and 960×640 (±1 px), and the named shots of every UI task
+   exist for side-by-side review with `out/mockups/*.png`.
+8. Valence warnings appear as overlays with their message on hover and never in exports: an
+   overlay unit test for a doc with an `H20` label, an e2e hover over it showing chem-core's
+   message `Unknown label "H20".` (shot `E24/warning-tooltip.png`), and a unit test that `renderSvg(doc)` of that doc
+   contains no `#b42318`.
+9. Name insert: exact names insert, prefixes suggest, misspellings show "Did you mean" with the
+   closest first ("ethanl" → ethanol), reaction text builds a tidy scheme (unit + e2e).
+10. Performance budgets met on Windows and node perf budgets pass.
+11. `npm run check` green; `src/renderer/editor` ≥ 70 % line coverage; the DOM-free lint block
     and boundary probes pass.
-11. The editor runs in the scaffold window with no app-shell code beyond the listed scaffold
-    changes; `e2e/smoke.spec.ts` still passes.
-
-## Phases (tool groups)
-
-The plan (`tasks/plan-editor.md`, `tasks/todo-editor.md`) is written later; it should follow this
-order, each phase ending in a checkpoint with screenshots reviewed.
-
-| Phase | Content | Prerequisite |
-|---|---|---|
-| E0 | Required changes: `setStyle` (doc-model spec then code), `SPEC.md` edits, scaffold min size + menu, lint blocks | approval |
-| E1 | Shell and canvas: tokens, icons, layout, rail/options/status (static), store, viewport, keyed-part mounting, pan/zoom, empty state, perf harness | E0 |
-| E2 | Select and Erase: hit-test, hover, selection, marquee, move (fast path), rotate, flip, delete + orphan rule, undo/redo, in-app clipboard, controller + dirty | E1 |
-| E3 | Structure tools: Bond, Chain, Ring, Atom + marks, hover keys, label editor, warning overlay, formula | E2 |
-| E4 | Name field: suggestions, insert, not-found, reaction text, empty-state chips; Clean up, Kekulé, Expand, Number; preset switch | E3 |
-| E5 | Reaction tools: Arrow, Plus, Text + T4 formatting + conditions, Tidy reaction, Curved arrow + handles | E4 |
-| E6 | Acceptance: keyboard/a11y pass, contrast test, e2e suite, profiling task, Windows checklist | E5 |
-| E7 (optional, needs approval) | Annotation creation UI: brackets (‡, n), callouts, highlight shapes, colours | owner feedback |
+12. The editor runs in the scaffold window with no app-shell code beyond the listed scaffold
+    changes; `e2e/smoke.spec.ts` passes.
 
 ## Boundaries (module-specific)
 
 - **Always:** edit only through doc-model ops inside `transact`; read chemistry only from
   chem-core and pixels only from svg-render; keep `model/`, `tools/`, `state/` DOM-free; keep
-  tolerances in screen px; use the tokens (no raw colours or sizes in components); give every
-  control an accessible name, tooltip and test id.
+  tolerances in screen px; use tokens (no raw colours or sizes in components or `editor.css`);
+  give every control an accessible name, tooltip and test id; name the screenshots each UI task
+  produces.
 - **Ask first:** any new dependency (jsdom, Zustand, an icon set); any `Atom`/`Bond`/`DrawObject`
   or `StyleSettings` field; asking svg-render for `createRenderer` or any new option; adding a
-  visible control not listed in this spec; E7.
+  visible control not listed here; creation UI for anything in "Left out".
 - **Never:** draw overlays into svg-render output or exports; hold ids across undo/redo; import
   `openchemlib` or deep core paths; open a modal dialog for a routine message; use network, fonts
-  or icons from outside the repo; use ChemDraw's names, icons or assets.
-
-## Open questions
-
-Each has the default this spec ships with.
-
-| # | Question | Default | Reason |
-|---|---|---|---|
-| 1 | Does a click with Select pick the whole molecule or one atom/bond? | Whole molecule; Alt+click for one | A teacher clicking a molecule wants to move it, not distort it |
-| 2 | Bond angle snap step | 30° (Shift free); arrows 15° | 30° multiples give textbook zig-zags and rings; 45° arrows are common |
-| 3 | Reaction text in the name field (`A + B -> C`) | In | Fastest route to SC3; the empty-state chip teaches it |
-| 4 | Where does a name-inserted structure land? | Auto, right of the drawing, then selected | No extra click; the teacher can drag it at once |
-| 5 | Minimum window 960×640 instead of 800×500 | 960×640 | Fits 1366×768 laptops and every control without scrolling |
-| 6 | Auto-subscript digits in formula-like words (with SN1/SN2/E1/E2 exceptions) | On | `H2SO4` "is auto-subscripted" is a user story; `^` covers charges |
-| 7 | Annotation creation UI (brackets, callouts, highlights, colours) | Deferred to E7 | Few controls done well; basics-level figures rarely need them |
-| 8 | jsdom + Testing Library for component tests | Not added; ask only if `renderer/editor` coverage < 70 % because of `view/` | No new dependency unless the bar can't be met otherwise |
-| 9 | Preset switch keeps the on-screen size | Yes | Shows the style difference without the drawing jumping in size |
-| 10 | Default zoom | 100 % Slides, 250 % Journal | Bonds ≈ 50 px on screen either way |
-| 11 | Erasing a bond removes stray plain carbons | Yes | A leftover bare carbon renders as "CH₄", which no teacher wants |
-| 12 | Chair template in the Ring options | In | Cyclohexane conformations are on the grade 12 syllabus; costs one button |
-| 13 | Hover keys win over tool keys | Yes | ChemDraw-like; the highlight shows what the key will change |
-| 14 | Quick keys `L` → Cl and `B` → Br on a hovered atom | Yes | Haloalkanes are core grade 11 content; two-letter symbols need a single key |
+  or icons from outside the repo; edit `tokens.css` or `icons.svg` in `src/` without changing the
+  mock-up files first; use ChemDraw's names, icons or assets.
