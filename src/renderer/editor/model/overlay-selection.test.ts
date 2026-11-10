@@ -330,3 +330,48 @@ describe('canvasOverlay: marquee, guides, merge', () => {
     expect(f1.rect.x - f0.rect.x).toBeCloseTo(dxPt * v.zoom * (4 / 3), 9);
   });
 });
+
+describe('canvasOverlay: hover of a selected item (HV5)', () => {
+  const doc = doc2();
+  const scene = render(doc);
+  const bond = Object.keys(doc.bonds)[0] as BondId;
+  const oxygen = Object.values(doc.atoms).find((a) => a.element === 'O');
+  const view = {
+    hover: { kind: 'bond', id: bond },
+    selection: wholeOf(doc, ringAtoms(doc)),
+    gesture: null,
+    preview: null,
+    doc,
+    scene,
+    viewport: v,
+  } as const;
+  const kinds = (tool: 'select' | 'bond' | undefined): string[] =>
+    canvasOverlay({ ...view, ...(tool === undefined ? {} : { tool }) }).map((g) => g.kind);
+
+  it('with Select, a selected bond shows no hover group', () => {
+    expect(kinds('select')).toEqual(['selection', 'frame', 'handle']);
+  });
+
+  it('with Select, a selected label atom shows no hover group', () => {
+    if (!oxygen) throw new Error('no O');
+    const all = wholeOf(doc, Object.keys(doc.atoms) as AtomId[]);
+    const groups = canvasOverlay({
+      ...view,
+      hover: { kind: 'atom', id: oxygen.id },
+      selection: all,
+      tool: 'select',
+    });
+    expect(groups.map((g) => g.kind)).not.toContain('hover-label');
+    expect(groups.map((g) => g.kind)).not.toContain('hover');
+  });
+
+  it('with Select, an item that is not selected still highlights', () => {
+    const groups = canvasOverlay({ ...view, selection: EMPTY_SELECTION, tool: 'select' });
+    expect(groups.map((g) => g.kind)).toEqual(['hover']);
+  });
+
+  it('with another tool, or none named, a selected item still highlights', () => {
+    expect(kinds('bond')).toContain('hover');
+    expect(kinds(undefined)).toContain('hover');
+  });
+});

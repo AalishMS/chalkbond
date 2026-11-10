@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { render } from '../src/core/svg-render';
-import { canvasPoint, goldenDoc, loadDocument, openApp } from './harness';
+import { canvasPoint, goldenDoc, insertName, loadDocument, openApp, readDocument } from './harness';
 
 const near = (actual: number, expected: number, tol = 0.75): void => {
   expect(Math.abs(actual - expected), `${actual} vs ${expected}`).toBeLessThanOrEqual(tol);
@@ -158,6 +158,31 @@ test('cursors per tool, and what each tool highlights', async () => {
 
     await page.getByTestId('tool-ring').click();
     expect(await cursor(page)).toBe('crosshair');
+  } finally {
+    await app.close();
+  }
+});
+
+test('HV5: with Select, a selected item shows no hover tint; an unselected one does', async () => {
+  const { app, page } = await openApp();
+  try {
+    // Water is inserted selected, with the Select tool active (R21).
+    await insertName(page, 'water');
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Escape');
+    const doc = await readDocument(page);
+    const oxygen = Object.values(doc.atoms).find((a) => a.element === 'O');
+    if (!oxygen) throw new Error('no O');
+    const o = await canvasPoint(page, oxygen);
+    await page.mouse.move(o.x, o.y);
+    await expect(page.getByTestId('overlay-selection')).toHaveCount(1);
+    await expect(hoverGroup(page)).toHaveCount(0);
+    await expect(page.getByTestId('overlay-hover-label')).toHaveCount(0);
+    expect(await cursor(page)).toBe('move');
+    // Clear the selection on empty canvas: the same atom now highlights.
+    await page.mouse.click(o.x + 300, o.y + 250);
+    await page.mouse.move(o.x, o.y);
+    await expect(page.getByTestId('overlay-hover-label')).toHaveCount(1);
   } finally {
     await app.close();
   }

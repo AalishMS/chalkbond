@@ -131,6 +131,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R29 | Atom tool (E22): a mark clicked on empty canvas gives its info notice through the tool step (`ToolStep.notice`), not a document change; lone pairs store 0 explicitly after 4 (the cycle returns to 0); radical toggles 0 and 1 (a stored 2 becomes 0) | The tool machine must be able to tell the user why nothing happened; the cycle needs a defined end | 2026-11-10 |
 | R30 | Empty state hides while something is drawn (E22 fix): it shows only when the document is empty AND no gesture runs AND no preview exists. Amended 2026-11-10: while the document is empty there is NO hover ghost for any tool, so moving the pointer never hides the block or its chips; it stays until a gesture starts (a pointer press on the canvas) or the document becomes non-empty, and returns after Esc cancels that first gesture or after undo empties the document. Once the document has an item, hover ghosts behave as before | The first bond's ghost drew over the art and the sentence; the rule is the function `emptyStateVisible(doc, gesture, preview)` | 2026-11-10 |
 | R31 | Chain count badge shows carbon atoms including the start atom (`bonds + 1`: pentane reads 5; three bonds from an existing atom read 4), as a tooltip-style badge with the same colour tokens, kept inside the canvas | A teacher counts carbons, not bonds; the tiny tinted digit was unreadable | 2026-11-10 |
+| R32 | With the Select tool, a hovered item that is already selected shows no hover highlight (HV5); the cursor, hover keys and tooltips are unchanged | A selected label atom under the pointer stacked the selection and hover tints into a heavy blue box | 2026-11-10 |
 
 ---
 
@@ -752,6 +753,10 @@ Numbered so tasks can cite them.
   with the light box of Canvas appearance (R27) and shows **no hover ghost**: a ghost bond through
   the letters is noise. A click still does what its tool does; only the ghost is suppressed.
   Skeleton atoms and empty canvas keep their ghosts.
+- **HV5** With the Select tool, an item that is already in the selection shows no hover highlight:
+  the selection tint stands alone (a hovered, selected label atom would otherwise stack both tints
+  into a heavy box). The cursor is still `move`, hover keys and warning tooltips still work. Items
+  not selected highlight as before; other tools are unchanged.
 
 ### Select tool
 

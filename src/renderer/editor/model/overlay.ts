@@ -10,7 +10,7 @@ import {
 } from '@core/doc-model';
 import type { Perception } from '@core/chem-core';
 import type { Scene } from '@core/svg-render';
-import type { GestureState, Hit, Preview } from '../state/editor-state';
+import type { GestureState, Hit, Preview, ToolId } from '../state/editor-state';
 import { curveControl } from './hit-test';
 import { FRAME_GROW, frameRect, screenRect, selectionInk } from './frame';
 import { growRect, type Point, type Rect } from './geometry';
@@ -283,6 +283,16 @@ export interface OverlayView {
   readonly viewport: Viewport;
   /** Its warnings are drawn (E24); none when absent. */
   readonly perception?: Perception;
+  /** The active tool; with Select a hovered item that is already selected is not highlighted (HV5). */
+  readonly tool?: ToolId;
+}
+
+/** True when `hit` is an atom, bond or object of `sel`. */
+function isSelectedHit(hit: Hit, sel: Selection): boolean {
+  if (hit.kind === 'atom') return sel.atoms.has(hit.id);
+  if (hit.kind === 'bond') return sel.bonds.has(hit.id);
+  if (hit.kind === 'object') return sel.objects.has(hit.id);
+  return false;
 }
 
 /**
@@ -297,7 +307,11 @@ export function canvasOverlay(view: OverlayView): OverlayGroup[] {
       ? undefined
       : { x: preview.translate.dx * k, y: preview.translate.dy * k };
   const groups = selectionGroups(view.selection, doc, scene, v, offset);
-  groups.push(...overlayGroups(view.hover, doc, scene, v));
+  const hover =
+    view.tool === 'select' && view.hover !== null && isSelectedHit(view.hover, view.selection)
+      ? null
+      : view.hover;
+  groups.push(...overlayGroups(hover, doc, scene, v));
   if (preview?.mergeTarget !== undefined) {
     const shape = hoverShape({ kind: 'atom', id: preview.mergeTarget }, doc, scene, v);
     if (shape !== null) groups.push({ kind: 'merge', shapes: [shape] });

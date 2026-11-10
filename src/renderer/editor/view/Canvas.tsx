@@ -201,6 +201,7 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
         size={viewport.size}
         groups={canvasOverlay({
           hover: state.hover,
+          tool: state.tool,
           // While an editor is open its box stands alone: no selection halo or handles.
           selection: state.editing === null ? state.selection : EMPTY_SELECTION,
           gesture: state.gesture,
