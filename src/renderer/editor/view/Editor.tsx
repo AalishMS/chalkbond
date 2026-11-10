@@ -29,6 +29,9 @@ function isTextTarget(target: EventTarget | null): boolean {
   );
 }
 
+const isCanvas = (target: EventTarget): boolean =>
+  target instanceof HTMLElement && target.dataset['testid'] === 'canvas';
+
 const isNameField = (target: EventTarget): boolean =>
   target instanceof HTMLElement && target.dataset['testid'] === 'namefield-input';
 
@@ -55,7 +58,8 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
     // K1: a text input keeps its keys, except Undo / Redo in the empty name field (R23).
     const inText = isTextTarget(e.target);
     const plain = inText ? null : canvasKey(e);
-    if (plain !== null) {
+    // Arrow keys also move focus in the toolbars: they nudge only with the canvas focused.
+    if (plain !== null && !(plain.type === 'nudge' && !isCanvas(e.target))) {
       e.preventDefault();
       dispatch(plain);
       return;

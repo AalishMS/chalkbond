@@ -43,8 +43,13 @@ interface CanvasProps {
 export function Canvas({ controller, children }: CanvasProps): React.JSX.Element {
   const state = useEditorState(controller.store);
   const { viewport } = state;
-  const doc = current(state.history);
-  const { scene } = controller.derive.committed(doc);
+  const committed = current(state.history);
+  const { preview } = state;
+  // A preview that only translates parts shows the committed scene; any other preview shows its
+  // own document (SPEC-editor.md "Rendering" steps 3 and 4).
+  const showPreview = preview !== null && preview.translate === undefined;
+  const doc = showPreview ? preview.doc : committed;
+  const { scene } = showPreview ? controller.derive.preview(doc) : controller.derive.committed(doc);
   const { dispatch } = controller.store;
 
   const ref = useRef<HTMLElement>(null);
@@ -58,6 +63,18 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
     if (!g) return;
     mounted.current = mountParts(domHost(g), nodes.current, mounted.current, scene.parts);
   }, [scene]);
+
+  // Drag fast path: the moving parts' `<g>` are translated by the preview, nothing re-renders.
+  const translate = preview?.translate;
+  useLayoutEffect(() => {
+    if (translate === undefined) return;
+    const moved = translate.keys.flatMap((key) => nodes.current.get(key as ItemKey) ?? []);
+    for (const g of moved)
+      g.setAttribute('transform', `translate(${translate.dx} ${translate.dy})`);
+    return () => {
+      for (const g of moved) g.removeAttribute('transform');
+    };
+  }, [translate, scene]);
 
   // Focus at launch; the ring shows only when Tab brought focus here (K4).
   useEffect(() => {

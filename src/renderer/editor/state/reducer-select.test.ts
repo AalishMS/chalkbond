@@ -1,5 +1,14 @@
 import { createNameIndex } from '@core/chem-core';
-import { canUndo, current, fragments, undoLabel, type AtomId, type Doc } from '@core/doc-model';
+import {
+  canUndo,
+  current,
+  fragments,
+  transformItems,
+  translation,
+  undoLabel,
+  type AtomId,
+  type Doc,
+} from '@core/doc-model';
 import { describe, expect, it } from 'vitest';
 import compounds from '../../../../resources/compounds/compounds.json';
 import type { CanvasEvent } from '../model/canvas-event';
@@ -125,6 +134,65 @@ describe('pointer events with the Select tool', () => {
   });
 });
 
+describe('a drag moves the selection (S2, S3)', () => {
+  it('previews never touch history; the release is exactly one "Move" step', () => {
+    let s = ready();
+    const start = atomPx(s, ring(s)[0] as AtomId);
+    const before = current(s.history);
+    s = run(s, ev(s, 'down', start));
+    for (const [dx, dy] of [
+      [30, 20],
+      [80, 60],
+      [120, 90],
+    ] as const) {
+      s = run(s, ev(s, 'move', { x: start.x + dx, y: start.y + dy }));
+      expect(s.history.past).toHaveLength(0);
+      expect(current(s.history)).toBe(before);
+      expect(s.preview).not.toBeNull();
+    }
+    expect(s.gesture?.kind).toBe('select-move');
+    s = run(s, ev(s, 'up', { x: start.x + 120, y: start.y + 90 }));
+    expect(s.history.past).toHaveLength(1);
+    expect(undoLabel(s.history)).toBe('Move');
+    expect(s.gesture).toBeNull();
+    expect(s.preview).toBeNull();
+    // 120 px = 1.5 BLU, 90 px = 1.125 BLU at 150 % (80 px per BLU).
+    const a = ring(s)[0] as AtomId;
+    const was = before.atoms[a] as Point;
+    const now = current(s.history).atoms[a] as Point;
+    expect(now.x - was.x).toBeCloseTo(1.5, 9);
+    expect(now.y - was.y).toBeCloseTo(1.125, 9);
+    expect(s.selection.atoms.size).toBe(6);
+  });
+
+  it('a cancelled drag leaves the document and the history as they were', () => {
+    let s = ready();
+    const start = atomPx(s, ring(s)[0] as AtomId);
+    s = run(s, ev(s, 'down', start));
+    s = run(s, ev(s, 'move', { x: start.x + 100, y: start.y }));
+    s = run(s, { type: 'escape' });
+    expect(s.gesture).toBeNull();
+    expect(s.preview).toBeNull();
+    expect(s.history.past).toHaveLength(0);
+  });
+
+  it('undo during a drag drops the gesture and the preview', () => {
+    let s = ready();
+    const whole = wholeOf(doc(), ring(s));
+    s = run(s, {
+      type: 'commit',
+      label: 'Move',
+      recipe: (d) => transformItems(d, whole, translation(0.2, 0)),
+    });
+    const start = atomPx(s, ring(s)[0] as AtomId);
+    s = run(s, ev(s, 'down', start));
+    s = run(s, ev(s, 'move', { x: start.x + 100, y: start.y }));
+    s = run(s, { type: 'undo' });
+    expect(s.gesture).toBeNull();
+    expect(s.preview).toBeNull();
+  });
+});
+
 describe('delete (S8, K1)', () => {
   it('deletes the selection as one undo step labelled "Delete"', () => {
     let s = ready();
@@ -244,5 +312,56 @@ describe('Esc ladder (K1)', () => {
     s = run(s, { type: 'escape' });
     expect(s.nameField.open).toBe(false);
     expect(s.selection.atoms.size).toBe(6);
+  });
+});
+
+describe('nudges (K1)', () => {
+  const withRing = (): EditorState => {
+    const s = ready();
+    return run(s, { type: 'set-selection', selection: wholeOf(doc(), ring(s)) });
+  };
+  const x = (s: EditorState): number => current(s.history).atoms[ring(s)[0] as AtomId]?.x ?? NaN;
+  const x0 = (doc().atoms[ring(ready())[0] as AtomId] as Point).x;
+
+  it('moves the selection by the step in BLU, y down', () => {
+    let s = run(withRing(), { type: 'nudge', dx: 0.1, dy: 0 });
+    expect(x(s) - x0).toBeCloseTo(0.1, 9);
+    s = run(s, { type: 'nudge', dx: 0, dy: -1 });
+    expect(current(s.history).atoms[ring(s)[0] as AtomId]?.y).toBeCloseTo(
+      (doc().atoms[ring(s)[0] as AtomId] as Point).y - 1,
+      9,
+    );
+  });
+
+  it('three nudges are one undo step', () => {
+    let s = withRing();
+    for (let i = 0; i < 3; i++) s = run(s, { type: 'nudge', dx: 0.1, dy: 0 });
+    expect(x(s) - x0).toBeCloseTo(0.3, 9);
+    s = run(s, { type: 'undo' });
+    expect(canUndo(s.history)).toBe(false);
+    expect(x(s)).toBeCloseTo(x0, 9);
+  });
+
+  it('a nudge after a move is a second step', () => {
+    let s = withRing();
+    const sel = s.selection;
+    s = run(s, {
+      type: 'commit',
+      label: 'Move',
+      recipe: (d) => transformItems(d, sel, translation(0.5, 0)),
+    });
+    s = run(s, { type: 'nudge', dx: 0.1, dy: 0 });
+    expect(x(s) - x0).toBeCloseTo(0.6, 9);
+    s = run(s, { type: 'undo' });
+    expect(x(s) - x0).toBeCloseTo(0.5, 9);
+    expect(undoLabel(s.history)).toBe('Move');
+  });
+
+  it('does nothing without a selection, and not while a gesture runs', () => {
+    const s = ready();
+    expect(run(s, { type: 'nudge', dx: 0.1, dy: 0 })).toBe(s);
+    let g = withRing();
+    g = run(g, { type: 'set-gesture', gesture: { kind: 'select-press' } });
+    expect(canUndo(run(g, { type: 'nudge', dx: 0.1, dy: 0 }).history)).toBe(false);
   });
 });

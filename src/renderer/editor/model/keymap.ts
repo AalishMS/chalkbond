@@ -44,13 +44,29 @@ export function globalCommand(e: KeyInfo, shortcuts: 'all' | 'canvas-only'): Edi
   return null;
 }
 
+/** Arrow-key nudge distances, BLU: 0.1, and 1.0 with Shift. */
+export const NUDGE_SMALL = 0.1;
+export const NUDGE_BIG = 1;
+
 /**
  * K1 keys that need no Ctrl: Delete / Backspace delete the selection (else the hovered item),
- * Esc takes one step of the ladder. Not left to the host, whatever `shortcuts` says.
+ * Esc takes one step of the ladder, arrow keys nudge the selection. Not left to the host, whatever `shortcuts` says.
  */
 export function canvasKey(e: KeyInfo): EditorAction | null {
   if (e.ctrlKey || e.altKey || e.metaKey) return null;
   if (e.key === 'Delete' || e.key === 'Backspace') return { type: 'delete' };
   if (e.key === 'Escape') return { type: 'escape' };
-  return null;
+  const step = e.shiftKey ? NUDGE_BIG : NUDGE_SMALL;
+  switch (e.key) {
+    case 'ArrowLeft':
+      return { type: 'nudge', dx: -step, dy: 0 };
+    case 'ArrowRight':
+      return { type: 'nudge', dx: step, dy: 0 };
+    case 'ArrowUp':
+      return { type: 'nudge', dx: 0, dy: -step };
+    case 'ArrowDown':
+      return { type: 'nudge', dx: 0, dy: step };
+    default:
+      return null;
+  }
 }

@@ -25,7 +25,7 @@ import {
 } from '../model/viewport';
 import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
-import { deleteSelection, escape, selectEverything } from './commands';
+import { deleteSelection, escape, nudgeSelection, selectEverything } from './commands';
 import { differs } from './dirty';
 import {
   EMPTY_SELECTION,
@@ -77,6 +77,7 @@ export type EditorAction =
   | { type: 'insert-text'; text: string }
   | { type: 'pointer'; event: CanvasEvent }
   | { type: 'delete' }
+  | { type: 'nudge'; dx: number; dy: number }
   | { type: 'select-all' }
   | { type: 'escape' }
   | { type: 'undo' }
@@ -256,6 +257,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return pointer(state, action.event, ctx, (s, a) => commit(s, a, ctx));
     case 'delete':
       return deleteSelection(state, (s, a) => commit(s, a, ctx));
+    case 'nudge':
+      return nudgeSelection(state, action.dx, action.dy, (s, a) => commit(s, a, ctx));
     case 'select-all':
       return selectEverything(state);
     case 'escape':

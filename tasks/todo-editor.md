@@ -506,15 +506,15 @@ another atom → "Join atoms" with `mergeAtoms`; three nudges → one undo step;
 → two steps.
 
 **Acceptance criteria:**
-- [ ] One commit per drag; previews never touch history (assert `history.past.length` during the drag)
-- [ ] Snapping guide drawn and removed on release (unit + e2e)
-- [ ] Nudges coalesce (unit)
+- [x] One commit per drag; previews never touch history (assert `history.past.length` during the drag)
+- [x] Snapping guide drawn and removed on release (unit + e2e)
+- [x] Nudges coalesce (unit)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E16` → `E16/move-guide.png` (scripted: insert ethanol and benzene, drag benzene until its centre aligns with ethanol's; capture before release showing the guide), `E16/moved.png` (after release)
 
 **Dependencies:** E15
 
-**Files:** `src/renderer/editor/tools/select.ts` (+ tests), `src/renderer/editor/model/{geometry.ts,overlay.ts}`, `src/renderer/editor/view/Canvas.tsx`, `e2e/editor-select.spec.ts`, `e2e/shots/E16.shot.ts`
+**Files:** `src/renderer/editor/tools/select.ts` (+ tests), `src/renderer/editor/model/{move.ts,snap.ts,overlay.ts,keymap.ts}`, `src/renderer/editor/state/{commands.ts,reducer.ts}`, `src/renderer/editor/view/{Canvas.tsx,Editor.tsx,use-canvas-input.ts}`, `e2e/editor-move.spec.ts`, `e2e/shots/E16.shot.ts`
 
 **Scope:** M
 

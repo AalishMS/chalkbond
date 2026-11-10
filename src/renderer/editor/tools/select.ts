@@ -1,15 +1,31 @@
 // The Select tool (SPEC-editor.md S1-S4, H4): a state machine over canvas events. Idle -> press ->
-// click (selection by S1) or marquee (H4).
-import type { Selection } from '@core/doc-model';
+// click (selection by S1), marquee (H4) or move (S2-S4). A move previews without touching history
+// and commits once on release.
+import {
+  mergeAtoms,
+  transformItems,
+  translation,
+  type AtomId,
+  type Selection,
+} from '@core/doc-model';
 import type { CanvasEvent } from '../model/canvas-event';
-import { distance, type Point } from '../model/geometry';
-import { marqueeSelection } from '../model/hit-test';
-import { clickSelection, unionSelection } from '../model/selection';
+import { distance, type Point, type Rect } from '../model/geometry';
+import { marqueeSelection, mergeTarget } from '../model/hit-test';
+import { itemBoxes, movedInk, movePlan, type MovePlan } from '../model/move';
+import {
+  clickSelection,
+  isEmptySelection,
+  selectionHolds,
+  unionSelection,
+} from '../model/selection';
+import { snapMove } from '../model/snap';
+import { bluToScreen, PX_PER_PT } from '../model/viewport';
 import {
   EMPTY_SELECTION,
   type GestureOverlay,
   type GestureState,
   type Hit,
+  type Preview,
 } from '../state/editor-state';
 import { DRAG_PX, type Tool, type ToolContext, type ToolStep } from './tool';
 
@@ -37,10 +53,31 @@ interface Marquee extends GestureState {
   readonly base: Selection;
 }
 
-type SelectGesture = Press | Marquee;
+/** A drag of the selection (S2, S3). */
+interface Move extends GestureState {
+  readonly kind: 'select-move';
+  readonly overlay: GestureOverlay;
+  /** BLU position of the press. */
+  readonly start: Point;
+  /** What moves: the selection after S2. */
+  readonly moving: Selection;
+  readonly plan: MovePlan;
+  /** Ink box of what moves, and of every other fragment and object (pt), for snapping. */
+  readonly ink: Rect | null;
+  readonly others: readonly Rect[];
+  /** The one atom being moved (S4), when the moving set is exactly one atom. */
+  readonly single: AtomId | null;
+  /** Translation so far, BLU, after the Shift constraint and snapping. */
+  readonly delta: Point;
+  /** S4: the atom the single atom would join. */
+  readonly target: AtomId | null;
+}
+
+type SelectGesture = Press | Marquee | Move;
 
 function asSelect(g: GestureState | null): SelectGesture | null {
-  return g !== null && (g.kind === 'select-press' || g.kind === 'select-marquee')
+  return g !== null &&
+    (g.kind === 'select-press' || g.kind === 'select-marquee' || g.kind === 'select-move')
     ? (g as SelectGesture)
     : null;
 }
@@ -64,11 +101,97 @@ function down(ev: PointerEv, ctx: ToolContext): ToolStep {
   return { gesture: press };
 }
 
+/** S2: the moving set, the parts that depend on it and the ink boxes to snap to. */
+function startMove(g: Press, ctx: ToolContext): Move | null {
+  if (g.hit === null) return null;
+  const moving = selectionHolds(ctx.selection, g.hit)
+    ? ctx.selection
+    : clickSelection(ctx.doc, ctx.selection, g.hit, g.mods);
+  if (isEmptySelection(moving)) return null;
+  const plan = movePlan(ctx.doc, ctx.scene, moving);
+  const others = itemBoxes(ctx.doc, ctx.scene)
+    .filter(
+      (b) =>
+        !b.atoms.some((id) => plan.atoms.has(id)) &&
+        (b.object === undefined || !plan.objects.has(b.object)),
+    )
+    .map((b) => b.box);
+  const alone = moving.atoms.size === 1 && moving.bonds.size === 0 && moving.objects.size === 0;
+  return {
+    kind: 'select-move',
+    overlay: {},
+    start: g.p,
+    moving,
+    plan,
+    ink: movedInk(ctx.doc, ctx.scene, moving),
+    others,
+    single: alone ? ([...moving.atoms][0] ?? null) : null,
+    delta: { x: 0, y: 0 },
+    target: null,
+  };
+}
+
+/** The move for the pointer at `ev`: Shift constraint, merge target or centre snapping. */
+function dragged(g: Move, ev: PointerEv, ctx: ToolContext): Move {
+  const bl = ctx.scene.style.bondLength;
+  const pxPerPt = ctx.viewport.zoom * PX_PER_PT;
+  let dx = (ev.p.x - g.start.x) * bl;
+  let dy = (ev.p.y - g.start.y) * bl;
+  const lock = { x: false, y: false };
+  if (ev.mods.shift) {
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      dy = 0;
+      lock.y = true;
+    } else {
+      dx = 0;
+      lock.x = true;
+    }
+  }
+  let target: AtomId | null = null;
+  const atom = g.single === null ? undefined : ctx.doc.atoms[g.single];
+  if (g.single !== null && atom !== undefined) {
+    // The atom itself, not the pointer, is what lands on the target.
+    const at = bluToScreen(ctx.viewport, { x: atom.x + dx / bl, y: atom.y + dy / bl }, bl);
+    target = mergeTarget(ctx.doc, ctx.viewport, at, new Set([g.single]));
+  }
+  let guides: GestureOverlay['guides'] = [];
+  if (target === null && g.ink !== null) {
+    const snapped = snapMove(g.ink, g.others, { x: dx, y: dy }, pxPerPt, lock);
+    dx = snapped.d.x;
+    dy = snapped.d.y;
+    guides = snapped.guides;
+  }
+  return { ...g, overlay: { guides }, delta: { x: dx / bl, y: dy / bl }, target };
+}
+
+/** The preview of a move: a translation of the moving parts, or the moved document. */
+function movePreview(g: Move, ctx: ToolContext): Preview {
+  const bl = ctx.scene.style.bondLength;
+  const merge = g.target === null ? {} : { mergeTarget: g.target };
+  if (g.plan.translate) {
+    return {
+      doc: ctx.doc,
+      added: new Set<string>(),
+      translate: { keys: g.plan.keys, dx: g.delta.x * bl, dy: g.delta.y * bl },
+      ...merge,
+    };
+  }
+  return {
+    doc: transformItems(ctx.doc, g.moving, translation(g.delta.x, g.delta.y)),
+    added: new Set<string>(),
+    ...merge,
+  };
+}
+
 function move(g: SelectGesture, ev: PointerEv, ctx: ToolContext): ToolStep {
   if (g.kind === 'select-marquee') {
     const marquee = g.overlay.marquee;
     if (marquee === undefined) return { gesture: g };
     return { gesture: { ...g, overlay: { marquee: { from: marquee.from, to: ev.p } } } };
+  }
+  if (g.kind === 'select-move') {
+    const next = dragged(g, ev, ctx);
+    return { gesture: next, preview: movePreview(next, ctx) };
   }
   if (distance(g.screen, ev.screen) <= DRAG_PX) return { gesture: g };
   if (g.hit === null) {
@@ -80,13 +203,40 @@ function move(g: SelectGesture, ev: PointerEv, ctx: ToolContext): ToolStep {
     };
     return { gesture: marquee };
   }
-  // A drag from an item applies S1 first, then moves it (E16 adds the move).
-  return { gesture: null, selection: clickSelection(ctx.doc, ctx.selection, g.hit, g.mods) };
+  // S2: a drag from an item applies S1 first (unless it is already selected), then moves.
+  const started = startMove(g, ctx);
+  if (started === null) return { gesture: null };
+  const next = dragged(started, ev, ctx);
+  return {
+    gesture: next,
+    preview: movePreview(next, ctx),
+    ...(next.moving === ctx.selection ? {} : { selection: next.moving }),
+  };
 }
 
 function up(g: SelectGesture, ev: PointerEv, ctx: ToolContext): ToolStep {
   if (g.kind === 'select-press') {
     return { gesture: null, selection: clickSelection(ctx.doc, ctx.selection, g.hit, g.mods) };
+  }
+  if (g.kind === 'select-move') {
+    const { delta, target, single, moving } = dragged(g, ev, ctx);
+    if (delta.x === 0 && delta.y === 0) return { gesture: null, preview: null };
+    const shift = translation(delta.x, delta.y);
+    if (target !== null && single !== null) {
+      return {
+        gesture: null,
+        preview: null,
+        commit: {
+          label: 'Join atoms',
+          recipe: (doc) => mergeAtoms(transformItems(doc, moving, shift), target, single),
+        },
+      };
+    }
+    return {
+      gesture: null,
+      preview: null,
+      commit: { label: 'Move', recipe: (doc) => transformItems(doc, moving, shift) },
+    };
   }
   const marquee = g.overlay.marquee;
   const found =

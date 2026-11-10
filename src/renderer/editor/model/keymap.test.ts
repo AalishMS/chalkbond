@@ -100,3 +100,23 @@ describe('K1 select all and the plain keys', () => {
     expect(canvasKey(plain('x'))).toBeNull();
   });
 });
+
+describe('K1 nudge keys', () => {
+  const arrow = (k: string, over: Partial<KeyInfo> = {}) => key(k, { ctrlKey: false, ...over });
+
+  it('arrow keys nudge by 0.1 BLU, Shift+arrow by 1.0; y points down', () => {
+    expect(canvasKey(arrow('ArrowRight'))).toEqual({ type: 'nudge', dx: 0.1, dy: 0 });
+    expect(canvasKey(arrow('ArrowLeft'))).toEqual({ type: 'nudge', dx: -0.1, dy: 0 });
+    expect(canvasKey(arrow('ArrowUp'))).toEqual({ type: 'nudge', dx: 0, dy: -0.1 });
+    expect(canvasKey(arrow('ArrowDown', { shiftKey: true }))).toEqual({
+      type: 'nudge',
+      dx: 0,
+      dy: 1,
+    });
+  });
+
+  it('Ctrl, Alt or Meta with an arrow is not a nudge', () => {
+    expect(canvasKey(arrow('ArrowUp', { ctrlKey: true }))).toBeNull();
+    expect(canvasKey(arrow('ArrowUp', { altKey: true }))).toBeNull();
+  });
+});

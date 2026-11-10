@@ -1,5 +1,5 @@
 // Editor commands that act on the selection: delete (S8, K1), select all, the Esc ladder.
-import { current, type Selection } from '@core/doc-model';
+import { current, transformItems, translation, type Selection } from '@core/doc-model';
 import { deleteWithOrphans } from '../model/cleanup';
 import { isEmptySelection, selectAll } from '../model/selection';
 import { EMPTY_SELECTION, type EditorState, type Hit } from './editor-state';
@@ -76,4 +76,26 @@ export function escape(state: EditorState): EditorState {
   if (!isEmptySelection(state.selection)) return { ...state, selection: EMPTY_SELECTION };
   if (state.tool !== 'select') return { ...state, tool: 'select', hover: null };
   return state;
+}
+
+/**
+ * K1: arrow keys move the selection by `dx`, `dy` BLU. A run of nudges is one undo step
+ * (`coalesceKey: 'nudge'`); anything else in between ends the run.
+ */
+export function nudgeSelection(
+  state: EditorState,
+  dx: number,
+  dy: number,
+  commit: (state: EditorState, action: Commit) => EditorState,
+): EditorState {
+  if (state.gesture !== null || state.editing !== null || isEmptySelection(state.selection)) {
+    return state;
+  }
+  const sel = state.selection;
+  return commit(state, {
+    type: 'commit',
+    label: 'Nudge',
+    recipe: (doc) => transformItems(doc, sel, translation(dx, dy)),
+    coalesceKey: 'nudge',
+  });
 }
