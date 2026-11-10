@@ -81,16 +81,38 @@ describe('set-preset (PR1, V6)', () => {
     expect(run(h, { type: 'set-preset', preset: 'journal' })).toBe(h);
   });
 
-  it('undo flips the preset back and the switch follows; the zoom stays (not part of history)', () => {
+  it('undo flips the preset back and the switch follows; the viewport follows the style (not history)', () => {
     const s = run(sized(), { type: 'set-preset', preset: 'journal' });
-    const zoom = s.viewport.zoom;
     const u = run(s, { type: 'undo' });
     expect(docOf(u).style.preset).toBe('slides');
-    expect(u.viewport.zoom).toBe(zoom);
     expect(canUndo(u.history)).toBe(false);
     expect(redoLabel(u.history)).toBe('Switch to Handout style');
     const r = run(u, { type: 'redo' });
     expect(docOf(r).style.preset).toBe('journal');
+  });
+
+  it('undo returns every atom to within 1 px of where it was and the zoom to its value; redo matches the Handout state', () => {
+    const slides = ester();
+    const handout = run(slides, { type: 'set-preset', preset: 'journal' });
+    const undone = run(handout, { type: 'undo' });
+    expect(undone.viewport.zoom).toBeCloseTo(slides.viewport.zoom, 9);
+    expect(zoomPercent(undone.viewport.zoom)).toBe(zoomPercent(slides.viewport.zoom));
+    for (const a of Object.values(docOf(slides).atoms)) {
+      const p = bluToScreen(slides.viewport, a, bondLength(slides));
+      const q = bluToScreen(undone.viewport, a, bondLength(undone));
+      expect(Math.abs(p.x - q.x)).toBeLessThan(1);
+      expect(Math.abs(p.y - q.y)).toBeLessThan(1);
+    }
+    const redone = run(undone, { type: 'redo' });
+    expect(redone.viewport.zoom).toBeCloseTo(handout.viewport.zoom, 9);
+    expect(redone.viewport.pan.x).toBeCloseTo(handout.viewport.pan.x, 6);
+    expect(redone.viewport.pan.y).toBeCloseTo(handout.viewport.pan.y, 6);
+  });
+
+  it('undo of an ordinary edit leaves the viewport alone', () => {
+    const s = run(sized(), { type: 'insert-text', text: 'ethanol' });
+    const u = run(s, { type: 'undo' });
+    expect(u.viewport).toEqual(s.viewport);
   });
 
   it('makes the document dirty, and clean again after undo', () => {

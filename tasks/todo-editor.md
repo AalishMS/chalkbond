@@ -906,7 +906,7 @@ old/new bond length about the canvas centre), the switch follows the document (u
 back); `run({ type: 'set-preset' })`.
 
 **Tests first:** reducer: switch to journal → preset journal, zoom 1.5 → 4.1667, screen bond
-length unchanged; undo → slides and the switch shows Slides (zoom stays, not part of history);
+length unchanged; undo → slides and the switch shows Slides (the viewport follows the style, R38: atoms within 1 px of where they started, zoom back to its value; redo → the Handout state);
 switching to the current preset records nothing.
 
 **Acceptance criteria:**

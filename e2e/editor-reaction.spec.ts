@@ -298,3 +298,36 @@ test('the chip at 960 x 640 zooms out to fit with the 48 px margin', async () =>
     await app.close();
   }
 });
+
+test('two-atom molecules lie flat: 2 H2 + O2 -> 2 H2O and chlorine (N2, N3)', async () => {
+  const { app, page } = await openApp();
+  try {
+    const input = page.getByTestId('namefield-input');
+    await input.click();
+    await input.fill('2 H2 + O2 -> 2 H2O');
+    await page.keyboard.press('Enter');
+    const doc = await readDocument(page);
+    const arrow = arrowOf(doc);
+    let diatomics = 0;
+    for (const bond of Object.values(doc.bonds)) {
+      const p = doc.atoms[bond.a1];
+      const q = doc.atoms[bond.a2];
+      if (!p || !q || p.element !== q.element) continue;
+      diatomics++;
+      expect(Math.abs(p.y - q.y)).toBeLessThan(1e-6);
+      expect(p.x).toBeLessThan(q.x);
+      expect(Math.abs((p.y + q.y) / 2 - arrow.from.y)).toBeLessThan(0.01);
+    }
+    expect(diatomics).toBe(2);
+    await page.getByTestId('undo').click();
+    await input.fill('chlorine');
+    await page.keyboard.press('Enter');
+    const [a, b] = Object.values((await readDocument(page)).atoms);
+    if (!a || !b) throw new Error('expected two atoms');
+    expect([a.element, b.element]).toEqual(['Cl', 'Cl']);
+    expect(Math.abs(a.y - b.y)).toBeLessThan(1e-6);
+    expect(a.x).toBeLessThan(b.x);
+  } finally {
+    await app.close();
+  }
+});

@@ -137,6 +137,8 @@ resolutions of the draft's open questions and of problems found in review.
 | R35 | Text editor (E27): the Text tool opens the box on release, not on press (the press would give focus back to the canvas and close it); the box stands on the object's `at` by its `align` (left edge, centre or right edge, first line centred on `at.y`) and its lines align the same way; Insert buttons add plain non-explicit text; a paste or drop takes the clipboard's `text/plain` only (a `plaintext-only` box otherwise turns rich HTML into its own text); the empty state is hidden while an editor is open | A press-opened box lost focus at once; a left-aligned text drew centred lines in the box; rich clipboard HTML pasted with wrong line breaks; the chips sat behind a new box | 2026-11-10 |
 | R36 | Conditions and Tidy (E28): "above" is screen-up for a horizontal arrow whichever way it points, else the left of its travel direction (T3); a tilted arrow's ink reaches half the thickness of the same arrow lying flat beyond its shaft; a new condition is placed by the content it is committed with (and again when edited, resized or rotated), a nominal one-line `H` stands in for the slot box and the editor; the Text tool shows a slot for the pointer's side within 1.0 BLU of a shaft, after texts; Tidy attaches a free text to a slot only if the slot is free and sets `align` to `center`; changes under 1e-9 BLU are noise, so a tidied document plans nothing and a second Tidy records no step; Ctrl+Shift+T runs whenever the editor is idle and says "Nothing to tidy" when no arrow is in scope (the Tidy button stays disabled without any arrow) | The rules left these open; each is what makes T3 and TR6 exact and idempotent | 2026-11-10 |
 | R37 | Short curly arrows (E25 follow-up; svg-render Decision 13 draws `\|bend\| > 0.5` as a cubic whose ends are square to the chord): when either anchor is an atom drawn with a label, the default apex height is at least `0.9 − 0.5 × chord` BLU (chord 0.5: 0.65, bend 2.6; from chord 0.9 on R33 alone decides, so chord ≥ 0.9 arrows are unchanged). Hit-testing (H1), the hover band and the bend handle use svg-render's `curveControls`, so they follow the drawn curve | At bend 1.8 the label's clearance (≈ 0.3 BLU) ate the return leg and the head sat beside the O pointing away from it; with 0.65 the arc leaves the bond sideways and the head arrives at the label edge pointing at it (head within 20° of the label centre, visible arc ≥ 5 head lengths in both presets) | 2026-11-10 |
+| R38 | The viewport follows the document's preset whenever a change alters the style's bond length: the preset switch, undo and redo all call `switchPreset(viewport, old, new)` (zoom × old / new bond length, drawing centre kept). The viewport is still not part of history; `load` keeps its own default-zoom rule. Replaces "the zoom stays" in PR1 | Undoing a Handout switch left the Slides style at the Handout zoom, so the drawing looked 2.8 times too big | 2026-11-10 |
+| R39 | A structure inserted through the name field (single names, chips, reaction parts; N2, N3) with exactly two atoms and one bond is rotated about its centre so the bond is horizontal, first atom on the left; done in the editor's insert path, not in chem-core | `2 H2 + O2 -> 2 H2O` drew H-H and O=O at the zig-zag angle, wrong beside "H₂O" | 2026-11-10 |
 
 ---
 
@@ -1041,7 +1043,10 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
   "Insert ethanol" (entry name, else "Insert structure"), announced "Inserted ethanol" (an info notice, no icon). The inserted items become the selection and
   the tool becomes Select; the field keeps focus and is cleared; the view is framed (V7). Failure →
   the not-found row (`not-found`, `invalid-smiles`, `invalid-molfile`); `too-large` → that
-  message in the row; `empty` → nothing.
+  message in the row; `empty` → nothing. A fragment with exactly two atoms joined by one bond (H₂,
+  O₂, Cl₂, ...) is rotated about its centre so the bond is horizontal, the atoms in the order
+  chem-core returned them (first on the left); any other fragment is untouched (R39). This applies
+  to N3 parts as well.
 - **N3** **Reaction text**: if the text contains an arrow token (R14) outside brackets and
   parentheses, it is a scheme. Split at arrow tokens into sides, each side at `+` outside brackets
   and parentheses (spaces optional) into parts; a part starting with an integer and a space
@@ -1107,7 +1112,10 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
   commit ("Switch to Handout style" / "Switch to Slides style"), then V6. The switch shows the
   document's preset. It is a two-option `radiogroup` (`role="radio"`, `aria-checked`): one tab stop
   (the selected option), arrow keys move to the other option and choose it, Home / End the ends.
-  Undo and redo flip the style only; the zoom is not part of history.
+  Undo and redo flip the style only; the viewport is not part of history, but it follows the
+  style: whenever a document change alters the style's bond length (the switch, undo, redo),
+  `switchPreset(viewport, oldBondLength, newBondLength)` keeps one bond's on-screen length and the
+  drawing's centre where it was. `load` keeps its own rule (default zoom for the loaded preset).
 
 ### Errors
 

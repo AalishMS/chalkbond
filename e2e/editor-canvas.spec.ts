@@ -442,6 +442,37 @@ test('undo flips the style back and the switch follows; redo flips it again', as
   }
 });
 
+test('undo and redo across a preset switch keep every atom within 1 px and the readout in step', async () => {
+  const { app, page } = await openApp();
+  try {
+    await chip(page, ESTER);
+    const slides = await atomPoints(page, 40);
+    const zoomText = (await readout(page).textContent()) ?? '';
+    await page.getByTestId('preset-handout').click();
+    const handout = await atomPoints(page, 14.4);
+    const handoutText = (await readout(page).textContent()) ?? '';
+    expect(handoutText).not.toBe(zoomText);
+    await page.keyboard.press('Control+z');
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
+    await expect(readout(page)).toHaveText(zoomText);
+    const undone = await atomPoints(page, 40);
+    for (let i = 0; i < slides.length; i++) {
+      near((undone[i] as Pt).x, (slides[i] as Pt).x, 1);
+      near((undone[i] as Pt).y, (slides[i] as Pt).y, 1);
+    }
+    await page.keyboard.press('Control+y');
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
+    await expect(readout(page)).toHaveText(handoutText);
+    const redone = await atomPoints(page, 14.4);
+    for (let i = 0; i < handout.length; i++) {
+      near((redone[i] as Pt).x, (handout[i] as Pt).x, 1);
+      near((redone[i] as Pt).y, (handout[i] as Pt).y, 1);
+    }
+  } finally {
+    await app.close();
+  }
+});
+
 test('a loaded Journal document shows Handout selected at the Handout default zoom', async () => {
   const { app, page } = await openApp();
   try {

@@ -189,3 +189,31 @@ describe('name-dismiss and name-clear (Esc ladder)', () => {
     expect(s.nameField).toEqual({ text: '', open: false, highlighted: 0, error: null });
   });
 });
+
+describe('two-atom molecules insert horizontally (N2, N3)', () => {
+  const atomsOf = (s: EditorState) => Object.values(current(s.history).atoms);
+
+  it('chlorine inserts Cl-Cl with the bond horizontal, first atom on the left', () => {
+    const s = run(sized(), { type: 'insert-text', text: 'chlorine' });
+    const [a, b] = atomsOf(s);
+    if (a === undefined || b === undefined) throw new Error('expected two atoms');
+    expect([a.element, b.element]).toEqual(['Cl', 'Cl']);
+    expect(a.y).toBeCloseTo(b.y, 9);
+    expect(a.x).toBeLessThan(b.x);
+  });
+
+  it('2 H2 + O2 -> 2 H2O lays H-H and O=O flat; water is untouched', () => {
+    const s = run(sized(), { type: 'insert-text', text: '2 H2 + O2 -> 2 H2O' });
+    const atoms = atomsOf(s);
+    const h = atoms.filter((a) => a.element === 'H');
+    const o = atoms.filter((a) => a.element === 'O');
+    expect(h.length + o.length).toBe(atoms.length);
+    const doc = current(s.history);
+    for (const bond of Object.values(doc.bonds)) {
+      const p = doc.atoms[bond.a1];
+      const q = doc.atoms[bond.a2];
+      if (p === undefined || q === undefined) throw new Error('dangling bond');
+      if (p.element === q.element) expect(p.y).toBeCloseTo(q.y, 9);
+    }
+  });
+});

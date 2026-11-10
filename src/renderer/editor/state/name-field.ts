@@ -2,6 +2,7 @@
 import { structureFromText } from '@core/chem-core';
 import { current, insert, type Doc, type Point } from '@core/doc-model';
 import type { Scene } from '@core/svg-render';
+import { levelDiatomic } from '../model/level-diatomic';
 import { insertPosition } from '../model/placement';
 import { buildScheme, parseScheme, type SchemeItem, type SchemeToken } from '../model/scheme-text';
 import { frame, screenToBlu } from '../model/viewport';
@@ -122,7 +123,7 @@ function insertScheme(
       };
     }
     if (item.coefficient !== null) built.push({ kind: 'coefficient', text: item.coefficient });
-    built.push({ kind: 'structure', sub: result.value.sub });
+    built.push({ kind: 'structure', sub: levelDiatomic(result.value.sub) });
   }
   const doc: Doc = current(state.history);
   const { scene } = ctx.derive.committed(doc);
@@ -154,7 +155,8 @@ export function insertText(
       nameField: { text, open: false, highlighted: 0, error: nameError(text, result.error) },
     };
   }
-  const { sub, entry } = result.value;
+  const { entry } = result.value;
+  const sub = levelDiatomic(result.value.sub);
   const doc: Doc = current(state.history);
   const { scene } = ctx.derive.committed(doc);
   const at = insertPosition(doc, scene, sub, canvasCentre(state, scene));

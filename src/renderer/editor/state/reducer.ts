@@ -22,6 +22,7 @@ import {
   fitViewport,
   initialViewport,
   stepViewport,
+  switchPreset,
   wheelZoom,
   zoomAbout,
   type Viewport,
@@ -238,12 +239,17 @@ function commit(
   }
 }
 
-function stepHistory(state: EditorState, dir: 'undo' | 'redo'): EditorState {
+function stepHistory(state: EditorState, dir: 'undo' | 'redo', ctx: ReducerContext): EditorState {
   if (state.editing !== null) return state;
   const can = dir === 'undo' ? canUndo(state.history) : canRedo(state.history);
   if (!can) return state;
   const history = dir === 'undo' ? undo(state.history) : redo(state.history);
-  return { ...settled(state), history, notice: null };
+  const stepped = { ...settled(state), history, notice: null };
+  // PR1: the viewport follows the style's bond length (a preset switch undone or redone).
+  const was = ctx.derive.committed(docOf(state)).scene.style.bondLength;
+  const now = ctx.derive.committed(current(history)).scene.style.bondLength;
+  if (was === now) return stepped;
+  return { ...stepped, viewport: switchPreset(state.viewport, was, now) };
 }
 
 /** Ink bounds (pt) and bond length (pt) of a document's scene. */
@@ -367,7 +373,7 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return insertText(state, action.text, ctx, (s, a) => commit(s, a, ctx));
     case 'undo':
     case 'redo':
-      return stepHistory(state, action.type);
+      return stepHistory(state, action.type, ctx);
     case 'notice-show':
       return showNotice(state, action.kind, action.text);
     case 'notice-expired':
