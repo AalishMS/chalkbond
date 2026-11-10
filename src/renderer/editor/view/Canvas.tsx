@@ -115,7 +115,7 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
   useCanvasInput(ref, controller.store, controller.derive);
 
   const k = viewport.zoom * PX_PER_PT;
-  const cursor = cursorFor(state.tool, state.hover, state.spaceHeld);
+  const cursor = cursorFor(state.tool, state.hover, state.spaceHeld, state.gesture?.kind ?? null);
   return (
     <main
       ref={ref}

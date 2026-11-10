@@ -25,7 +25,13 @@ import {
 } from '../model/viewport';
 import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
-import { deleteSelection, escape, nudgeSelection, selectEverything } from './commands';
+import {
+  deleteSelection,
+  escape,
+  flipSelection,
+  nudgeSelection,
+  selectEverything,
+} from './commands';
 import { differs } from './dirty';
 import {
   EMPTY_SELECTION,
@@ -79,6 +85,7 @@ export type EditorAction =
   | { type: 'delete' }
   | { type: 'nudge'; dx: number; dy: number }
   | { type: 'select-all' }
+  | { type: 'flip'; axis: 'h' | 'v' }
   | { type: 'escape' }
   | { type: 'undo' }
   | { type: 'redo' }
@@ -261,6 +268,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return nudgeSelection(state, action.dx, action.dy, (s, a) => commit(s, a, ctx));
     case 'select-all':
       return selectEverything(state);
+    case 'flip':
+      return flipSelection(state, action.axis, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'escape':
       return escape(state);
     case 'name-text':

@@ -148,6 +148,10 @@ describe('S1 clickSelection (Decision 6)', () => {
   it('a click on empty canvas clears the selection', () => {
     expect(clickSelection(doc, ring, null, none)).toBe(EMPTY_SELECTION);
   });
+
+  it('R24: Shift+click on empty canvas keeps the selection', () => {
+    expect(clickSelection(doc, ring, null, { shift: true, alt: false })).toBe(ring);
+  });
 });
 
 describe('selectAll and expandSelection', () => {

@@ -27,6 +27,7 @@ import {
   type Hit,
   type Preview,
 } from '../state/editor-state';
+import { isHandleGesture, startHandle, stepHandle, type HandleGesture } from './select-handles';
 import { DRAG_PX, type Tool, type ToolContext, type ToolStep } from './tool';
 
 interface Mods {
@@ -73,11 +74,14 @@ interface Move extends GestureState {
   readonly target: AtomId | null;
 }
 
-type SelectGesture = Press | Marquee | Move;
+type SelectGesture = Press | Marquee | Move | HandleGesture;
 
 function asSelect(g: GestureState | null): SelectGesture | null {
   return g !== null &&
-    (g.kind === 'select-press' || g.kind === 'select-marquee' || g.kind === 'select-move')
+    (g.kind === 'select-press' ||
+      g.kind === 'select-marquee' ||
+      g.kind === 'select-move' ||
+      isHandleGesture(g))
     ? (g as SelectGesture)
     : null;
 }
@@ -88,9 +92,14 @@ type PointerEv = Extract<CanvasEvent, { type: 'down' | 'move' | 'up' }>;
 const IDLE: ToolStep = { gesture: null };
 
 function down(ev: PointerEv, ctx: ToolContext): ToolStep {
-  // Only the primary button presses. Handles and slots arrive with E17 and the Text tool.
+  // Only the primary button presses. A handle starts its own gesture (S5, S6); slots belong to
+  // the Text tool.
   if (ev.button !== 0) return IDLE;
-  if (ctx.hit?.kind === 'handle' || ctx.hit?.kind === 'slot') return IDLE;
+  if (ctx.hit?.kind === 'handle') {
+    const started = startHandle(ctx.hit, ev, ctx);
+    return started === null ? IDLE : { gesture: started };
+  }
+  if (ctx.hit?.kind === 'slot') return IDLE;
   const press: Press = {
     kind: 'select-press',
     screen: ev.screen,
@@ -183,7 +192,7 @@ function movePreview(g: Move, ctx: ToolContext): Preview {
   };
 }
 
-function move(g: SelectGesture, ev: PointerEv, ctx: ToolContext): ToolStep {
+function move(g: Exclude<SelectGesture, HandleGesture>, ev: PointerEv, ctx: ToolContext): ToolStep {
   if (g.kind === 'select-marquee') {
     const marquee = g.overlay.marquee;
     if (marquee === undefined) return { gesture: g };
@@ -214,7 +223,7 @@ function move(g: SelectGesture, ev: PointerEv, ctx: ToolContext): ToolStep {
   };
 }
 
-function up(g: SelectGesture, ev: PointerEv, ctx: ToolContext): ToolStep {
+function up(g: Exclude<SelectGesture, HandleGesture>, ev: PointerEv, ctx: ToolContext): ToolStep {
   if (g.kind === 'select-press') {
     return { gesture: null, selection: clickSelection(ctx.doc, ctx.selection, g.hit, g.mods) };
   }
@@ -258,6 +267,9 @@ export const selectTool: Tool = {
     if (ev.type === 'down') return down(ev, ctx);
     const g = asSelect(gesture);
     if (g === null) return IDLE;
+    if (isHandleGesture(g)) {
+      return ev.type === 'move' || ev.type === 'up' ? stepHandle(g, ev, ctx) : { gesture: g };
+    }
     if (ev.type === 'move') return move(g, ev, ctx);
     if (ev.type === 'up') return up(g, ev, ctx);
     return { gesture: g };

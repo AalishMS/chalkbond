@@ -136,7 +136,7 @@ export function selectionHolds(sel: Selection, hit: Hit): boolean {
  * S1: the selection after a click (press and release within 4 px). On an atom or bond: its whole
  * fragment, or, when that fragment is already fully selected, just that atom or bond; Alt picks
  * the single atom or bond directly; Shift toggles. On an object: that object (Shift toggles).
- * On empty canvas: nothing selected.
+ * On empty canvas: nothing selected, unless Shift is down (R24: Shift only adds).
  */
 export function clickSelection(
   doc: Doc,
@@ -144,7 +144,7 @@ export function clickSelection(
   hit: Hit | null,
   mods: { readonly shift: boolean; readonly alt: boolean },
 ): Selection {
-  if (hit === null) return EMPTY_SELECTION;
+  if (hit === null) return mods.shift ? sel : EMPTY_SELECTION;
   if (hit.kind === 'object') return mods.shift ? toggled(sel, single(hit)) : single(hit);
   if (hit.kind !== 'atom' && hit.kind !== 'bond') return sel;
   if (mods.alt) return mods.shift ? toggled(sel, single(hit)) : single(hit);

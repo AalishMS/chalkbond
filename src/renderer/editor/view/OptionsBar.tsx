@@ -55,8 +55,9 @@ function FlipButton(props: {
   label: string;
   state: ActionState;
   roving: Roving;
+  dispatch: (action: EditorAction) => void;
 }): React.JSX.Element {
-  const { id, label, state, roving } = props;
+  const { id, label, state, roving, dispatch } = props;
   return (
     <button
       type="button"
@@ -66,6 +67,10 @@ function FlipButton(props: {
       aria-disabled={state.enabled ? undefined : true}
       {...roving.item(id)}
       {...tipProps(actionTip(label, undefined, state), 'below')}
+      onClick={() => {
+        // A disabled button stays focusable (aria-disabled), so the click is checked here.
+        if (state.enabled) dispatch({ type: 'flip', axis: id === 'act-flip-h' ? 'h' : 'v' });
+      }}
     >
       <Icon name={id === 'act-flip-h' ? 'flip-h' : 'flip-v'} size={20} />
     </button>
@@ -75,9 +80,11 @@ function FlipButton(props: {
 function SelectionBar({
   scope,
   roving,
+  dispatch,
 }: {
   scope: SelectionScope;
   roving: Roving;
+  dispatch: (action: EditorAction) => void;
 }): React.JSX.Element {
   const a = selectionActions(scope);
   return (
@@ -108,8 +115,20 @@ function SelectionBar({
         shortcut="Ctrl+Shift+T"
       />
       <Separator />
-      <FlipButton id="act-flip-h" label="Flip horizontal" state={a.flip} roving={roving} />
-      <FlipButton id="act-flip-v" label="Flip vertical" state={a.flip} roving={roving} />
+      <FlipButton
+        id="act-flip-h"
+        label="Flip horizontal"
+        state={a.flip}
+        roving={roving}
+        dispatch={dispatch}
+      />
+      <FlipButton
+        id="act-flip-v"
+        label="Flip vertical"
+        state={a.flip}
+        roving={roving}
+        dispatch={dispatch}
+      />
       {a.expand && (
         <>
           <Separator />
@@ -147,7 +166,7 @@ export function OptionsBar({ state, scope, dispatch }: OptionsBarProps): React.J
       onMouseDown={pressKeepsFocus}
       onKeyDown={roving.onKeyDown}
     >
-      {tool === 'select' && <SelectionBar scope={scope} roving={roving} />}
+      {tool === 'select' && <SelectionBar scope={scope} roving={roving} dispatch={dispatch} />}
       {isVariantTool(tool) &&
         OPTIONS[tool].map((o) => (
           <Fragment key={o.id}>

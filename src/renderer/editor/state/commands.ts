@@ -1,6 +1,8 @@
 // Editor commands that act on the selection: delete (S8, K1), select all, the Esc ladder.
-import { current, transformItems, translation, type Selection } from '@core/doc-model';
+import { current, scaling, transformItems, translation, type Selection } from '@core/doc-model';
 import { deleteWithOrphans } from '../model/cleanup';
+import type { Derive } from '../model/derive';
+import { selectionCentre } from '../model/frame';
 import { isEmptySelection, selectAll } from '../model/selection';
 import { EMPTY_SELECTION, type EditorState, type Hit } from './editor-state';
 import { nameDismiss } from './name-field';
@@ -97,5 +99,35 @@ export function nudgeSelection(
     label: 'Nudge',
     recipe: (doc) => transformItems(doc, sel, translation(dx, dy)),
     coalesceKey: 'nudge',
+  });
+}
+
+/**
+ * Flip horizontal / vertical: the selection mirrored about the centre of its ink box, one "Flip"
+ * commit (SPEC-editor.md "Selection actions"). Labels stay upright: svg-render lays a label out
+ * from where its bonds are, so "HO" becomes "OH" when the bond now comes from the other side.
+ */
+export function flipSelection(
+  state: EditorState,
+  axis: 'h' | 'v',
+  derive: Derive,
+  commit: (state: EditorState, action: Commit) => EditorState,
+): EditorState {
+  if (state.gesture !== null || state.editing !== null || isEmptySelection(state.selection)) {
+    return state;
+  }
+  const doc = current(state.history);
+  const { scene } = derive.committed(doc);
+  const centre = selectionCentre(doc, scene, state.selection);
+  if (centre === null) return state;
+  const bl = scene.style.bondLength;
+  const c = { x: centre.x / bl, y: centre.y / bl };
+  const m = axis === 'h' ? scaling(-1, 1, c) : scaling(1, -1, c);
+  const sel = state.selection;
+  return commit(state, {
+    type: 'commit',
+    label: 'Flip',
+    recipe: (d) => transformItems(d, sel, m),
+    selection: sel,
   });
 }

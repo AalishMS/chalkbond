@@ -1,6 +1,7 @@
 // Applying a tool's step to the editor state (SPEC-editor.md "Tools and gestures").
 import { current, type Selection } from '@core/doc-model';
 import type { CanvasEvent } from '../model/canvas-event';
+import { handleHit } from '../model/handles';
 import { hoverFilter, hitTest } from '../model/hit-test';
 import { toolFor } from '../tools';
 import type { ToolContext } from '../tools/tool';
@@ -9,10 +10,7 @@ import type { EditorAction, ReducerContext } from './reducer';
 
 type Commit = Extract<EditorAction, { type: 'commit' }>;
 
-/**
- * The pointer's hit on a press. The seam for handles: E17 tests the selection's handles here
- * before the items (H2).
- */
+/** The pointer's hit on a press: the selection's handles first (H2), then the items. */
 function hitForPress(
   state: EditorState,
   ctx: ReducerContext,
@@ -20,7 +18,9 @@ function hitForPress(
 ): Hit | null {
   const doc = current(state.history);
   const { scene } = ctx.derive.committed(doc);
-  return hitTest(doc, scene, state.viewport, screen, hoverFilter(state.tool));
+  const handle =
+    state.tool === 'select' ? handleHit(doc, scene, state.viewport, state.selection, screen) : null;
+  return handle ?? hitTest(doc, scene, state.viewport, screen, hoverFilter(state.tool));
 }
 
 /**

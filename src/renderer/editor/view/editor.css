@@ -296,6 +296,18 @@
   cursor: crosshair;
 }
 
+.canvas[data-cursor='pointer'] {
+  cursor: pointer;
+}
+
+.canvas[data-cursor='grab'] {
+  cursor: grab;
+}
+
+.canvas[data-cursor='grabbing'] {
+  cursor: grabbing;
+}
+
 .canvas[data-cursor='text'] {
   cursor: text;
 }
@@ -342,6 +354,21 @@
   fill-opacity: var(--overlay-marquee);
   stroke: var(--accent);
   stroke-width: 1;
+}
+
+/* Handles of the selection: white fill, 1.5 px accent stroke; the rotate stem is 1 px. */
+.overlay-handle circle,
+.overlay-handle rect,
+.overlay-handle polygon {
+  fill: var(--canvas-bg);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.overlay-handle line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
 }
 
 /* Snapping guides: 1 px dashed lines across the canvas. */

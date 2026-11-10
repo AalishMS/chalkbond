@@ -20,6 +20,12 @@ function Shape({ shape }: { shape: OverlayShape }): React.JSX.Element {
       return (
         <line x1={n(shape.from.x)} y1={n(shape.from.y)} x2={n(shape.to.x)} y2={n(shape.to.y)} />
       );
+    case 'diamond': {
+      const { c, size } = shape;
+      const h = size / Math.SQRT2;
+      const points = `${n(c.x)},${n(c.y - h)} ${n(c.x + h)},${n(c.y)} ${n(c.x)},${n(c.y + h)} ${n(c.x - h)},${n(c.y)}`;
+      return <polygon points={points} />;
+    }
     case 'box':
       return (
         <rect

@@ -123,6 +123,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R21 | A name insert selects what it inserted and switches to Select, like pasting an object into PowerPoint; the name field keeps focus and is cleared. Applies to single names, chips and reaction text | The teacher can drag the new structure at once | 2026-11-10 |
 | R22 | After a name or scheme insert the whole drawing is framed (V7): zoom `min(current, fit)` and the drawing's ink box centred. Supersedes Decision 8's reveal for inserts | The third molecule ended at the right edge with the left half of the canvas empty | 2026-11-10 |
 | R23 | Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z act on the document while the name field is focused and empty; with text in it they are the field's text undo | After typing a name and Enter the field is empty and focused, and undoing the insert is the natural next key | 2026-11-10 |
+| R24 | Shift is additive everywhere in Select: Shift+click on empty canvas keeps the selection (it no longer clears it); Shift+drag from empty canvas draws a marquee whose result is added to the selection; Shift+click on an item toggles it | One modifier, one meaning: a slipped Shift never throws a careful selection away | 2026-11-10 |
 
 ---
 
@@ -746,10 +747,11 @@ Numbered so tasks can cite them.
   - Alt+click on an atom or bond: the selection becomes just that atom or bond;
   - Shift+click: toggles the item's fragment (or the object, or with Alt the single atom/bond)
     in or out of the selection;
-  - on empty canvas: clears the selection.
+  - on empty canvas: clears the selection; with Shift it keeps it (R24).
 - **S2** Drag: from an item in the selection moves the selection as it is (no narrowing); from an
   item not in the selection first applies S1's click rule for that item (with its modifiers),
-  then moves; from empty canvas draws a marquee (H4); from a handle runs the handle (S5, S6).
+  then moves; from empty canvas draws a marquee (H4; with Shift its result is added to the
+  selection, R24); from a handle runs the handle (S5, S6).
 - **S3** Moving: `transformItems(doc, sel, translation(dx, dy))` committed once on release
   ("Move"). Shift constrains to horizontal or vertical. Snapping: if the moving ink box's centre
   x or y comes within 6 px (screen) of the centre x or y of another fragment's or object's ink

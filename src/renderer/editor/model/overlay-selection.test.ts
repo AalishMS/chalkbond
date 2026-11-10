@@ -297,7 +297,7 @@ describe('canvasOverlay: marquee, guides, merge', () => {
       hover: { kind: 'bond', id: bond },
       selection: wholeOf(doc, ringAtoms(doc)),
     });
-    expect(groups.map((g) => g.kind)).toEqual(['selection', 'frame', 'hover']);
+    expect(groups.map((g) => g.kind)).toEqual(['selection', 'frame', 'hover', 'handle']);
   });
 
   it('while a translate preview runs the selection shapes follow it', () => {

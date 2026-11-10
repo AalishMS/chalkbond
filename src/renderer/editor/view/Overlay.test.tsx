@@ -60,4 +60,21 @@ describe('Overlay markup', () => {
     expect(html).toContain('<g class="overlay-guide" data-testid="overlay-guide">');
     expect(html).toContain('<line x1="5" y1="0" x2="5" y2="600"></line>');
   });
+
+  it('draws a handle group: stem, circle, square and a diamond', () => {
+    const html = render([
+      {
+        kind: 'handle',
+        shapes: [
+          { kind: 'line', from: { x: 5.5, y: 20.5 }, to: { x: 5.5, y: 1.5 } },
+          { kind: 'circle', c: { x: 5.5, y: -3.5 }, r: 5 },
+          { kind: 'diamond', c: { x: 20, y: 30 }, size: 9 },
+        ],
+      },
+    ]);
+    expect(html).toContain('<g class="overlay-handle" data-testid="overlay-handle">');
+    expect(html).toContain('<circle cx="5.5" cy="-3.5" r="5"></circle>');
+    // A 9 px diamond: a square of side 9 turned 45 degrees has a half-diagonal of 9 / sqrt(2).
+    expect(html).toContain('<polygon points="20,23.64 26.36,30 20,36.36 13.64,30"></polygon>');
+  });
 });

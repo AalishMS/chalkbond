@@ -533,9 +533,9 @@ atom → atom anchor, on a bond → bond anchor t 0.5, on empty → point; bend 
 off a chord of 2 BLU → bend 0.5.
 
 **Acceptance criteria:**
-- [ ] S5, S6 and the flips each one undo step (unit)
-- [ ] Handles drawn as specified (overlay unit: rotate circle Ø 10 24 px above the frame)
-- [ ] Flip buttons disabled without a selection, with the tooltip reason
+- [x] S5, S6 and the flips each one undo step (unit)
+- [x] Handles drawn as specified (overlay unit: rotate circle Ø 10 24 px above the frame)
+- [x] Flip buttons disabled without a selection, with the tooltip reason
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E17` → `E17/rotate-handle.png` (scripted: select benzene; compare the handle in `03-select.png`), `E17/rotated-45.png` (scripted: drag the rotate handle on ethanol), `E17/flipped.png` (scripted: insert toluene, select, Flip horizontal; methyl now on the other side)
 

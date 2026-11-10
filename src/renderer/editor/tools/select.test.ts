@@ -130,6 +130,28 @@ describe('S1 clicks', () => {
     expect(r.selection).toBe(EMPTY_SELECTION);
   });
 
+  it('R24: Shift+click on empty canvas keeps the selection', () => {
+    const r = rig();
+    click(r, atomScreen(r.doc, ringAtoms(r.doc)[0] as AtomId));
+    const before = r.selection;
+    click(r, { x: 40, y: 650 }, { shift: true, alt: false, ctrl: false });
+    expect(r.selection).toBe(before);
+  });
+
+  it('R24: Shift+drag from empty canvas adds the marquee result to the selection', () => {
+    const r = rig();
+    click(r, atomScreen(r.doc, ringAtoms(r.doc)[0] as AtomId));
+    const shift = { shift: true, alt: false, ctrl: false };
+    const eth = ethanolAtoms(r.doc).map((id) => r.doc.atoms[id] as Point);
+    const left = Math.min(...eth.map((p) => p.x));
+    const right = Math.max(...eth.map((p) => p.x));
+    send(r, at(screenOf({ x: left - 1, y: -3 }), 'down', shift));
+    send(r, at(screenOf({ x: right + 1, y: 3 }), 'move', shift));
+    const up = send(r, at(screenOf({ x: right + 1, y: 3 }), 'up', shift));
+    expect(up.selection?.atoms.size).toBe(9);
+    expect(up.selection?.bonds.size).toBe(8);
+  });
+
   it('a press that moves within 4 px is still a click', () => {
     const r = rig();
     const s = atomScreen(r.doc, ringAtoms(r.doc)[0] as AtomId);

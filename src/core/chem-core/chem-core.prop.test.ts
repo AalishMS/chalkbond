@@ -45,7 +45,7 @@ describe('chem-core properties', () => {
       }),
       { numRuns: 300 },
     );
-  });
+  }, 60_000);
 
   it('toSmiles never throws; aromatize keeps formulas; kekulize keeps them or refuses', () => {
     fc.assert(

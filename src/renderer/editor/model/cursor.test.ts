@@ -34,4 +34,21 @@ describe('cursorFor (Canvas appearance, Cursors)', () => {
       expect(cursorFor(tool, atom, true)).toBe('grab');
     }
   });
+
+  it('Select over a handle: grab on the rotate handle, pointer on the arrow handles', () => {
+    const handle = (h: 'rotate' | 'arrow-to' | 'curve-bend'): Hit => ({
+      kind: 'handle',
+      handle: h,
+    });
+    expect(cursorFor('select', handle('rotate'), false)).toBe('grab');
+    expect(cursorFor('select', handle('arrow-to'), false)).toBe('pointer');
+    expect(cursorFor('select', handle('curve-bend'), false)).toBe('pointer');
+  });
+
+  it('turning the rotate handle shows grabbing; other handle drags keep the pointer', () => {
+    expect(cursorFor('select', null, false, 'select-rotate')).toBe('grabbing');
+    expect(cursorFor('select', null, false, 'select-arrow')).toBe('pointer');
+    expect(cursorFor('select', null, false, 'select-curve')).toBe('pointer');
+    expect(cursorFor('select', null, false, 'select-move')).toBe('default');
+  });
 });

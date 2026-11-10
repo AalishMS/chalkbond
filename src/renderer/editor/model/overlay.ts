@@ -8,12 +8,16 @@ import {
   type ObjectId,
   type Selection,
 } from '@core/doc-model';
-import type { ItemKey, Scene } from '@core/svg-render';
+import type { Scene } from '@core/svg-render';
 import type { GestureState, Hit, Preview } from '../state/editor-state';
 import { curveControl } from './hit-test';
-import { growRect, rectUnion, type Point, type Rect } from './geometry';
-import { expandSelection, isEmptySelection } from './selection';
+import { FRAME_GROW, frameRect, screenRect, selectionInk } from './frame';
+import { growRect, type Point, type Rect } from './geometry';
+import { selectionHandles } from './handles';
+import { isEmptySelection } from './selection';
 import { bluToScreen, PX_PER_PT, ptToScreen, type Viewport } from './viewport';
+
+export { FRAME_GROW, selectionInk };
 
 /** Hover: a skeleton vertex gets a circle of diameter 18. */
 export const HOVER_CIRCLE_R = 9;
@@ -28,8 +32,6 @@ export const SELECT_CIRCLE_R = 12;
 export const SELECT_BAND = 12;
 export const SELECT_ATOM_GROW = 3;
 export const SELECT_OBJECT_GROW = 4;
-/** Selection frame: px the ink box is grown by. */
-export const FRAME_GROW = 8;
 
 export type OverlayShape =
   | { readonly kind: 'circle'; readonly c: Point; readonly r: number }
@@ -42,19 +44,14 @@ export type OverlayShape =
       readonly width: number;
     }
   | { readonly kind: 'box'; readonly rect: Rect; readonly radius: number }
-  | { readonly kind: 'line'; readonly from: Point; readonly to: Point };
+  | { readonly kind: 'line'; readonly from: Point; readonly to: Point }
+  /** A square turned 45 degrees, `size` px along each side. */
+  | { readonly kind: 'diamond'; readonly c: Point; readonly size: number };
 
 /** Shapes drawn together at one group opacity. */
 export interface OverlayGroup {
-  readonly kind: 'selection' | 'frame' | 'hover' | 'merge' | 'marquee' | 'guide';
+  readonly kind: 'selection' | 'frame' | 'hover' | 'merge' | 'marquee' | 'guide' | 'handle';
   readonly shapes: readonly OverlayShape[];
-}
-
-/** A rectangle (pt) in screen px. */
-function screenRect(v: Viewport, ink: Rect): Rect {
-  const a = ptToScreen(v, { x: ink.x, y: ink.y });
-  const b = ptToScreen(v, { x: ink.x + ink.w, y: ink.y + ink.h });
-  return { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y };
 }
 
 /** An `extents` box (pt) in screen px, grown by `grow` px. */
@@ -146,32 +143,10 @@ function shifted(shape: OverlayShape, by: Point): OverlayShape {
       return { ...shape, rect: { ...shape.rect, x: shape.rect.x + by.x, y: shape.rect.y + by.y } };
     case 'line':
       return { ...shape, from: shiftPoint(shape.from, by), to: shiftPoint(shape.to, by) };
+    case 'diamond':
+      return { ...shape, c: shiftPoint(shape.c, by) };
   }
 }
-
-/**
- * The ink box (pt) of a selection: the union of its items' `extents` and its vertex points,
- * including the atoms of selected bonds; null when it has none.
- */
-export function selectionInk(doc: Doc, scene: Scene, sel: Selection): Rect | null {
-  const bl = scene.style.bondLength;
-  const { atoms, objects } = expandSelection(doc, sel);
-  let ink: Rect | null = null;
-  const add = (r: Rect | undefined): void => {
-    if (r !== undefined) ink = ink === null ? r : rectUnion(ink, r);
-  };
-  for (const id of atoms) {
-    const atom = doc.atoms[id];
-    if (atom) add({ x: atom.x * bl, y: atom.y * bl, w: 0, h: 0 });
-    add(scene.extents[`atom:${id}`]);
-  }
-  for (const id of sel.bonds) add(scene.extents[`bond:${id}`]);
-  for (const id of objects) add(scene.extents[`obj:${id}` as ItemKey]);
-  return ink;
-}
-
-/** A crisp 1 px line sits on a half pixel. */
-const crisp = (x: number): number => Math.round(x - 0.5) + 0.5;
 
 /** The band that selects an arrow or a curved arrow, a box for any other object. */
 function objectSelectShape(id: ObjectId, doc: Doc, scene: Scene, v: Viewport): OverlayShape | null {
@@ -234,14 +209,9 @@ export function selectionGroups(
   ];
   const ink = selectionInk(doc, scene, sel);
   if (ink !== null) {
-    const r = growRect(screenRect(v, ink), FRAME_GROW);
-    const x0 = crisp(r.x + offset.x);
-    const y0 = crisp(r.y + offset.y);
-    const x1 = crisp(r.x + r.w + offset.x);
-    const y1 = crisp(r.y + r.h + offset.y);
     groups.push({
       kind: 'frame',
-      shapes: [{ kind: 'box', rect: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, radius: 0 }],
+      shapes: [{ kind: 'box', rect: frameRect(v, ink, offset), radius: 0 }],
     });
   }
   return groups;
@@ -258,7 +228,10 @@ export interface OverlayView {
   readonly viewport: Viewport;
 }
 
-/** All overlay groups, back to front: selection, frame, hover, merge target, marquee, guides. */
+/**
+ * All overlay groups, back to front: selection, frame, hover, merge target, marquee, guides, and
+ * the handles of the selection on top.
+ */
 export function canvasOverlay(view: OverlayView): OverlayGroup[] {
   const { doc, scene, viewport: v, preview, gesture } = view;
   const k = v.zoom * PX_PER_PT;
@@ -297,6 +270,10 @@ export function canvasOverlay(view: OverlayView): OverlayGroup[] {
         return { kind: 'line', from: { x: 0, y }, to: { x: v.size.w, y } };
       }),
     });
+  }
+  const handles = selectionHandles(doc, scene, v, view.selection, offset);
+  if (handles.length > 0) {
+    groups.push({ kind: 'handle', shapes: handles.flatMap((h) => h.shapes) });
   }
   return groups;
 }
