@@ -254,7 +254,9 @@
 /* Left-aligned label; reserves the width of the longer one so the bar never jumps. */
 .btn-kekule {
   justify-content: flex-start;
+  width: var(--kekule-btn-w);
   min-width: var(--kekule-btn-w);
+  padding-right: var(--space-2);
 }
 
 .rail > .btn {

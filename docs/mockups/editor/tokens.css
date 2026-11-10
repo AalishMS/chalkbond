@@ -38,7 +38,7 @@
   --guide-opacity: 0.6;
 
   /* Type */
-  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', Arial, 'Liberation Sans', system-ui, sans-serif;
   --type-xs: 400 12px / 16px var(--font-ui);
   --type-sm: 400 13px / 18px var(--font-ui);
   --type-md: 400 14px / 20px var(--font-ui);

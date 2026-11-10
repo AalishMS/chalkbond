@@ -143,6 +143,8 @@ resolutions of the draft's open questions and of problems found in review.
 | R41 | The preset segments are 64×24 (`--preset-seg-h: 24px`), centred in the 28 px status bar: the group is 24 + 2 × 1 px padding + 2 × 1 px outline = 28 px, so its outline lies inside the bar | The mock-up's 64×20 was 4 px under the 24 px hit target of Accessibility; the status-bar controls now all meet it (zoom buttons and the warnings button are 24 high already) | 2026-11-10 |
 | R42 | `--border-control` is `#79818c` (was `#7a828e`, 2.96 : 1 on `--pressed-bg`): 3.64 on `--chrome-bg`, 3.94 on `--canvas-bg`, 3.30 on `--hover-bg`, 3.00 on `--pressed-bg`. The contrast table now lists hover and pressed; the test asserts all four | A control border must reach 3 : 1 on every background the control can have, including while pressed. The darkest step that does it keeps the field and chip borders from looking heavier | 2026-11-10 |
 
+| R43 | The UI font stack keeps Segoe UI first, then Arial and Liberation Sans before system-ui | Linux without Segoe UI used wider DejaVu Sans, breaking the 109 px Kekulé toggle and shifting its neighbours; the Arial-compatible fallback preserves the approved control boxes without bundling fonts. The Kekulé toggle has fixed 109 px width, 4 px left and right padding and 4 px icon gap, retaining 32 px height and 2 px neighbour gaps | 2026-11-10 |
+
 ---
 
 ## UI design
@@ -251,7 +253,7 @@ All values live in `tokens.css` (normative). Summary:
 - **Canvas overlay alphas** (group opacity, never per shape): `--overlay-hover` 0.45,
   `--overlay-selection` 0.24, `--overlay-marquee` 0.08, `--overlay-merge` 0.32, `--ghost-opacity`
   0.45, `--erase-ghost-opacity` 0.3 (E1), `--guide-opacity` 0.6.
-- **Type**: `--font-ui` (Segoe UI Variable Text, Segoe UI, system-ui; nothing bundled);
+- **Type**: `--font-ui` (Segoe UI Variable Text, Segoe UI, Arial, Liberation Sans, system-ui; nothing bundled);
   `--type-xs` 12/16 (status controls, tooltips, captions under editors), `--type-sm` 13/18
   (action labels, chips), `--type-md` 14/20 (name field, dropdown names, option glyphs 600,
   empty-state text), `--type-rail` 600 18/24 (Atom rail glyph), `--type-caption` 500 11/14 (rail

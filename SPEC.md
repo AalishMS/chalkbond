@@ -253,6 +253,8 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-10 | Installer: NSIS one-click per user, no admin, `.chalk` association, unsigned, no auto-update, en-US only, version 1.0.0 at release. Icons are committed `.ico` files with PNG entries rendered by Playwright's Chromium and packed by a small script: electron-builder would otherwise download its icon toolset from GitHub to convert a PNG; a file-association icon must be `.ico` anyway. The NSIS toolset itself is downloaded once at build time. |
 | 2026-11-10 | e2e test hook (`window.__chalkbondTest`) and a per-launch user-data folder are enabled only by `--chalkbond-test-hooks` / `--chalkbond-user-data` on an unpackaged build; the React-fiber helpers are removed. Windows-only e2e specs live in `e2e/win/`, ignored on other platforms by `testIgnore` (no skipped tests). |
 
+| 2026-11-10 | Linux baseline: UI typography keeps Segoe UI first and falls back to installed Arial / Liberation Sans before system-ui, preserving the approved fixed control sizes (including the 109 px Kekulé toggle). Its fixed 109 px Kekulé toggle uses 4 px right padding so the longer fallback label fits without moving the icon or label. No bundled font or project dependency. |
+
 ## Open Questions
 
 None at project level.

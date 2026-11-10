@@ -328,6 +328,13 @@ input {
   white-space: nowrap;
 }
 
+#act-kekule {
+  justify-content: flex-start;
+  width: var(--kekule-btn-w);
+  min-width: var(--kekule-btn-w);
+  padding-right: var(--space-2);
+}
+
 .btn-action.label-only {
   padding: 0 var(--space-3);
 }

@@ -261,6 +261,11 @@ test('option buttons are 32x32 and 2 px apart; the Atom bar fits at 960', async 
     near(kek.x - (clean.x + clean.width), 2);
     // The toggle reserves the width of its longer label (Show Kekulé, 108.8 px).
     near(kek.width, 109, 0.5);
+    const label = await box(page.getByTestId('act-kekule').locator('span'));
+    expect(label.x + label.width).toBeLessThanOrEqual(kek.x + kek.width - 4);
+    expect(
+      await page.getByTestId('act-kekule').evaluate((el) => el.scrollWidth),
+    ).toBeLessThanOrEqual(kek.width);
     await expect(page.getByTestId('act-kekule')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.getByTestId('act-expand')).toHaveCount(0);
   } finally {
