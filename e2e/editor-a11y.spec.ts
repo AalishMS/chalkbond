@@ -533,3 +533,45 @@ test('reduced motion: no transition or animation runs, tooltip included; normal 
     await app.close();
   }
 });
+
+test('keyboard only: every selection action runs from its shortcut or its button', async () => {
+  const { app, page } = await openApp();
+  try {
+    await insertName(page, 'benzene');
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Control+a');
+    const kekule = page.getByTestId('act-kekule');
+    await expect(kekule).toContainText('Show Kekulé');
+    // Ctrl+Shift+K toggles circle / Kekulé; one undo step.
+    await page.keyboard.press('Control+Shift+K');
+    await expect(kekule).toContainText('Show circle');
+    await page.keyboard.press('Control+z');
+    await expect(kekule).toContainText('Show Kekulé');
+    // Ctrl+Shift+L runs Clean up; benzene is already clean, so the document is unchanged (the
+    // geometry itself is covered by the reducer tests).
+    const before = JSON.stringify((await readDocument(page)).atoms);
+    await page.keyboard.press('Control+Shift+L');
+    await page.keyboard.press('Control+z');
+    expect(JSON.stringify((await readDocument(page)).atoms)).toBe(before);
+    // Flip by its button: focus, Enter.
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+a');
+    await page.getByTestId('act-flip-v').focus();
+    await page.keyboard.press('Enter');
+    expect(JSON.stringify((await readDocument(page)).atoms)).not.toBe(before);
+    await page.keyboard.press('Control+z');
+    expect(JSON.stringify((await readDocument(page)).atoms)).toBe(before);
+    // Ctrl+D duplicates and Delete removes the copy.
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Control+d');
+    expect(Object.keys((await readDocument(page)).atoms)).toHaveLength(12);
+    await page.keyboard.press('Delete');
+    expect(Object.keys((await readDocument(page)).atoms)).toHaveLength(6);
+    // The Tidy shortcut runs with nothing to tidy and says so.
+    await page.keyboard.press('Control+Shift+T');
+    await expect(page.getByRole('status')).toContainText('Nothing to tidy');
+  } finally {
+    await app.close();
+  }
+});
