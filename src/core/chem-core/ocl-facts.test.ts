@@ -5,6 +5,10 @@ import { Molecule } from 'openchemlib';
 import { describe, expect, it } from 'vitest';
 
 declare const performance: { now(): number };
+declare const process: { env: Record<string, string | undefined> };
+
+/** Timings are meaningless under coverage instrumentation (vitest.config.mts sets this). */
+const budget = it.skipIf(process.env['CHALKBOND_COVERAGE'] === '1');
 
 function bondLengths(m: Molecule): number[] {
   const out: number[] = [];
@@ -93,7 +97,7 @@ describe('openchemlib library facts', () => {
     expect(Molecule.fromText('ethanol')).toBeNull();
   });
 
-  it('parses and computes the formula of aspirin quickly (≈0.4 ms; budget 5 ms median)', () => {
+  budget('parses and computes the formula of aspirin quickly (≈0.4 ms; budget 5 ms median)', () => {
     const run = () => Molecule.fromSmiles('CC(=O)Oc1ccccc1C(O)=O').getMolecularFormula();
     for (let i = 0; i < 20; i++) run();
     const samples = [];

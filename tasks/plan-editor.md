@@ -130,7 +130,7 @@ Everything else is sequential: each phase builds on the previous one.
 - [x] E30: Preset switch
 - [x] E31: Property suite and controller completeness
 - [x] E32: Performance measurement
-- [ ] E33: Coverage and accessibility pass
+- [x] E33: Coverage and accessibility pass
 - [ ] E34: Windows checklist, AGENTS.md, success-criteria sweep
 
 ### Checkpoint R — module complete

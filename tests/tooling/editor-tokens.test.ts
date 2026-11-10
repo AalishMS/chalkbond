@@ -51,6 +51,8 @@ const PAIRS: [string[], string[], number][] = [
   [['--tooltip-fg', '--tooltip-muted'], ['--tooltip-bg'], 4.5],
   [['--accent'], ['--canvas-bg', '--chrome-bg', '--active-bg'], 3],
   [['--border-control'], ['--canvas-bg', '--chrome-bg'], 3],
+  // The text editor on the canvas (editor.css .textbox-edit) is black on white, like canvas text.
+  [['--ink'], ['--canvas-bg'], 4.5],
 ];
 
 describe('contrast pairs (SC6)', () => {
@@ -79,5 +81,122 @@ describe('editor.css uses tokens only', () => {
       .map((m) => m[0])
       .filter((v) => v !== '1px');
     expect(raw).toEqual([]);
+  });
+});
+
+// ---- Every colour pair editor.css actually uses (E33) ---------------------------------------
+
+interface Rule {
+  selector: string;
+  decls: Map<string, string>;
+}
+
+function rules(): Rule[] {
+  const css = read(`${VIEW}/editor.css`).replace(/\/\*[\s\S]*?\*\//g, '');
+  const out: Rule[] = [];
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const decls = new Map<string, string>();
+    for (const d of (m[2] as string).split(';')) {
+      const i = d.indexOf(':');
+      if (i > 0) decls.set(d.slice(0, i).trim(), d.slice(i + 1).trim());
+    }
+    out.push({ selector: (m[1] as string).trim().replace(/\s+/g, ' '), decls });
+  }
+  return out;
+}
+
+const tokenIn = (value: string | undefined): string | null =>
+  value === undefined ? null : (/var\((--[\w-]+)\)/.exec(value)?.[1] ?? null);
+
+// Tokens used for text that the spec exempts: disabled text (WCAG 1.4.3) and the empty-state
+// artwork, which is decorative (`aria-hidden`).
+const EXEMPT_TEXT = new Set(['--text-disabled', '--empty-art']);
+
+describe('every colour pair used in editor.css is checked', () => {
+  const t = tokens();
+  const all = rules();
+
+  it('every text colour token is in the contrast table or exempt', () => {
+    const tableFg = new Set(PAIRS.flatMap(([fgs]) => fgs));
+    const used = new Set(
+      all.map((r) => tokenIn(r.decls.get('color'))).filter((x): x is string => x !== null),
+    );
+    expect([...used].filter((u) => !tableFg.has(u) && !EXEMPT_TEXT.has(u))).toEqual([]);
+  });
+
+  it('text on the background set in the same rule is at least 4.5 : 1', () => {
+    const pairs = all.flatMap((r) => {
+      const fg = tokenIn(r.decls.get('color'));
+      const bg = tokenIn(r.decls.get('background') ?? r.decls.get('background-color'));
+      return fg !== null && bg !== null && !EXEMPT_TEXT.has(fg)
+        ? [[r.selector, fg, bg] as const]
+        : [];
+    });
+    expect(pairs.length).toBeGreaterThan(3);
+    for (const [selector, fg, bg] of pairs) {
+      expect(
+        contrast(t.get(fg) as string, t.get(bg) as string),
+        `${selector}: ${fg} on ${bg}`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  // Surfaces a control can sit on in its states (rest, hover, pressed, selected, warning band).
+  const SURFACES = [
+    '--chrome-bg',
+    '--canvas-bg',
+    '--hover-bg',
+    '--pressed-bg',
+    '--active-bg',
+    '--active-hover-bg',
+    '--warning-bg',
+  ];
+
+  it('--text and --warning stay at 4.5 : 1 on every surface they can meet, hover and pressed included', () => {
+    for (const fg of ['--text', '--warning']) {
+      for (const bg of SURFACES.filter((s) => !s.startsWith('--active') || fg === '--text')) {
+        expect(
+          contrast(t.get(fg) as string, t.get(bg) as string),
+          `${fg} on ${bg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('--text-muted stays at 4.5 : 1 on every surface it can meet', () => {
+    for (const bg of SURFACES) {
+      expect(
+        contrast(t.get('--text-muted') as string, t.get(bg) as string),
+        bg,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('--accent (focus ring, selection bar, underline, caret) is at least 3 : 1 on every surface it can meet', () => {
+    for (const bg of SURFACES) {
+      expect(contrast(t.get('--accent') as string, t.get(bg) as string), bg).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
+
+  it('--border-control is at least 3 : 1 on the bars and the canvas, and on hover', () => {
+    // Pressed (2.96 : 1) is transient and the border's outer neighbour is the canvas; the spec
+    // asks for the bars and the canvas only.
+    for (const bg of ['--chrome-bg', '--canvas-bg', '--hover-bg']) {
+      expect(
+        contrast(t.get('--border-control') as string, t.get(bg) as string),
+        bg,
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('keyboard-key text in the tooltip is at least 4.5 : 1', () => {
+    expect(
+      contrast(t.get('--tooltip-fg') as string, t.get('--tooltip-bg') as string),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(t.get('--tooltip-muted') as string, t.get('--tooltip-bg') as string),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 });

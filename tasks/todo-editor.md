@@ -983,9 +983,9 @@ visible on each keyboard stop, `prefers-reduced-motion: reduce` (Playwright `emu
 **Tests first:** the coverage report decides the extra tests; the walkthrough e2e.
 
 **Acceptance criteria:**
-- [ ] `src/renderer/editor` ≥ 70 % lines in the coverage report (SC11); no new coverage excludes
-- [ ] Keyboard walkthrough passes (SC5); reduced-motion check passes
-- [ ] Every interactive element has an accessible name (e2e) and a visible focus indicator
+- [x] `src/renderer/editor` ≥ 70 % lines in the coverage report (SC11); no new coverage excludes
+- [x] Keyboard walkthrough passes (SC5); reduced-motion check passes
+- [x] Every interactive element has an accessible name (e2e) and a visible focus indicator
 
 **Verification:** `npm test -- --coverage`, `npm run test:e2e`, `npm run shots -- E33` → `E33/keyboard-walkthrough-*.png` (one per walkthrough step, scripted)
 
