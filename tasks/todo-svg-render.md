@@ -53,10 +53,10 @@ non-allow-listed element or attribute; `xml-check` accepts valid output and reje
 tags, bad entities, illegal characters.
 
 **Acceptance criteria:**
-- [ ] No builder can emit `script`, `style`, `foreignObject`, `use`, `image`, `a`, event or `href` attributes, or `url(…)` (SC9)
-- [ ] User text only ever lands in `<text>` content or `<metadata>`, escaped (SC9)
-- [ ] Attribute order and colour case are fixed, so equal inputs give equal bytes (SC4, SC3)
-- [ ] `xml-check` validates builder output in tests (used by S7, S12)
+- [x] No builder can emit `script`, `style`, `foreignObject`, `use`, `image`, `a`, event or `href` attributes, or `url(…)` (SC9)
+- [x] User text only ever lands in `<text>` content or `<metadata>`, escaped (SC9)
+- [x] Attribute order and colour case are fixed, so equal inputs give equal bytes (SC4, SC3)
+- [x] `xml-check` validates builder output in tests (used by S7, S12)
 
 **Verification:** `npm test -- src/core/svg-render`
 
