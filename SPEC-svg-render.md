@@ -263,6 +263,15 @@ box along the direction (a vertex: `vertexGap`) plus `satelliteGap`. A lone pair
 `partialCharge` and `number` are text at `satelliteScale·fs` whose box is tangent to the point
 at `d`.
 
+**Collision rule.** The satellites of one atom never overlap each other, the label's text box or
+a bond leaving the atom. Lone pairs and radical dots are measured from the **element symbol's
+glyph box** (the anchor box; for a typed label with no reversed form, just the symbol inside it,
+so `HO` puts them round the `O`), so the H or count part of the label is an obstacle, not a
+place to sit. In assignment order each satellite takes its dealt angle if its ink box is free,
+else the next free slot (15° steps, alternating either side of the dealt angle), and only when
+the whole turn is blocked does it move outward one ring (`2·satelliteGap`) and try again; the
+result depends only on the input, so it is deterministic.
+
 ### Bonds
 
 `L1` = clipped end points, `n` = left normal. "Left" is the visual left when travelling from `a1`

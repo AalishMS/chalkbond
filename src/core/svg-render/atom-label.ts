@@ -35,6 +35,12 @@ export interface AtomLabel {
   readonly anchorBox: Rect;
   /** Every glyph run, sub/superscripts included. */
   readonly textBox: Rect;
+  /**
+   * The element symbol's own glyphs, `capHeight` tall: lone pairs and radical dots sit round
+   * this box. It is the anchor box, except for a typed label with no reversed form whose text
+   * holds the element symbol (`HO` for oxygen: just the `O`).
+   */
+  readonly symbolBox: Rect;
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
@@ -69,6 +75,43 @@ function bareHydrogenFirst(element: string, n: number): boolean {
   return ['F', 'Cl', 'Br', 'I'].includes(element) || (['O', 'S', 'Se'].includes(element) && n >= 2);
 }
 
+/** Runs restricted to the characters `[from, to)` of their joined text. */
+function sliceRuns(runs: readonly TextRun[], from: number, to: number): TextRun[] {
+  const out: TextRun[] = [];
+  let at = 0;
+  for (const run of runs) {
+    const a = Math.max(from - at, 0);
+    const b = Math.min(to - at, run.text.length);
+    if (b > a) out.push({ ...run, text: run.text.slice(a, b) });
+    at += run.text.length;
+  }
+  return out;
+}
+
+/**
+ * The element symbol's glyphs inside a typed label with no reversed form (`HO`, `H2N`-like
+ * text): the first occurrence of the symbol not followed by a lower-case letter, located by the
+ * measured width of the text before it. Anything else keeps the anchor box.
+ */
+function typedSymbolBox(
+  anchor: readonly TextRun[],
+  anchorBox: Rect,
+  element: string,
+  typed: boolean,
+  style: ResolvedStyle,
+): Rect {
+  if (!typed) return anchorBox;
+  const text = anchor.map((r) => r.text).join('');
+  let at = text.indexOf(element);
+  while (at >= 0 && /[a-z]/.test(text[at + element.length] ?? '')) {
+    at = text.indexOf(element, at + 1);
+  }
+  if (at < 0 || text.length === element.length) return anchorBox;
+  const before = measureRuns(sliceRuns(anchor, 0, at), style).width;
+  const symbol = measureRuns(sliceRuns(anchor, at, at + element.length), style).width;
+  return { ...anchorBox, x: anchorBox.x + before, w: symbol };
+}
+
 /** Builds the label of a labelled atom. */
 export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): AtomLabel {
   const { atom, position } = input;
@@ -87,12 +130,14 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
     isotopeRuns = [];
   }
 
+  let typedLabel = false;
   let symbolBefore: TextRun[] = [];
   let anchor: TextRun[];
   let symbolAfter: TextRun[] = [];
   if (hasLabel) {
     const display = labelDisplay(label);
     if (!display) {
+      typedLabel = true;
       anchor = scriptedRuns(label);
     } else if (bonded && sx > SIDE_DEAD_ZONE) {
       const cut = display.reversed.length - display.attach.length;
@@ -154,16 +199,18 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
     )
     .join('\n');
 
+  const anchorBox: Rect = {
+    x: originX + anchorStart,
+    y: position.y - style.capHeight / 2,
+    w: anchorEnd - anchorStart,
+    h: style.capHeight,
+  };
   return {
     runs,
     text: runs.map((r) => r.text).join(''),
     svg,
-    anchorBox: {
-      x: originX + anchorStart,
-      y: position.y - style.capHeight / 2,
-      w: anchorEnd - anchorStart,
-      h: style.capHeight,
-    },
+    anchorBox,
+    symbolBox: typedSymbolBox(anchor, anchorBox, atom.element, typedLabel, style),
     textBox: {
       x: originX,
       y: baseline - measure.ascent,

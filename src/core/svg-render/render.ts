@@ -139,7 +139,13 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
     if (!atom || !position) continue;
     const label = labels.get(id);
     const sats = layoutSatellites(
-      { atom, position, directions: vectorsFrom(id), labelBox: label ? label.textBox : null },
+      {
+        atom,
+        position,
+        directions: vectorsFrom(id),
+        labelBox: label ? label.textBox : null,
+        glyphBox: label ? label.symbolBox : null,
+      },
       style,
     );
     if (sats && atomInScope(id)) glyphNotices.push(...sats.notices);
