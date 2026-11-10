@@ -211,9 +211,9 @@ the canvas changes the editor zoom readout, not the page zoom. Update `e2e/smoke
 new minimum assertion.
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass; the W6 Facts row records what the probe showed
-- [ ] The editor e2e suite still passes in the host
-- [ ] Shots exist
+- [x] Unit and e2e tests pass; the W6 Facts row records what the probe showed
+- [x] The editor e2e suite still passes in the host
+- [x] Shots exist
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A6` →
 `A6/untitled.png` (A11's window without the box: empty drawing, empty state, disabled-looking top

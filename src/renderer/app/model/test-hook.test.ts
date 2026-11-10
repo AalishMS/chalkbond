@@ -77,3 +77,14 @@ describe('createTestHook', () => {
     expect(hook.events()).toEqual([]);
   });
 });
+it('captures controller notices and clears their history', () => {
+  const controller = createEditorController({ clock: () => T0 });
+  const hook = createTestHook(controller);
+  controller.notify('error', 'Could not copy');
+  expect(hook.notices()).toEqual([{ kind: 'error', text: 'Could not copy' }]);
+  hook.clearEvents();
+  expect(hook.notices()).toEqual([]);
+  hook.dispose();
+  controller.notify('info', 'Later');
+  expect(hook.notices()).toEqual([]);
+});

@@ -1,11 +1,13 @@
 import { join } from 'node:path';
-import { app, BrowserWindow, Menu } from 'electron';
+import { app, BrowserWindow, Menu, screen } from 'electron';
+import { firstWindowBounds } from './model/window-bounds';
+import type { StartupResponse } from '../shared/ipc-types';
 import { testFlags } from './model/args';
 
 import { pathToFileURL } from 'node:url';
 import { CHANNELS } from '../shared/channels';
 import { createIpc } from './ipc';
-import { logErrorSchema } from './ipc-schemas';
+import { logErrorSchema, startupSchema, sessionUpdateSchema } from './ipc-schemas';
 import { createLogger } from './log';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
 
@@ -15,11 +17,13 @@ const APP_ID = 'com.chalkbond.app';
 
 function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
+    useContentSize: true,
+    autoHideMenuBar: false,
     width: 1280,
     height: 800,
     minWidth: 960,
     minHeight: 640,
-    title: 'Chalkbond',
+    title: 'Untitled - Chalkbond',
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -32,6 +36,20 @@ function createMainWindow(): BrowserWindow {
     },
   });
 
+  win.webContents.setZoomMode('disabled');
+  win.on('page-title-updated', (event) => event.preventDefault());
+  const [outerWidth = 0, outerHeight = 0] = win.getSize();
+  const [contentWidth = 0, contentHeight = 0] = win.getContentSize();
+  const frame: [number, number] = [outerWidth - contentWidth, outerHeight - contentHeight];
+  // W6: minWidth/minHeight can constrain outer rather than content dimensions.
+  win.setSize(200, 200);
+  const minimum = win.getContentSize();
+  if ((minimum[0] ?? 0) < 960 || (minimum[1] ?? 0) < 640) {
+    win.setMinimumSize(960 + frame[0], 640 + frame[1]);
+  }
+  const { maximized, ...bounds } = firstWindowBounds(screen.getPrimaryDisplay().workArea, frame);
+  win.setBounds(bounds);
+  if (maximized) win.maximize();
   win.once('ready-to-show', () => win.show());
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'] === DEV_ORIGIN ? DEV_ORIGIN : undefined;
@@ -80,6 +98,19 @@ void app.whenReady().then(() => {
     (message) => log('ipc', message),
   );
   ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
+  ipc.handle(CHANNELS.startup, startupSchema, (): StartupResponse => ({
+    settings: {
+      newDrawingStyle: 'slides',
+      export: { format: 'png', pngDpi: 300, pngWhite: false },
+    },
+    recovery: null,
+    open: null,
+  }));
+  let session: { title: string; dirty: boolean } | undefined;
+  ipc.on(CHANNELS.updateSession, sessionUpdateSchema, (value) => {
+    if (session?.title !== value.title) mainWindow?.setTitle(value.title);
+    session = value;
+  });
   mainWindow = createMainWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();

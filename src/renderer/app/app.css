@@ -213,6 +213,7 @@ body,
 .seg-item {
   min-width: 76px;
   padding: 0 var(--space-4);
+  border: 0;
   border-left: 1px solid var(--border-control);
   border-radius: 0;
   background: var(--canvas-bg);
@@ -396,4 +397,8 @@ body,
 .check-box,
 .radio-dot {
   box-sizing: border-box;
+}
+
+.seg-item:focus-visible {
+  outline-offset: -2px;
 }

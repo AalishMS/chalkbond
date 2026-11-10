@@ -34,13 +34,21 @@ export interface DisposableTestHook extends TestHook {
 
 type HookedController = Pick<
   EditorController,
-  'load' | 'getDoc' | 'getSelection' | 'subscribe' | 'run'
+  'load' | 'getDoc' | 'getSelection' | 'subscribe' | 'run' | 'store'
 >;
 
-export function createTestHook(controller: HookedController): DisposableTestHook {
+export function createTestHook(
+  controller: HookedController,
+  commands: string[] = [],
+): DisposableTestHook {
   let heard: EditorEvent[] = [];
+  let notices: HeardNotice[] = [];
   const unsubscribe = controller.subscribe((e) => {
     heard.push(e);
+    if (e.type === 'notice') {
+      const notice = controller.store.getState().notice;
+      if (notice) notices.push({ kind: notice.kind, text: notice.text });
+    }
   });
   return {
     load: (doc) => {
@@ -59,9 +67,11 @@ export function createTestHook(controller: HookedController): DisposableTestHook
     events: () => [...heard],
     clearEvents: () => {
       heard = [];
+      notices = [];
+      commands.length = 0;
     },
-    notices: () => [],
-    commands: () => [],
+    notices: () => notices.map((n) => ({ ...n })),
+    commands: () => [...commands],
     dispose: unsubscribe,
   };
 }

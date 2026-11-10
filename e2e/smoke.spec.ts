@@ -5,7 +5,9 @@ test('launches one secure window titled Chalkbond', async () => {
   const app = await launchApp();
   try {
     const page = await app.firstWindow();
-    await expect(page).toHaveTitle('Chalkbond');
+    await expect
+      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getTitle()))
+      .toBe('Untitled - Chalkbond');
     await expect(page.getByTestId('canvas-area')).toBeVisible();
 
     // Preload exposes only the typed API; no Node in the page.
@@ -40,10 +42,17 @@ test('launches one secure window titled Chalkbond', async () => {
 
     // Scaffold window: 960x640 minimum, no default application menu (no zoom accelerators).
     const shell = await app.evaluate(({ BrowserWindow, Menu }) => ({
-      minSize: BrowserWindow.getAllWindows()[0]?.getMinimumSize(),
+      minSize: (() => {
+        const win = BrowserWindow.getAllWindows()[0];
+        win?.unmaximize();
+        win?.setSize(200, 200);
+        return win?.getContentSize();
+      })(),
       menu: Menu.getApplicationMenu(),
     }));
-    expect(shell).toEqual({ minSize: [960, 640], menu: null });
+    expect(shell.minSize?.[0]).toBeGreaterThanOrEqual(960);
+    expect(shell.minSize?.[1]).toBeGreaterThanOrEqual(640);
+    expect(shell.menu).toBe(null);
 
     await page.keyboard.press('Control+=');
     const zoom = await app.evaluate(({ BrowserWindow }) =>

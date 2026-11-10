@@ -10,6 +10,8 @@ test('named bridge logs errors and denies windows and permissions', async () => 
       'logError',
       'onMainEvent',
       'platform',
+      'startup',
+      'updateSession',
     ]);
     expect(await page.evaluate(() => Notification.requestPermission())).toBe('denied');
     const prefs = await app.evaluate(({ BrowserWindow }) => {
