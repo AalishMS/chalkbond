@@ -288,9 +288,9 @@ nearest box point and clipped at an atom label; curved arrow bend 0, ±, atom an
 offset, bond anchor, fishhook barb side; an unresolvable anchor gives `skipped-item`, not a throw.
 
 **Acceptance criteria:**
-- [ ] Every `DrawObject` type, curved-arrow `head` and text `align` / `script` value has a rule and a test; the dispatcher's `switch` ends in `never` (SC2)
-- [ ] doc-model's `kitchen-sink` and `mechanism` fixtures render with no `skipped-item` notice
-- [ ] Bounds equal `ink-scan` on the reaction-scheme and mechanism scenes (SC5)
+- [x] Every `DrawObject` type, curved-arrow `head` and text `align` / `script` value has a rule and a test; the dispatcher's `switch` ends in `never` (SC2)
+- [x] doc-model's `kitchen-sink` and `mechanism` fixtures render with no `skipped-item` notice
+- [x] Bounds equal `ink-scan` on the reaction-scheme and mechanism scenes (SC5)
 
 **Verification:** `npm test -- src/core/svg-render`
 

@@ -50,7 +50,7 @@ const at = (origin: Point, u: Point, s: number, n: Point, t: number): Point =>
   add(add(origin, scale(u, s)), scale(n, t));
 
 /** A triangular head: the tip, then the two base corners. */
-function triangle(tip: Point, back: Point, n: Point, half: number): Point[] {
+export function triangle(tip: Point, back: Point, n: Point, half: number): Point[] {
   const base = sub(tip, back);
   return [tip, add(base, scale(n, half)), sub(base, scale(n, half))];
 }
@@ -143,7 +143,7 @@ function equilibrium(c: Canvas, f: Frame, style: ResolvedStyle): void {
 }
 
 /** A one-sided head: the tip, the base point on the shaft and the barb. */
-function halfHead(tip: Point, back: Point, barb: Point): Point[] {
+export function halfHead(tip: Point, back: Point, barb: Point): Point[] {
   const base = sub(tip, back);
   return [tip, base, add(base, barb)];
 }

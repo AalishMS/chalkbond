@@ -11,7 +11,10 @@ import {
   type Rect,
   type Selection,
 } from '../doc-model';
+import { kitchenSinkDoc } from '../doc-model/__fixtures__/kitchen-sink';
+import { mechanismDoc, twoStepReactionDoc } from '../doc-model/__fixtures__/schemes';
 import { inkScan } from './__fixtures__/ink-scan';
+import { polygonPoints, textElements } from './__fixtures__/markup';
 import {
   aceticAcid,
   benzene,
@@ -739,12 +742,12 @@ describe('render: notices', () => {
     ]);
   });
 
-  it('object types without a rule yet give a skipped-item notice when drawn', () => {
+  it('an object with nothing to draw gives a skipped-item notice', () => {
     const m = ethanol();
     const [doc, id] = addObject(m.doc, {
       type: 'text',
       at: { x: 0, y: 3 },
-      runs: [{ text: 'x' }],
+      runs: [{ text: '' }],
       align: 'left',
     });
     expect(render(doc).notices).toEqual([
@@ -753,5 +756,361 @@ describe('render: notices', () => {
     expect(render(doc).parts.some((p) => p.key.startsWith('obj:'))).toBe(false);
     expect(render(doc, { only: only(m.atoms) }).notices).toEqual([]);
     expect(render(doc, { only: only([], [], [id]) }).notices).toHaveLength(1);
+  });
+});
+
+describe('render: text, caption, callout and curved arrows', () => {
+  const S = Math.sqrt(3) / 2;
+  const skipped = (scene: Scene) => scene.notices.filter((n) => n.code === 'skipped-item');
+  const sameBox = (a: Rect, b: Rect) => {
+    expect(Math.abs(a.x - b.x)).toBeLessThan(0.01);
+    expect(Math.abs(a.y - b.y)).toBeLessThan(0.01);
+    expect(Math.abs(a.w - b.w)).toBeLessThan(0.01);
+    expect(Math.abs(a.h - b.h)).toBeLessThan(0.01);
+  };
+  const docs: [string, () => Doc][] = [
+    ['kitchen-sink', kitchenSinkDoc],
+    ['mechanism', mechanismDoc],
+    ['two-step reaction', twoStepReactionDoc],
+  ];
+  type Init = Parameters<typeof addObject>[1];
+
+  /** Adds objects to a doc through doc-model; returns the ids in order. */
+  function withObjects(base: Doc, inits: Init[]): [Doc, ObjectId[]] {
+    let doc = base;
+    const ids: ObjectId[] = [];
+    for (const init of inits) {
+      let id: ObjectId;
+      [doc, id] = addObject(doc, init);
+      ids.push(id);
+    }
+    return [doc, ids];
+  }
+
+  /** Replaces fields of stored objects (a hand-edited file can hold what addObject refuses). */
+  function patched(doc: Doc, patches: Record<string, object>): Doc {
+    const objects = { ...doc.objects };
+    for (const [id, patch] of Object.entries(patches)) {
+      objects[id as ObjectId] = {
+        ...objects[id as ObjectId]!,
+        ...patch,
+      } as (typeof objects)[ObjectId];
+    }
+    return { ...doc, objects };
+  }
+
+  const straight = (y: number, bend = 0): Init => ({
+    type: 'curved-arrow',
+    head: 'full',
+    from: { kind: 'point', p: { x: 0, y } },
+    to: { kind: 'point', p: { x: 2, y } },
+    bend,
+  });
+
+  it.each(docs)('%s renders with no skipped-item notice', (_name, make) => {
+    expect(skipped(render(make()))).toEqual([]);
+  });
+
+  it.each(docs)('%s: bounds equal the independent ink scan within 0.01 pt', (_name, make) => {
+    const scene = render(make());
+    sameBox(scene.bounds as Rect, inkScan(joined(scene))!);
+  });
+
+  it.each(docs)('%s: each object extents entry equals the scan of its own part', (_name, make) => {
+    const scene = render(make());
+    for (const p of scene.parts.filter((x) => x.key.startsWith('obj:'))) {
+      sameBox(scene.extents[p.key]!, inkScan(p.svg)!);
+    }
+  });
+
+  it.each(docs)('%s is well-formed with only allow-listed elements', (_name, make) => {
+    expect(() => checkXml(`<g>\n${joined(render(make()))}\n</g>`)).not.toThrow();
+  });
+
+  describe('text', () => {
+    it('is drawn at `at` in pt, under its key, with extents', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        {
+          type: 'text',
+          at: { x: 2, y: 3 },
+          runs: [
+            { text: 'H' },
+            { text: '2', script: 'sub' },
+            { text: 'SO' },
+            { text: '4', script: 'sub' },
+          ],
+          align: 'left',
+        },
+      ]);
+      const scene = render(doc);
+      const t = textElements(part(scene, `obj:${id}`).svg);
+      expect(t.map((e) => e.text)).toEqual(['H', '2', 'SO', '4']);
+      near(t[0]!.x, 80);
+      near(t[0]!.y, 120 + scene.style.capHeight / 2);
+      expect(scene.extents[`obj:${id}`]).toBeDefined();
+      expect(scene.notices).toEqual([]);
+    });
+
+    it('reports glyphs outside the table together with the other notices', () => {
+      const [doc] = withObjects(ethanol().doc, [
+        { type: 'text', at: { x: 0, y: 3 }, runs: [{ text: '中' }], align: 'center' },
+      ]);
+      expect(render(doc).notices).toEqual([{ code: 'unmeasured-glyph', chars: '中' }]);
+    });
+
+    it('a non-finite position is skipped with a notice, never a throw', () => {
+      const [base, [id]] = withObjects(ethanol().doc, [
+        { type: 'text', at: { x: 0, y: 3 }, runs: [{ text: 'x' }], align: 'left' },
+      ]);
+      const doc = patched(base, { [id!]: { at: { x: Number.NaN, y: 0 } } });
+      expect(render(doc).notices).toEqual([
+        { code: 'skipped-item', key: `obj:${id}`, reason: expect.any(String) as string },
+      ]);
+    });
+  });
+
+  describe('caption', () => {
+    it('sits captionGap below the union of the target atoms ink, centred on it', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        { type: 'caption', runs: [{ text: '1', bold: true }], target: m.atoms },
+      ]);
+      const scene = render(doc);
+      const o = scene.extents[`atom:${m.atoms[2]}`]!;
+      // Skeleton atoms count as points: the lowest is the middle carbon, 20 pt below the axis.
+      const cap = scene.extents[`obj:${id}`]!;
+      near(cap.y, 20 + scene.style.captionGap);
+      near(cap.x + cap.w / 2, (0 + o.x + o.w) / 2, 1);
+    });
+
+    it('a labelled atom counts with its whole label and satellites', () => {
+      const m = molecule([{ x: 0, y: 0, element: 'N', charge: 1, lonePairs: 1 }], []);
+      const [doc, [id]] = withObjects(m.doc, [
+        { type: 'caption', runs: [{ text: '2' }], target: m.atoms },
+      ]);
+      const scene = render(doc);
+      const n = scene.extents[`atom:${m.atoms[0]}`]!;
+      near(scene.extents[`obj:${id}`]!.y, n.y + n.h + scene.style.captionGap);
+    });
+
+    it('targets missing from the document are skipped; the rest still counts', () => {
+      const m = ethanol();
+      const [base, [id]] = withObjects(m.doc, [
+        { type: 'caption', runs: [{ text: '1' }], target: [m.atoms[2]!] },
+      ]);
+      const doc = patched(base, { [id!]: { target: ['a999', m.atoms[2]!] } });
+      const scene = render(doc);
+      expect(skipped(scene)).toEqual([]);
+      const o = scene.extents[`atom:${m.atoms[2]}`]!;
+      const cap = scene.extents[`obj:${id}`]!;
+      near(cap.x + cap.w / 2, o.x + o.w / 2, 1);
+    });
+
+    it('nothing left to caption: skipped with a notice', () => {
+      const m = ethanol();
+      const [base, [id]] = withObjects(m.doc, [
+        { type: 'caption', runs: [{ text: '1' }], target: [m.atoms[0]!] },
+      ]);
+      for (const target of [['a999'], []]) {
+        const scene = render(patched(base, { [id!]: { target } }));
+        expect(skipped(scene)).toEqual([
+          { code: 'skipped-item', key: `obj:${id}`, reason: expect.any(String) as string },
+        ]);
+        expect(keys(scene)).not.toContain(`obj:${id}`);
+      }
+    });
+
+    it('a selected caption draws alone, byte-identical to the full render', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        { type: 'caption', runs: [{ text: '1' }], target: m.atoms },
+      ]);
+      const sub = render(doc, { only: only([], [], [id!]) });
+      expect(keys(sub)).toEqual([`obj:${id}`]);
+      expect(sub.parts[0]!.svg).toBe(part(render(doc), `obj:${id}`).svg);
+    });
+  });
+
+  describe('callout', () => {
+    it('draws the text and a leader to a point anchor', () => {
+      const [doc, [id]] = withObjects(ethanol().doc, [
+        {
+          type: 'callout',
+          at: { x: 1, y: 3 },
+          runs: [{ text: 'nucleophile', italic: true }],
+          anchor: { kind: 'point', p: { x: 4, y: 3 } },
+        },
+      ]);
+      const svg = part(render(doc), `obj:${id}`).svg;
+      const [leader] = pathLines(svg);
+      expect(leader!.pts[1]).toEqual({ x: 160, y: 120 });
+      expect(svg).toContain('font-style="italic"');
+    });
+
+    it('a leader to an atom stops outside its label box', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        {
+          type: 'callout',
+          at: { x: 2 * S, y: 3 },
+          runs: [{ text: 'alcohol' }],
+          anchor: { kind: 'atom', atom: m.atoms[2]! },
+        },
+      ]);
+      const scene = render(doc);
+      const [leader] = pathLines(part(scene, `obj:${id}`).svg);
+      const end = leader!.pts[1]!;
+      // Straight up into the O: it stops under the anchor box grown by curvedGap.
+      near(end.x, 2 * S * 40, 2);
+      near(end.y, scene.style.capHeight / 2 + scene.style.curvedGap, 2);
+    });
+
+    it('an unresolvable anchor is skipped with a notice', () => {
+      const [base, [id]] = withObjects(ethanol().doc, [
+        {
+          type: 'callout',
+          at: { x: 1, y: 3 },
+          runs: [{ text: 'x' }],
+          anchor: { kind: 'point', p: { x: 4, y: 3 } },
+        },
+      ]);
+      const doc = patched(base, { [id!]: { anchor: { kind: 'atom', atom: 'a999' } } });
+      expect(skipped(render(doc))).toEqual([
+        { code: 'skipped-item', key: `obj:${id}`, reason: expect.any(String) as string },
+      ]);
+    });
+  });
+
+  describe('curved arrows', () => {
+    const tipOf = (scene: Scene, id: ObjectId): Point =>
+      polygonPoints(part(scene, `obj:${id}`).svg)[0]![0]!;
+
+    it('an atom anchor without offset on a labelled atom stops outside its anchor box', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        {
+          type: 'curved-arrow',
+          head: 'full',
+          from: { kind: 'point', p: { x: 2 * S - 2.5, y: 0 } },
+          to: { kind: 'atom', atom: m.atoms[2]! },
+          bend: 0,
+        },
+      ]);
+      const scene = render(doc);
+      const halfW = (ADVANCE_REGULAR[0x4f]! / 1000) * scene.style.fontSize * 0.5;
+      near(tipOf(scene, id!).x, 2 * S * 40 - halfW - scene.style.curvedGap, 2);
+      near(tipOf(scene, id!).y, 0, 2);
+    });
+
+    it('an offset (lone pair) end is used as given, even inside the label box', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        {
+          type: 'curved-arrow',
+          head: 'full',
+          from: { kind: 'point', p: { x: 2 * S - 2.5, y: 0 } },
+          to: { kind: 'atom', atom: m.atoms[2]!, offset: { x: -0.1, y: 0 } },
+          bend: 0,
+        },
+      ]);
+      near(tipOf(render(doc), id!).x, 2 * S * 40 - 4, 2);
+    });
+
+    it('a skeleton vertex end is used as given', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        {
+          type: 'curved-arrow',
+          head: 'fishhook',
+          from: { kind: 'point', p: { x: S - 2, y: 0.5 } },
+          to: { kind: 'atom', atom: m.atoms[1]! },
+          bend: 0,
+        },
+      ]);
+      const scene = render(doc);
+      near(tipOf(scene, id!).x, S * 40, 2);
+      near(tipOf(scene, id!).y, 20, 2);
+    });
+
+    it('a bond anchor ends at the point along the bond', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        {
+          type: 'curved-arrow',
+          head: 'full',
+          from: { kind: 'point', p: { x: 0.5, y: 2 } },
+          to: { kind: 'bond', bond: m.bonds[0]!, t: 0.25 },
+          bend: 0.3,
+        },
+      ]);
+      const tip = tipOf(render(doc), id!);
+      near(tip.x, 0.25 * S * 40, 2);
+      near(tip.y, 0.25 * 0.5 * 40, 2);
+    });
+
+    it('bend 0 is a straight line, a bend is a curve', () => {
+      const [flat, [a]] = withObjects(ethanol().doc, [straight(2)]);
+      const [bent, [b]] = withObjects(ethanol().doc, [straight(2, 0.4)]);
+      expect(part(render(flat), `obj:${a}`).svg).not.toContain('Q');
+      expect(part(render(bent), `obj:${b}`).svg).toContain('Q');
+    });
+
+    it('unresolvable anchors and bad numbers are skipped with a notice, never a throw', () => {
+      const [base, ids] = withObjects(ethanol().doc, [
+        straight(2, 0.2),
+        straight(2, 0.2),
+        straight(2, 0.2),
+        straight(2, 0.2),
+        straight(2, 0.2),
+        {
+          type: 'curved-arrow',
+          head: 'full',
+          from: { kind: 'point', p: { x: 1, y: 1 } },
+          to: { kind: 'point', p: { x: 1, y: 1 } },
+          bend: 0.2,
+        },
+      ]);
+      const doc = patched(base, {
+        [ids[0]!]: { from: { kind: 'atom', atom: 'a999' } },
+        [ids[1]!]: { to: { kind: 'bond', bond: 'b999' } },
+        [ids[2]!]: { to: { kind: 'point', p: { x: Number.NaN, y: 0 } } },
+        [ids[3]!]: { bend: Number.NaN },
+        [ids[4]!]: { bend: 1e308 },
+      });
+      const scene = render(doc);
+      expect(skipped(scene).map((n) => (n.code === 'skipped-item' ? n.key : ''))).toEqual(
+        ids.map((id) => `obj:${id}`),
+      );
+      expect(keys(scene).some((k) => k.startsWith('obj:'))).toBe(false);
+    });
+
+    it('an atom anchor outside a subset still clips against its label', () => {
+      const m = ethanol();
+      const [doc, [id]] = withObjects(m.doc, [
+        {
+          type: 'curved-arrow',
+          head: 'full',
+          from: { kind: 'point', p: { x: 2 * S - 2.5, y: 0 } },
+          to: { kind: 'atom', atom: m.atoms[2]! },
+          bend: 0.2,
+        },
+      ]);
+      const sub = render(doc, { only: only([], [], [id!]) });
+      expect(keys(sub)).toEqual([`obj:${id}`]);
+      expect(sub.parts[0]!.svg).toBe(part(render(doc), `obj:${id}`).svg);
+      expect(sub.extents[`obj:${id}`]).toEqual(render(doc).extents[`obj:${id}`]);
+    });
+
+    it('paints above structures, by zOrder', () => {
+      const [doc, [first, second]] = withObjects(ethanol().doc, [
+        { type: 'text', at: { x: 0, y: 3 }, runs: [{ text: 'a' }], align: 'left' },
+        straight(2, 0.2),
+      ]);
+      const order = keys(render(doc));
+      const lastStructure = order.map((k) => /^(atom|bond):/.test(k)).lastIndexOf(true);
+      expect(order.indexOf(`obj:${first}`)).toBeGreaterThan(lastStructure);
+      expect(order.indexOf(`obj:${first}`)).toBeLessThan(order.indexOf(`obj:${second}`));
+    });
   });
 });

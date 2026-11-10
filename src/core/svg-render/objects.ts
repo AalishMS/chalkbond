@@ -1,13 +1,40 @@
 // The rule for each drawing object (SPEC-svg-render.md "Objects"): converts BLU to pt, checks that
 // the geometry is finite, and hands over to the per-type layout. A skipped object returns the
 // reason (the caller turns it into a `skipped-item` notice).
-import type { DrawObject, Point, Rect } from '../doc-model';
+import {
+  resolveAnchor,
+  type Anchor,
+  type AtomId,
+  type Doc,
+  type DrawObject,
+  type Point,
+  type Rect,
+} from '../doc-model';
 import { layoutArrow, layoutPlus } from './arrows';
+import type { AtomLabel } from './atom-label';
 import { layoutBracket } from './brackets';
+import { layoutCurvedArrow, type CurveEnd } from './curved-arrow';
 import type { Drawn } from './draw';
+import { growRect, unionAll } from './geom';
 import { exhaustive } from './order';
 import { layoutShape } from './shapes';
 import { bluToPt, type ResolvedStyle } from './style';
+import { layoutCallout, layoutCaption, layoutTextObject } from './text-objects';
+
+/**
+ * What the objects need to know about the structures they point at. Built over the whole
+ * document, drawn or not, so an object looks the same in a subset render as in the full one.
+ */
+export interface ObjectContext {
+  readonly doc: Doc;
+  readonly style: ResolvedStyle;
+  /** Pt positions of the atoms whose coordinates are finite. */
+  readonly pos: ReadonlyMap<AtomId, Point>;
+  /** The labelled atoms' labels. */
+  readonly labels: ReadonlyMap<AtomId, AtomLabel>;
+  /** Ink boxes (label and satellites) of the atoms that have any. */
+  readonly atomInk: ReadonlyMap<AtomId, Rect>;
+}
 
 const finite = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
 
@@ -19,10 +46,37 @@ function rectToPt(r: Rect, style: ResolvedStyle): Rect | null {
 }
 
 /**
- * The drawing of one object, or the reason it is skipped. Exhaustive over `DrawObject`; the types
- * that have no rule yet are skipped with a notice (removed as S10 lands).
+ * An anchor as a curve end in pt, or the reason it cannot be resolved. An atom anchor without an
+ * offset on a labelled atom carries the box to be cut out of (the label's anchor box grown by
+ * `curvedGap`); a vertex, an offset (lone pair), a bond and a point are used as given.
  */
-export function drawObject(obj: DrawObject, style: ResolvedStyle): Drawn | string {
+function resolveEnd(anchor: Anchor, ctx: ObjectContext): CurveEnd | string {
+  let blu: Point;
+  try {
+    blu = resolveAnchor(ctx.doc, anchor);
+  } catch {
+    return 'anchor refers to a missing atom or bond';
+  }
+  const point = bluToPt(blu, ctx.style);
+  if (!finite(point)) return 'non-finite coordinate';
+  const label = anchor.kind === 'atom' && !anchor.offset ? ctx.labels.get(anchor.atom) : undefined;
+  return { point, clip: label ? growRect(label.anchorBox, ctx.style.curvedGap) : null };
+}
+
+/** The union of the ink of the caption's target atoms (a bare vertex is a point), if any exist. */
+function captionTarget(targets: readonly AtomId[], ctx: ObjectContext): Rect | null {
+  const boxes: Rect[] = [];
+  for (const id of targets) {
+    const p = ctx.pos.get(id);
+    if (!p || !(id in ctx.doc.atoms)) continue;
+    boxes.push(ctx.atomInk.get(id) ?? { x: p.x, y: p.y, w: 0, h: 0 });
+  }
+  return unionAll(boxes);
+}
+
+/** The drawing of one object, or the reason it is skipped. Exhaustive over `DrawObject`. */
+export function drawObject(obj: DrawObject, ctx: ObjectContext): Drawn | string {
+  const { style } = ctx;
   switch (obj.type) {
     case 'arrow': {
       const from = bluToPt(obj.from, style);
@@ -50,11 +104,31 @@ export function drawObject(obj: DrawObject, style: ResolvedStyle): Drawn | strin
         ) ?? 'shape has neither fill nor stroke'
       );
     }
-    case 'curved-arrow':
-    case 'text':
-    case 'caption':
-    case 'callout':
-      return `${obj.type} is not rendered yet`;
+    case 'curved-arrow': {
+      const from = resolveEnd(obj.from, ctx);
+      if (typeof from === 'string') return from;
+      const to = resolveEnd(obj.to, ctx);
+      if (typeof to === 'string') return to;
+      if (!Number.isFinite(obj.bend)) return 'non-finite bend';
+      return layoutCurvedArrow(obj.head, from, to, obj.bend, style) ?? 'arrow has no length';
+    }
+    case 'text': {
+      const at = bluToPt(obj.at, style);
+      if (!finite(at)) return 'non-finite coordinate';
+      return layoutTextObject(obj.runs, obj.align, at, style) ?? 'text has no content';
+    }
+    case 'caption': {
+      const target = captionTarget(obj.target, ctx);
+      if (!target) return 'caption has no target atoms';
+      return layoutCaption(obj.runs, target, style) ?? 'text has no content';
+    }
+    case 'callout': {
+      const at = bluToPt(obj.at, style);
+      if (!finite(at)) return 'non-finite coordinate';
+      const anchor = resolveEnd(obj.anchor, ctx);
+      if (typeof anchor === 'string') return anchor;
+      return layoutCallout(obj.runs, at, anchor, style) ?? 'text has no content';
+    }
     default:
       exhaustive(obj);
       return 'unknown object type';

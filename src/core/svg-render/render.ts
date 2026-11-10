@@ -5,8 +5,9 @@
 // double-bond sides and clip boxes see the full neighbourhood, so a part of a subset render is
 // byte-identical to the same-key part of the full render.
 //
-// Paint order: beneath objects, ring circles, bonds, atoms, above objects. Later tasks plug in
-// here: satellites join an atom's part; `drawObject` (objects.ts) holds the object rules (S9, S10).
+// Paint order: beneath objects, ring circles, bonds, atoms, above objects. Labels and atom ink are
+// laid out for every atom (objects point at them); only the atoms in scope are emitted.
+// `drawObject` (objects.ts) holds the object rules.
 import { perceive } from '../chem-core';
 import {
   paintLayers,
@@ -21,7 +22,7 @@ import { bondClipBox, buildAtomLabel, isLabelled, type AtomLabel } from './atom-
 import { layoutBond } from './bonds';
 import { circledRings, ringCircle } from './circles';
 import { rectUnion, unionAll } from './geom';
-import { drawObject } from './objects';
+import { drawObject, type ObjectContext } from './objects';
 import { sortedIds } from './order';
 import { ringCentroid, ringsByBond } from './rings';
 import { layoutSatellites } from './satellites';
@@ -109,13 +110,13 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
 
   const perception = atomIds.length > 0 ? (opts.perception ?? perceive(doc)) : null;
 
-  // Labels of the atoms in scope (layout sees every neighbour, drawn or not).
+  // Labels of every atom (layout sees every neighbour, drawn or not); notices only for those drawn.
   const labels = new Map<AtomId, AtomLabel>();
   const glyphNotices: UnmeasuredGlyphNotice[] = [];
   for (const id of atomIds) {
     const atom = doc.atoms[id];
     const position = pos.get(id);
-    if (!atom || !position || !atomInScope(id)) continue;
+    if (!atom || !position) continue;
     if (!isLabelled(atom, adjacency.get(id)?.length ?? 0)) continue;
     const label = buildAtomLabel(
       {
@@ -127,8 +128,40 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
       style,
     );
     labels.set(id, label);
-    glyphNotices.push(...label.notices);
+    if (atomInScope(id)) glyphNotices.push(...label.notices);
   }
+
+  // Atom parts (label and satellites) for every atom that has ink.
+  const atomParts = new Map<AtomId, Item>();
+  for (const id of atomIds) {
+    const atom = doc.atoms[id];
+    const position = pos.get(id);
+    if (!atom || !position) continue;
+    const label = labels.get(id);
+    const sats = layoutSatellites(
+      { atom, position, directions: vectorsFrom(id), labelBox: label ? label.textBox : null },
+      style,
+    );
+    if (sats && atomInScope(id)) glyphNotices.push(...sats.notices);
+    if (!label && !sats) continue;
+    atomParts.set(id, {
+      key: `atom:${id}`,
+      svg: [label?.svg, sats?.svg]
+        .filter((x): x is string => x !== undefined && x !== '')
+        .join('\n'),
+      ink:
+        label && sats
+          ? rectUnion(label.textBox, sats.ink)
+          : ((label?.textBox ?? sats?.ink) as Rect),
+    });
+  }
+  const objectContext: ObjectContext = {
+    doc,
+    style,
+    pos,
+    labels,
+    atomInk: new Map([...atomParts].map(([id, item]) => [id, item.ink])),
+  };
 
   // Rings, found once.
   const smallestRing = ringsByBond(doc);
@@ -145,7 +178,7 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
     for (const id of ids) {
       const obj = doc.objects[id];
       if (!obj || (sel && !sel.objects.has(id))) continue;
-      const out = drawObject(obj, style);
+      const out = drawObject(obj, objectContext);
       if (typeof out === 'string') {
         skip(`obj:${id}`, out);
         continue;
@@ -206,32 +239,8 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
       skip(`atom:${id}`, 'non-finite coordinate');
       continue;
     }
-    const label = labels.get(id);
-    const atom = doc.atoms[id];
-    const sats = atom
-      ? layoutSatellites(
-          {
-            atom,
-            position: pos.get(id) as Point,
-            directions: vectorsFrom(id),
-            labelBox: label ? label.textBox : null,
-          },
-          style,
-        )
-      : null;
-    if (sats) glyphNotices.push(...sats.notices);
-    if (label || sats) {
-      items.push({
-        key: `atom:${id}`,
-        svg: [label?.svg, sats?.svg]
-          .filter((x): x is string => x !== undefined && x !== '')
-          .join('\n'),
-        ink:
-          label && sats
-            ? rectUnion(label.textBox, sats.ink)
-            : ((label?.textBox ?? sats?.ink) as Rect),
-      });
-    }
+    const item = atomParts.get(id);
+    if (item) items.push(item);
   }
 
   objectItems(layers.above);
