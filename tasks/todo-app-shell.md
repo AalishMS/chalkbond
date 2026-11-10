@@ -42,8 +42,8 @@ in `src/main/model/x.ts`; rejects `document`, `setTimeout`, `Date`, `react` in
 `../editor/model/keymap` in `src/renderer/app/model/keys.test.ts`.
 
 **Acceptance criteria:**
-- [ ] Every probe passes; existing lint probes (`lint-boundaries`, `editor-lint`, `svg-render-lint`) still pass
-- [ ] `npm run lint` and `npm run typecheck` clean on the current tree
+- [x] Every probe passes; existing lint probes (`lint-boundaries`, `editor-lint`, `svg-render-lint`) still pass
+- [x] `npm run lint` and `npm run typecheck` clean on the current tree
 
 **Verification:** `npm test -- tests/tooling/app-lint.test.ts`, `npm run check`. No visible change.
 

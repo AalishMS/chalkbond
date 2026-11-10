@@ -1,3 +1,4 @@
+import { builtinModules } from 'node:module';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -124,19 +125,37 @@ const EDITOR_PURE_GLOBALS = [
   'Date',
 ];
 
+/**
+ * app-shell and clipboard-export (renderer) reach the editor only through its public index:
+ * `../editor` or `../../editor`. Tests are exempt.
+ */
+const EDITOR_INDEX_ONLY = {
+  regex: '(^|/)editor/',
+  message:
+    'Import the editor only through its index (../editor); its internals are not public (SPEC-app-shell.md).',
+};
+
 function rendererConfigs() {
-  const pureFiles = ['model', 'tools', 'state'].map(
-    (d) => `src/renderer/editor/${d}/**/*.{ts,tsx}`,
-  );
-  const pureTestFiles = ['model', 'tools', 'state'].map(
-    (d) => `src/renderer/editor/${d}/**/*.test.{ts,tsx}`,
-  );
-  const domMessage = 'Editor model, tools and state must stay DOM-free (SPEC-editor.md).';
-  const pureImports = (allowFixtures) =>
+  // Pure folders: the editor's model, tools and state, plus the pure models of the shell.
+  const pureDirs = [
+    'src/renderer/editor/model',
+    'src/renderer/editor/tools',
+    'src/renderer/editor/state',
+    'src/renderer/app/model',
+    'src/renderer/clipboard-export/model',
+  ];
+  const shellDirs = ['src/renderer/app', 'src/renderer/clipboard-export'];
+  const pureFiles = pureDirs.map((d) => `${d}/**/*.{ts,tsx}`);
+  const pureTestFiles = pureDirs.map((d) => `${d}/**/*.test.{ts,tsx}`);
+  const shellFiles = shellDirs.map((d) => `${d}/**/*.{ts,tsx}`);
+  const shellPureFiles = pureFiles.filter((f) => !f.includes('/editor/'));
+  const domMessage =
+    'Editor and shell model, tools and state must stay DOM-free (SPEC-editor.md, SPEC-app-shell.md).';
+  const pureImports = (allowFixtures, extraPatterns = []) =>
     rendererImportRules(
       allowFixtures,
       ['react', 'react-dom', 'electron'].map((name) => ({ name, message: domMessage })),
-      [{ regex: '^(react|react-dom|electron)/', message: domMessage }],
+      [{ regex: '^(react|react-dom|electron)/', message: domMessage }, ...extraPatterns],
     );
   return [
     {
@@ -148,14 +167,27 @@ function rendererConfigs() {
       rules: { 'no-restricted-imports': rendererImportRules(true) },
     },
     {
+      files: shellFiles,
+      ignores: ['**/*.test.{ts,tsx}'],
+      rules: { 'no-restricted-imports': rendererImportRules(false, [], [EDITOR_INDEX_ONLY]) },
+    },
+    {
+      files: shellPureFiles,
+      ignores: ['**/*.test.{ts,tsx}'],
+      rules: { 'no-restricted-imports': pureImports(false, [EDITOR_INDEX_ONLY]) },
+    },
+    {
+      files: pureFiles.filter((f) => f.includes('/editor/')),
+      rules: { 'no-restricted-imports': pureImports(false) },
+    },
+    {
       files: pureFiles,
       rules: {
-        'no-restricted-imports': pureImports(false),
         'no-restricted-globals': [
           'error',
           ...EDITOR_PURE_GLOBALS.map((name) => ({
             name,
-            message: `${name} is banned in editor model, tools and state (pure logic).`,
+            message: `${name} is banned in editor and shell model, tools and state (pure logic).`,
           })),
         ],
         'no-restricted-syntax': [
@@ -173,6 +205,26 @@ function rendererConfigs() {
     },
   ];
 }
+
+/** main and preload may not reach core at all (SPEC-app-shell.md "Code"): not `@core`, not a path. */
+const NO_CORE_PATTERNS = [
+  {
+    regex: '^@core(/|$)',
+    message: 'main and preload must not import src/core; core runs in the renderer.',
+  },
+  {
+    regex: '(^|/)core(/|$)',
+    message: 'main and preload must not import src/core (no relative path into it either).',
+  },
+];
+
+/** `src/main/model` is pure: no Electron, no Node built-in, in or out of tests. */
+const NODE_BUILTIN_NAMES = builtinModules.filter((name) => !name.startsWith('_'));
+const MAIN_MODEL_MESSAGE =
+  'src/main/model must stay pure: no electron and no Node built-ins (SPEC-app-shell.md).';
+
+const PRELOAD_MESSAGE =
+  'preload may import at runtime only electron and ../shared/channels (type-only imports are free).';
 
 export default tseslint.config(
   {
@@ -225,6 +277,53 @@ export default tseslint.config(
   },
   ...CORE_MODULES.flatMap(coreModuleConfig),
   ...rendererConfigs(),
+  {
+    // A block that sets no-restricted-imports replaces the earlier one: the openchemlib ban is
+    // repeated here.
+    files: ['src/main/**/*.ts', 'src/preload/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: [OCL_CHEM_CORE_ONLY], patterns: NO_CORE_PATTERNS },
+      ],
+    },
+  },
+  {
+    files: ['src/preload/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^(?!electron$|\\.\\./shared/channels$)',
+              allowTypeImports: true,
+              message: PRELOAD_MESSAGE,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/main/model/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            OCL_CHEM_CORE_ONLY,
+            { name: 'electron', message: MAIN_MODEL_MESSAGE },
+            ...NODE_BUILTIN_NAMES.map((name) => ({ name, message: MAIN_MODEL_MESSAGE })),
+          ],
+          patterns: [
+            ...NO_CORE_PATTERNS,
+            { regex: '^(node:|electron/)', message: MAIN_MODEL_MESSAGE },
+          ],
+        },
+      ],
+    },
+  },
   {
     // svg-render output must be byte-identical on every machine (SPEC-svg-render.md
     // "Determinism"): no maths whose V8 results have differed between platforms, no clock,
