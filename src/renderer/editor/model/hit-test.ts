@@ -57,12 +57,14 @@ export interface HitFilter {
   readonly atoms: boolean;
   readonly bonds: boolean;
   /** `text`: texts only (the Text tool). */
-  readonly objects: 'all' | 'text' | 'none';
+  readonly objects: 'all' | 'text' | 'arrows' | 'none';
 }
 
 export const HIT_ALL: HitFilter = { atoms: true, bonds: true, objects: 'all' };
 const STRUCTURE: HitFilter = { atoms: true, bonds: true, objects: 'none' };
 const TEXT_ONLY: HitFilter = { atoms: false, bonds: false, objects: 'text' };
+/** The Arrow tool's click on an existing arrow (R1): straight arrows only. */
+export const ARROWS_ONLY: HitFilter = { atoms: false, bonds: false, objects: 'arrows' };
 
 /**
  * HV1: what each tool highlights. Select and Erase see everything; the Text tool only texts; the
@@ -179,6 +181,7 @@ function objectHit(doc: Doc, scene: Scene, v: Viewport, p: Point, filter: HitFil
   const best: (Candidate<DrawObject> | null)[] = OBJECT_CLASSES.map(() => null);
   for (const obj of Object.values(doc.objects)) {
     if (filter.objects === 'text' && obj.type !== 'text') continue;
+    if (filter.objects === 'arrows' && obj.type !== 'arrow') continue;
     const cls = OBJECT_CLASSES.findIndex((types) => types.includes(obj.type));
     const d = objectDistance(doc, scene, v, p, obj);
     if (d !== null) best[cls] = keepBetter(best[cls] ?? null, obj, d);

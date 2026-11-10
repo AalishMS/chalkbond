@@ -922,7 +922,9 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 - **R1** Arrow: drag from p₀ to p₁ → arrow of the option's kind, angle snapped to 15° (Shift
   free); a drag shorter than 0.5 BLU counts as a click; click on empty canvas → arrow from p to
   p + (2.5, 0). Click on an existing arrow sets its kind to the option.
-- **R2** Plus: click → plus at p; snapping as S3 (centre alignment with other items).
+- **R2** Plus: click → plus at p; snapping as S3 (centre alignment with other items). While the
+  button is down a ghost plus follows the pointer with its guide; the plus lands where the button
+  is released. Arrow, Plus and Curved arrow leave the selection as it was (nothing is selected).
 - **R3** Curved arrow: press on an atom or bond (else nothing, notice "Start on an atom or a
   bond." (info)), release on an atom, a bond or empty canvas. Anchors: atom → `{ kind: 'atom',
   atom }`, bond → `{ kind: 'bond', bond, t: 0.5 }`, empty → `{ kind: 'point', p }`. Same start and

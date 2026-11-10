@@ -11,7 +11,15 @@ import {
 import { render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import { add, type Point } from './geometry';
-import { HIT_ALL, hitTest, hoverFilter, marqueeSelection, mergeTarget, type Hit } from './hit-test';
+import {
+  ARROWS_ONLY,
+  HIT_ALL,
+  hitTest,
+  hoverFilter,
+  marqueeSelection,
+  mergeTarget,
+  type Hit,
+} from './hit-test';
 import { bluToScreen, type Viewport } from './viewport';
 
 const BL = 40;
@@ -205,6 +213,15 @@ describe('hit filters (HV1)', () => {
       expect(hit(withArrow, v, onArrow, f)).toBeNull();
       expect(at(hit(withArrow, v, onAtom, f))).toBe(a);
     }
+  });
+
+  it('the Arrow tool click filter sees straight arrows only', () => {
+    expect(hit(withArrow, v, onArrow, ARROWS_ONLY)).toEqual({
+      kind: 'object',
+      id: arrow,
+      type: 'arrow',
+    });
+    expect(hit(withArrow, v, onAtom, ARROWS_ONLY)).toBeNull();
   });
 
   it('Erase sees everything it would erase', () => {

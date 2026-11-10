@@ -375,3 +375,31 @@ describe('canvasOverlay: hover of a selected item (HV5)', () => {
     expect(kinds(undefined)).toContain('hover');
   });
 });
+
+describe('canvasOverlay: curly-arrow anchors', () => {
+  it('each anchor of the gesture is lit like a hover', () => {
+    const doc = doc2();
+    const bond = Object.keys(doc.bonds)[0] as BondId;
+    const atom = ringAtoms(doc)[0] as AtomId;
+    const groups = canvasOverlay({
+      hover: null,
+      selection: EMPTY_SELECTION,
+      gesture: {
+        kind: 'curved-drag',
+        overlay: {
+          anchors: [
+            { kind: 'bond', id: bond },
+            { kind: 'atom', id: atom },
+          ],
+        },
+      },
+      preview: null,
+      doc,
+      scene: render(doc),
+      viewport: v,
+    });
+    expect(groups.map((g) => g.kind)).toEqual(['hover', 'hover']);
+    expect(groups[0]?.shapes[0]?.kind).toBe('band');
+    expect(groups[1]?.shapes[0]?.kind).toBe('circle');
+  });
+});

@@ -312,6 +312,10 @@ export function canvasOverlay(view: OverlayView): OverlayGroup[] {
       ? null
       : view.hover;
   groups.push(...overlayGroups(hover, doc, scene, v));
+  // A curly arrow's start and end anchors are lit like a hover.
+  for (const anchor of gesture?.overlay?.anchors ?? []) {
+    groups.push(...overlayGroups(anchor, doc, scene, v));
+  }
   if (preview?.mergeTarget !== undefined) {
     const shape = hoverShape({ kind: 'atom', id: preview.mergeTarget }, doc, scene, v);
     if (shape !== null) groups.push({ kind: 'merge', shapes: [shape] });

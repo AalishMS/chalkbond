@@ -61,6 +61,8 @@ export interface GestureOverlay {
   /** Opposite corners of the marquee, BLU. */
   readonly marquee?: { readonly from: Point; readonly to: Point };
   readonly guides?: readonly Guide[];
+  /** Curly arrow: the atoms or bonds the arrow starts and ends on, highlighted like a hover. */
+  readonly anchors?: readonly Hit[];
   /** Chain: the carbons of the zig-zag (start atom included), badged by the pointer `at` (canvas px). */
   readonly count?: { readonly at: Point; readonly n: number };
 }

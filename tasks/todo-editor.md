@@ -748,7 +748,7 @@ undo step; C2 on `Ph` → 6 more carbons, formula unchanged; Expand hidden witho
 
 ### Checkpoint P — structures
 - [x] `npm run check` green; `e2e/editor-structures.spec.ts`: ethanol by gestures, benzene, toluene in 3 actions
-- [ ] Commit + push
+- [x] Commit + push (origin/main contains 1a7452b, checked with `git merge-base --is-ancestor`)
 
 ---
 
@@ -766,8 +766,8 @@ molecule's centre y; curved arrow from an O lone-pair atom to a C–O bond → a
 bend sign away from the fragment centroid; start on empty → notice, no step.
 
 **Acceptance criteria:**
-- [ ] R1–R3 covered; one undo step per gesture; previews ghosted
-- [ ] Arrow kinds exactly the four of Decision 3 (markup)
+- [x] R1–R3 covered; one undo step per gesture; previews ghosted
+- [x] Arrow kinds exactly the four of Decision 3 (markup)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E25` → `E25/arrow-drag.png` (scripted: insert ethanol and acetic acid, Arrow, drag between them; capture mid-drag), `E25/curly.png` (scripted: insert water and chloromethane; Curly, Electron pair, drag from water's O to the C of chloromethane)
 
