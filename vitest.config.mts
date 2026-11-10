@@ -15,6 +15,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     env: { CHALKBOND_COVERAGE: coverage ? '1' : '' },
+    // Instrumentation also pushes the heavy property / dictionary tests past the 5 s default.
+    testTimeout: coverage ? 60_000 : 5_000,
     // Perf budgets time medians on a quiet CPU: they run as a second group, after every other
     // file has finished, one file at a time (in parallel with the rest they read ~3x slower).
     projects: [
