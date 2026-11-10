@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { HINTS } from '../state/catalog';
 import { TOOL_IDS, type Hit, type ToolId } from '../state/editor-state';
-import { StatusBar } from './StatusBar';
+import { presetForKey, StatusBar } from './StatusBar';
 
 const noop = (): undefined => undefined;
 
@@ -42,13 +42,31 @@ describe('StatusBar markup', () => {
     expect(render('bond')).toContain('role="status" aria-live="polite"');
   });
 
-  it('presses the preset segment of the document', () => {
+  it('is a two-option radio group that shows the document preset', () => {
     const slides = render('bond', 'slides');
-    expect(slides).toContain('data-testid="preset-slides" aria-pressed="true"');
-    expect(slides).toContain('data-testid="preset-handout" aria-pressed="false"');
+    expect(slides).toContain('role="radiogroup" aria-label="Style"');
+    expect(slides).toMatch(
+      /role="radio" aria-checked="true" tabindex="0"[^>]*data-testid="preset-slides"/,
+    );
+    expect(slides).toMatch(
+      /role="radio" aria-checked="false" tabindex="-1"[^>]*data-testid="preset-handout"/,
+    );
     const handout = render('bond', 'journal');
-    expect(handout).toContain('data-testid="preset-slides" aria-pressed="false"');
-    expect(handout).toContain('data-testid="preset-handout" aria-pressed="true"');
+    expect(handout).toMatch(/aria-checked="false" tabindex="-1"[^>]*data-testid="preset-slides"/);
+    expect(handout).toMatch(/aria-checked="true" tabindex="0"[^>]*data-testid="preset-handout"/);
+  });
+
+  it('arrow keys move to the other option, Home and End to the ends, other keys nothing', () => {
+    for (const key of ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp']) {
+      expect(presetForKey(key, 'slides')).toBe('journal');
+      expect(presetForKey(key, 'journal')).toBe('slides');
+    }
+    expect(presetForKey('Home', 'journal')).toBe('slides');
+    expect(presetForKey('Home', 'slides')).toBe('slides');
+    expect(presetForKey('End', 'slides')).toBe('journal');
+    expect(presetForKey('End', 'journal')).toBe('journal');
+    expect(presetForKey('a', 'slides')).toBeNull();
+    expect(presetForKey('Enter', 'slides')).toBeNull();
   });
 
   it('has the zoom cluster with a 150% readout labelled as reset (R12)', () => {

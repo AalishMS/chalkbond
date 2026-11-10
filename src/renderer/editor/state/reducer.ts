@@ -10,6 +10,7 @@ import {
   type AtomId,
   type Doc,
   type Selection,
+  type StylePreset,
   type SubDoc,
 } from '@core/doc-model';
 import type { CanvasEvent, MoveEvent } from '../model/canvas-event';
@@ -44,6 +45,7 @@ import {
 } from './commands';
 import { differs } from './dirty';
 import { showNotice } from './notice';
+import { setPreset } from './preset';
 import {
   cleanUp,
   expandLabels,
@@ -135,6 +137,8 @@ export type EditorAction =
   | { type: 'expand' }
   /** C6: select the next warning and reveal it. */
   | { type: 'show-warning' }
+  /** PR1: the Slides | Handout switch. */
+  | { type: 'set-preset'; preset: StylePreset }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'notice-show'; kind: 'info' | 'error'; text: string }
@@ -347,6 +351,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return expandLabels(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'show-warning':
       return showWarning(state, ctx.derive);
+    case 'set-preset':
+      return setPreset(state, action.preset, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'name-text':
       return nameText(state, action.text, ctx);
     case 'name-highlight':

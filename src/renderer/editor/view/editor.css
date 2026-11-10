@@ -832,9 +832,14 @@ kbd {
   border-radius: var(--radius-xs);
 }
 
-.segmented .btn-status[aria-pressed='true'] {
+.segmented .btn-status[aria-checked='true'] {
+  background: var(--active-bg);
   color: var(--active-fg);
   font-weight: 600;
+}
+
+.segmented .btn-status[aria-checked='true']:hover {
+  background: var(--active-hover-bg);
 }
 
 /* The label and text editors (SPEC-editor.md L1, T2; screen 09): a box over the canvas, centred

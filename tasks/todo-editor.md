@@ -910,14 +910,14 @@ length unchanged; undo → slides and the switch shows Slides (zoom stays, not p
 switching to the current preset records nothing.
 
 **Acceptance criteria:**
-- [ ] PR1 and V6 covered; one undo step
-- [ ] e2e: a C–C bond's on-screen length is unchanged within 1 px after switching; readout shows "417%"
+- [x] PR1 and V6 covered; one undo step
+- [x] e2e: a C–C bond's on-screen length is unchanged within 1 px after switching; readout shows "417%"
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E30` → `E30/handout.png` (scripted: insert the reaction chip, click Handout), `E30/slides-again.png` (scripted: Ctrl+Z)
 
 **Dependencies:** E29, E1
 
-**Files:** `src/renderer/editor/state/reducer.ts` (+ tests), `src/renderer/editor/view/StatusBar.tsx`, `e2e/editor-canvas.spec.ts`, `e2e/shots/E30.shot.ts`
+**Files:** `src/renderer/editor/state/reducer.ts` (+ tests), `src/renderer/editor/view/StatusBar.tsx`, `e2e/editor-canvas.spec.ts` (+ keyboard and layout specs for the radio group), `e2e/shots/E30.shot.ts`
 
 **Scope:** S
 

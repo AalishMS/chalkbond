@@ -73,14 +73,14 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
   try {
     expect(await focused(page)).toBe('canvas');
     // Forward from the canvas: the three chips (shown while the document is empty), then the
-    // status controls. The two preset buttons carry test ids; the chips do not.
-    const forward = await tab(page, 9);
+    // status controls. The preset switch is a radio group with one tab stop (the selected
+    // option); the chips do not carry test ids.
+    const forward = await tab(page, 8);
     expect(forward).toEqual([
       'button',
       'button',
       'button',
       'preset-slides',
-      'preset-handout',
       'zoom-out',
       'zoom-reset',
       'zoom-in',

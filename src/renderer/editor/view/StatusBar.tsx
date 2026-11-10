@@ -8,6 +8,7 @@ import type { EditorAction } from '../state/reducer';
 import { STATUS_TIPS, type TipContent } from '../state/tips';
 import { FormulaText } from './FormulaText';
 import { Icon } from './Icon';
+import { PRESET_LABELS } from '../state/preset';
 import { pressKeepsFocus } from './press';
 import { tipProps } from './Tooltip';
 
@@ -62,7 +63,29 @@ function ZoomButton(props: {
   );
 }
 
-/** Hint, formula, preset switch and zoom cluster. The preset switch is a no-op until E30. */
+const PRESET_IDS: Record<StylePreset, string> = { slides: 'slides', journal: 'handout' };
+
+/**
+ * The radio group's keys, as native radios have them: an arrow moves to the other of the two
+ * options (wrapping), Home and End go to the first and the last. Null for any other key.
+ */
+export function presetForKey(key: string, current: StylePreset): StylePreset | null {
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      return current === 'slides' ? 'journal' : 'slides';
+    case 'Home':
+      return 'slides';
+    case 'End':
+      return 'journal';
+    default:
+      return null;
+  }
+}
+
+/** Hint, formula, preset switch and zoom cluster. */
 export function StatusBar({
   tool,
   preset,
@@ -125,23 +148,35 @@ export function StatusBar({
           <span>{warnings}</span>
         </button>
       )}
-      <div className="segmented" role="group" aria-label="Style" onMouseDown={pressKeepsFocus}>
-        <button
-          type="button"
-          className="btn btn-status"
-          data-testid="preset-slides"
-          aria-pressed={preset === 'slides'}
-        >
-          Slides
-        </button>
-        <button
-          type="button"
-          className="btn btn-status"
-          data-testid="preset-handout"
-          aria-pressed={preset === 'journal'}
-        >
-          Handout
-        </button>
+      <div
+        className="segmented"
+        role="radiogroup"
+        aria-label="Style"
+        onMouseDown={pressKeepsFocus}
+        onKeyDown={(e) => {
+          const next = presetForKey(e.key, preset);
+          if (next === null) return;
+          e.preventDefault();
+          if (next !== preset) dispatch({ type: 'set-preset', preset: next });
+          e.currentTarget
+            .querySelector<HTMLElement>(`[data-testid="preset-${PRESET_IDS[next]}"]`)
+            ?.focus();
+        }}
+      >
+        {(['slides', 'journal'] as const).map((p) => (
+          <button
+            key={p}
+            type="button"
+            role="radio"
+            aria-checked={preset === p}
+            tabIndex={preset === p ? 0 : -1}
+            className="btn btn-status"
+            data-testid={`preset-${PRESET_IDS[p]}`}
+            onClick={() => dispatch({ type: 'set-preset', preset: p })}
+          >
+            {PRESET_LABELS[p]}
+          </button>
+        ))}
       </div>
       <div className="zoom" onMouseDown={pressKeepsFocus}>
         <ZoomButton

@@ -1105,7 +1105,9 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 
 - **PR1** The status-bar switch "Slides | Handout" calls `setStyle(doc, { preset })` in one
   commit ("Switch to Handout style" / "Switch to Slides style"), then V6. The switch shows the
-  document's preset.
+  document's preset. It is a two-option `radiogroup` (`role="radio"`, `aria-checked`): one tab stop
+  (the selected option), arrow keys move to the other option and choose it, Home / End the ends.
+  Undo and redo flip the style only; the zoom is not part of history.
 
 ### Errors
 

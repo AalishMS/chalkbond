@@ -77,11 +77,24 @@ describe('controller API', () => {
   it('commands that are not implemented yet cannot run and do nothing', () => {
     const c = make();
     const later: EditorCommand[] = ['cut', 'copy', 'paste', 'delete', 'clean-up'];
-    later.push({ type: 'set-preset', preset: 'journal' });
     for (const cmd of later) {
       expect(c.canRun(cmd)).toBe(false);
       c.run(cmd);
     }
+    expect(c.isDirty()).toBe(false);
+  });
+
+  it('set-preset switches the style in one step (PR1)', () => {
+    const c = make();
+    const seen = events(c);
+    expect(c.canRun({ type: 'set-preset', preset: 'journal' })).toBe(true);
+    c.run({ type: 'set-preset', preset: 'journal' });
+    expect(c.getDoc().style.preset).toBe('journal');
+    expect(c.undoLabel()).toBe('Switch to Handout style');
+    expect(c.isDirty()).toBe(true);
+    expect(seen).toContain('doc');
+    c.run('undo');
+    expect(c.getDoc().style.preset).toBe('slides');
     expect(c.isDirty()).toBe(false);
   });
 

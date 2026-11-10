@@ -127,7 +127,7 @@ Everything else is sequential: each phase builds on the previous one.
 - [ ] Commit + push
 
 ### Phase 6: preset, hardening, acceptance
-- [ ] E30: Preset switch
+- [x] E30: Preset switch
 - [ ] E31: Property suite and controller completeness
 - [ ] E32: Performance measurement
 - [ ] E33: Coverage and accessibility pass

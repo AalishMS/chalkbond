@@ -228,6 +228,9 @@ export function createEditorController(options: EditorOptions): EditorController
       }
       default:
         if (typeof cmd === 'object' && cmd.type === 'insert-text') return true;
+        if (typeof cmd === 'object' && cmd.type === 'set-preset') {
+          return s.gesture === null && s.editing === null;
+        }
         if (typeof cmd === 'object' && cmd.type === 'paste-sub') {
           return s.gesture === null && s.editing === null;
         }
@@ -297,6 +300,8 @@ export function createEditorController(options: EditorOptions): EditorController
         default:
           if (typeof cmd === 'object' && cmd.type === 'insert-text') {
             store.dispatch({ type: 'insert-text', text: cmd.text });
+          } else if (typeof cmd === 'object' && cmd.type === 'set-preset') {
+            store.dispatch({ type: 'set-preset', preset: cmd.preset });
           } else if (typeof cmd === 'object' && cmd.type === 'paste-sub') {
             store.dispatch({ type: 'paste', at: pointerAt, sub: cmd.sub });
           }

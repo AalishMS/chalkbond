@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { render } from '../src/core/svg-render';
-import { goldenDoc, loadDocument, openApp, resizeContent } from './harness';
+import { goldenDoc, loadDocument, openApp, readDocument, resizeContent } from './harness';
 
 interface Box {
   x: number;
@@ -307,6 +307,151 @@ test('resizing the window keeps the document point under the canvas centre', asy
     expect(after.k).toBe(before.k);
     near((c1.width / 2 - after.x) / after.k, (c0.width / 2 - before.x) / before.k, 0.01);
     near((c1.height / 2 - after.y) / after.k, (c0.height / 2 - before.y) / before.k, 0.01);
+  } finally {
+    await app.close();
+  }
+});
+
+// ---- E30: the Slides | Handout switch (PR1, V6) ------------------------------------------------
+
+const ESTER = 'ethanol + acetic acid -> ethyl acetate + water';
+
+async function chip(page: Page, text: string): Promise<void> {
+  await page.getByTestId('empty-state').getByRole('button', { name: text, exact: true }).click();
+}
+
+type Pt = { x: number; y: number };
+
+/** Screen position of every atom (BLU in the doc, `bondLength` pt per BLU), in client px. */
+async function atomPoints(page: Page, bondLength: number): Promise<Pt[]> {
+  const doc = await readDocument(page);
+  const attr = await page.locator('[data-layer="content"]').getAttribute('transform');
+  const m = /^matrix\(([^ ]+) 0 0 ([^ ]+) ([^ ]+) ([^)]+)\)$/.exec(attr ?? '');
+  if (!m) throw new Error(`unexpected transform ${attr}`);
+  const canvas = await box(page.getByTestId('canvas'));
+  const k = Number(m[1]);
+  return Object.values(doc.atoms).map((a) => ({
+    x: canvas.x + Number(m[3]) + a.x * bondLength * k,
+    y: canvas.y + Number(m[4]) + a.y * bondLength * k,
+  }));
+}
+
+const dist = (a: Pt, b: Pt): number => Math.hypot(a.x - b.x, a.y - b.y);
+
+test('Handout: the Journal preset, the zoom scaled by V6, every atom and every bond keep their size on screen', async () => {
+  const { app, page } = await openApp();
+  try {
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'false');
+    await chip(page, ESTER);
+    const before = await atomPoints(page, 40);
+    const zoomBefore = (await content(page)).k * 0.75;
+
+    await page.getByTestId('preset-handout').click();
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'false');
+    const doc = await readDocument(page);
+    expect(doc.style.preset).toBe('journal');
+    await expect(readout(page)).toHaveText(`${Math.round(zoomBefore * (40 / 14.4) * 100)}%`);
+
+    const after = await atomPoints(page, 14.4);
+    expect(after).toHaveLength(before.length);
+    for (let i = 0; i < before.length; i++) {
+      near((after[i] as Pt).x, (before[i] as Pt).x, 1);
+      near((after[i] as Pt).y, (before[i] as Pt).y, 1);
+    }
+    // A C-C bond is as long on screen as before (80 px at 150 %, 1.34 / 1.5 of it here).
+    const bond = Object.values(doc.bonds)[0];
+    if (!bond) throw new Error('no bond');
+    const ids = Object.keys(doc.atoms);
+    const i1 = ids.indexOf(bond.a1);
+    const i2 = ids.indexOf(bond.a2);
+    near(dist(after[i1] as Pt, after[i2] as Pt), dist(before[i1] as Pt, before[i2] as Pt), 1);
+    near(dist(after[i1] as Pt, after[i2] as Pt), 80 * (zoomBefore / 1.5), 1);
+
+    // Back: the same drawing and the same readout.
+    await page.getByTestId('preset-slides').click();
+    await expect(readout(page)).toHaveText(`${Math.round(zoomBefore * 100)}%`);
+    const back = await atomPoints(page, 40);
+    for (let i = 0; i < before.length; i++) {
+      near((back[i] as Pt).x, (before[i] as Pt).x, 0.5);
+      near((back[i] as Pt).y, (before[i] as Pt).y, 0.5);
+    }
+  } finally {
+    await app.close();
+  }
+});
+
+test('Handout from the launch zoom reads 417 % and Slides again 150 %', async () => {
+  const { app, page } = await openApp();
+  try {
+    await expect(readout(page)).toHaveText('150%');
+    await page.getByTestId('preset-handout').click();
+    await expect(readout(page)).toHaveText('417%');
+    await page.getByTestId('preset-slides').click();
+    await expect(readout(page)).toHaveText('150%');
+  } finally {
+    await app.close();
+  }
+});
+
+test('the switch is a radio group: one tab stop, arrow keys move the selection and the focus', async () => {
+  const { app, page } = await openApp();
+  try {
+    await expect(page.getByRole('radiogroup', { name: 'Style' })).toHaveCount(1);
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('tabindex', '0');
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('tabindex', '-1');
+    await page.getByTestId('preset-slides').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('preset-handout')).toBeFocused();
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('tabindex', '0');
+    await expect(readout(page)).toHaveText('417%');
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByTestId('preset-slides')).toBeFocused();
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
+    await expect(readout(page)).toHaveText('150%');
+    await page.keyboard.press('End');
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Home');
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
+  } finally {
+    await app.close();
+  }
+});
+
+test('undo flips the style back and the switch follows; redo flips it again', async () => {
+  const { app, page } = await openApp();
+  try {
+    await chip(page, ESTER);
+    await page.getByTestId('preset-handout').click();
+    expect((await readDocument(page)).style.preset).toBe('journal');
+    await page.getByTestId('undo').click();
+    expect((await readDocument(page)).style.preset).toBe('slides');
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'false');
+    await page.getByTestId('redo').click();
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
+    // Choosing the preset the document has records nothing: one undo leaves the scheme and Slides.
+    await page.getByTestId('preset-handout').click();
+    await page.getByTestId('undo').click();
+    expect((await readDocument(page)).style.preset).toBe('slides');
+    expect(Object.keys((await readDocument(page)).atoms).length).toBeGreaterThan(0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a loaded Journal document shows Handout selected at the Handout default zoom', async () => {
+  const { app, page } = await openApp();
+  try {
+    const doc = goldenDoc('ethanol');
+    await loadDocument(page, { ...doc, style: { preset: 'journal', overrides: {} } });
+    await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
+    await expect(readout(page)).toHaveText('417%');
+    await loadDocument(page, doc);
+    await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
+    await expect(readout(page)).toHaveText('150%');
   } finally {
     await app.close();
   }

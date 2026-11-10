@@ -317,11 +317,11 @@ async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
     near(b.height, 20);
   }
   near(handout.x - (slides.x + slides.width), 0);
-  const group = await box(page.getByRole('group', { name: 'Style' }));
+  const group = await box(page.getByRole('radiogroup', { name: 'Style' }));
   near(group.height, 24);
   near(group.width, 132);
   near((zoom[0] as Box).x - (group.x + group.width), 16);
-  await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByTestId('zoom-reset')).toHaveText('150%');
   // The formula slot is not rendered with an empty document, and is hidden below 1000 px.
   await expect(page.getByTestId('formula')).toHaveCount(0);
