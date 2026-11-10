@@ -329,7 +329,7 @@ sequences.
 - [x] Variant scan passes (SC2)
 - [x] Every golden's `bounds` equals the independent ink scan within 0.01 pt (SC5)
 - [x] Same doc in `slides` and `journal`: identical structure, different scale (SC10)
-- [ ] Sheet reviewed as a PNG; defects fixed and goldens regenerated; retuned constants recorded in the spec
+- [x] Sheet reviewed as a PNG; defects fixed and goldens regenerated; retuned constants recorded in the spec
 
 **Verification:** `npm test -- src/core/svg-render && npm run golden:sheet -- --png out/golden-sheet.png`
 
@@ -354,11 +354,11 @@ committed golden contains `\r`.
 if one is easy to inject, then fix the code.
 
 **Acceptance criteria:**
-- [ ] Determinism property passes at 1,000 runs (SC4)
-- [ ] Subset property holds (SC8)
-- [ ] Safety property holds for `<script>`, `"onload=`, `]]>`, lone surrogates, emoji (SC9)
-- [ ] Bounds and scale properties hold (SC5, SC10)
-- [ ] Goldens contain no `\r` (SC3)
+- [x] Determinism property passes at 1,000 runs (SC4)
+- [x] Subset property holds (SC8)
+- [x] Safety property holds for `<script>`, `"onload=`, `]]>`, lone surrogates, emoji (SC9)
+- [x] Bounds and scale properties hold (SC5, SC10)
+- [x] Goldens contain no `\r` (SC3)
 
 **Verification:** `npm test -- src/core/svg-render tests/tooling`
 

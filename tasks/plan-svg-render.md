@@ -96,8 +96,8 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 - [ ] Commit + push
 
 ### Phase 4: goldens and hardening
-- [ ] S11: ≥ 30 golden scenes, variant-coverage scan, `npm run golden:sheet`, visual review of the sheet
-- [ ] S12: property suite and tooling tests
+- [x] S11: ≥ 30 golden scenes, variant-coverage scan, `npm run golden:sheet`, visual review of the sheet
+- [x] S12: property suite and tooling tests
 - [ ] S13: perf budgets, e2e font calibration, Windows checklist entry, coverage
 
 ### Checkpoint K — module complete
