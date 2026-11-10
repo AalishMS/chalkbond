@@ -246,3 +246,21 @@ describe('layoutCurvedArrow: ink', () => {
     sameBox(out.ink, inkScan(out.svg)!);
   });
 });
+
+describe('layoutCurvedArrow: absurd bends', () => {
+  // Found by the editor's property suite (seed 1903761575): a bend of 8.8e163 over a chord made
+  // the control points 1e165 and the path text printed exponents, which svg-write rejects.
+  it('draws nothing for a bend that puts the curve out of range, in either family', () => {
+    const from = end(P(-41.836, -169.724));
+    const to = end(P(-5, -6.5));
+    expect(layoutCurvedArrow('full', from, to, 8.810217237303839e163, style)).toBeNull();
+    expect(layoutCurvedArrow('full', from, to, -8.810217237303839e163, style)).toBeNull();
+    expect(layoutCurvedArrow('fishhook', from, to, 1e30, style)).toBeNull();
+  });
+
+  it('still draws a large but sane bend', () => {
+    const out = layoutCurvedArrow('full', end(P(0, 0)), end(P(100, 0)), 4, style);
+    expect(out).not.toBeNull();
+    expect(out!.svg).not.toMatch(/e[+-]d/);
+  });
+});

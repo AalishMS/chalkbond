@@ -75,8 +75,15 @@ export function clipRange(
   return t1 > t0 ? [t0, t1] : null;
 }
 
+/**
+ * Larger than any page; beyond it a coordinate is not drawable (and `String` would print an
+ * exponent). A huge `bend` over a near-zero chord (a stored file or a property test can make
+ * one) puts the control points out here, so it draws nothing, like a non-finite result.
+ */
+const MAX_COORD = 1e9;
+
 const finite = (pts: readonly Point[]): boolean =>
-  pts.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+  pts.every((p) => Math.abs(p.x) <= MAX_COORD && Math.abs(p.y) <= MAX_COORD);
 
 /** Up to this |bend| the curve is the quadratic; above it, the symmetric cubic (Decision 13). */
 export const QUADRATIC_MAX_BEND = 0.5;
