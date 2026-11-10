@@ -7,13 +7,13 @@ import { _electron as electron, type ElectronApplication } from '@playwright/tes
  * Linux only: dev machines may lack a root-owned chrome-sandbox helper and a display, so the
  * OS sandbox is disabled and Chromium's headless backend is used. Windows runs unmodified.
  */
-export async function launchApp(): Promise<ElectronApplication> {
+export async function launchApp(extraArgs: string[] = []): Promise<ElectronApplication> {
   const linuxArgs =
     process.platform === 'linux'
       ? ['--no-sandbox', ...(process.env['DISPLAY'] ? [] : ['--ozone-platform=headless'])]
       : [];
   return electron.launch({
-    args: [resolve(__dirname, '..'), ...linuxArgs],
+    args: [resolve(__dirname, '..'), ...extraArgs, ...linuxArgs],
     env: { ...process.env, NODE_ENV: 'production' },
   });
 }

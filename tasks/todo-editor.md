@@ -143,9 +143,9 @@ the name field) as they need them.
 first") when `out/main/index.js` is missing (checked at the top of the helper).
 
 **Acceptance criteria:**
-- [ ] `npm run shots -- E5` writes `out/shots/E5/launch.png` (1280×800 PNG) and `out/shots/E5/resized-960.png` (scripted: resize to 960×640, then capture); image sizes asserted in the shot file by reading the PNG header
-- [ ] `npm run test:e2e` runs only `*.spec.ts`; `npm run shots` runs only `*.shot.ts`
-- [ ] Scripts contain no POSIX-only syntax (work in PowerShell)
+- [x] `npm run shots -- E5` writes `out/shots/E5/launch.png` (1280×800 PNG) and `out/shots/E5/resized-960.png` (scripted: resize to 960×640, then capture); image sizes asserted in the shot file by reading the PNG header
+- [x] `npm run test:e2e` runs only `*.spec.ts`; `npm run shots` runs only `*.shot.ts`
+- [x] Scripts contain no POSIX-only syntax (work in PowerShell)
 
 **Verification:** `npm run shots -- E5`, `npm run test:e2e`, `npm run check`
 
@@ -156,7 +156,7 @@ first") when `out/main/index.js` is missing (checked at the top of the helper).
 **Scope:** S
 
 ### Checkpoint L — foundations
-- [ ] `npm run check` green; `npm run test:e2e` green; `npm run shots -- E5` writes its PNGs
+- [x] `npm run check` green; `npm run test:e2e` green; `npm run shots -- E5` writes its PNGs
 - [ ] Commit + push
 
 ---

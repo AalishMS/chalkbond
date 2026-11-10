@@ -20,7 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "golden:sheet": "node scripts/golden-sheet.mjs",
-    "test:e2e": "electron-vite build && playwright test",
+    "test:e2e": "electron-vite build && playwright test --project=e2e",
+    "shots": "electron-vite build && playwright test --project=shots",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
   },
   "devDependencies": {

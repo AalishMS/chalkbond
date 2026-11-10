@@ -6,4 +6,8 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: { trace: 'retain-on-failure' },
+  projects: [
+    { name: 'e2e', testMatch: /.*\.spec\.ts/ },
+    { name: 'shots', testMatch: /.*\.shot\.ts/ },
+  ],
 });
