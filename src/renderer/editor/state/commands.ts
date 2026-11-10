@@ -8,14 +8,17 @@ import {
   scaling,
   transformItems,
   translation,
+  updateAtom,
   type Doc,
   type Selection,
   type SubDoc,
 } from '@core/doc-model';
+import { setBondOrder, setBondStereo, sprout } from '../model/bond-ops';
 import { deleteWithOrphans } from '../model/cleanup';
 import type { Derive } from '../model/derive';
 import { selectionCentre } from '../model/frame';
 import type { Point } from '../model/geometry';
+import type { HoverEdit } from '../model/keymap';
 import { isEmptySelection, selectAll } from '../model/selection';
 import { reveal, screenToBlu } from '../model/viewport';
 import { EMPTY_SELECTION, type EditorState, type Hit } from './editor-state';
@@ -266,4 +269,77 @@ export function duplicateSelection(
     selection: 'inserted',
   });
   return afterInsert(state, done, derive);
+}
+
+/** K2 charge limits (A3). */
+const MAX_CHARGE = 4;
+
+/**
+ * K2 hover keys: `edit` applied to the hovered atom or bond in one commit ("Change atom", "Add
+ * bond", "Change bond"). Nothing happens without a hovered item of the right kind, with a
+ * gesture or an editor open, or when the edit changes nothing (the same element, a charge at its
+ * limit, the same order). The item stays hovered unless it no longer exists (a reversed bond gets
+ * a new id).
+ */
+export function hoverEdit(
+  state: EditorState,
+  edit: HoverEdit,
+  commit: (state: EditorState, action: Commit) => EditorState,
+): EditorState {
+  const hit = state.hover;
+  if (hit === null || state.gesture !== null || state.editing !== null) return state;
+  const doc = current(state.history);
+  let label: string;
+  let recipe: ((d: Doc) => Doc) | null = null;
+  if (hit.kind === 'atom') {
+    const atom = doc.atoms[hit.id];
+    if (!atom) return state;
+    const id = hit.id;
+    switch (edit.kind) {
+      case 'element':
+        label = 'Change atom';
+        // A2: the element it already has is left alone.
+        if (atom.element !== edit.element) {
+          recipe = (d) =>
+            updateAtom(d, id, { element: edit.element, label: undefined, explicitH: undefined });
+        }
+        break;
+      case 'charge': {
+        label = 'Change atom';
+        const charge = Math.max(-MAX_CHARGE, Math.min(MAX_CHARGE, atom.charge + edit.delta));
+        if (charge !== atom.charge) recipe = (d) => updateAtom(d, id, { charge });
+        break;
+      }
+      case 'sprout': {
+        label = 'Add bond';
+        const spec = { order: edit.order, stereo: 'none' } as const;
+        if (sprout(doc, id, spec) !== null) recipe = (d) => sprout(d, id, spec)?.doc ?? d;
+        break;
+      }
+      default:
+        return state;
+    }
+  } else if (hit.kind === 'bond') {
+    const id = hit.id;
+    if (!doc.bonds[id]) return state;
+    label = 'Change bond';
+    if (edit.kind === 'order') {
+      const order = edit.order;
+      if (setBondOrder(doc, id, order) !== null) recipe = (d) => setBondOrder(d, id, order) ?? d;
+    } else if (edit.kind === 'stereo') {
+      const stereo = edit.stereo;
+      recipe = (d) => setBondStereo(d, id, stereo);
+    } else {
+      return state;
+    }
+  } else {
+    return state;
+  }
+  if (recipe === null) return state;
+  const done = commit(state, { type: 'commit', label, recipe });
+  if (done.history === state.history) return done;
+  const next = current(done.history);
+  const kept =
+    (hit.kind === 'atom' && hit.id in next.atoms) || (hit.kind === 'bond' && hit.id in next.bonds);
+  return { ...done, hover: kept ? hit : null };
 }

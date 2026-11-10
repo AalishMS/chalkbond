@@ -24,6 +24,7 @@ import {
   zoomAbout,
   type Viewport,
 } from '../model/viewport';
+import type { HoverEdit } from '../model/keymap';
 import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
 import {
@@ -33,6 +34,7 @@ import {
   duplicateSelection,
   escape,
   flipSelection,
+  hoverEdit,
   nudgeSelection,
   pasteFragment,
   selectEverything,
@@ -90,6 +92,8 @@ export type EditorAction =
   | { type: 'pointer'; event: CanvasEvent }
   /** The pointer moved with no gesture running: hover and the tool's ghost (HV1, B6). */
   | { type: 'hover-move'; event: MoveEvent }
+  /** A hover key (K2): change the hovered atom or bond. */
+  | { type: 'hover-edit'; edit: HoverEdit }
   | { type: 'delete' }
   | { type: 'nudge'; dx: number; dy: number }
   | { type: 'select-all' }
@@ -271,6 +275,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return pointer(state, action.event, ctx, (s, a) => commit(s, a, ctx));
     case 'hover-move':
       return hoverMove(state, action.event, ctx);
+    case 'hover-edit':
+      return hoverEdit(state, action.edit, (s, a) => commit(s, a, ctx));
     case 'delete':
       return deleteSelection(state, (s, a) => commit(s, a, ctx));
     case 'nudge':

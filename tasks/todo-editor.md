@@ -612,7 +612,7 @@ case-insensitive letters, Ctrl/Alt/Meta up, Shift ignored; hover keys first, the
 nothing), wired in the canvas `keydown`. Hover actions: set element (A2) incl. L → Cl, B → Br;
 charge ±1 clamped; `1`/`2`/`3` on an atom sprout a bond of that order via P1; on a bond set order
 (stereo cleared); `W`/`H` wedge/hash with reverse on repeat; Delete/Backspace erase the hovered
-item (E2); Enter opens the label editor (stub until E23). Hints for hovered atom/bond.
+item (E2); Enter opens the label editor (a hook that does nothing until E23 lands). Hints for hovered atom/bond (already in the status bar since E14). Ctrl+Shift+K / L / T map to `toggle-kekulé` / `clean-up` / `tidy-reaction`; the controller runs them when E24 / E28 turn them on.
 
 **Tests first:** keymap table tests for every row of K2 including: `B` with an atom hovered →
 Br; `B` with a bond hovered → Bond tool; `B` with nothing hovered → Bond tool; `V` over an atom →
@@ -621,15 +621,15 @@ Select tool (R3); `Shift` + `=` (key `+`) over an atom → charge +1; `Ctrl+=` �
 field.
 
 **Acceptance criteria:**
-- [ ] Every K1 and K2 row has a keymap test; no hover key fires with Ctrl/Alt/Meta down
-- [ ] Hover + `1` on a ring atom of benzene (inserted by name) gives toluene, "C7H8 · 92.14 g/mol" (e2e); the 3-action version with the Ring tool is in E21
-- [ ] Ethanol by gestures: Bond click on empty, hover the end atom, `O` → "C2H6O · 46.07 g/mol" (e2e, SC1)
+- [x] Every K1 and K2 row has a keymap test; no hover key fires with Ctrl/Alt/Meta down
+- [x] Hover + `1` on a ring atom of benzene (inserted by name) gives toluene, "C7H8 · 92.14 g/mol" (e2e); the 3-action version with the Ring tool is in E21
+- [x] Ethanol by gestures: Bond click on empty, hover the end atom, `O` → "C2H6O · 46.07 g/mol" (e2e, SC1)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E20` → `E20/hover-key-O.png` (scripted: draw a bond, hover its end, press O → ethanol), `E20/hover-key-L.png` (scripted: hover the other end, press L → chloroethanol; Cl label drawn)
 
 **Dependencies:** E19
 
-**Files:** `src/renderer/editor/model/keymap.ts` (+ tests), `src/renderer/editor/model/commands.ts`, `src/renderer/editor/state/reducer.ts`, `src/renderer/editor/view/{Canvas.tsx,StatusBar.tsx}`, `e2e/editor-structures.spec.ts`, `e2e/shots/E20.shot.ts`
+**Files:** `src/renderer/editor/model/keymap.ts` (+ tests), `src/renderer/editor/state/{commands.ts,reducer.ts,controller.ts}` (+ tests), `src/renderer/editor/view/Editor.tsx`, `e2e/editor-hover-keys.spec.ts`, `e2e/shots/E20.shot.ts`
 
 **Scope:** M
 

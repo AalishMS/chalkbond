@@ -1,5 +1,7 @@
 // Key event -> command (SPEC-editor.md K1 "Global shortcuts"). Pure: it reads a plain key record.
+import type { ElementSymbol } from '@core/doc-model';
 import type { EditorCommand } from '../state/controller';
+import type { Hit, ToolId } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
 
 /** The parts of a `KeyboardEvent` the map reads. */
@@ -35,6 +37,9 @@ export function globalCommand(e: KeyInfo, shortcuts: 'all' | 'canvas-only'): Edi
   if (key === 'z') return e.shiftKey ? 'redo' : 'undo';
   if (key === 'y' && !e.shiftKey) return 'redo';
   if (key === 'f' && !e.shiftKey) return 'focus-name-field';
+  if (e.shiftKey && key === 'k') return 'toggle-kekulé';
+  if (e.shiftKey && key === 'l') return 'clean-up';
+  if (e.shiftKey && key === 't') return 'tidy-reaction';
   if (key === 'a' && !e.shiftKey) return 'select-all';
   if (key === 'c' && !e.shiftKey) return 'copy';
   if (key === 'x' && !e.shiftKey) return 'cut';
@@ -73,4 +78,78 @@ export function canvasKey(e: KeyInfo): EditorAction | null {
     default:
       return null;
   }
+}
+
+/** A change a hover key makes to the hovered atom or bond (K2). */
+export type HoverEdit =
+  | { readonly kind: 'element'; readonly element: ElementSymbol }
+  | { readonly kind: 'charge'; readonly delta: 1 | -1 }
+  | { readonly kind: 'sprout'; readonly order: 1 | 2 | 3 }
+  | { readonly kind: 'order'; readonly order: 1 | 2 | 3 }
+  | { readonly kind: 'stereo'; readonly stereo: 'wedge' | 'hash' };
+
+/** K2: element keys over an atom; `L` is chlorine and `B` bromine. */
+const ELEMENT_KEYS: Readonly<Record<string, ElementSymbol>> = {
+  c: 'C',
+  h: 'H',
+  n: 'N',
+  o: 'O',
+  s: 'S',
+  p: 'P',
+  f: 'F',
+  i: 'I',
+  l: 'Cl',
+  b: 'Br',
+};
+
+/** K2: tool keys, used when no hover key claims the press. */
+const TOOL_KEYS: Readonly<Record<string, ToolId>> = {
+  v: 'select',
+  e: 'erase',
+  b: 'bond',
+  z: 'chain',
+  r: 'ring',
+  l: 'atom',
+  a: 'arrow',
+  '+': 'plus',
+  m: 'curved',
+  t: 'text',
+};
+
+const ORDERS: Readonly<Record<string, 1 | 2 | 3>> = { '1': 1, '2': 2, '3': 3 };
+
+function atomEdit(k: string): HoverEdit | null {
+  const element = ELEMENT_KEYS[k];
+  if (element !== undefined) return { kind: 'element', element };
+  if (k === '+' || k === '=') return { kind: 'charge', delta: 1 };
+  if (k === '-') return { kind: 'charge', delta: -1 };
+  const order = ORDERS[k];
+  if (order !== undefined) return { kind: 'sprout', order };
+  // Enter opens the label editor (L1): the hook stays empty until the editor (E23) exists.
+  return null;
+}
+
+function bondEdit(k: string): HoverEdit | null {
+  const order = ORDERS[k];
+  if (order !== undefined) return { kind: 'order', order };
+  if (k === 'w') return { kind: 'stereo', stereo: 'wedge' };
+  if (k === 'h') return { kind: 'stereo', stereo: 'hash' };
+  return null;
+}
+
+/**
+ * K2 canvas keys (R3, R6): the key matches `KeyboardEvent.key`, letters in either case; Ctrl, Alt
+ * and Meta must be up, Shift is ignored. If an atom or bond is hovered (and the tool is not Erase
+ * or Text) and the key is one of its hover keys, the key acts on it; otherwise a tool key selects
+ * that tool; any other key does nothing. Call it only with the canvas focused.
+ */
+export function hoverKeys(e: KeyInfo, hover: Hit | null, tool: ToolId): EditorAction | null {
+  if (e.ctrlKey || e.altKey || e.metaKey) return null;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (hover !== null && tool !== 'erase' && tool !== 'text') {
+    const edit = hover.kind === 'atom' ? atomEdit(k) : hover.kind === 'bond' ? bondEdit(k) : null;
+    if (edit !== null) return { type: 'hover-edit', edit };
+  }
+  const target = TOOL_KEYS[k];
+  return target === undefined ? null : { type: 'select-tool', tool: target };
 }

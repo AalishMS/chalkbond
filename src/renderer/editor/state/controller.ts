@@ -17,7 +17,7 @@ import {
 import compounds from '../../../../resources/compounds/compounds.json';
 import { createDerive, type Derive } from '../model/derive';
 import type { Point } from '../model/geometry';
-import { stepZoom } from '../model/viewport';
+import { screenToBlu, stepZoom } from '../model/viewport';
 import { initialState, type EditorState } from './editor-state';
 import { handleHit } from '../model/handles';
 import { HIT_ALL, hitTest } from '../model/hit-test';
@@ -90,6 +90,12 @@ export interface EditorController {
    * Paste lands there (CB1).
    */
   setPointer(screen: Point | null): void;
+  /**
+   * Hovers again what rests under the last reported pointer position (HV1, B6): a key press that
+   * changed the tool or the document leaves the pointer where it was, and hover keys must not wait
+   * for it to move. Nothing happens with the pointer off the canvas or while a gesture runs.
+   */
+  refreshHover(): void;
   /**
    * The view reports a `contextmenu` on the canvas at `screen` (canvas px). A gesture in progress
    * is cancelled and nothing else happens; otherwise a `context-menu` event goes to the
@@ -285,6 +291,21 @@ export function createEditorController(options: EditorOptions): EditorController
     },
     setPointer(screen) {
       pointerAt = screen;
+    },
+    refreshHover() {
+      const state = store.getState();
+      if (pointerAt === null || state.gesture !== null) return;
+      const bondLength = derive.committed(current(state.history)).scene.style.bondLength;
+      store.dispatch({
+        type: 'hover-move',
+        event: {
+          type: 'move',
+          screen: pointerAt,
+          p: screenToBlu(state.viewport, pointerAt, bondLength),
+          button: 0,
+          mods: { shift: false, alt: false, ctrl: false },
+        },
+      });
     },
     contextMenuAt(screen) {
       const state = store.getState();

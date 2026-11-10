@@ -405,7 +405,7 @@ Hover keys work with every tool except Erase and Text.
 | atom | `L` → Cl, `B` → Br | set element |
 | atom | `+` / `=`, `-` | charge +1 / −1 (clamped −4…4) |
 | atom | `1` `2` `3` | sprout a single / double / triple bond in P1's direction (R5) |
-| atom | Enter | open the label editor |
+| atom | Enter | open the label editor (hook only until the label editor exists, E23: no effect) |
 | bond | `1` `2` `3` | set order single / double / triple (stereo cleared) |
 | bond | `W` / `H` | wedge / hash; again reverses the direction (rule B5) |
 | atom or bond | Delete, Backspace | erase it (rule E2) |
@@ -737,6 +737,11 @@ Numbered so tasks can cite them.
   Text highlights texts and condition slots only.
 - **HV2** Hovering an atom or bond with a warning shows the warning's `message` as a tooltip
   after 500 ms (screen 08).
+- **HV3** What rests under the pointer is hovered again after a release (B6) and after any key press
+  that changed the tool or the document (`controller.refreshHover()`), not only when the pointer
+  next moves: `V` then `O` over an atom works without wiggling the mouse. Not while a gesture
+  runs (Esc cancels it; the release brings the hover back). A held key does not repeat a hover or
+  tool key.
 
 ### Select tool
 

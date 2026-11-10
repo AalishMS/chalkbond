@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { canRedo, canUndo, current } from '@core/doc-model';
 import { statusFormula } from '../model/formula';
 import { selectionScope } from '../model/scope';
-import { canvasKey, fieldCommand, globalCommand } from '../model/keymap';
+import { canvasKey, fieldCommand, globalCommand, hoverKeys } from '../model/keymap';
 import { suggestionRows } from '../model/suggestions';
 import type { EditorController } from '../state/controller';
 import { isEmptyDoc } from '../state/empty-doc';
@@ -55,6 +55,13 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
     return () => clearTimeout(timer);
   }, [noticeId, dispatch]);
   const onKeyDown = (e: React.KeyboardEvent): void => {
+    // A key that changed the tool or the document leaves the pointer where it was: what rests
+    // under it is hovered again at once. Not while a gesture ran (Esc cancels it, and the
+    // release brings the hover back).
+    const hadGesture = state.gesture !== null;
+    const refresh = (): void => {
+      if (!hadGesture) controller.refreshHover();
+    };
     // K1: a text input keeps its keys, except Undo / Redo in the empty name field (R23).
     const inText = isTextTarget(e.target);
     const plain = inText ? null : canvasKey(e);
@@ -62,6 +69,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
     if (plain !== null && !(plain.type === 'nudge' && !isCanvas(e.target))) {
       e.preventDefault();
       dispatch(plain);
+      refresh();
       return;
     }
     const command = inText
@@ -69,13 +77,26 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
         ? fieldCommand(e, controller.shortcuts, state.nameField.text)
         : null
       : globalCommand(e, controller.shortcuts);
-    if (command === null) return;
+    if (command === null) {
+      // K2: with the canvas itself focused, a hover key acts on what is hovered, else a tool key
+      // selects its tool. A held key does not repeat.
+      if (!inText && isCanvas(e.target) && state.editing === null && !e.repeat) {
+        const action = hoverKeys(e, state.hover, state.tool);
+        if (action !== null) {
+          e.preventDefault();
+          dispatch(action);
+          refresh();
+        }
+      }
+      return;
+    }
     e.preventDefault();
     if (command === 'focus-name-field') {
       e.currentTarget.querySelector<HTMLInputElement>('[data-testid="namefield-input"]')?.focus();
       return;
     }
     controller.run(command);
+    refresh();
   };
   const idle = state.editing === null;
   const field = state.nameField;
