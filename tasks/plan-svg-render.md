@@ -68,7 +68,7 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 ## Task List
 
 ### Phase 1: foundations
-- [ ] S1: `StyleSettings` meaning, presets, `resolveStyle`, `fmt`, id order; ESLint determinism block; `.gitattributes` golden line; `types.ts` JSDoc wording
+- [x] S1: `StyleSettings` meaning, presets, `resolveStyle`, `fmt`, id order; ESLint determinism block; `.gitattributes` golden line; `types.ts` JSDoc wording
 - [ ] S2: SVG writer (escaping, attribute order, allow-lists, sanitisers) + `xml-check` helper
 - [ ] S3: font metrics generator, committed table, `text-measure`
 

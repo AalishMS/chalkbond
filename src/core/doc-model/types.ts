@@ -178,8 +178,8 @@ export interface Group {
 export type StylePreset = 'slides' | 'journal';
 
 /**
- * Per-document overrides of a style preset. Provisional field set; `svg-render`'s spec owns the
- * meaning of each field. All values are optional in `Doc.style.overrides`.
+ * Per-document overrides of a style preset. Final field set; meaning defined in
+ * `SPEC-svg-render.md`. All values are optional in `Doc.style.overrides`.
  */
 export interface StyleSettings {
   /** Bond length in points. */

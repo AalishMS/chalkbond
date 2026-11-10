@@ -23,11 +23,11 @@ range, wrong type, empty family) falls back to the preset; `bluToPt`/`ptToBlu` i
 not elsewhere; `.gitattributes` contains the golden line.
 
 **Acceptance criteria:**
-- [ ] `STYLE_PRESETS`, `resolveStyle`, `bluToPt`, `ptToBlu` match the spec tables (SC1, SC10)
-- [ ] `fmt` prints at most 3 decimals, no exponent, no `-0`, leading `0` kept (SC3)
-- [ ] ESLint rejects each banned API inside `src/core/svg-render/**` (SC3); existing boundary probes for `svg-render` still pass (SC12)
-- [ ] `.gitattributes` has `src/core/svg-render/__golden__/** text eol=lf` (SC3)
-- [ ] `types.ts` comment says final; `src/core/svg-render/index.ts` exists as the single public entry
+- [x] `STYLE_PRESETS`, `resolveStyle`, `bluToPt`, `ptToBlu` match the spec tables (SC1, SC10)
+- [x] `fmt` prints at most 3 decimals, no exponent, no `-0`, leading `0` kept (SC3)
+- [x] ESLint rejects each banned API inside `src/core/svg-render/**` (SC3); existing boundary probes for `svg-render` still pass (SC12)
+- [x] `.gitattributes` has `src/core/svg-render/__golden__/** text eol=lf` (SC3)
+- [x] `types.ts` comment says final; `src/core/svg-render/index.ts` exists as the single public entry
 
 **Verification:** `npm test -- src/core/svg-render tests/tooling && npm run lint`
 

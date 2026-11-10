@@ -136,5 +136,42 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', { paths: [OCL_CHEM_CORE_ONLY] }] },
   },
   ...CORE_MODULES.flatMap(coreModuleConfig),
+  {
+    // svg-render output must be byte-identical on every machine (SPEC-svg-render.md
+    // "Determinism"): no maths whose V8 results have differed between platforms, no clock,
+    // randomness or locale. Overriding no-restricted-syntax replaces the global rule, so the
+    // named-exports restriction is repeated here.
+    files: ['src/core/svg-render/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        ...['pow', 'hypot', 'exp', 'log', 'tan', 'random'].map((property) => ({
+          object: 'Math',
+          property,
+          message: `Math.${property} is banned in svg-render (determinism).`,
+        })),
+        ...['localeCompare', 'toLocaleString'].map((property) => ({
+          property,
+          message: `${property} is locale-dependent; banned in svg-render (determinism).`,
+        })),
+      ],
+      'no-restricted-globals': [
+        'error',
+        { name: 'Date', message: 'No clock in svg-render (determinism).' },
+        { name: 'Intl', message: 'No locale formatting in svg-render (determinism).' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ExportDefaultDeclaration',
+          message: 'Use named exports (SPEC.md code style).',
+        },
+        {
+          selector: "BinaryExpression[operator='**'], AssignmentExpression[operator='**=']",
+          message: '`**` is banned in svg-render (determinism); multiply instead.',
+        },
+      ],
+    },
+  },
   prettier,
 );

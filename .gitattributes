@@ -2,3 +2,4 @@
 *.png binary
 *.ico binary
 *.pdf binary
+src/core/svg-render/__golden__/** text eol=lf
