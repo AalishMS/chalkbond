@@ -70,7 +70,7 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 ### Phase 1: foundations
 - [x] S1: `StyleSettings` meaning, presets, `resolveStyle`, `fmt`, id order; ESLint determinism block; `.gitattributes` golden line; `types.ts` JSDoc wording
 - [x] S2: SVG writer (escaping, attribute order, allow-lists, sanitisers) + `xml-check` helper
-- [ ] S3: font metrics generator, committed table, `text-measure`
+- [x] S3: font metrics generator, committed table, `text-measure`
 
 ### Checkpoint H — foundations
 - [ ] `npm run check` green; presets, escaping and text widths (`W` 944, `i` 222) pass

@@ -82,10 +82,10 @@ plain, bold, italic, sub/sup and multi-line runs; fallback notice for an uncover
 (deduplicated, sorted by code point); descent only with a descending glyph.
 
 **Acceptance criteria:**
-- [ ] Table covers U+0020–007E, U+00A0–00FF, Greek U+0391–03C9, the listed punctuation, arrows and U+2212 (SC13)
-- [ ] Uncovered characters measure 0.556 em and report `unmeasured-glyph` (SC13)
-- [ ] Re-running the script on the same fonts gives identical bytes; tests and `npm run check` never run it (SC13)
-- [ ] `npm run format:check` passes with the generated file ignored
+- [x] Table covers U+0020–007E, U+00A0–00FF, Greek U+0391–03C9, the listed punctuation, arrows and U+2212 (SC13)
+- [x] Uncovered characters measure 0.556 em and report `unmeasured-glyph` (SC13)
+- [x] Re-running the script on the same fonts gives identical bytes; tests and `npm run check` never run it (SC13)
+- [x] `npm run format:check` passes with the generated file ignored
 
 **Verification:** `npm test -- src/core/svg-render tests/tooling && node scripts/build-font-metrics.mjs C:\Windows\Fonts\arial.ttf C:\Windows\Fonts\arialbd.ttf` (twice, then `git diff --stat` is empty the second time)
 
