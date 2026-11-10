@@ -1,3 +1,4 @@
+import { expectNoNetwork } from './harness';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -74,5 +75,19 @@ export async function launchApp(
       }
     });
   }
+  const close = app.close.bind(app);
+  app.close = async () => {
+    try {
+      await expectNoNetwork(app, expectedBlocked.get(app) ?? 0);
+    } finally {
+      await close();
+    }
+  };
   return app;
+}
+
+// Deliberate SEC4 tests declare the precise expected count; all other launches require zero.
+const expectedBlocked = new WeakMap<ElectronApplication, number>();
+export function expectBlockedRequests(app: ElectronApplication, count: number): void {
+  expectedBlocked.set(app, count);
 }

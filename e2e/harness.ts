@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import type { ElectronApplication, Page } from '@playwright/test';
+import { expect, type ElectronApplication, type Page } from '@playwright/test';
 import { parse, type Doc } from '../src/core/doc-model';
 import { launchApp, type LaunchOptions } from './launch';
 
@@ -178,4 +178,15 @@ export async function listenEvents(page: Page): Promise<void> {
 export async function heardEvents(page: Page): Promise<SeamEvent[]> {
   await waitForHook(page);
   return page.evaluate(() => ((window as HookWindow).__chalkbondTest?.events() ?? []) as never);
+}
+
+/** SEC4: every launch must finish without unexpected nonlocal requests. */
+export async function expectNoNetwork(app: ElectronApplication, expected = 0): Promise<void> {
+  expect(
+    await app.evaluate(
+      () =>
+        (globalThis as { __chalkbondTestMain?: { blockedRequests: number } }).__chalkbondTestMain
+          ?.blockedRequests ?? 0,
+    ),
+  ).toBe(expected);
 }

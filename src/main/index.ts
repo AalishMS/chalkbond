@@ -1,7 +1,16 @@
 import { join } from 'node:path';
-import { app, BrowserWindow, Menu, shell } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import { testFlags } from './model/args';
 
+import { pathToFileURL } from 'node:url';
+import { CHANNELS } from '../shared/channels';
+import { createIpc } from './ipc';
+import { logErrorSchema } from './ipc-schemas';
+import { createLogger } from './log';
+import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
+
+installWebContentsSecurity();
+let mainWindow: BrowserWindow | undefined;
 const APP_ID = 'com.chalkbond.app';
 
 function createMainWindow(): BrowserWindow {
@@ -18,19 +27,14 @@ function createMainWindow(): BrowserWindow {
       sandbox: true,
       nodeIntegration: false,
       webSecurity: true,
+      webviewTag: false,
+      devTools: !app.isPackaged,
     },
   });
 
   win.once('ready-to-show', () => win.show());
 
-  // Never open new Electron windows from page content; hand http(s) links to the OS browser.
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://') || url.startsWith('http://')) void shell.openExternal(url);
-    return { action: 'deny' };
-  });
-  win.webContents.on('will-navigate', (event) => event.preventDefault());
-
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  const devUrl = process.env['ELECTRON_RENDERER_URL'] === DEV_ORIGIN ? DEV_ORIGIN : undefined;
   if (!app.isPackaged && devUrl) {
     void win.loadURL(flags.hooks ? `${devUrl}?testHooks=1` : devUrl);
   } else {
@@ -57,9 +61,28 @@ app.setAppUserModelId(APP_ID);
 void app.whenReady().then(() => {
   // No default menu: its accelerators (Ctrl+0, Ctrl+=) would zoom the page and steal editor keys.
   Menu.setApplicationMenu(null);
-  createMainWindow();
+  const log = createLogger(app.getPath('userData'));
+  installSessionSecurity(
+    (message) => log('security', message),
+    () => {
+      const hook = (globalThis as { __chalkbondTestMain?: { blockedRequests: number } })
+        .__chalkbondTestMain;
+      if (hook) hook.blockedRequests++;
+    },
+  );
+  const appUrl =
+    !app.isPackaged && process.env['ELECTRON_RENDERER_URL'] === DEV_ORIGIN
+      ? new URL(DEV_ORIGIN).href
+      : pathToFileURL(join(__dirname, '../renderer/index.html')).href;
+  const ipc = createIpc(
+    () => mainWindow,
+    appUrl,
+    (message) => log('ipc', message),
+  );
+  ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
+  mainWindow = createMainWindow();
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+    if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();
   });
 });
 

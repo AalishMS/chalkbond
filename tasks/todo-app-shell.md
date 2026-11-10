@@ -116,9 +116,9 @@ equals the documented list; `logError` appends a line to `main.log` in the test'
 folder.
 
 **Acceptance criteria:**
-- [ ] Unit, tooling and e2e tests pass
-- [ ] `e2e/smoke.spec.ts` still passes (title, preferences)
-- [ ] From this task on every e2e file asserts the counter is 0 at its end (helper `expectNoNetwork(app)` in `e2e/harness.ts`), and the editor e2e files call it
+- [x] Unit, tooling and e2e tests pass
+- [x] `e2e/smoke.spec.ts` still passes (title, preferences)
+- [x] From this task on every e2e file asserts the counter is 0 at its end (helper `expectNoNetwork(app)` in `e2e/harness.ts`), and the editor e2e files call it
 
 **Verification:** `npm test -- src/main`, `npm run check`, `npm run test:e2e`. No visible change.
 
