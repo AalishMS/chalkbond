@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Keyboard shortcuts</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+  </head>
+  <body class="desk">
+    <div class="win" style="width: 1280px; height: 800px">
+      <div class="titlebar">
+        <img class="app" src="app-icon-small.svg" alt="" /><span class="title"
+          >*esterification - Chalkbond</span
+        >
+        <span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-min" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-max" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-close" /></svg
+        ></span>
+      </div>
+      <div class="menubar" role="menubar">
+        <span class="menubar-item" id="mb-file">File</span
+        ><span class="menubar-item" id="mb-edit">Edit</span
+        ><span class="menubar-item" id="mb-view">View</span
+        ><span class="menubar-item" id="mb-help">Help</span>
+      </div>
+      <div class="client">
+        <div class="window">
+          <header class="topbar">
+            <label class="namefield"
+              ><svg class="icon icon-20" aria-hidden="true">
+                <use href="../editor/icons.svg#search" /></svg
+              ><input
+                type="text"
+                aria-label="Compound name"
+                placeholder="Type a compound name…"
+                value=""
+            /></label>
+            <div class="divider-v" role="separator"></div>
+            <div class="options" role="toolbar" aria-label="Tool options">
+              <button class="btn btn-action" id="act-clean">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#clean-up" /></svg
+                ><span>Clean up</span>
+              </button>
+              <button class="btn btn-action" id="act-kekule" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#show-kekule" /></svg
+                ><span>Show Kekulé</span>
+              </button>
+              <button class="btn btn-action" id="act-tidy">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#tidy" /></svg
+                ><span>Tidy reaction</span>
+              </button>
+              <div class="options-sep" role="separator"></div>
+              <button
+                class="btn btn-opt"
+                id="act-flip-h"
+                aria-label="Flip horizontal"
+                aria-disabled="true"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-h" />
+                </svg>
+              </button>
+              <button
+                class="btn btn-opt"
+                id="act-flip-v"
+                aria-label="Flip vertical"
+                aria-disabled="true"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-v" />
+                </svg>
+              </button>
+            </div>
+            <div class="history">
+              <button class="btn btn-top" id="undo" aria-label="Undo (Ctrl+Z)">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#undo" />
+                </svg>
+              </button>
+              <button class="btn btn-top" id="redo" aria-label="Redo (Ctrl+Y)" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#redo" />
+                </svg>
+              </button>
+            </div>
+            <button class="btn btn-copy" id="copy" data-testid="copy" aria-label="Copy (Ctrl+C)">
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+              ><span aria-hidden="true">Copy</span>
+            </button>
+          </header>
+          <nav class="rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+            <button
+              class="btn btn-rail"
+              id="tool-select"
+              aria-label="Select (V)"
+              aria-pressed="true"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#select" /></svg
+              ><span class="rail-caption" aria-hidden="true">Select</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-erase"
+              aria-label="Erase (E)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#erase" /></svg
+              ><span class="rail-caption" aria-hidden="true">Erase</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button class="btn btn-rail" id="tool-bond" aria-label="Bond (B)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#bond-single" /></svg
+              ><span class="rail-caption" aria-hidden="true">Bond</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-chain"
+              aria-label="Chain (Z)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#chain" /></svg
+              ><span class="rail-caption" aria-hidden="true">Chain</span>
+            </button>
+            <button class="btn btn-rail" id="tool-ring" aria-label="Ring (R)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#ring-benzene" /></svg
+              ><span class="rail-caption" aria-hidden="true">Ring</span>
+            </button>
+            <button class="btn btn-rail" id="tool-atom" aria-label="Atom (L)" aria-pressed="false">
+              <span class="rail-glyph">C</span
+              ><span class="rail-caption" aria-hidden="true">Atom</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button
+              class="btn btn-rail"
+              id="tool-arrow"
+              aria-label="Arrow (A)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#arrow-forward" /></svg
+              ><span class="rail-caption" aria-hidden="true">Arrow</span>
+            </button>
+            <button class="btn btn-rail" id="tool-plus" aria-label="Plus (+)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#plus" /></svg
+              ><span class="rail-caption" aria-hidden="true">Plus</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-curved"
+              aria-label="Curved arrow (M)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#curved-full" /></svg
+              ><span class="rail-caption" aria-hidden="true">Curly</span>
+            </button>
+            <button class="btn btn-rail" id="tool-text" aria-label="Text (T)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#text" /></svg
+              ><span class="rail-caption" aria-hidden="true">Text</span>
+            </button>
+          </nav>
+          <main class="canvas" role="application" aria-label="Drawing canvas">
+            <img class="canvas-art" src="canvas/scheme.svg" alt="" />
+          </main>
+          <footer class="statusbar">
+            <div class="hint" role="status" aria-live="polite">
+              Click a molecule to select it. Drag to move. Drag on empty space to select an area.
+            </div>
+            <div class="segmented" role="group" aria-label="Style">
+              <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+              ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+                Handout
+              </button>
+            </div>
+            <div class="zoom">
+              <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-out" />
+                </svg></button
+              ><button
+                class="btn btn-status btn-zoom"
+                id="zoom-100"
+                aria-label="Zoom to 100% (Ctrl+1)"
+              >
+                117%</button
+              ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-in" />
+                </svg></button
+              ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#fit" />
+                </svg>
+              </button>
+            </div>
+          </footer>
+          <div class="scrim"></div>
+          <div
+            class="dialog dialog-md shortcuts"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sc-title"
+            data-testid="shortcuts-dialog"
+          >
+            <h2 class="dialog-title" id="sc-title">Keyboard shortcuts</h2>
+            <div class="dialog-body">
+              <h3 class="sc-section">Tools</h3>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">V</kbd></span
+                ><span class="sc-meaning">Select</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">E</kbd></span
+                ><span class="sc-meaning">Erase</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">B</kbd></span
+                ><span class="sc-meaning">Bond</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">Z</kbd></span
+                ><span class="sc-meaning">Chain</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">R</kbd></span
+                ><span class="sc-meaning">Ring</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">L</kbd></span
+                ><span class="sc-meaning">Atom</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">A</kbd></span
+                ><span class="sc-meaning">Arrow</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">+</kbd></span
+                ><span class="sc-meaning">Plus</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">M</kbd></span
+                ><span class="sc-meaning">Curved arrow</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">T</kbd></span
+                ><span class="sc-meaning">Text</span>
+              </div>
+              <h3 class="sc-section">Pointing at an atom</h3>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">C</kbd> <kbd class="key">H</kbd> <kbd class="key">N</kbd>
+                  <kbd class="key">O</kbd> <kbd class="key">S</kbd> <kbd class="key">P</kbd>
+                  <kbd class="key">F</kbd> <kbd class="key">I</kbd></span
+                ><span class="sc-meaning">Change it to that element</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">L</kbd></span
+                ><span class="sc-meaning">Change it to chlorine (Cl)</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">B</kbd></span
+                ><span class="sc-meaning">Change it to bromine (Br)</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">+</kbd> <kbd class="key">−</kbd></span
+                ><span class="sc-meaning">Add a positive or negative charge</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">1</kbd> <kbd class="key">2</kbd> <kbd class="key">3</kbd></span
+                ><span class="sc-meaning">Add a single, double or triple bond</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">Enter</kbd></span
+                ><span class="sc-meaning">Type a label, such as OH or CH3</span>
+              </div>
+              <h3 class="sc-section">Pointing at a bond</h3>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">1</kbd> <kbd class="key">2</kbd> <kbd class="key">3</kbd></span
+                ><span class="sc-meaning">Make it single, double or triple</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">W</kbd></span
+                ><span class="sc-meaning">Make it a wedge</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">H</kbd></span
+                ><span class="sc-meaning">Make it a hash</span>
+              </div>
+              <h3 class="sc-section">Editing</h3>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Z</kbd></span
+                ><span class="sc-meaning">Undo</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Y</kbd></span
+                ><span class="sc-meaning">Redo</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">C</kbd></span
+                ><span class="sc-meaning">Copy (the whole drawing when nothing is selected)</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">X</kbd></span
+                ><span class="sc-meaning">Cut</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">V</kbd></span
+                ><span class="sc-meaning">Paste</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">D</kbd></span
+                ><span class="sc-meaning">Duplicate</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">A</kbd></span
+                ><span class="sc-meaning">Select all</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">Delete</kbd></span
+                ><span class="sc-meaning">Delete</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">←</kbd> <kbd class="key">↑</kbd> <kbd class="key">→</kbd>
+                  <kbd class="key">↓</kbd></span
+                ><span class="sc-meaning">Move the selection (hold Shift to move further)</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">Esc</kbd></span
+                ><span class="sc-meaning">Cancel, or clear the selection</span>
+              </div>
+              <h3 class="sc-section">Chemistry</h3>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">F</kbd></span
+                ><span class="sc-meaning">Type a compound name</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">L</kbd></span
+                ><span class="sc-meaning">Clean up</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">K</kbd></span
+                ><span class="sc-meaning">Show Kekulé or circle</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">T</kbd></span
+                ><span class="sc-meaning">Tidy reaction</span>
+              </div>
+              <h3 class="sc-section">View</h3>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">=</kbd></span
+                ><span class="sc-meaning">Zoom in</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">−</kbd></span
+                ><span class="sc-meaning">Zoom out</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">0</kbd></span
+                ><span class="sc-meaning">Fit drawing</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">1</kbd></span
+                ><span class="sc-meaning">Zoom to 100%</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Space</kbd><span aria-hidden="true">+</span
+                  ><span>drag</span></span
+                ><span class="sc-meaning">Move around the drawing</span>
+              </div>
+              <h3 class="sc-section">Files</h3>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">N</kbd></span
+                ><span class="sc-meaning">New drawing</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">O</kbd></span
+                ><span class="sc-meaning">Open</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">S</kbd></span
+                ><span class="sc-meaning">Save</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">S</kbd></span
+                ><span class="sc-meaning">Save as</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">E</kbd></span
+                ><span class="sc-meaning">Export</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">F1</kbd></span
+                ><span class="sc-meaning">This list</span>
+              </div>
+              <h3 class="sc-section">While typing text</h3>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">Enter</kbd></span
+                ><span class="sc-meaning">Finish</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Enter</kbd></span
+                ><span class="sc-meaning">New line</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"><kbd class="key">Esc</kbd></span
+                ><span class="sc-meaning">Cancel</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">B</kbd></span
+                ><span class="sc-meaning">Bold</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">I</kbd></span
+                ><span class="sc-meaning">Italic</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">=</kbd></span
+                ><span class="sc-meaning">Subscript</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">=</kbd></span
+                ><span class="sc-meaning">Superscript</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">D</kbd></span
+                ><span class="sc-meaning">Insert Δ (heat)</span>
+              </div>
+              <div class="sc-row">
+                <span class="keys"
+                  ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+                  ><kbd class="key">H</kbd></span
+                ><span class="sc-meaning">Insert hν (light)</span>
+              </div>
+            </div>
+            <div class="sc-thumb" aria-hidden="true"></div>
+            <div class="dialog-foot">
+              <button class="btn btn-secondary">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="native-note" style="top: 838px">
+      <b>Native, approximate:</b> Windows 11 title bar and menu bar (Chalkbond cannot style them).
+      Everything inside the window is drawn exactly as it will be built.
+    </p>
+    <script src="shell.js"></script>
+  </body>
+</html>

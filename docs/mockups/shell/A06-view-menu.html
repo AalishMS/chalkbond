@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>View menu</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+  </head>
+  <body class="desk">
+    <div class="win" style="width: 1280px; height: 800px">
+      <div class="titlebar">
+        <img class="app" src="app-icon-small.svg" alt="" /><span class="title"
+          >*esterification - Chalkbond</span
+        >
+        <span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-min" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-max" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-close" /></svg
+        ></span>
+      </div>
+      <div class="menubar" role="menubar">
+        <span class="menubar-item" id="mb-file"><u>F</u>ile</span
+        ><span class="menubar-item" id="mb-edit"><u>E</u>dit</span
+        ><span class="menubar-item is-open" id="mb-view"><u>V</u>iew</span
+        ><span class="menubar-item" id="mb-help"><u>H</u>elp</span>
+      </div>
+      <div class="client">
+        <div class="window">
+          <header class="topbar">
+            <label class="namefield"
+              ><svg class="icon icon-20" aria-hidden="true">
+                <use href="../editor/icons.svg#search" /></svg
+              ><input
+                type="text"
+                aria-label="Compound name"
+                placeholder="Type a compound name…"
+                value=""
+            /></label>
+            <div class="divider-v" role="separator"></div>
+            <div class="options" role="toolbar" aria-label="Tool options">
+              <button class="btn btn-action" id="act-clean">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#clean-up" /></svg
+                ><span>Clean up</span>
+              </button>
+              <button class="btn btn-action" id="act-kekule" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#show-kekule" /></svg
+                ><span>Show Kekulé</span>
+              </button>
+              <button class="btn btn-action" id="act-tidy">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#tidy" /></svg
+                ><span>Tidy reaction</span>
+              </button>
+              <div class="options-sep" role="separator"></div>
+              <button
+                class="btn btn-opt"
+                id="act-flip-h"
+                aria-label="Flip horizontal"
+                aria-disabled="true"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-h" />
+                </svg>
+              </button>
+              <button
+                class="btn btn-opt"
+                id="act-flip-v"
+                aria-label="Flip vertical"
+                aria-disabled="true"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-v" />
+                </svg>
+              </button>
+            </div>
+            <div class="history">
+              <button class="btn btn-top" id="undo" aria-label="Undo (Ctrl+Z)">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#undo" />
+                </svg>
+              </button>
+              <button class="btn btn-top" id="redo" aria-label="Redo (Ctrl+Y)" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#redo" />
+                </svg>
+              </button>
+            </div>
+            <button class="btn btn-copy" id="copy" data-testid="copy" aria-label="Copy (Ctrl+C)">
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+              ><span aria-hidden="true">Copy</span>
+            </button>
+          </header>
+          <nav class="rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+            <button
+              class="btn btn-rail"
+              id="tool-select"
+              aria-label="Select (V)"
+              aria-pressed="true"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#select" /></svg
+              ><span class="rail-caption" aria-hidden="true">Select</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-erase"
+              aria-label="Erase (E)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#erase" /></svg
+              ><span class="rail-caption" aria-hidden="true">Erase</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button class="btn btn-rail" id="tool-bond" aria-label="Bond (B)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#bond-single" /></svg
+              ><span class="rail-caption" aria-hidden="true">Bond</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-chain"
+              aria-label="Chain (Z)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#chain" /></svg
+              ><span class="rail-caption" aria-hidden="true">Chain</span>
+            </button>
+            <button class="btn btn-rail" id="tool-ring" aria-label="Ring (R)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#ring-benzene" /></svg
+              ><span class="rail-caption" aria-hidden="true">Ring</span>
+            </button>
+            <button class="btn btn-rail" id="tool-atom" aria-label="Atom (L)" aria-pressed="false">
+              <span class="rail-glyph">C</span
+              ><span class="rail-caption" aria-hidden="true">Atom</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button
+              class="btn btn-rail"
+              id="tool-arrow"
+              aria-label="Arrow (A)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#arrow-forward" /></svg
+              ><span class="rail-caption" aria-hidden="true">Arrow</span>
+            </button>
+            <button class="btn btn-rail" id="tool-plus" aria-label="Plus (+)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#plus" /></svg
+              ><span class="rail-caption" aria-hidden="true">Plus</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-curved"
+              aria-label="Curved arrow (M)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#curved-full" /></svg
+              ><span class="rail-caption" aria-hidden="true">Curly</span>
+            </button>
+            <button class="btn btn-rail" id="tool-text" aria-label="Text (T)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#text" /></svg
+              ><span class="rail-caption" aria-hidden="true">Text</span>
+            </button>
+          </nav>
+          <main class="canvas" role="application" aria-label="Drawing canvas">
+            <img class="canvas-art" src="canvas/scheme.svg" alt="" />
+          </main>
+          <footer class="statusbar">
+            <div class="hint" role="status" aria-live="polite">
+              Click a molecule to select it. Drag to move. Drag on empty space to select an area.
+            </div>
+            <div class="segmented" role="group" aria-label="Style">
+              <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+              ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+                Handout
+              </button>
+            </div>
+            <div class="zoom">
+              <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-out" />
+                </svg></button
+              ><button
+                class="btn btn-status btn-zoom"
+                id="zoom-100"
+                aria-label="Zoom to 100% (Ctrl+1)"
+              >
+                117%</button
+              ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-in" />
+                </svg></button
+              ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#fit" />
+                </svg>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+    <div class="menu" role="menu" data-anchor="mb-view" data-side="below">
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Zoom <u>i</u>n</span
+        ><span class="accel">Ctrl+=</span><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Zoom <u>o</u>ut</span
+        ><span class="accel">Ctrl+−</span><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label"><u>F</u>it drawing</span
+        ><span class="accel">Ctrl+0</span><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Zoom to <u>1</u>00%</span
+        ><span class="accel">Ctrl+1</span><span class="more"></span>
+      </div>
+      <div class="menu-sep" role="separator"></div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"
+          ><svg class="" aria-hidden="true"><use href="native.svg#menu-radio" /></svg></span
+        ><span class="label"><u>S</u>lides style</span><span class="accel"></span
+        ><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label"><u>H</u>andout style</span
+        ><span class="accel"></span><span class="more"></span>
+      </div>
+    </div>
+    <p class="native-note" style="top: 838px">
+      <b>Native, approximate:</b> title bar, menu bar and the View menu (Windows draws them; opened
+      with the keyboard, so access keys are underlined). The window contents are as built.
+    </p>
+    <script src="shell.js"></script>
+  </body>
+</html>

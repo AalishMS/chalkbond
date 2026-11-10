@@ -1,0 +1,272 @@
+/* Layout of the specimen sheets only (A03 extras, A16 icons, A17 notices). Not app CSS. */
+
+body.sheet {
+  overflow: hidden;
+  padding: var(--space-5) var(--space-7);
+}
+
+.sheet h1 {
+  margin: 0 0 var(--space-2);
+  font: 600 18px/24px var(--font-ui);
+}
+
+.sheet h2 {
+  margin: var(--space-6) 0 var(--space-2);
+  font: 600 14px/20px var(--font-ui);
+}
+
+.sheet-note {
+  margin: 0 0 var(--space-4);
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+/* ---- A16 icons ---- */
+
+.icon-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-7);
+  padding: var(--space-5) var(--space-6);
+}
+
+.icon-strip.is-light {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: #f3f3f3;
+  color: #1a1a1a;
+}
+
+.icon-strip.is-dark {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: #202020;
+  color: #e0e0e0;
+}
+
+.icon-strip figure,
+.ex-large {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.icon-strip img {
+  display: block;
+}
+
+.icon-strip figcaption {
+  font: var(--type-xs);
+}
+
+.taskbars {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.taskbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 48px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.taskbar.is-light {
+  background: #eef0f3;
+}
+
+.taskbar.is-dark {
+  background: #1c1c1c;
+}
+
+.tb-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+}
+
+.taskbar.is-light .tb-slot.is-active {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.taskbar.is-dark .tb-slot.is-active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tb-slot.is-running::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: calc(50% - 8px);
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: #0067c0;
+}
+
+.taskbar.is-dark .tb-slot.is-running::after {
+  background: #4cc2ff;
+}
+
+.stand-in {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  color: #ffffff;
+  font: 700 13px/1 var(--font-ui);
+}
+
+.si-folder {
+  border-radius: 3px;
+  background: #f4c542;
+}
+
+.si-word {
+  background: #2b62c4;
+}
+
+.si-ppt {
+  background: #c94f2b;
+}
+
+.si-excel {
+  background: #1d7a46;
+}
+
+.si-edge {
+  border-radius: 50%;
+  background: #1688c9;
+}
+
+.explorer {
+  display: flex;
+  gap: var(--space-7);
+  align-items: flex-start;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  font:
+    400 12px/16px 'Segoe UI',
+    system-ui,
+    sans-serif;
+  color: #1a1a1a;
+}
+
+.ex-details {
+  width: 640px;
+}
+
+.ex-row {
+  display: grid;
+  grid-template-columns: 240px 150px 150px 1fr;
+  align-items: center;
+  height: 24px;
+}
+
+.ex-head {
+  color: #5f5f5f;
+  border-bottom: 1px solid #ececec;
+  margin-bottom: var(--space-1);
+}
+
+.ex-size {
+  text-align: right;
+}
+
+.ex-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ex-png {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #8a8a8a;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #9fd3f0 0 55%, #6fb36a 55%);
+}
+
+.ex-icons {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-6);
+}
+
+.ex-large figcaption {
+  text-align: center;
+}
+
+/* ---- A17 notices ---- */
+
+.notice-item {
+  margin-bottom: var(--space-3);
+}
+
+.notice-when {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+.notice-kind {
+  min-width: 44px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-xs);
+  background: var(--hover-bg);
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+}
+
+.notice-kind.is-error {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.notice-bar {
+  height: 29px;
+  margin: 0 calc(-1 * var(--space-7));
+  background: var(--chrome-bg);
+}
+
+.notice-bar.is-narrow {
+  width: 960px;
+  box-shadow: 1px 0 0 var(--border);
+}
+
+.notice-bar > .statusbar {
+  height: 29px;
+}
+
+/* ---- A03 extras ---- */
+
+.shell-specimen .spec-grid {
+  grid-template-columns: 150px repeat(6, 1fr);
+}
+
+.shell-specimen .spec-cell .radio-card {
+  width: 172px;
+}
+
+.spec-pairs {
+  display: flex;
+  gap: var(--space-7);
+}
+
+.shell-specimen .spec-tips {
+  flex-wrap: wrap;
+}

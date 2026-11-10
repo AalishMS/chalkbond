@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Status-bar notices</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+    <link rel="stylesheet" href="icons-sheet.css" />
+  </head>
+  <body class="sheet notices">
+    <h1>Status-bar notices</h1>
+    <p class="sheet-note">
+      The hint slot of the editor status bar, full window width. Info: --text, no icon. Error:
+      warning icon, --warning. Each lasts 8 s, until the next canvas action, or Esc.
+    </p>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">info</span>Copy a selection (button, Ctrl+C, Edit or context menu)
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Copied. Paste into PowerPoint or Word with Ctrl+V.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when"><span class="notice-kind">info</span>Copy with nothing selected</p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Copied the whole drawing. Paste into PowerPoint or Word with Ctrl+V.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when"><span class="notice-kind">info</span>Cut</p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Cut. Paste into PowerPoint or Word with Ctrl+V.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">info</span>Ctrl+C on an empty drawing (the button is disabled)
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Nothing to copy yet. Draw something first.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">info</span>Copy of a very large drawing (picture made smaller, R3)
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Copied. The drawing is very large, so the picture is less sharp than usual.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind is-error">error</span>Clipboard write failed
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice notice-error" role="status" aria-live="polite">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="../editor/icons.svg#warning" /></svg
+            ><span>Couldn't copy. Please try again.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">info</span>Paste: a picture that is not from Chalkbond
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Only drawings copied from Chalkbond can be pasted here.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when"><span class="notice-kind">info</span>Paste: nothing usable</p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Nothing to paste. Copy a drawing, or a compound name, first.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind is-error">error</span>Paste: drawing from a newer Chalkbond
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice notice-error" role="status" aria-live="polite">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="../editor/icons.svg#warning" /></svg
+            ><span
+              >This drawing was copied from a newer version of Chalkbond and can't be pasted.</span
+            >
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind is-error">error</span>Paste: damaged drawing
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice notice-error" role="status" aria-live="polite">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="../editor/icons.svg#warning" /></svg
+            ><span>The copied drawing is damaged and can't be pasted. Copy it again.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when"><span class="notice-kind">info</span>Paste: text over 64 KB</p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>That text is too long to paste.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when"><span class="notice-kind">info</span>Export written</p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Exported esterification.png.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">info</span>Export of a very large drawing (R3)
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span
+              >Exported esterification.png. The drawing is very large, so the picture is less sharp
+              than you chose.</span
+            >
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">info</span>Export too large to embed the drawing
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span
+              >Exported esterification.png. It is too large to open again in Chalkbond, so keep the
+              .chalk file.</span
+            >
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when"><span class="notice-kind">info</span>Save</p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Saved esterification.chalk.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">info</span>Launch with a file while a recovery exists (RC4)
+      </p>
+      <div class="notice-bar">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Recovered your unsaved drawing. Save it, then open ethanol.chalk again.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <h2>At the minimum width (960 px)</h2>
+    <div class="notice-item">
+      <p class="notice-when"><span class="notice-kind">960 px</span>Copy with nothing selected</p>
+      <div class="notice-bar is-narrow">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span>Copied the whole drawing. Paste into PowerPoint or Word with Ctrl+V.</span>
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <div class="notice-item">
+      <p class="notice-when">
+        <span class="notice-kind">960 px</span>Export too large to embed the drawing
+      </p>
+      <div class="notice-bar is-narrow">
+        <footer class="statusbar">
+          <div class="hint notice" role="status" aria-live="polite">
+            <span
+              >Exported esterification.png. It is too large to open again in Chalkbond, so keep the
+              .chalk file.</span
+            >
+          </div>
+          <div class="segmented" role="group" aria-label="Style">
+            <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+            ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+              Handout
+            </button>
+          </div>
+          <div class="zoom">
+            <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-out" />
+              </svg></button
+            ><button
+              class="btn btn-status btn-zoom"
+              id="zoom-100"
+              aria-label="Zoom to 100% (Ctrl+1)"
+            >
+              115%</button
+            ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#zoom-in" />
+              </svg></button
+            ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="../editor/icons.svg#fit" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

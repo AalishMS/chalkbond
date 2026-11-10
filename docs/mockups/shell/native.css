@@ -1,0 +1,264 @@
+/*
+ * Windows 11 light-theme approximations of what Chalkbond cannot style: the desktop around the
+ * window, the title bar, the menu bar, popup menus and message boxes. Values are eyeballed from
+ * Windows 11 23H2 at 100 % scaling; they exist so content, order, wording, accelerators and
+ * separators can be judged. Nothing here becomes app CSS or tokens.
+ */
+
+body.desk {
+  position: relative;
+  overflow: hidden;
+  background: #dfe4ea;
+}
+
+.win {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.18),
+    0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.native,
+.titlebar,
+.menubar,
+.menu,
+.msgbox {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  color: #1a1a1a;
+}
+
+.titlebar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 31px;
+  background: #ffffff;
+}
+
+.titlebar .app {
+  width: 16px;
+  height: 16px;
+  margin: 0 8px 0 12px;
+}
+
+.titlebar .title {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.caption-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 31px;
+  color: #1a1a1a;
+}
+
+.caption-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.menubar {
+  display: flex;
+  flex: none;
+  height: 20px;
+  padding-left: 1px;
+  border-bottom: 1px solid #eaeaea;
+  background: #ffffff;
+}
+
+.menubar-item {
+  height: 19px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  line-height: 17px;
+}
+
+.menubar-item.is-open {
+  border-color: #99d1ff;
+  background: #cce8ff;
+}
+
+.client {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* The editor grid fills the client area instead of the viewport. */
+.client > .window {
+  width: 100%;
+  height: 100%;
+}
+
+/* Caption under the window: which parts are native. */
+.native-note {
+  position: absolute;
+  left: 24px;
+  margin: 0;
+  color: #3d4450;
+  font:
+    400 12px/16px 'Segoe UI',
+    system-ui,
+    sans-serif;
+}
+
+.native-note b {
+  font-weight: 600;
+}
+
+/* ---- Popup menu ---- */
+
+.menu {
+  position: absolute;
+  z-index: 50;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid #d6d6d6;
+  border-radius: 8px;
+  background: #f9f9f9;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.14);
+  white-space: nowrap;
+}
+
+.menu-item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto 20px;
+  align-items: center;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.menu-item .accel {
+  padding-left: 40px;
+}
+
+.menu-item .mark,
+.menu-item .more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-item .mark svg,
+.menu-item .more svg {
+  width: 16px;
+  height: 16px;
+}
+
+.menu-item.is-hover {
+  background: #e8e8e8;
+}
+
+.menu-item.is-disabled {
+  color: #a0a0a0;
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: #e0e0e0;
+}
+
+.menu-pointer {
+  position: absolute;
+  z-index: 60;
+}
+
+/* ---- Message box (Electron showMessageBox = Windows task dialog) ---- */
+
+.msgbox {
+  position: absolute;
+  z-index: 70;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.22),
+    0 16px 40px rgba(0, 0, 0, 0.26);
+}
+
+.msgbox-title {
+  display: flex;
+  align-items: center;
+  height: 31px;
+  padding-left: 12px;
+}
+
+.msgbox-title span {
+  flex: 1;
+}
+
+.msgbox-body {
+  display: flex;
+  gap: 12px;
+  padding: 10px 24px 24px 12px;
+}
+
+.msgbox-body .mb-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
+.msgbox-main {
+  margin: 4px 0 0;
+  color: #003399;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.msgbox-detail {
+  margin: 10px 0 0;
+}
+
+.msgbox-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #dfdfdf;
+  background: #f0f0f0;
+}
+
+.wbtn {
+  min-width: 80px;
+  height: 24px;
+  padding: 0 12px;
+  border: 1px solid #d0d0d0;
+  border-bottom-color: #b8b8b8;
+  border-radius: 4px;
+  background: #fdfdfd;
+  color: #1a1a1a;
+  font: inherit;
+}
+
+.wbtn.is-default {
+  border-color: #005fb8;
+  box-shadow: inset 0 0 0 1px #005fb8;
+}
+
+.wbtn .ak {
+  text-decoration: underline;
+}
+
+.desk-label {
+  position: absolute;
+  margin: 0;
+  color: #3d4450;
+  font:
+    600 12px/16px 'Segoe UI',
+    system-ui,
+    sans-serif;
+}

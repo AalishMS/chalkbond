@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Shell control states</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+    <link rel="stylesheet" href="../editor/specimen.css" />
+    <link rel="stylesheet" href="icons-sheet.css" />
+  </head>
+  <body class="specimen shell-specimen">
+    <h1>Shell and export control states</h1>
+    <div class="spec-grid">
+      <div class="spec-head"></div>
+      <div class="spec-head">Rest</div>
+      <div class="spec-head">Hover</div>
+      <div class="spec-head">Pressed</div>
+      <div class="spec-head">Selected / copied</div>
+      <div class="spec-head">Disabled</div>
+      <div class="spec-head">Keyboard focus</div>
+      <div class="spec-label">Copy, icon and label (≥ 1100 px)</div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-copy" id="copy" data-testid="copy" aria-label="Copy (Ctrl+C)">
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+          ><span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-hover"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+          ><span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-pressed"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+          ><span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button class="btn btn-copy" id="copy" data-testid="copy" aria-label="Copy (Ctrl+C)">
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#check" /></svg
+          ><span aria-hidden="true">Copied</span></button
+        ><span class="spec-note">2 s after a copy</span>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+          aria-disabled="true"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+          ><span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-focus"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+          ><span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-label">Copy, label only (proposal, &lt; 1100 px)</div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-compact"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-compact is-hover"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-compact is-pressed"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-compact"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <span aria-hidden="true">Copied</span></button
+        ><span class="spec-note">2 s after a copy</span>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-compact"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+          aria-disabled="true"
+        >
+          <span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-compact is-focus"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <span aria-hidden="true">Copy</span>
+        </button>
+      </div>
+      <div class="spec-label">Copy, icon only (spec, &lt; 1100 px)</div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-icon"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-icon is-hover"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-icon is-pressed"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-icon"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true">
+            <use href="shell-icons.svg#check" />
+          </svg></button
+        ><span class="spec-note">2 s after a copy</span>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-icon"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+          aria-disabled="true"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg>
+        </button>
+      </div>
+      <div class="spec-cell on-chrome">
+        <button
+          class="btn btn-copy is-icon is-focus"
+          id="copy"
+          data-testid="copy"
+          aria-label="Copy (Ctrl+C)"
+        >
+          <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg>
+        </button>
+      </div>
+      <div class="spec-label">Primary button</div>
+      <div class="spec-cell on-canvas"><button class="btn btn-primary">Save…</button></div>
+      <div class="spec-cell on-canvas"><button class="btn btn-primary is-hover">Save…</button></div>
+      <div class="spec-cell on-canvas">
+        <button class="btn btn-primary is-pressed">Save…</button>
+      </div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas">
+        <button class="btn btn-primary" aria-disabled="true">Save…</button
+        ><span class="spec-note">not used yet</span>
+      </div>
+      <div class="spec-cell on-canvas"><button class="btn btn-primary is-focus">Save…</button></div>
+      <div class="spec-label">Secondary button</div>
+      <div class="spec-cell on-canvas"><button class="btn btn-secondary">Cancel</button></div>
+      <div class="spec-cell on-canvas">
+        <button class="btn btn-secondary is-hover">Cancel</button>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button class="btn btn-secondary is-pressed">Cancel</button>
+      </div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas">
+        <button class="btn btn-secondary" aria-disabled="true">Cancel</button
+        ><span class="spec-note">not used yet</span>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button class="btn btn-secondary is-focus">Cancel</button>
+      </div>
+      <div class="spec-label">Radio card</div>
+      <div class="spec-cell on-canvas">
+        <button class="radio-card" role="radio" aria-checked="false" id="fmt-png" tabindex="-1">
+          <span class="radio-dot" aria-hidden="true"></span
+          ><span class="radio-title">PNG picture</span
+          ><span class="radio-desc">For WhatsApp, websites and printing.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button
+          class="radio-card is-hover"
+          role="radio"
+          aria-checked="false"
+          id="fmt-png"
+          tabindex="-1"
+        >
+          <span class="radio-dot" aria-hidden="true"></span
+          ><span class="radio-title">PNG picture</span
+          ><span class="radio-desc">For WhatsApp, websites and printing.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button
+          class="radio-card is-pressed"
+          role="radio"
+          aria-checked="false"
+          id="fmt-png"
+          tabindex="-1"
+        >
+          <span class="radio-dot" aria-hidden="true"></span
+          ><span class="radio-title">PNG picture</span
+          ><span class="radio-desc">For WhatsApp, websites and printing.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button class="radio-card" role="radio" aria-checked="true" id="fmt-png" tabindex="0">
+          <span class="radio-dot" aria-hidden="true"></span
+          ><span class="radio-title">PNG picture</span
+          ><span class="radio-desc">For WhatsApp, websites and printing.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas">
+        <button
+          class="radio-card is-focus"
+          role="radio"
+          aria-checked="true"
+          id="fmt-png"
+          tabindex="0"
+        >
+          <span class="radio-dot" aria-hidden="true"></span
+          ><span class="radio-title">PNG picture</span
+          ><span class="radio-desc">For WhatsApp, websites and printing.</span>
+        </button>
+      </div>
+      <div class="spec-label">Checkbox</div>
+      <div class="spec-cell on-canvas">
+        <button class="check" role="checkbox" aria-checked="false">
+          <span class="check-box" aria-hidden="true"></span
+          ><span class="check-label">White background</span
+          ><span class="check-help">Leave this off for slides with a coloured background.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button class="check is-hover" role="checkbox" aria-checked="false">
+          <span class="check-box" aria-hidden="true"></span
+          ><span class="check-label">White background</span
+          ><span class="check-help">Leave this off for slides with a coloured background.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button class="check is-pressed" role="checkbox" aria-checked="false">
+          <span class="check-box" aria-hidden="true"></span
+          ><span class="check-label">White background</span
+          ><span class="check-help">Leave this off for slides with a coloured background.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas">
+        <button class="check" role="checkbox" aria-checked="true">
+          <span class="check-box" aria-hidden="true"
+            ><svg class="icon icon-16" aria-hidden="true">
+              <use href="shell-icons.svg#check" /></svg></span
+          ><span class="check-label">White background</span
+          ><span class="check-help">Leave this off for slides with a coloured background.</span>
+        </button>
+      </div>
+      <div class="spec-cell on-canvas"><span class="spec-na">—</span></div>
+      <div class="spec-cell on-canvas">
+        <button class="check is-focus" role="checkbox" aria-checked="false">
+          <span class="check-box" aria-hidden="true"></span
+          ><span class="check-label">White background</span
+          ><span class="check-help">Leave this off for slides with a coloured background.</span>
+        </button>
+      </div>
+    </div>
+    <div class="spec-pairs">
+      <div>
+        <h2>Segmented control (Export: Size)</h2>
+        <div class="spec-tips">
+          <div class="spec-tipbox">
+            <div class="seg" role="radiogroup" aria-labelledby="size-label">
+              <button class="btn seg-item" role="radio" aria-checked="false">Screen</button
+              ><button class="btn seg-item" role="radio" aria-checked="true">Print</button
+              ><button class="btn seg-item" role="radio" aria-checked="false">Poster</button>
+            </div>
+            <span class="spec-note">rest (Print chosen)</span>
+          </div>
+          <div class="spec-tipbox">
+            <div class="seg" role="radiogroup" aria-labelledby="size-label">
+              <button class="btn seg-item is-hover" role="radio" aria-checked="false">Screen</button
+              ><button class="btn seg-item" role="radio" aria-checked="true">Print</button
+              ><button class="btn seg-item" role="radio" aria-checked="false">Poster</button>
+            </div>
+            <span class="spec-note">hover on Screen</span>
+          </div>
+          <div class="spec-tipbox">
+            <div class="seg" role="radiogroup" aria-labelledby="size-label">
+              <button class="btn seg-item is-pressed" role="radio" aria-checked="false">
+                Screen</button
+              ><button class="btn seg-item" role="radio" aria-checked="true">Print</button
+              ><button class="btn seg-item" role="radio" aria-checked="false">Poster</button>
+            </div>
+            <span class="spec-note">pressed on Screen</span>
+          </div>
+          <div class="spec-tipbox">
+            <div class="seg" role="radiogroup" aria-labelledby="size-label">
+              <button class="btn seg-item" role="radio" aria-checked="false">Screen</button
+              ><button class="btn seg-item is-focus" role="radio" aria-checked="true">Print</button
+              ><button class="btn seg-item" role="radio" aria-checked="false">Poster</button>
+            </div>
+            <span class="spec-note">keyboard focus</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h2>Key chips (Keyboard shortcuts)</h2>
+        <div class="spec-tips">
+          <div class="spec-tipbox">
+            <span class="keys"><kbd class="key">V</kbd></span
+            ><span class="spec-note">one key</span>
+          </div>
+          <div class="spec-tipbox">
+            <span class="keys"
+              ><kbd class="key">Ctrl</kbd><span aria-hidden="true">+</span
+              ><kbd class="key">Shift</kbd><span aria-hidden="true">+</span
+              ><kbd class="key">L</kbd></span
+            ><span class="spec-note">a combination</span>
+          </div>
+          <div class="spec-tipbox">
+            <span class="keys"
+              ><kbd class="key">1</kbd> <kbd class="key">2</kbd> <kbd class="key">3</kbd></span
+            ><span class="spec-note">alternatives</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2>Copy tooltips</h2>
+    <div class="spec-tips">
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Copy</span><kbd>Ctrl+C</kbd></div>
+          <div class="tooltip-help">
+            Copies the selection, or the whole drawing, to paste into PowerPoint or Word.
+          </div>
+        </div>
+        <span class="spec-note">Copy, rest</span>
+      </div>
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Copy</span><kbd>Ctrl+C</kbd></div>
+          <div class="tooltip-help">Draw something first.</div>
+        </div>
+        <span class="spec-note">disabled: empty drawing</span>
+      </div>
+      <div class="spec-tipbox">
+        <div class="tooltip static">
+          <div class="tooltip-title"><span>Copy</span><kbd>Ctrl+C</kbd></div>
+          <div class="tooltip-help">Press Enter to finish typing first.</div>
+        </div>
+        <span class="spec-note">disabled: typing a label or text</span>
+      </div>
+    </div>
+  </body>
+</html>

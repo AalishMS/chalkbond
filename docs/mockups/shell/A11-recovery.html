@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Recovery</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+  </head>
+  <body class="desk">
+    <div class="win" style="width: 1280px; height: 800px">
+      <div class="titlebar">
+        <img class="app" src="app-icon-small.svg" alt="" /><span class="title"
+          >Untitled - Chalkbond</span
+        >
+        <span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-min" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-max" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-close" /></svg
+        ></span>
+      </div>
+      <div class="menubar" role="menubar">
+        <span class="menubar-item" id="mb-file">File</span
+        ><span class="menubar-item" id="mb-edit">Edit</span
+        ><span class="menubar-item" id="mb-view">View</span
+        ><span class="menubar-item" id="mb-help">Help</span>
+      </div>
+      <div class="client">
+        <div class="window">
+          <header class="topbar">
+            <label class="namefield"
+              ><svg class="icon icon-20" aria-hidden="true">
+                <use href="../editor/icons.svg#search" /></svg
+              ><input
+                type="text"
+                aria-label="Compound name"
+                placeholder="Type a compound name…"
+                value=""
+            /></label>
+            <div class="divider-v" role="separator"></div>
+            <div class="options" role="toolbar" aria-label="Tool options">
+              <button
+                class="btn btn-opt"
+                id="opt-bond-single"
+                aria-label="Single"
+                aria-pressed="true"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#bond-single" />
+                </svg>
+              </button>
+              <button
+                class="btn btn-opt"
+                id="opt-bond-double"
+                aria-label="Double"
+                aria-pressed="false"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#bond-double" />
+                </svg>
+              </button>
+              <button
+                class="btn btn-opt"
+                id="opt-bond-triple"
+                aria-label="Triple"
+                aria-pressed="false"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#bond-triple" />
+                </svg>
+              </button>
+              <button
+                class="btn btn-opt"
+                id="opt-bond-wedge"
+                aria-label="Wedge"
+                aria-pressed="false"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#bond-wedge" />
+                </svg>
+              </button>
+              <button class="btn btn-opt" id="opt-bond-hash" aria-label="Hash" aria-pressed="false">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#bond-hash" />
+                </svg>
+              </button>
+            </div>
+            <div class="history">
+              <button class="btn btn-top" id="undo" aria-label="Undo (Ctrl+Z)" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#undo" />
+                </svg>
+              </button>
+              <button class="btn btn-top" id="redo" aria-label="Redo (Ctrl+Y)" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#redo" />
+                </svg>
+              </button>
+            </div>
+            <button
+              class="btn btn-copy"
+              id="copy"
+              data-testid="copy"
+              aria-label="Copy (Ctrl+C)"
+              aria-disabled="true"
+            >
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+              ><span aria-hidden="true">Copy</span>
+            </button>
+          </header>
+          <nav class="rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+            <button
+              class="btn btn-rail"
+              id="tool-select"
+              aria-label="Select (V)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#select" /></svg
+              ><span class="rail-caption" aria-hidden="true">Select</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-erase"
+              aria-label="Erase (E)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#erase" /></svg
+              ><span class="rail-caption" aria-hidden="true">Erase</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button class="btn btn-rail" id="tool-bond" aria-label="Bond (B)" aria-pressed="true">
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#bond-single" /></svg
+              ><span class="rail-caption" aria-hidden="true">Bond</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-chain"
+              aria-label="Chain (Z)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#chain" /></svg
+              ><span class="rail-caption" aria-hidden="true">Chain</span>
+            </button>
+            <button class="btn btn-rail" id="tool-ring" aria-label="Ring (R)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#ring-benzene" /></svg
+              ><span class="rail-caption" aria-hidden="true">Ring</span>
+            </button>
+            <button class="btn btn-rail" id="tool-atom" aria-label="Atom (L)" aria-pressed="false">
+              <span class="rail-glyph">C</span
+              ><span class="rail-caption" aria-hidden="true">Atom</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button
+              class="btn btn-rail"
+              id="tool-arrow"
+              aria-label="Arrow (A)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#arrow-forward" /></svg
+              ><span class="rail-caption" aria-hidden="true">Arrow</span>
+            </button>
+            <button class="btn btn-rail" id="tool-plus" aria-label="Plus (+)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#plus" /></svg
+              ><span class="rail-caption" aria-hidden="true">Plus</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-curved"
+              aria-label="Curved arrow (M)"
+              aria-pressed="false"
+            >
+              <svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#curved-full" /></svg
+              ><span class="rail-caption" aria-hidden="true">Curly</span>
+            </button>
+            <button class="btn btn-rail" id="tool-text" aria-label="Text (T)" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#text" /></svg
+              ><span class="rail-caption" aria-hidden="true">Text</span>
+            </button>
+          </nav>
+          <main class="canvas" role="application" aria-label="Drawing canvas">
+            <div class="empty">
+              <svg class="empty-art" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z" />
+                <circle cx="12" cy="12" r="4.2" />
+              </svg>
+              <p class="empty-text">
+                Type a compound name above, or click anywhere to start drawing.
+              </p>
+              <div class="empty-try">
+                <span>Try:</span>
+                <button class="chip">ethanol</button>
+                <button class="chip">benzene</button>
+                <button class="chip">ethanol + acetic acid -&gt; ethyl acetate + water</button>
+              </div>
+            </div>
+          </main>
+          <footer class="statusbar">
+            <div class="hint" role="status" aria-live="polite">
+              Click to add a bond. Drag to aim it. Click a bond to change it.
+            </div>
+            <div class="segmented" role="group" aria-label="Style">
+              <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+              ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+                Handout
+              </button>
+            </div>
+            <div class="zoom">
+              <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-out" />
+                </svg></button
+              ><button
+                class="btn btn-status btn-zoom"
+                id="zoom-100"
+                aria-label="Zoom to 100% (Ctrl+1)"
+              >
+                150%</button
+              ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-in" />
+                </svg></button
+              ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#fit" />
+                </svg>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+    <div class="msgbox" role="dialog" data-center="win" data-dx="0" style="width: 440px">
+      <div class="msgbox-title">
+        <span>Chalkbond</span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-close" /></svg
+        ></span>
+      </div>
+      <div class="msgbox-body">
+        <svg class="mb-icon" aria-hidden="true"><use href="native.svg#mb-info" /></svg>
+        <div>
+          <p class="msgbox-main">Chalkbond closed before your drawing was saved.</p>
+          <p class="msgbox-detail">
+            Do you want to recover it? If you delete it, it can't be brought back.
+          </p>
+        </div>
+      </div>
+      <div class="msgbox-foot">
+        <button class="wbtn is-default">Recover</button><button class="wbtn">Delete</button>
+      </div>
+    </div>
+    <p class="native-note" style="top: 838px">
+      <b>Native, approximate:</b> title bar, menu bar and the message box (a Windows task dialog;
+      Chalkbond sets only the words, icon and buttons). The window contents are as built. Shown at
+      launch over a fresh window.
+    </p>
+    <script src="shell.js"></script>
+  </body>
+</html>
