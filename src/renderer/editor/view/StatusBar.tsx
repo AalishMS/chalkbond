@@ -1,7 +1,13 @@
 import type { StylePreset } from '@core/doc-model';
 import { HINTS } from '../state/catalog';
 import type { ToolId } from '../state/editor-state';
+import { STATUS_TIPS, type TipContent } from '../state/tips';
 import { Icon } from './Icon';
+import { pressKeepsFocus } from './press';
+import { tipProps } from './Tooltip';
+
+/** Id of the hint slot; the canvas is described by it. */
+export const HINT_ID = 'editor-hint';
 
 interface StatusBarProps {
   tool: ToolId;
@@ -13,6 +19,7 @@ interface StatusBarProps {
 function ZoomButton(props: {
   id: string;
   label: string;
+  tip: TipContent;
   className?: string;
   children: React.ReactNode;
 }): React.JSX.Element {
@@ -23,6 +30,7 @@ function ZoomButton(props: {
       className={`btn btn-status${extra}`}
       data-testid={props.id}
       aria-label={props.label}
+      {...tipProps(props.tip, 'above')}
     >
       {props.children}
     </button>
@@ -33,7 +41,7 @@ function ZoomButton(props: {
 export function StatusBar({ tool, preset, formula = '' }: StatusBarProps): React.JSX.Element {
   return (
     <footer className="statusbar" data-testid="statusbar">
-      <div className="hint" role="status" aria-live="polite">
+      <div className="hint" id={HINT_ID} role="status" aria-live="polite">
         {HINTS[tool]}
       </div>
       {formula !== '' && (
@@ -41,7 +49,7 @@ export function StatusBar({ tool, preset, formula = '' }: StatusBarProps): React
           {formula}
         </div>
       )}
-      <div className="segmented" role="group" aria-label="Style">
+      <div className="segmented" role="group" aria-label="Style" onMouseDown={pressKeepsFocus}>
         <button
           type="button"
           className="btn btn-status"
@@ -59,17 +67,22 @@ export function StatusBar({ tool, preset, formula = '' }: StatusBarProps): React
           Handout
         </button>
       </div>
-      <div className="zoom">
-        <ZoomButton id="zoom-out" label="Zoom out (Ctrl+−)">
+      <div className="zoom" onMouseDown={pressKeepsFocus}>
+        <ZoomButton id="zoom-out" label="Zoom out (Ctrl+−)" tip={STATUS_TIPS.zoomOut}>
           <Icon name="zoom-out" size={16} />
         </ZoomButton>
-        <ZoomButton id="zoom-reset" label="Reset zoom (Ctrl+1)" className="btn-zoom">
+        <ZoomButton
+          id="zoom-reset"
+          label="Reset zoom (Ctrl+1)"
+          tip={STATUS_TIPS.zoomReset}
+          className="btn-zoom"
+        >
           150%
         </ZoomButton>
-        <ZoomButton id="zoom-in" label="Zoom in (Ctrl+=)">
+        <ZoomButton id="zoom-in" label="Zoom in (Ctrl+=)" tip={STATUS_TIPS.zoomIn}>
           <Icon name="zoom-in" size={16} />
         </ZoomButton>
-        <ZoomButton id="zoom-fit" label="Zoom to fit (Ctrl+0)">
+        <ZoomButton id="zoom-fit" label="Zoom to fit (Ctrl+0)" tip={STATUS_TIPS.zoomFit}>
           <Icon name="fit" size={16} />
         </ZoomButton>
       </div>

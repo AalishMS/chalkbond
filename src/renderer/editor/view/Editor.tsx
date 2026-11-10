@@ -1,10 +1,12 @@
 import type { EditorController } from '../state/controller';
 import { isEmptyDoc } from '../state/empty-doc';
 import { EMPTY_SCOPE } from '../state/selection-actions';
+import { Canvas } from './Canvas';
 import { EmptyState } from './EmptyState';
 import sprite from './icons.svg?raw';
 import { StatusBar } from './StatusBar';
 import { ToolRail } from './ToolRail';
+import { TooltipHost } from './Tooltip';
 import { TopBar } from './TopBar';
 import { useEditorState } from './use-store';
 import './tokens.css';
@@ -33,10 +35,9 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
         dispatch={dispatch}
       />
       <ToolRail state={state} dispatch={dispatch} />
-      <main className="canvas" data-testid="canvas" aria-label="Drawing canvas">
-        {isEmptyDoc(doc) && <EmptyState />}
-      </main>
+      <Canvas>{isEmptyDoc(doc) && <EmptyState />}</Canvas>
       <StatusBar tool={state.tool} preset={doc.style.preset} />
+      <TooltipHost />
     </div>
   );
 }

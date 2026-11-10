@@ -267,7 +267,7 @@ show-circle expand flip-h flip-v glyph-degree glyph-arrow`. Rendered by one `Ico
 
 All controls are `<button>` (or `<input>`) with an accessible name; toggles carry `aria-pressed`;
 disabled controls use `aria-disabled="true"`, stay focusable and keep their tooltip, whose help
-line says why. Focus ring: `outline: 2px solid var(--accent)`, offset 2 px (rail buttons:
+line says why. Focus ring: `outline: 2px solid var(--accent)`, offset 2 px (rail and status-bar buttons:
 offset 0), only on `:focus-visible`. States per control as in `mockup.css` and screen 10:
 
 | Control | Rest | Hover | Pressed | Selected | Disabled |

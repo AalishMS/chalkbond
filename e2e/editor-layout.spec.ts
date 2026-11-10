@@ -220,8 +220,10 @@ test('clicking tools and options changes tool and variant, not focus', async () 
     await page.getByTestId('opt-cyclopentane').click();
     await expect(page.getByTestId('opt-cyclopentane')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('tool-ring').locator('use')).toHaveAttribute('href', '#ring-5');
-    // K5: a mouse press does not take focus.
-    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('BODY');
+    // K5: a mouse press does not take focus; it stays on the canvas, which has it at launch.
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe(
+      'canvas',
+    );
     await page.getByTestId('tool-atom').click();
     await page.getByTestId('opt-N').click();
     await expect(page.getByTestId('tool-atom').locator('.rail-glyph')).toHaveText('N');

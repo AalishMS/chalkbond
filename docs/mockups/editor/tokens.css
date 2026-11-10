@@ -87,6 +87,8 @@
   --preset-seg-h: 20px;
   --radius-xs: 3px;
   --empty-art-size: 96px;
+  --tooltip-max-w: 240px;
+  --kbd-size: 18px;
 }
 
 @media (prefers-reduced-motion: reduce) {

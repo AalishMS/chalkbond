@@ -2,7 +2,11 @@ import { Fragment } from 'react';
 import { railFace, TOOLS } from '../state/catalog';
 import type { EditorState } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
+import { toolTip } from '../state/tips';
 import { Icon } from './Icon';
+import { pressKeepsFocus } from './press';
+import { tipProps } from './Tooltip';
+import { useRoving } from './use-roving';
 
 interface ToolRailProps {
   state: EditorState;
@@ -11,6 +15,7 @@ interface ToolRailProps {
 
 /** The tool rail: ten buttons in three groups. A mouse press does not take focus (K5). */
 export function ToolRail({ state, dispatch }: ToolRailProps): React.JSX.Element {
+  const roving = useRoving('vertical', state.tool, state.tool);
   return (
     <nav
       className="rail"
@@ -18,9 +23,8 @@ export function ToolRail({ state, dispatch }: ToolRailProps): React.JSX.Element 
       role="toolbar"
       aria-orientation="vertical"
       aria-label="Tools"
-      onMouseDown={(e) => {
-        e.preventDefault();
-      }}
+      onMouseDown={pressKeepsFocus}
+      onKeyDown={roving.onKeyDown}
     >
       {TOOLS.map((tool, i) => {
         const face = railFace(state, tool);
@@ -34,6 +38,8 @@ export function ToolRail({ state, dispatch }: ToolRailProps): React.JSX.Element 
               data-testid={`tool-${tool.id}`}
               aria-label={`${tool.label} (${tool.key})`}
               aria-pressed={state.tool === tool.id}
+              {...roving.item(tool.id)}
+              {...tipProps(toolTip(tool), 'right')}
               onClick={() => {
                 dispatch({ type: 'select-tool', tool: tool.id });
               }}

@@ -75,7 +75,7 @@ Everything else is sequential: each phase builds on the previous one.
 - [ ] E6: Editor shell: lifted tokens and icons, window grid, `<Editor>` in the scaffold
 - [x] E7: Tool rail, options bars, selection actions bar, tool/option selection
 - [x] E8: Top bar, status bar, empty state
-- [ ] E9: Tooltips, focus order, control states
+- [x] E9: Tooltips, focus order, control states
 
 ### Checkpoint M — the window matches the mock-ups
 - [ ] `npm run check` green; `e2e/editor-layout.spec.ts` green at 1280×800 and 960×640

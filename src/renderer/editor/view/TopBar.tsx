@@ -1,9 +1,11 @@
 import type { EditorState } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
 import type { SelectionScope } from '../state/selection-actions';
+import { HISTORY_EMPTY_HELP, HISTORY_TIPS } from '../state/tips';
 import { Icon } from './Icon';
 import { NameField } from './NameField';
 import { OptionsBar } from './OptionsBar';
+import { tipProps } from './Tooltip';
 
 interface TopBarProps {
   state: EditorState;
@@ -14,11 +16,12 @@ interface TopBarProps {
 }
 
 function HistoryButton(props: {
-  id: string;
+  id: 'undo' | 'redo';
   label: string;
   icon: string;
   enabled: boolean;
 }): React.JSX.Element {
+  const tip = HISTORY_TIPS[props.id];
   return (
     <button
       type="button"
@@ -26,6 +29,7 @@ function HistoryButton(props: {
       data-testid={props.id}
       aria-label={props.label}
       aria-disabled={props.enabled ? undefined : true}
+      {...tipProps(props.enabled ? tip : { ...tip, help: HISTORY_EMPTY_HELP[props.id] }, 'below')}
     >
       <Icon name={props.icon} size={20} />
     </button>

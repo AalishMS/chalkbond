@@ -278,10 +278,10 @@ clicking a rail button with the mouse leaves `document.activeElement` on the can
 rail button 600 ms shows a tooltip to its right with an 8 px gap.
 
 **Acceptance criteria:**
-- [ ] Every rail, option, action and icon-only status control has a tooltip; each disabled control's tooltip says why
-- [ ] Tab order and roving focus exactly as K4 (e2e)
-- [ ] Focus ring visible on keyboard focus only (e2e: computed `outline-style` is `solid` after Tab, `none` after mouse click)
-- [ ] Launch focus is the canvas (e2e)
+- [x] Every rail, option, action and icon-only status control has a tooltip; each disabled control's tooltip says why
+- [x] Tab order and roving focus exactly as K4 (e2e)
+- [x] Focus ring visible on keyboard focus only (e2e: computed `outline-style` is `solid` after Tab, `none` after mouse click)
+- [x] Launch focus is the canvas (e2e)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E9` → `E9/tooltip-bond.png` (scripted: hover Bond 600 ms; compare the Bond tooltip in `10-states.png`), `E9/tooltip-disabled-flip.png` (scripted: Select, hover Flip horizontal), `E9/focus-rail.png` (scripted: Tab to the rail, ↓ twice), `E9/states-hover-pressed.png` (scripted: hover Chain, press and hold on Ring), `E9/focus-name-field.png` (scripted: Ctrl+F)
 
@@ -292,8 +292,8 @@ rail button 600 ms shows a tooltip to its right with an 8 px gap.
 **Scope:** M
 
 ### Checkpoint M — the window matches the mock-ups
-- [ ] `npm run check` green; `e2e/editor-layout.spec.ts` green at 1280×800 and 960×640
-- [ ] Shots of E6–E9 compared side by side with `out/mockups/01-empty.png`, `10-states.png`, `11-min-window.png`
+- [x] `npm run check` green; `e2e/editor-layout.spec.ts` green at 1280×800 and 960×640
+- [x] Shots of E6–E9 compared side by side with `out/mockups/01-empty.png`, `10-states.png`, `11-min-window.png`
 - [ ] Commit + push
 
 ---

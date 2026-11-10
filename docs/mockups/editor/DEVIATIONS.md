@@ -28,6 +28,7 @@ device scale 1; `--serve` serves the folder on 127.0.0.1, since Chromium blocks
 | (captions) | Caption `--text-muted` (5.67 : 1 on chrome, 5.14 on `--hover-bg`, 4.68 on `--pressed-bg`); hover and pressed `--text`; selected `--active-fg` (6.33 : 1 on `--active-bg`) | Item 1: ≥ 4.5 : 1 in every state, quieter than the icon at rest |
 | Active bar 3 × 20 at x = 0, centred | 3 × 24 at x = 0, top 12 (centred on the 48 px button) | Item 1: scaled to the new button |
 | Focus ring offset 2 px | rail buttons: offset 0 | With 2 px gaps an offset ring would cover the neighbouring button; offset 0 ends exactly in the gap and at the rail edge |
+| Focus ring offset 2 px | status-bar buttons: offset 0 (E9) | A 24 px control in the 28 px bar with an offset ring is 32 px tall and is clipped by the window edge; offset 0 gives 28 px |
 | Rail fits at 640 px | content 8 + 528 + 8 = 544 px of the 562 px between the borders at 960 × 640 (screen 11), no scrolling | Item 1 |
 | Zoom at launch: unspecified (readout 100 %) | 150 % (1 pt = 2 px) on every canvas and readout; handles, outlines, marks and pointers stay in screen px | Orchestrator decision (item 2) |
 | — | Reaction scheme (08, 09) at zoom to fit: largest whole percent ≤ 150 % with 48 px margin on every side = **115 %**. 09 keeps 08's view (correcting the H20 label does not re-fit; by itself 09's scheme would fit at 117 %) | Item 2 |

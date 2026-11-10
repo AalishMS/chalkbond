@@ -90,11 +90,10 @@ describe('selection actions bar', () => {
       'No benzene ring here.',
       'Draw an arrow first.',
     ]) {
-      expect(html).toContain(`aria-disabled="true" data-help="${help}"`);
+      expect(html).toContain(`data-tip-help="${help}"`);
     }
-    expect(html.match(/aria-disabled="true" data-help="Select a molecule first\."/g)).toHaveLength(
-      2,
-    );
+    expect(html.match(/data-tip-help="Select a molecule first\."/g)).toHaveLength(2);
+    expect(html.match(/aria-disabled="true"/g)).toHaveLength(5);
   });
 
   it('enables what the scope allows', () => {

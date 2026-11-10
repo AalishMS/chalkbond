@@ -161,6 +161,11 @@
   outline-offset: 0;
 }
 
+/* A 24 px control in the 28 px status bar: an offset ring would be clipped by the window edge. */
+.btn-status:focus-visible {
+  outline-offset: 0;
+}
+
 .rail-caption {
   display: block;
   color: var(--text-muted);
@@ -403,6 +408,68 @@
 
 .chip:active {
   background: var(--pressed-bg);
+}
+
+/* ---- Canvas focus (keyboard only): 2 px inset accent ring ---- */
+
+.canvas:focus {
+  outline: none;
+}
+
+.canvas[data-keyboard]:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 var(--space-1) var(--accent);
+  pointer-events: none;
+}
+
+/* ---- Tooltip ---- */
+
+.tooltip {
+  position: absolute;
+  z-index: 10;
+  max-width: var(--tooltip-max-w);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--tooltip-bg);
+  box-shadow: var(--shadow-2);
+  color: var(--tooltip-fg);
+  font: var(--type-xs);
+  pointer-events: none;
+  animation: tooltip-in var(--motion-fade);
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.tooltip-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tooltip-help {
+  margin-top: var(--space-1);
+  color: var(--tooltip-muted);
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--kbd-size);
+  height: var(--kbd-size);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--tooltip-kbd-border);
+  border-radius: var(--radius-sm);
+  font: var(--type-xs);
+  font-weight: 600;
 }
 
 /* ---- Status bar ---- */
