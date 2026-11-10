@@ -146,7 +146,7 @@ function satelliteList(atom: Atom, vertex: boolean): Satellite[] {
     out.push({ kind: 'text', text: atom.partialCharge.replace('-', MINUS) });
   }
   if (atom.number !== undefined && atom.number !== '') {
-    out.push({ kind: 'text', text: atom.number });
+    out.push({ kind: 'text', text: atom.number.replace(/[\r\n]+/g, ' ') });
   }
   return out;
 }

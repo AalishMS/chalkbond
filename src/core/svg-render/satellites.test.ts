@@ -190,4 +190,10 @@ describe('layoutSatellites', () => {
     const b = layout({ lonePairs: 2, radical: 1 }, [unit(0), unit(100), unit(250)])!;
     expect(a.svg).toBe(b.svg);
   });
+
+  it('an atom number with line breaks is drawn whole on one line, like a label', () => {
+    const out = layout({ number: 'a\r\nb\nc' }, [unit(0)])!;
+    const texts = [...out.svg.matchAll(/>([^<]*)<\/text>/g)].map((m) => m[1]);
+    expect(texts.join('')).toBe('a b c');
+  });
 });
