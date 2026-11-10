@@ -189,3 +189,14 @@ describe('the text editor in the window (T1, T2, T5)', () => {
     expect(html(make())).not.toMatch(/_\{|\^\{/);
   });
 });
+
+it('passes host actions through to the top bar before the rail', () => {
+  const controller = createEditorController({ clock: () => '2026-01-01T00:00:00.000Z' });
+  const html = renderToStaticMarkup(
+    <Editor controller={controller} actions={<button>Host</button>} />,
+  );
+  expect(html).toContain('data-testid="topbar-actions"><button>Host</button>');
+  expect(html.indexOf('data-testid="topbar-actions"')).toBeLessThan(
+    html.indexOf('data-testid="rail"'),
+  );
+});

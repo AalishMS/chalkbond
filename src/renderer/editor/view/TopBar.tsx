@@ -9,6 +9,7 @@ import { OptionsBar } from './OptionsBar';
 import { tipProps } from './Tooltip';
 
 interface TopBarProps {
+  actions?: React.ReactNode;
   state: EditorState;
   scope: SelectionScope;
   canUndo: boolean;
@@ -43,6 +44,7 @@ function HistoryButton(props: {
 
 /** Name field, divider, tool options, Undo and Redo. */
 export function TopBar({
+  actions,
   state,
   scope,
   canUndo,
@@ -51,7 +53,10 @@ export function TopBar({
   dispatch,
 }: TopBarProps): React.JSX.Element {
   return (
-    <header className="topbar" data-testid="topbar">
+    <header
+      className={actions === undefined ? 'topbar' : 'topbar has-actions'}
+      data-testid="topbar"
+    >
       <NameField field={state.nameField} rows={rows} dispatch={dispatch} />
       <div className="divider-v" role="separator" />
       <OptionsBar state={state} scope={scope} dispatch={dispatch} />
@@ -71,6 +76,11 @@ export function TopBar({
           onPress={() => dispatch({ type: 'redo' })}
         />
       </div>
+      {actions !== undefined && (
+        <div className="topbar-actions" data-testid="topbar-actions">
+          {actions}
+        </div>
+      )}
     </header>
   );
 }

@@ -4,9 +4,10 @@ import { freshState as initialState } from '../state/testing';
 import { EMPTY_SCOPE } from '../state/selection-actions';
 import { TopBar } from './TopBar';
 
-const render = (canUndo: boolean, canRedo: boolean): string =>
+const render = (canUndo: boolean, canRedo: boolean, actions?: React.ReactNode): string =>
   renderToStaticMarkup(
     <TopBar
+      actions={actions}
       state={initialState()}
       scope={EMPTY_SCOPE}
       canUndo={canUndo}
@@ -41,4 +42,19 @@ describe('TopBar markup', () => {
     expect(html.indexOf('class="divider-v"')).toBeGreaterThan(html.indexOf('namefield'));
     expect(html.indexOf('class="divider-v"')).toBeLessThan(html.indexOf('data-testid="options"'));
   });
+});
+
+it('renders optional host actions last after history, preserving DOM tab order', () => {
+  const html = render(true, true, <button>Host action</button>);
+  expect(html).toContain('class="topbar has-actions"');
+  expect(html).toMatch(
+    /<div class="topbar-actions" data-testid="topbar-actions"><button>Host action<\/button><\/div><\/header>$/,
+  );
+  const ids = ['namefield-input', 'options', 'undo', 'redo', 'topbar-actions'];
+  const positions = ids.map((id) => html.indexOf('data-testid="' + id + '"'));
+  expect(positions.every((position) => position >= 0)).toBe(true);
+  expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  const bare = render(false, false);
+  expect(bare).not.toContain('has-actions');
+  expect(bare).not.toContain('topbar-actions');
 });

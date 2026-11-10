@@ -935,3 +935,19 @@ kbd {
   stroke-width: 3;
   stroke-dasharray: 3 2;
 }
+
+/* The host supplies --namefield-compact; this rule never applies to a bare editor. */
+.topbar-actions {
+  flex: none;
+  margin-left: var(--space-4);
+}
+
+@media (max-width: calc(1099.98 * 1px)) {
+  .topbar.has-actions .topbar-actions {
+    margin-left: var(--space-3);
+  }
+
+  .topbar.has-actions .namefield {
+    width: var(--namefield-compact);
+  }
+}

@@ -143,6 +143,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R41 | The preset segments are 64×24 (`--preset-seg-h: 24px`), centred in the 28 px status bar: the group is 24 + 2 × 1 px padding + 2 × 1 px outline = 28 px, so its outline lies inside the bar | The mock-up's 64×20 was 4 px under the 24 px hit target of Accessibility; the status-bar controls now all meet it (zoom buttons and the warnings button are 24 high already) | 2026-11-10 |
 | R42 | `--border-control` is `#79818c` (was `#7a828e`, 2.96 : 1 on `--pressed-bg`): 3.64 on `--chrome-bg`, 3.94 on `--canvas-bg`, 3.30 on `--hover-bg`, 3.00 on `--pressed-bg`. The contrast table now lists hover and pressed; the test asserts all four | A control border must reach 3 : 1 on every background the control can have, including while pressed. The darkest step that does it keeps the field and chip borders from looking heavier | 2026-11-10 |
 | R43 | The UI font stack keeps Segoe UI first, then Arial and Liberation Sans before system-ui | Linux without Segoe UI used wider DejaVu Sans, breaking the 109 px Kekulé toggle and shifting its neighbours; the Arial-compatible fallback preserves the approved control boxes without bundling fonts. The Kekulé toggle has fixed 109 px width, 4 px left and right padding and 4 px icon gap, retaining 32 px height and 2 px neighbour gaps | 2026-11-10 |
+| R44 | Host actions slot after Redo (clipboard-export O1): optional `actions?: React.ReactNode`, last top-bar child in `topbar-actions`, with `has-actions` only when supplied; host supplies `--namefield-compact` | Keeps host controls after history in layout and tab order; preserves the editor without a host | 2026-11-10 |
 
 ---
 
@@ -178,7 +179,7 @@ The numbers below are what the e2e layout test measures at 1280×800 (and 960×6
 
 | Region | Measured box | Holds |
 |---|---|---|
-| Top bar | full width × 48 px, then a 1 px `--border` line; padding 0 12 | name field (x = 12, width `round(down, clamp(240px, 26vw, 360px), 1px)`, height 32); a 1×24 divider with 12 px either side; the options bar (flex, gap 2, scrolls horizontally with no visible scrollbar if ever too narrow); Undo and Redo (32×32, 4 px apart, 12 px left margin, 12 px from the right edge) |
+| Top bar | full width × 48 px, then a 1 px `--border` line; padding 0 12 | name field (x = 12, width `round(down, clamp(240px, 26vw, 360px), 1px)`, height 32); a 1×24 divider with 12 px either side; the options bar (flex, gap 2, scrolls horizontally with no visible scrollbar if ever too narrow); Undo and Redo (32×32, 4 px apart, 12 px left margin, 12 px from the right edge); then the host’s optional actions, 12 px after Redo, 8 px below 1100 px content width, when the name field becomes `--namefield-compact` (204 px, supplied by the host’s shell tokens). Actions end 12 px from the right edge; without actions the layout is unchanged |
 | Tool rail | 64 px wide + 1 px `--border` line, between top bar and status bar | 10 buttons 56×48 at x = 4, first at y = 8, 2 px apart within a group; group separators 32×1 with 8 px above and below. At 960×640 the content (544 px) fits in the 562 px available; it would scroll vertically only below that |
 | Canvas | the rest | white surface, overlays, empty state, editors |
 | Status bar | full width × 28 px after a 1 px `--border` line; padding 0 12, gap 16 | left: hint or notice (flex, ellipsis); then formula (hidden below 1000 px window width), warnings button (only when there are warnings), preset switch, zoom cluster (−, readout 48 px, +, fit; 2 px apart) |
@@ -435,7 +436,7 @@ Ctrl+= subscript, Ctrl+Shift+= (Ctrl++) superscript, Ctrl+Shift+D inserts Δ, Ct
 inserts hν.
 
 **K4 Tab order**: name field → options bar (one tab stop; ←/→ move, roving `tabindex`) → Undo
-→ Redo → rail (one tab stop; ↑/↓ move, Enter/Space activates; `role="toolbar"`
+→ Redo → host actions (when supplied) → rail (one tab stop; ↑/↓ move, Enter/Space activates; `role="toolbar"`
 `aria-orientation="vertical"`) → canvas (`role="application"`, `aria-label="Drawing canvas"`,
 `aria-describedby` the hint) → status-bar controls (warnings, Slides, Handout, zoom −, readout,
 zoom +, fit). Shift+Tab reverses. Empty-state chips sit after the canvas in tab order while shown.
@@ -642,7 +643,7 @@ type Hit =
 
 ```ts
 // src/renderer/editor/index.ts
-export { Editor } from './view/Editor';                 // <Editor controller={c} />
+export { Editor } from './view/Editor';                 // <Editor controller={c} actions={node?} />
 export { createEditorController } from './state/controller';
 export type { EditorController, EditorOptions, EditorCommand, EditorEvent, HostHit }
   from './state/controller';

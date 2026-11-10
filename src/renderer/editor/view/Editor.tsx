@@ -39,6 +39,8 @@ const isNameField = (target: EventTarget): boolean =>
   target instanceof HTMLElement && target.dataset['testid'] === 'namefield-input';
 
 interface EditorProps {
+  /** Host controls after Redo; host supplies --namefield-compact (204px). */
+  actions?: React.ReactNode;
   controller: EditorController;
 }
 
@@ -46,7 +48,7 @@ interface EditorProps {
  * The editor window grid: top bar, tool rail, canvas, status bar. The icon sprite is injected
  * inline once: an external sprite does not load from file:// in Chromium.
  */
-export function Editor({ controller }: EditorProps): React.JSX.Element {
+export function Editor({ controller, actions }: EditorProps): React.JSX.Element {
   const state = useEditorState(controller.store);
   const doc = current(state.history);
   const { dispatch } = controller.store;
@@ -125,6 +127,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
     >
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <TopBar
+        actions={actions}
         state={state}
         scope={scope}
         canUndo={idle && canUndo(state.history)}

@@ -45,9 +45,9 @@ the last child after `data-testid="redo"` and the top bar has `has-actions`; wit
 exists; the tab order in DOM is name field → options → Undo → Redo → wrapper.
 
 **Acceptance criteria:**
-- [ ] `SPEC-editor.md` edited first (same commit, separate hunk), R-row added
-- [ ] Markup tests above pass; existing `e2e/editor-layout.spec.ts` and `editor-keyboard.spec.ts` pass unchanged (no actions in the editor e2e)
-- [ ] Editor coverage stays ≥ 70 % lines
+- [x] `SPEC-editor.md` edited first (same commit, separate hunk), R-row added
+- [x] Markup tests above pass; existing `e2e/editor-layout.spec.ts` and `editor-keyboard.spec.ts` pass unchanged (no actions in the editor e2e)
+- [x] Editor coverage stays ≥ 70 % lines
 
 **Verification:** `npm test -- src/renderer/editor/view`, `npm run check`, `npm run test:e2e`.
 No visible change yet (the slot is empty until C8), so no shots; the boxes are asserted in C8.
