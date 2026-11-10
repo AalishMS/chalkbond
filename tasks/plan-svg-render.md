@@ -93,7 +93,7 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 
 ### Checkpoint J — every item type renders
 - [x] `npm run check` green; doc-model's `kitchen-sink` and `mechanism` fixtures render with no `skipped-item` notice
-- [ ] Commit + push
+- [x] Commit + push
 
 ### Phase 4: goldens and hardening
 - [x] S11: ≥ 30 golden scenes, variant-coverage scan, `npm run golden:sheet`, visual review of the sheet

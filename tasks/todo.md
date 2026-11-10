@@ -233,4 +233,4 @@ arrows); timing budgets.
 - [x] Every success criterion in `SPEC-doc-model.md` met
 - [x] `npm run check` green; coverage ≥ 95% (98.6% lines)
 - [x] Commit + push
-- [ ] Human review → then write `SPEC-chem-core.md`
+- [x] Human review → then write `SPEC-chem-core.md`
