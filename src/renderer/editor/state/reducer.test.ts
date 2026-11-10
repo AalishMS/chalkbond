@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { OPTIONS, TOOLS } from './catalog';
-import { initialState, TOOL_IDS } from './editor-state';
-import { reduce } from './reducer';
+import { TOOL_IDS } from './editor-state';
+import { freshState as initialState, reduceTest as reduce } from './testing';
 
 describe('initial state (Decision 5)', () => {
   it('starts with Bond and its Single variant', () => {

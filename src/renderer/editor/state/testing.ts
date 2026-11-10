@@ -1,0 +1,54 @@
+import { createNameIndex } from '@core/chem-core';
+import { addAtom, addBond, emptyDoc, type AtomId, type BondId, type Doc } from '@core/doc-model';
+import { createDerive } from '../model/derive';
+import { initialState, type EditorState } from './editor-state';
+import { reduce, type EditorAction, type ReducerContext } from './reducer';
+import { createStore, type Store } from './store';
+
+/** Fixtures shared by the state and view tests. */
+export const T0 = '2026-01-01T00:00:00.000Z';
+
+export const testDoc = (): Doc => emptyDoc(T0);
+
+export const freshState = (doc: Doc = testDoc()): EditorState => initialState(doc, () => T0);
+
+export interface TestContext extends ReducerContext {
+  readonly logged: unknown[];
+}
+
+export function testContext(): TestContext {
+  const logged: unknown[] = [];
+  return {
+    derive: createDerive(),
+    names: createNameIndex({
+      format: 'chalkbond-compounds',
+      version: 1,
+      source: 'test',
+      entries: [],
+    }),
+    logError: (error) => {
+      logged.push(error);
+    },
+    logged,
+  };
+}
+
+export function testStore(doc: Doc = testDoc()): { store: Store; ctx: TestContext } {
+  const ctx = testContext();
+  return { store: createStore(freshState(doc), ctx), ctx };
+}
+
+/** `reduce` with a throwaway context, for tests that only need the next state. */
+export const reduceTest = (state: EditorState, action: EditorAction): EditorState =>
+  reduce(state, action, testContext());
+
+/** A recipe that adds two bonded carbons (an "Add bond" commit). */
+export const addEthane = (doc: Doc): Doc => {
+  const [d1, a] = addAtom(doc, { element: 'C', x: 0, y: 0 });
+  const [d2, b] = addAtom(d1, { element: 'C', x: 1, y: 0 });
+  return addBond(d2, a, b)[0];
+};
+
+/** Ids as the editor sees them (branded strings). */
+export const atomId = (n: number): AtomId => `a${n}` as AtomId;
+export const bondId = (n: number): BondId => `b${n}` as BondId;

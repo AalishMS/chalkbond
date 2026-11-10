@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { initialState } from '../state/editor-state';
+import { freshState as initialState } from '../state/testing';
 import { EMPTY_SCOPE } from '../state/selection-actions';
 import { TopBar } from './TopBar';
 

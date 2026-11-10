@@ -1,6 +1,6 @@
 import type { StylePreset } from '@core/doc-model';
 import { HINTS } from '../state/catalog';
-import type { ToolId } from '../state/editor-state';
+import type { Notice, ToolId } from '../state/editor-state';
 import { STATUS_TIPS, type TipContent } from '../state/tips';
 import { Icon } from './Icon';
 import { pressKeepsFocus } from './press';
@@ -14,6 +14,8 @@ interface StatusBarProps {
   preset: StylePreset;
   /** Formula and mass text; the slot is not rendered when empty. */
   formula?: string;
+  /** Replaces the hint while set (X1 and the other notices). */
+  notice?: Notice | null;
 }
 
 function ZoomButton(props: {
@@ -38,11 +40,28 @@ function ZoomButton(props: {
 }
 
 /** Hint, formula, preset switch and zoom cluster. Buttons are no-ops until later tasks. */
-export function StatusBar({ tool, preset, formula = '' }: StatusBarProps): React.JSX.Element {
+export function StatusBar({
+  tool,
+  preset,
+  formula = '',
+  notice = null,
+}: StatusBarProps): React.JSX.Element {
   return (
     <footer className="statusbar" data-testid="statusbar">
-      <div className="hint" id={HINT_ID} role="status" aria-live="polite">
-        {HINTS[tool]}
+      <div
+        className={notice?.kind === 'error' ? 'hint hint-error' : 'hint'}
+        id={HINT_ID}
+        role="status"
+        aria-live="polite"
+      >
+        {notice === null ? (
+          HINTS[tool]
+        ) : (
+          <>
+            <Icon name="warning" size={16} />
+            <span className="hint-text">{notice.text}</span>
+          </>
+        )}
       </div>
       {formula !== '' && (
         <div className="formula" data-testid="formula">

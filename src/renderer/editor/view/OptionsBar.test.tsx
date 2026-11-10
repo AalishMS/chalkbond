@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { initialState, type ToolId } from '../state/editor-state';
-import { reduce } from '../state/reducer';
+import type { ToolId } from '../state/editor-state';
+import { freshState as initialState, reduceTest as reduce } from '../state/testing';
 import { EMPTY_SCOPE, type SelectionScope } from '../state/selection-actions';
 import { OptionsBar } from './OptionsBar';
 

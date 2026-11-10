@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createStore } from './store';
+import { testStore } from './testing';
+
+const createStore = () => testStore().store;
 
 describe('store', () => {
   it('holds the initial state and applies dispatched actions', () => {

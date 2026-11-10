@@ -349,9 +349,9 @@ refused while an editor is open; dirty after an edit, clean after undo back to `
 false on a new doc; `undoLabel()` returns "Add bond" after such a commit (use a test recipe).
 
 **Acceptance criteria:**
-- [ ] Controller API and events exactly as "Seam to the host" (type-level test: the exported types compile against a usage file)
-- [ ] X1, G2, R7 covered by named tests
-- [ ] Undo/Redo buttons enable/disable with history (e2e after E13 can exercise them; markup test here)
+- [x] Controller API and events exactly as "Seam to the host" (type-level test: the exported types compile against a usage file)
+- [x] X1, G2, R7 covered by named tests
+- [x] Undo/Redo buttons enable/disable with history (e2e after E13 can exercise them; markup test here)
 
 **Verification:** `npm test -- src/renderer/editor/state`, `npm run check`
 

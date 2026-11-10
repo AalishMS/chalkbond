@@ -60,3 +60,27 @@ describe('StatusBar markup', () => {
     expect(render('bond', 'slides', 'C2H6O')).toContain('data-testid="formula">C2H6O<');
   });
 });
+
+describe('StatusBar notice', () => {
+  const notice = (kind: 'info' | 'error') =>
+    renderToStaticMarkup(
+      <StatusBar
+        tool="bond"
+        preset="slides"
+        notice={{ id: 1, kind, text: 'That edit is not possible.' }}
+      />,
+    );
+
+  it('replaces the hint with the warning icon and the text', () => {
+    const html = notice('error');
+    expect(html).toContain('<use href="#warning"></use>');
+    expect(html).toContain('<span class="hint-text">That edit is not possible.</span>');
+    expect(html).not.toContain(HINTS.bond);
+    expect(html).toContain('class="hint hint-error"');
+    expect(html).toContain('role="status" aria-live="polite"');
+  });
+
+  it('shows an info notice in the normal text colour', () => {
+    expect(notice('info')).toContain('class="hint"');
+  });
+});

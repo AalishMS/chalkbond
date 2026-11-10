@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createEditorController } from '../state/controller';
-import { initialState } from '../state/editor-state';
 import { EMPTY_SCOPE } from '../state/selection-actions';
+import { freshState as initialState } from '../state/testing';
 import { Editor } from './Editor';
 import { OptionsBar } from './OptionsBar';
 import { StatusBar } from './StatusBar';

@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { initialState } from '../state/editor-state';
-import { reduce } from '../state/reducer';
+import { freshState as initialState, reduceTest as reduce } from '../state/testing';
 import { ToolRail } from './ToolRail';
 
 const render = (state = initialState()): string =>

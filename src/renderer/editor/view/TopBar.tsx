@@ -20,6 +20,7 @@ function HistoryButton(props: {
   label: string;
   icon: string;
   enabled: boolean;
+  onPress: () => void;
 }): React.JSX.Element {
   const tip = HISTORY_TIPS[props.id];
   return (
@@ -29,6 +30,7 @@ function HistoryButton(props: {
       data-testid={props.id}
       aria-label={props.label}
       aria-disabled={props.enabled ? undefined : true}
+      onClick={props.enabled ? props.onPress : undefined}
       {...tipProps(props.enabled ? tip : { ...tip, help: HISTORY_EMPTY_HELP[props.id] }, 'below')}
     >
       <Icon name={props.icon} size={20} />
@@ -50,8 +52,20 @@ export function TopBar({
       <div className="divider-v" role="separator" />
       <OptionsBar state={state} scope={scope} dispatch={dispatch} />
       <div className="history">
-        <HistoryButton id="undo" label="Undo (Ctrl+Z)" icon="undo" enabled={canUndo} />
-        <HistoryButton id="redo" label="Redo (Ctrl+Y)" icon="redo" enabled={canRedo} />
+        <HistoryButton
+          id="undo"
+          label="Undo (Ctrl+Z)"
+          icon="undo"
+          enabled={canUndo}
+          onPress={() => dispatch({ type: 'undo' })}
+        />
+        <HistoryButton
+          id="redo"
+          label="Redo (Ctrl+Y)"
+          icon="redo"
+          enabled={canRedo}
+          onPress={() => dispatch({ type: 'redo' })}
+        />
       </div>
     </header>
   );

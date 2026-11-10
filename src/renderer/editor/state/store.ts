@@ -1,5 +1,5 @@
-import { initialState, type EditorState } from './editor-state';
-import { reduce, type EditorAction } from './reducer';
+import type { EditorState } from './editor-state';
+import { reduce, type EditorAction, type ReducerContext } from './reducer';
 
 export interface Store {
   getState(): EditorState;
@@ -9,13 +9,13 @@ export interface Store {
 }
 
 /** Hand-written store (SPEC.md Decisions): state, dispatch, subscribe. */
-export function createStore(initial: EditorState = initialState()): Store {
+export function createStore(initial: EditorState, ctx: ReducerContext): Store {
   let state = initial;
   const listeners = new Set<() => void>();
   return {
     getState: () => state,
     dispatch(action) {
-      const next = reduce(state, action);
+      const next = reduce(state, action, ctx);
       if (next === state) return;
       state = next;
       for (const listener of [...listeners]) listener();

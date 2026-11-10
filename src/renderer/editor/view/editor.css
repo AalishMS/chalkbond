@@ -483,6 +483,26 @@ kbd {
   white-space: nowrap;
 }
 
+.hint:has(> .icon) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hint:has(> .icon) .icon {
+  flex: none;
+}
+
+.hint-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hint-error {
+  color: var(--warning);
+}
+
 .formula {
   flex: none;
   white-space: nowrap;

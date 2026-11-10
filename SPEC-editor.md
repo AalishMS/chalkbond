@@ -624,10 +624,11 @@ export type { EditorController, EditorOptions, EditorCommand, EditorEvent, HostH
 
 interface EditorOptions {
   doc?: Doc;                         // default emptyDoc(clock())
-  clock?: () => string;              // ISO timestamps for history; default system clock
+  clock: () => string;               // ISO timestamps for new docs and history; injected
   names?: NameIndex;                 // default: createNameIndex(compounds.json), built once
   shortcuts?: 'all' | 'canvas-only'; // 'canvas-only' when the host's menu owns K1's Ctrl shortcuts
   onCopy?: (sub: SubDoc, doc: Doc, selection: Selection) => void;  // clipboard-export hook
+  logError?: (error: unknown) => void; // X1 logging; default console.error
 }
 interface EditorController {
   getDoc(): Doc;
