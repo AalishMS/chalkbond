@@ -195,8 +195,13 @@ interface NameIndex {
   suggest(prefix: string, limit?: number): CompoundEntry[]   // default limit 10
   closest(query: string, limit?: number): CompoundEntry[]    // (C8) prefix matches, then near
                                                              // spellings (edit distance ≤
-                                                             // max(1, ⌊len/4⌋)); feeds the
-                                                             // 'not-found' suggestions
+                                                             // max(1, ⌊len/4⌋)) ordered by
+                                                             // distance, then display-name before
+                                                             // synonym matches, then omission
+                                                             // typos (query is a subsequence of
+                                                             // the key), then name; feeds the
+                                                             // 'not-found' suggestions (closest
+                                                             // first)
 }
 normaliseName(name: string): string              // (C8) the matching form, exported for tools
 // createNameIndex throws an Error for invalid data, two entries sharing a normalised name, or a

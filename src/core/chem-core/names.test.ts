@@ -198,6 +198,33 @@ describe('lookup / suggest / closest', () => {
     expect(names.closest('')).toEqual([]);
     expect(names.closest('qqqqqqqqqqqq')).toEqual([]);
   });
+
+  it('orders near spellings closest first ("ethanl" offers ethanol first)', () => {
+    expect(
+      names
+        .closest('ethanl')
+        .map((e) => e.name)
+        .slice(0, 3),
+    ).toEqual(['ethanol', 'ethane', 'acetaldehyde']);
+  });
+
+  it('at equal distance ranks a synonym-only hit after a display-name hit', () => {
+    const e = (name: string, synonyms: string[]) => ({
+      name,
+      synonyms,
+      smiles: 'C',
+      formula: 'CH4',
+      mw: 16.04,
+    });
+    const index = createNameIndex({
+      format: 'chalkbond-compounds',
+      version: 1,
+      source: 't',
+      // 'abcdx' is a synonym of the entry sorting first by name; 'abcdy' is a display name.
+      entries: [e('aaa', ['abcdx']), e('zzz', []), e('abcdy', [])],
+    });
+    expect(index.closest('abcde').map((x) => x.name)).toEqual(['abcdy', 'aaa']);
+  });
 });
 
 describe('structureFromText', () => {
@@ -264,5 +291,12 @@ describe('structureFromText', () => {
     const none = structureFromText('qqqqqqqqqqqq', names);
     expect(!none.ok && none.error.code).toBe('not-found');
     expect(!none.ok && none.error.suggestions).toEqual([]);
+  });
+
+  it('ethanl fails with ethanol as the first suggestion', () => {
+    const r = structureFromText('ethanl', names);
+    expect(!r.ok && r.error.code).toBe('not-found');
+    expect(!r.ok && r.error.suggestions?.[0]).toBe('ethanol');
+    expect(!r.ok && r.error.message).toContain('Did you mean ethanol?');
   });
 });

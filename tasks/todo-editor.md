@@ -61,9 +61,9 @@ query is a subsequence of the key) first, then display name. Record for each ent
 hit at the same distance.
 
 **Acceptance criteria:**
-- [ ] `SPEC-chem-core.md` updated before the code (same task, separate hunk)
-- [ ] "ethanl" offers ethanol, ethane, acetaldehyde in that order (matches screen 07)
-- [ ] chem-core coverage stays ≥ 90 % lines; library-fact tests untouched
+- [x] `SPEC-chem-core.md` updated before the code (same task, separate hunk)
+- [x] "ethanl" offers ethanol, ethane, acetaldehyde in that order (matches screen 07)
+- [x] chem-core coverage stays ≥ 90 % lines; library-fact tests untouched
 
 **Verification:** `npm test -- src/core/chem-core` then `npm run check`
 

@@ -25,7 +25,8 @@ export interface NameIndex {
   /** Entries with a name or synonym starting with `prefix` (normalised); display-name matches
    * first, then shorter names. */
   suggest(prefix: string, limit?: number): CompoundEntry[];
-  /** Best guesses for a query that matched nothing: prefix matches, then near spellings. */
+  /** Best guesses for a query that matched nothing: prefix matches, then near spellings, closest
+   * first (distance, display name before synonym, omission typos, then name). */
   closest(query: string, limit?: number): CompoundEntry[];
 }
 
@@ -58,6 +59,19 @@ export function normaliseName(name: string): string {
     .normalize('NFC')
     .toLowerCase()
     .replace(/[\s\-,()[\]'’]/g, '');
+}
+
+type Rank = readonly [number, number, number];
+
+function compareRank(a: Rank, b: Rank): number {
+  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
+
+/** True when `q` can be read off `key` by deleting characters (a pure omission typo). */
+function isSubsequence(q: string, key: string): boolean {
+  let i = 0;
+  for (let j = 0; j < key.length && i < q.length; j++) if (key[j] === q[i]) i++;
+  return i === q.length;
 }
 
 /** Validates the dictionary JSON (Zod) and indexes it. Throws on invalid or ambiguous data. */
@@ -108,14 +122,18 @@ export function createNameIndex(data: unknown): NameIndex {
     if (q === '' || limit <= 0) return [];
     const out = suggest(query, limit);
     const maxDistance = Math.max(1, Math.floor(q.length / 4));
-    const near = new Map<CompoundEntry, number>();
-    for (const [key, entry] of keys) {
+    // Best (distance, synonym-only, not-a-subsequence) over an entry's keys; lower is better.
+    const near = new Map<CompoundEntry, [number, number, number]>();
+    for (const [key, entry, isName] of keys) {
       if (Math.abs(key.length - q.length) > maxDistance) continue;
       const d = editDistance(q, key, maxDistance);
-      if (d <= maxDistance) near.set(entry, Math.min(d, near.get(entry) ?? Infinity));
+      if (d > maxDistance) continue;
+      const cand: [number, number, number] = [d, isName ? 0 : 1, isSubsequence(q, key) ? 0 : 1];
+      const best = near.get(entry);
+      if (!best || compareRank(cand, best) < 0) near.set(entry, cand);
     }
     const ranked = [...near]
-      .sort(([e1, d1], [e2, d2]) => d1 - d2 || (e1.name < e2.name ? -1 : 1))
+      .sort(([e1, r1], [e2, r2]) => compareRank(r1, r2) || (e1.name < e2.name ? -1 : 1))
       .map(([entry]) => entry);
     for (const entry of ranked) if (!out.includes(entry)) out.push(entry);
     return out.slice(0, limit);
