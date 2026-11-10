@@ -29,11 +29,13 @@ const byIdNumber = (p: string, q: string): number => Number(p.slice(1)) - Number
  * take a double bond if that stays within its *normal* (lowest allowed) valence: pyridine N
  * (2 bonds, normal 3) can, furan O and thiophene S (2, normal 2) can't, pyrrole N with an
  * explicit H or a third neighbour (3, normal 3) can't. Abbreviation or
- * unknown labels and pseudo-atoms never take part.
+ * unknown labels and pseudo-atoms never take part. Nor does an atom that already has a double
+ * or triple bond outside the 1.5 system (`hasPi`): its π bond is drawn, e.g. next to a partial
+ * Kekulé → circle toggle, or an exocyclic C=O.
  */
-export function piRole(atom: Atom, sigmaValence: number): PiRole {
+export function piRole(atom: Atom, sigmaValence: number, hasPi = false): PiRole {
   const none = { canPi: false, required: false };
-  if (atom.label !== undefined) return none;
+  if (atom.label !== undefined || hasPi) return none;
   const allowed = allowedValences(atom.element, atom.charge, atom.radical);
   if (!allowed) return none;
   const used = sigmaValence + (atom.explicitH ?? 0);
@@ -53,6 +55,7 @@ export function piRole(atom: Atom, sigmaValence: number): PiRole {
 export function assignKekule(doc: Doc, scope?: Iterable<AtomId>): KekuleResult {
   const inScope = scope ? new Set(scope) : null;
   const sigma = new Map<AtomId, number>();
+  const pi = new Set<AtomId>();
   const aromatic: BondId[] = [];
   for (const bond of Object.values(doc.bonds)) {
     const in1 = !inScope || inScope.has(bond.a1);
@@ -62,6 +65,7 @@ export function assignKekule(doc: Doc, scope?: Iterable<AtomId>): KekuleResult {
     const order = bond.order === 1.5 ? 1 : bond.order;
     sigma.set(bond.a1, (sigma.get(bond.a1) ?? 0) + order);
     sigma.set(bond.a2, (sigma.get(bond.a2) ?? 0) + order);
+    if (bond.order === 2 || bond.order === 3) pi.add(bond.a1).add(bond.a2);
     if (bond.order === 1.5 && in1 && in2) aromatic.push(bond.id);
   }
   aromatic.sort(byIdNumber);
@@ -69,7 +73,7 @@ export function assignKekule(doc: Doc, scope?: Iterable<AtomId>): KekuleResult {
   const orders = new Map<BondId, 1 | 2>();
   const failures: BondId[][] = [];
   for (const system of systems(doc, aromatic)) {
-    const solved = solveSystem(doc, system, sigma);
+    const solved = solveSystem(doc, system, sigma, pi);
     for (const id of system) orders.set(id, solved?.has(id) ? 2 : 1);
     if (!solved) failures.push(system);
   }
@@ -115,6 +119,7 @@ function solveSystem(
   doc: Doc,
   system: readonly BondId[],
   sigma: ReadonlyMap<AtomId, number>,
+  pi: ReadonlySet<AtomId>,
 ): Set<BondId> | null {
   const atomIds = new Set<AtomId>();
   for (const id of system) {
@@ -123,7 +128,7 @@ function solveSystem(
   }
   const atoms = [...atomIds].sort(byIdNumber);
   const index = new Map(atoms.map((a, i) => [a, i]));
-  const roles = atoms.map((a) => piRole(doc.atoms[a] as Atom, sigma.get(a) ?? 0));
+  const roles = atoms.map((a) => piRole(doc.atoms[a] as Atom, sigma.get(a) ?? 0, pi.has(a)));
 
   // Edges usable for a double bond: both ends can take one. adj[v] = [neighbour, bond index].
   const adj: [number, number][][] = atoms.map(() => []);
@@ -207,6 +212,7 @@ function solveSystem(
   const doubles = new Set<BondId>();
   for (const e of best as Int32Array) if (e !== -1) doubles.add(system[e] as BondId);
   // A delocalized system with no double bond at all is not one (e.g. 1.5 bonds between
-  // saturated atoms): report it rather than silently drawing single bonds.
-  return doubles.size > 0 ? doubles : null;
+  // saturated atoms): report it rather than silently drawing single bonds. Unless it touches a
+  // drawn π bond: then it is part of a conjugated system (a partly toggled ring).
+  return doubles.size > 0 || atoms.some((a) => pi.has(a)) ? doubles : null;
 }

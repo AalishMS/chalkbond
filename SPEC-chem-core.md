@@ -56,12 +56,14 @@ Found while building the adapter (C1, same version; also pinned by tests):
 |---|---|
 | A neutral 4-bonded N and a divalent Cl get free valence ≥ 0 (OCL tolerates hypervalence) | chem-core keeps its own valence table (see "Valence model"); OCL's free valence is used only for elements outside it |
 | The implicit-H count follows the atom's abnormal valence, monotonically | `explicitH` is passed to OCL by choosing the abnormal valence that yields it (only when it differs from OCL's default, so SMILES carries no needless brackets) |
+| Abnormal valence 2 on carbon also sets a carbene radical state, which a later valence (other than −1/0/4) keeps | The adapter restores the atom's radical after each valence it tries (Checkpoint G review: `explicitH: 3` on an isolated C gave CH4) |
+| Some fixed counts have no abnormal valence at all: a bare cation with fewer H than OCL's minimum (isolated N⁺, O⁺, S⁺ … with 0 H) | Perception takes every fixed count from `explicitH` itself (AtomInfo, formula, MW, exact mass agree); SMILES/Molfile export can only write what OCL holds (`[NH+]` for a bare N⁺) — exotic, accepted |
 | A SMILES containing `*` makes the whole molecule a query fragment: **no** implicit H anywhere (`*c1ccccc1` → C7) | Confirms `*` can't stand in for pseudo-atoms |
 | Pseudo-atom (atomic number 0) has no mass, no H; SMILES writes it `[?]` | chem-core writes pseudo-atoms as `*` itself |
 | Deuterium is `D` in OCL formulas; isotopes change the weights | Formula counts `D`/`T` separately, like OCL |
 | Unreadable Molfile text and empty SMILES give an empty molecule, not an error | chem-core checks the atom count itself (`invalid-molfile`, `empty`) |
 | Coordinate invention needs parities perceived from the old layout first | The adapter does it; stereo survives Clean Structure |
-| Helper perception moves plain H atoms (no isotope/charge/radical/label) and their bonds to the end of OCL's lists; `setHydrogenProtection` doesn't stop it | The adapter puts them last itself and maps caller ↔ OCL indexes, with a sanity check that throws if OCL reorders anything else |
+| Helper perception moves plain H atoms with exactly one bond to a non-H atom (no isotope/charge/label) and their bonds to the end of OCL's lists, by swapping; an H with two bonds or bonded to H stays; `setHydrogenProtection` doesn't stop it | The adapter doesn't predict this: it tags each atom (x = caller index) before perception, reads the final order back, maps bonds by endpoints, then sets the real coordinates (Checkpoint G review: H–C–H–O threw) |
 | `inventCoordinates()` deletes explicit H atoms unless `keepHydrogens: true` | The adapter keeps them (drawn H atoms are doc atoms) |
 | OCL's average atomic weights are an older IUPAC set (S 32.066, Cl 35.453, Se 78.96, Zn 65.39) and iodine is 126.9 | chem-core's own weight table for MW (see "Name lookup") |
 | `[HH]` parses as a single H atom with no H (formula "H") | Dictionary `hydrogen` uses curated SMILES `[H][H]` |
@@ -254,13 +256,16 @@ orders + `explicitH`; its *normal* valence is its lowest allowed valence (valenc
 below). It **can** take a double bond iff σ + 1 ≤ normal — pyridine N (2 → 3) can;
 furan O, thiophene S (2 → 2), pyrrole N with an explicit H or a third neighbour (3 → 3) can't.
 It **must** iff it can and is isoelectronic with carbon (neutral C, N⁺, B⁻). Labelled
-(abbreviation/unknown) atoms and pseudo-atoms never take part. Among assignments covering every
+(abbreviation/unknown) atoms and pseudo-atoms never take part, nor do atoms that already have a
+drawn double or triple bond outside the system (a partly toggled ring, an exocyclic C=O). Among assignments covering every
 required atom, the one matching the most atoms wins (so pyrazine's N are both matched, never a
 dihydro form); ties go to the first in id order, so the result is deterministic. A search
 budget (200 000 steps per system) bounds pathological inputs. Note: OCL perceives azulene's
 fusion bond as non-aromatic (peripheral 10π), so `aromatize` leaves it single. A system whose best
 assignment has no double bond at all (1.5 bonds between saturated atoms or pseudo-atoms) is
-`cannot-kekulize` too, rather than silently becoming single bonds.
+`cannot-kekulize` too, rather than silently becoming single bonds — unless it touches a drawn
+π bond (Checkpoint G review: after `aromatize` on the two ends of one single bond of a Kekulé
+benzene, that 1.5 bond resolves to single and the formula stays C6H6).
 
 ## Valence model
 
@@ -351,6 +356,11 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
   only if an unsolvable system has a bond in that scope, and then changes nothing.
   `aromatize` leaves 1.5 bonds OCL calls non-aromatic (carboxylate, azulene's fusion bond) as
   they are. Unknown atom ids → `DocError('unknown-atom')`.
+- `aromatize` checks its own result (Checkpoint G review): each connected system of bonds to
+  convert changes only if the fragment reads back with the same formula and no Kekulé failure
+  on that system. OCL calls some exotic rings aromatic (charged or boron 3-rings drawn with
+  unusual H) whose 1.5 form chem-core would read with π bonds elsewhere; those stay as drawn,
+  so the toggle never changes chemistry.
 
 ## Testing
 
@@ -383,13 +393,20 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
   IDCode.
 - **Properties (fast-check, reusing doc-model's command generator):** `perceive` never throws
   on any doc reachable by doc-model ops; `createPerceiver()(doc)` deep-equals `perceive(doc)`
-  across an edit sequence (cache never stale).
+  across an edit sequence (cache never stale). That generator draws no H atoms, fixed H
+  counts, B/P or charges, so a second, chem-core generator does (random graphs of ≤ 9 atoms
+  over H, C, N, O, S, Cl, B, P, R with charges, `explicitH` and orders 1/1.5/2/3): perceive
+  never throws, the cache agrees, formula H = drawn H atoms + Σ AtomInfo H, a fixed count is
+  what AtomInfo shows, `toSmiles` never throws, `aromatize` keeps formulas, `kekulize` keeps
+  them or refuses.
 - **Library facts:** each row of "Verified library facts" has a test.
 - **Perf:** `perceive` on a 500-atom single-fragment doc < 16 ms median (one frame);
   `createPerceiver` after a one-atom label change in a 10-fragment doc < 3 ms median;
   `parseSmiles` of a 50-heavy-atom molecule < 20 ms median. (C9) The timing assertions are
   skipped under `--coverage` (instrumentation slows code several-fold); `npm test` enforces
-  them.
+  them. Perf-budget files (`**/perf.test.ts`) are a separate Vitest project that runs after all
+  other files, one file at a time: run alongside the parallel workers, the 500-atom median read
+  17–18 ms instead of ~6 ms and failed intermittently (Checkpoint G review).
 
 ## Success Criteria
 

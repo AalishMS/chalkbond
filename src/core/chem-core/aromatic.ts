@@ -27,19 +27,57 @@ function scope(doc: Doc, atoms?: Iterable<AtomId>) {
   return { frags, inScope };
 }
 
-/** Bonds OpenChemLib perceives as aromatic become order 1.5 (circle-in-ring). Idempotent. */
+/**
+ * Bonds OpenChemLib perceives as aromatic become order 1.5 (circle-in-ring). Idempotent. Each
+ * connected system of such bonds changes only if chem-core reads it back with the same formula
+ * and without a Kekulé failure: exotic rings (e.g. charged or boron 3-rings) whose drawn π bonds
+ * chem-core would place differently stay as drawn, so a toggle never changes the chemistry.
+ */
 export function aromatize(doc: Doc, atoms?: Iterable<AtomId>): Doc {
   const { frags, inScope } = scope(doc, atoms);
-  const toChange: BondId[] = [];
+  let out = doc;
   for (const frag of frags) {
-    const { bondInfo } = perceiveFragment(doc, frag);
-    for (const [id, info] of bondInfo) {
+    const before = perceiveFragment(doc, frag);
+    const toChange: BondId[] = [];
+    for (const [id, info] of before.bondInfo) {
       const bond = doc.bonds[id] as Bond;
       if (info.aromatic && bond.order !== 1.5 && inScope(bond)) toChange.push(id);
     }
+    for (const system of bondSystems(doc, toChange)) {
+      let trial = out;
+      for (const id of system) trial = updateBond(trial, id, { order: 1.5 });
+      const after = perceiveFragment(trial, frag);
+      const failed = after.warnings.some(
+        (w) => w.code === 'cannot-kekulize' && w.bonds.some((id) => system.includes(id)),
+      );
+      if (!failed && after.formula.text === before.formula.text) out = trial;
+    }
   }
-  let out = doc;
-  for (const id of toChange) out = updateBond(out, id, { order: 1.5 });
+  return out;
+}
+
+/** Connected components of `bonds` (sharing an atom), in first-bond order. */
+function bondSystems(doc: Doc, bonds: readonly BondId[]): BondId[][] {
+  const rest = new Set(bonds);
+  const out: BondId[][] = [];
+  for (const start of bonds) {
+    if (!rest.has(start)) continue;
+    rest.delete(start);
+    const system = [start];
+    const atoms = new Set<AtomId>();
+    for (let i = 0; i < system.length; i++) {
+      const bond = doc.bonds[system[i] as BondId] as Bond;
+      atoms.add(bond.a1).add(bond.a2);
+      for (const id of rest) {
+        const other = doc.bonds[id] as Bond;
+        if (atoms.has(other.a1) || atoms.has(other.a2)) {
+          rest.delete(id);
+          system.push(id);
+        }
+      }
+    }
+    out.push(system);
+  }
   return out;
 }
 
