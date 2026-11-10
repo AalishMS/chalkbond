@@ -6,7 +6,7 @@
 // byte-identical to the same-key part of the full render.
 //
 // Paint order: beneath objects, ring circles, bonds, atoms, above objects. Later tasks plug in
-// here: satellites join an atom's part (S8); `drawObject` gains the real object rules (S9, S10).
+// here: satellites join an atom's part; `drawObject` gains the real object rules (S9, S10).
 import { perceive } from '../chem-core';
 import {
   paintLayers,
@@ -21,9 +21,10 @@ import {
 import { bondClipBox, buildAtomLabel, isLabelled, type AtomLabel } from './atom-label';
 import { layoutBond } from './bonds';
 import { circledRings, ringCircle } from './circles';
-import { unionAll } from './geom';
+import { rectUnion, unionAll } from './geom';
 import { exhaustive, sortedIds } from './order';
 import { ringCentroid, ringsByBond } from './rings';
+import { layoutSatellites } from './satellites';
 import { bluToPt, resolveStyle } from './style';
 import type { UnmeasuredGlyphNotice } from './text-measure';
 import type { ItemKey, RenderNotice, RenderOptions, RenderPart, Scene } from './types';
@@ -223,7 +224,31 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
       continue;
     }
     const label = labels.get(id);
-    if (label) items.push({ key: `atom:${id}`, svg: label.svg, ink: label.textBox });
+    const atom = doc.atoms[id];
+    const sats = atom
+      ? layoutSatellites(
+          {
+            atom,
+            position: pos.get(id) as Point,
+            directions: vectorsFrom(id),
+            labelBox: label ? label.textBox : null,
+          },
+          style,
+        )
+      : null;
+    if (sats) glyphNotices.push(...sats.notices);
+    if (label || sats) {
+      items.push({
+        key: `atom:${id}`,
+        svg: [label?.svg, sats?.svg]
+          .filter((x): x is string => x !== undefined && x !== '')
+          .join('\n'),
+        ink:
+          label && sats
+            ? rectUnion(label.textBox, sats.ink)
+            : ((label?.textBox ?? sats?.ink) as Rect),
+      });
+    }
   }
 
   objectItems(layers.above);

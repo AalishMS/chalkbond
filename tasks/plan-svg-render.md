@@ -83,11 +83,11 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 - [x] S7: `render`, `toSvg`, `renderSvg`, subsets, extents and bounds for atoms and bonds; `ink-scan` helper
 
 ### Checkpoint I — molecules render
-- [ ] `npm run check` green; benzene, ethanol and acetic acid render to well-formed SVG whose bounds match `ink-scan`; a subset part equals the full-render part
-- [ ] Commit + push
+- [x] `npm run check` green; benzene, ethanol and acetic acid render to well-formed SVG whose bounds match `ink-scan`; a subset part equals the full-render part
+- [x] Commit + push
 
 ### Phase 3: satellites and the other item types
-- [ ] S8: satellites (lone pairs, radicals, charge on a vertex, partial charge, atom number)
+- [x] S8: satellites (lone pairs, radicals, charge on a vertex, partial charge, atom number)
 - [ ] S9: arrows (5 kinds), plus signs, shapes, brackets
 - [ ] S10: text, caption, callout, curved arrows
 

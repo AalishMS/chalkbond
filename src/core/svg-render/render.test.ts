@@ -110,6 +110,44 @@ const scenes: [string, Molecule][] = [
       [],
     ),
   ],
+  [
+    'carbanion',
+    molecule(
+      [
+        { x: 0, y: 0, charge: -1, lonePairs: 1 },
+        { x: 1, y: 0.4 },
+        { x: -1, y: 0.4 },
+      ],
+      [
+        [0, 1],
+        [0, 2],
+      ],
+    ),
+  ],
+  [
+    'radical',
+    molecule(
+      [
+        { x: 0, y: 0, radical: 1 },
+        { x: 1, y: 0.4 },
+        { x: -1, y: 0.4, element: 'O', radical: 2, number: '3' },
+      ],
+      [
+        [0, 1],
+        [0, 2],
+      ],
+    ),
+  ],
+  [
+    'HCl delta',
+    molecule(
+      [
+        { x: 0, y: 0, element: 'H', partialCharge: 'δ+' },
+        { x: 1, y: 0, element: 'Cl', partialCharge: 'δ-', lonePairs: 3 },
+      ],
+      [[0, 1]],
+    ),
+  ],
 ];
 
 describe('render: empty', () => {
@@ -322,6 +360,60 @@ describe('render: extents and bounds', () => {
     // "H2O": the O sits at the origin; the box extends left over H2.
     expect(e.x).toBeLessThan(0);
     expect(e.x + e.w).toBeGreaterThan(0);
+  });
+});
+
+describe('render: satellites', () => {
+  const carbanion = scenes.find(([n]) => n === 'carbanion')![1];
+  const radical = scenes.find(([n]) => n === 'radical')![1];
+  const carbKey: ItemKey = `atom:${carbanion.atoms[0]}`;
+
+  it('a vertex with satellites gets an atom part; one without still has none', () => {
+    const scene = render(carbanion.doc);
+    expect(keys(scene)).toContain(carbKey);
+    expect(keys(scene)).not.toContain(`atom:${carbanion.atoms[1]}`);
+  });
+
+  it('the carbanion deals the sign into the largest gap (above) and the pair into the next (between the bonds)', () => {
+    const svg = part(render(carbanion.doc), carbKey).svg;
+    expect(textOf(svg)).toBe('−');
+    const ys = [...svg.matchAll(/<circle cx="[^"]+" cy="([^"]+)"/g)].map((m) => Number(m[1]));
+    expect(ys).toHaveLength(2);
+    // Bonds go down-left and down-right; the pair sits below the atom, the sign above it.
+    for (const y of ys) expect(y).toBeGreaterThan(0);
+    const signY = Number(/<text x="[^"]+" y="([^"]+)"/.exec(svg)![1]);
+    expect(signY).toBeLessThan(0);
+  });
+
+  it('a labelled atom keeps the label and adds its satellites after it', () => {
+    const svg = part(render(radical.doc), `atom:${radical.atoms[2]}`).svg;
+    expect(textOf(svg)).toMatch(/^OH?3$/);
+    expect((svg.match(/<circle/g) ?? []).length).toBe(2);
+  });
+
+  it('extents of an atom part include its satellites', () => {
+    const scene = render(carbanion.doc);
+    const e = scene.extents[carbKey]!;
+    for (const m of part(scene, carbKey).svg.matchAll(/cy="([^"]+)"/g)) {
+      expect(e.y).toBeLessThan(Number(m[1]));
+    }
+  });
+
+  it('satellites see bonds to atoms outside a subset', () => {
+    const full = render(carbanion.doc);
+    const sub = render(carbanion.doc, { only: only([carbanion.atoms[0]!]) });
+    expect(part(sub, carbKey).svg).toBe(part(full, carbKey).svg);
+  });
+
+  it('satellite glyphs outside the table are reported as unmeasured', () => {
+    const m = molecule(
+      [
+        { x: 0, y: 0, number: '中' },
+        { x: 1, y: 0 },
+      ],
+      [[0, 1]],
+    );
+    expect(render(m.doc).notices).toEqual([{ code: 'unmeasured-glyph', chars: '中' }]);
   });
 });
 

@@ -217,8 +217,8 @@ doc.
 **Scope:** M
 
 ### ✅ Checkpoint I — molecules render
-- [ ] `npm run check` green
-- [ ] Commit + push
+- [x] `npm run check` green
+- [x] Commit + push
 
 ---
 
@@ -236,8 +236,8 @@ and `δδ-` rendering; charge `2+` on a vertex; satellite past the `H2` of `NH2`
 satellites; determinism of order.
 
 **Acceptance criteria:**
-- [ ] Lone pairs, radicals, vertex charge, partial charge and atom numbers appear in the largest gaps in the specified order (SC7)
-- [ ] Bounds still equal `ink-scan` on a carbanion, radical and `HCl δ+/δ−` scene (SC5)
+- [x] Lone pairs, radicals, vertex charge, partial charge and atom numbers appear in the largest gaps in the specified order (SC7)
+- [x] Bounds still equal `ink-scan` on a carbanion, radical and `HCl δ+/δ−` scene (SC5)
 
 **Verification:** `npm test -- src/core/svg-render`
 
