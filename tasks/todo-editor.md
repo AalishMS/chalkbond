@@ -316,9 +316,9 @@ trip BLU → screen → BLU. patch: empty → all inserts; changed svg → one r
 only; removed key → remove. derive: same doc object → same scene object; changed doc → new.
 
 **Acceptance criteria:**
-- [ ] V1–V6 and R1/R13 behaviour covered by named tests
-- [ ] `planPatch` applied to the old list yields the new list for random inputs (fast-check)
-- [ ] 100 % of the three modules' lines covered
+- [x] V1–V6 and R1/R13 behaviour covered by named tests
+- [x] `planPatch` applied to the old list yields the new list for random inputs (fast-check)
+- [x] 100 % of the three modules' lines covered
 
 **Verification:** `npm test -- src/renderer/editor/model`
 
