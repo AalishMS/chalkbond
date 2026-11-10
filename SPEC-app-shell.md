@@ -577,8 +577,9 @@ const controller = createEditorController({
 - **TH2** With `testHooks=1` in `location.search`, `App.tsx` defines `window.__chalkbondTest = {
   load(doc): void /* as an Untitled document */, getDoc(): Doc, getSelection(): { atoms: string[];
   bonds: string[]; objects: string[] }, events(): EditorEvent[], clearEvents(): void, notices():
-  { kind: string; text: string }[] }` (events and notices collected since start or the last clear).
-  Without the query nothing is defined.
+  { kind: string; text: string }[], commands(): string[] }` (editor events, host notices and the
+  `main:event` commands received, collected since start or the last clear). Without the query
+  nothing is defined.
 - **TH3** `e2e/launch.ts` passes both flags (a fresh `mkdtemp(os.tmpdir())` user-data folder per
   launch unless the test passes one, e.g. to relaunch with the same data), keeping any main-process
   preload it already loads (such as `e2e/no-os-mouse.mjs`); `e2e/harness.ts`
@@ -589,6 +590,11 @@ const controller = createEditorController({
   `showSaveDialog`, `showMessageBox`, `Menu.prototype.popup` and `shell.openPath` through their
   module objects at call time (never destructured), so a test stubs them with `app.evaluate`;
   application menu items are clicked with `Menu.getApplicationMenu().getMenuItemById(id).click()`.
+  Boxes shown during startup (RC3) are scripted before the app's code runs by
+  `e2e/stub-dialogs.mjs`, a main-process preload (`-r`, like `e2e/no-os-mouse.mjs`) that
+  `launchApp({ dialogs })` adds; it reads the answers from the `CHALKBOND_TEST_DIALOGS`
+  environment variable (JSON) and records the options each box received. Production never loads
+  it.
 - **TH5** Native menus and boxes cannot be captured by Playwright: their content is asserted as
   data (menu model unit tests; the stubbed `showMessageBox` / `popup` receives the options and
   template) and looked at by a human (checklist).
@@ -745,7 +751,7 @@ Human-only: native chrome, other programs, a clean machine.
     (`e2e/app-window.spec.ts`).
 13. Icons: `build/icon.ico` and `build/chalk-file.ico` hold every IC3 size as PNG entries,
     largest 256 (tooling test); `npm run dist:win` succeeds and the packaged app launches
-    (`e2e/win/app-packaged.spec.ts`).
+    (`e2e/packaged/app.packaged.ts`, Playwright project `packaged`, run by `npm run test:packaged` after `npm run dist:win`).
 14. The shots of every UI task match their mock-up by eye at the phase checkpoint; the Windows
     checks above are ticked on Windows 10 and 11 (human).
 

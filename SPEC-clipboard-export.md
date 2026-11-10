@@ -313,7 +313,7 @@ check, size limits). Request limits are enforced by the schema.
   and `reduced` is true. Example: 800 × 200 pt at 300 dpi = 3334 × 834 px.
 - **R4** PNG pixels are not asserted byte-identical across machines. Asserted instead: dimensions
   exactly as R3; `pHYs` and `tEXt` byte-exact; the four corner pixels alpha 0 (or `#ffffff`
-  opaque with White background); for the benzene golden input the box of pixels with alpha > 0
+  opaque with White background); for the toluene golden input the box of pixels with alpha > 0
   lies within 2 px of every edge; a Slides bond is ≥ 6 opaque pixels across at 300 dpi.
 
 ### Embedding
@@ -549,7 +549,7 @@ Each names the test or check that proves it.
    centre; the text "ethanol" inserts ethanol; an image-only clipboard shows N-P1; a newer-version
    drawing shows N-P3 (`e2e/win/clipboard-paste.spec.ts`).
 6. A paste pressed during a copy reads the new clipboard (flow test of CB-Q).
-7. Export PNG at Print of the benzene golden input: size per R3, `pHYs` 11811, R4 holds; opening it
+7. Export PNG at Print of the toluene golden input: size per R3, `pHYs` 11811, R4 holds; opening it
    through File > Open gives a document whose `serialize` equals the original's
    (`e2e/export-png.spec.ts`).
 8. Export SVG bytes equal `exportSvg(doc, null).svg`; opening it gives an equal document
