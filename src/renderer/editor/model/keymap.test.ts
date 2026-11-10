@@ -29,3 +29,23 @@ describe('K1 undo and redo keys', () => {
     expect(globalCommand(key('z'), 'canvas-only')).toBeNull();
   });
 });
+
+describe('K1 zoom keys', () => {
+  it('Ctrl+= and Ctrl++ zoom in; Ctrl+- zooms out', () => {
+    expect(globalCommand(key('='), 'all')).toBe('zoom-in');
+    expect(globalCommand(key('+', { shiftKey: true }), 'all')).toBe('zoom-in');
+    expect(globalCommand(key('-'), 'all')).toBe('zoom-out');
+    expect(globalCommand(key('_', { shiftKey: true }), 'all')).toBe('zoom-out');
+  });
+
+  it('Ctrl+0 fits and Ctrl+1 resets', () => {
+    expect(globalCommand(key('0'), 'all')).toBe('zoom-fit');
+    expect(globalCommand(key('1'), 'all')).toBe('zoom-reset');
+  });
+
+  it('are left to the host in canvas-only mode and need Ctrl alone', () => {
+    expect(globalCommand(key('='), 'canvas-only')).toBeNull();
+    expect(globalCommand(key('0', { ctrlKey: false }), 'all')).toBeNull();
+    expect(globalCommand(key('0', { altKey: true }), 'all')).toBeNull();
+  });
+});

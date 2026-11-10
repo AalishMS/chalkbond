@@ -76,7 +76,9 @@ describe('controls carry their tooltip content', () => {
   });
 
   it('status zoom controls open above', () => {
-    const html = renderToStaticMarkup(<StatusBar tool="bond" preset="slides" />);
+    const html = renderToStaticMarkup(
+      <StatusBar tool="bond" preset="slides" zoom={1.5} dispatch={noop} />,
+    );
     expect(html).toContain('data-tip="Zoom to fit" data-tip-key="Ctrl+0"');
     expect(html.match(/data-tip-side="above"/g)).toHaveLength(4);
   });

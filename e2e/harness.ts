@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { ElectronApplication, Page } from '@playwright/test';
+import { parse, type Doc } from '../src/core/doc-model';
 import { launchApp } from './launch';
 
 const ROOT = resolve(__dirname, '..');
@@ -50,4 +51,42 @@ export async function shot(page: Page, taskId: string, name: string): Promise<st
   mkdirSync(dirname(file), { recursive: true });
   await page.screenshot({ path: file });
   return file;
+}
+
+/** The frozen golden inputs of svg-render: real `.chalk` documents, e.g. `ethanol`. */
+export function goldenDoc(name: string): Doc {
+  const text = readFileSync(
+    resolve(ROOT, 'src/core/svg-render/__golden__/inputs', `${name}.chalk`),
+    'utf8',
+  );
+  const parsed = parse(text);
+  if (!parsed.ok) throw new Error(`cannot parse golden input ${name}`);
+  return parsed.value;
+}
+
+/**
+ * Puts a document into the running editor, as the host's `load` does. The spec allows no
+ * test-only global, so the controller is found through React's fiber: the `Editor` element is
+ * the parent of the `.editor` root and holds `controller` in its props.
+ */
+export async function loadDocument(page: Page, doc: Doc): Promise<void> {
+  await page.evaluate((payload) => {
+    interface Fiber {
+      return: Fiber | null;
+      memoizedProps: unknown;
+    }
+    const root = document.querySelector('.editor');
+    if (!root) throw new Error('no editor root');
+    const key = Object.keys(root).find((k) => k.startsWith('__reactFiber$'));
+    if (key === undefined) throw new Error('no React fiber on the editor root');
+    let fiber: Fiber | null = (root as unknown as Record<string, Fiber>)[key] ?? null;
+    for (; fiber; fiber = fiber.return) {
+      const props = fiber.memoizedProps as { controller?: { load?: (d: unknown) => void } } | null;
+      if (props?.controller && typeof props.controller.load === 'function') {
+        props.controller.load(payload);
+        return;
+      }
+    }
+    throw new Error('no controller in the React tree');
+  }, doc);
 }

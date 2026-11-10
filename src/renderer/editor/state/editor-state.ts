@@ -7,7 +7,8 @@ import {
   type ObjectId,
   type Selection,
 } from '@core/doc-model';
-import type { Viewport } from '../model/viewport';
+import { resolveStyle } from '@core/svg-render';
+import { initialViewport, type Viewport } from '../model/viewport';
 
 /** Tool ids in rail order (SPEC-editor.md "Tool rail"). */
 export const TOOL_IDS = [
@@ -114,8 +115,8 @@ export interface EditorState {
 }
 
 /**
- * Decision 5: Bond (single) is the active tool at launch. The viewport is a placeholder until
- * the canvas reports its size and the controller applies V2.
+ * Decision 5: Bond (single) is the active tool at launch. The viewport has the default zoom and
+ * size 0 x 0 until the canvas reports its size; the reducer then applies V2.
  */
 export function initialState(doc: Doc, clock: () => string): EditorState {
   return {
@@ -127,7 +128,7 @@ export function initialState(doc: Doc, clock: () => string): EditorState {
     hover: null,
     gesture: null,
     preview: null,
-    viewport: { zoom: 1, pan: { x: 0, y: 0 }, size: { w: 0, h: 0 } },
+    viewport: initialViewport(null, { w: 0, h: 0 }, resolveStyle(doc.style).bondLength),
     editing: null,
     nameField: { text: '', open: false, highlighted: 0, error: null },
     notice: null,

@@ -4,8 +4,12 @@ import { HINTS } from '../state/catalog';
 import { TOOL_IDS, type ToolId } from '../state/editor-state';
 import { StatusBar } from './StatusBar';
 
+const noop = (): undefined => undefined;
+
 const render = (tool: ToolId, preset: 'slides' | 'journal' = 'slides', formula = ''): string =>
-  renderToStaticMarkup(<StatusBar tool={tool} preset={preset} formula={formula} />);
+  renderToStaticMarkup(
+    <StatusBar tool={tool} preset={preset} formula={formula} zoom={1.5} dispatch={noop} />,
+  );
 
 const EXPECTED: Record<ToolId, string> = {
   select: 'Click a molecule to select it. Drag to move. Drag on empty space to select an area.',
@@ -67,6 +71,8 @@ describe('StatusBar notice', () => {
       <StatusBar
         tool="bond"
         preset="slides"
+        zoom={1.5}
+        dispatch={noop}
         notice={{ id: 1, kind, text: 'That edit is not possible.' }}
       />,
     );
@@ -82,5 +88,24 @@ describe('StatusBar notice', () => {
 
   it('shows an info notice in the normal text colour', () => {
     expect(notice('info')).toContain('class="hint"');
+  });
+});
+
+describe('StatusBar zoom cluster', () => {
+  const zoomed = (zoom: number, dispatch = noop): string =>
+    renderToStaticMarkup(<StatusBar tool="bond" preset="slides" zoom={zoom} dispatch={dispatch} />);
+
+  it('reads the zoom as a whole percent', () => {
+    expect(zoomed(1.5)).toContain('>150%</button>');
+    expect(zoomed(1.25)).toContain('>125%</button>');
+    expect(zoomed(4.166666)).toContain('>417%</button>');
+  });
+
+  it('greys zoom out at 25 % and zoom in at 800 %, nothing else', () => {
+    expect(zoomed(0.25)).toContain('aria-label="Zoom out (Ctrl+−)" aria-disabled="true"');
+    expect(zoomed(0.25)).not.toContain('aria-label="Zoom in (Ctrl+=)" aria-disabled');
+    expect(zoomed(8)).toContain('aria-label="Zoom in (Ctrl+=)" aria-disabled="true"');
+    expect(zoomed(8)).not.toContain('aria-label="Zoom out (Ctrl+−)" aria-disabled');
+    expect(zoomed(1.5)).not.toContain('aria-disabled');
   });
 });

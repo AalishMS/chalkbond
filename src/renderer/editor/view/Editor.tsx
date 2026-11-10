@@ -64,8 +64,14 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
         dispatch={dispatch}
       />
       <ToolRail state={state} dispatch={dispatch} />
-      <Canvas>{isEmptyDoc(doc) && <EmptyState />}</Canvas>
-      <StatusBar tool={state.tool} preset={doc.style.preset} notice={state.notice} />
+      <Canvas controller={controller}>{isEmptyDoc(doc) && <EmptyState />}</Canvas>
+      <StatusBar
+        tool={state.tool}
+        preset={doc.style.preset}
+        zoom={state.viewport.zoom}
+        dispatch={dispatch}
+        notice={state.notice}
+      />
       <TooltipHost />
     </div>
   );

@@ -270,6 +270,26 @@
   grid-area: canvas;
   overflow: hidden;
   background: var(--canvas-bg);
+  user-select: none;
+}
+
+/* The content and overlay layers fill the canvas; the canvas element takes the pointer. */
+.canvas-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Space held, or a middle-drag in progress (V4). */
+.canvas[data-space] {
+  cursor: grab;
+}
+
+.canvas[data-pan] {
+  cursor: grabbing;
 }
 
 .statusbar {

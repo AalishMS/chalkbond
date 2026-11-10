@@ -294,7 +294,7 @@ rail button 600 ms shows a tooltip to its right with an 8 px gap.
 ### Checkpoint M — the window matches the mock-ups
 - [x] `npm run check` green; `e2e/editor-layout.spec.ts` green at 1280×800 and 960×640
 - [x] Shots of E6–E9 compared side by side with `out/mockups/01-empty.png`, `10-states.png`, `11-min-window.png`
-- [ ] Commit + push
+- [x] Commit + push
 
 ---
 
@@ -380,9 +380,9 @@ centre; Ctrl+= → "200%"; Ctrl+wheel up at a point keeps that point fixed (±1 
 at 25 %.
 
 **Acceptance criteria:**
-- [ ] Parts are mounted in paint order and patched (unit: patch ops; e2e after E13 shows parts)
-- [ ] Every V1/V4 input above works (e2e)
-- [ ] No React re-render of the parts layer on pan (the parts' `<g>` elements keep identity: e2e marks one with a property and checks it after panning)
+- [x] Parts are mounted in paint order and patched (unit: patch ops; e2e after E13 shows parts)
+- [x] Every V1/V4 input above works (e2e)
+- [x] No React re-render of the parts layer on pan (the parts' `<g>` elements keep identity: e2e marks one with a property and checks it after panning)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E12` → `E12/zoom-200.png` (scripted: Ctrl+=; readout 200 %), `E12/zoom-25.png` (scripted: Ctrl+− until disabled; zoom − greyed), `E12/pan-space.png` (scripted: hold Space and drag; cursor `grabbing` visible in the capture is not required)
 

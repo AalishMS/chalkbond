@@ -151,8 +151,11 @@ function sceneOf(doc: Doc, ctx: ReducerContext): { bounds: Rect | null; bond: nu
   return { bounds: scene.bounds, bond: scene.style.bondLength };
 }
 
+/** The same state object when the viewport did not change in value. */
 function withViewport(state: EditorState, viewport: Viewport): EditorState {
-  return viewport === state.viewport ? state : { ...state, viewport };
+  const v = state.viewport;
+  const same = viewport.zoom === v.zoom && viewport.pan.x === v.pan.x && viewport.pan.y === v.pan.y;
+  return same ? state : { ...state, viewport };
 }
 
 function viewportAction(

@@ -1,6 +1,8 @@
 import type { StylePreset } from '@core/doc-model';
+import { stepZoom, zoomPercent } from '../model/viewport';
 import { HINTS } from '../state/catalog';
 import type { Notice, ToolId } from '../state/editor-state';
+import type { EditorAction } from '../state/reducer';
 import { STATUS_TIPS, type TipContent } from '../state/tips';
 import { Icon } from './Icon';
 import { pressKeepsFocus } from './press';
@@ -14,6 +16,9 @@ interface StatusBarProps {
   preset: StylePreset;
   /** Formula and mass text; the slot is not rendered when empty. */
   formula?: string;
+  /** The viewport zoom (1 = 100 %), shown in the readout. */
+  zoom: number;
+  dispatch: (action: EditorAction) => void;
   /** Replaces the hint while set (X1 and the other notices). */
   notice?: Notice | null;
 }
@@ -23,6 +28,9 @@ function ZoomButton(props: {
   label: string;
   tip: TipContent;
   className?: string;
+  /** Greyed (`aria-disabled`) and inert; the tooltip still shows. */
+  disabled?: boolean;
+  onPress: () => void;
   children: React.ReactNode;
 }): React.JSX.Element {
   const extra = props.className === undefined ? '' : ` ${props.className}`;
@@ -32,6 +40,8 @@ function ZoomButton(props: {
       className={`btn btn-status${extra}`}
       data-testid={props.id}
       aria-label={props.label}
+      aria-disabled={props.disabled === true ? true : undefined}
+      onClick={props.disabled === true ? undefined : props.onPress}
       {...tipProps(props.tip, 'above')}
     >
       {props.children}
@@ -39,10 +49,12 @@ function ZoomButton(props: {
   );
 }
 
-/** Hint, formula, preset switch and zoom cluster. Buttons are no-ops until later tasks. */
+/** Hint, formula, preset switch and zoom cluster. The preset switch is a no-op until E30. */
 export function StatusBar({
   tool,
   preset,
+  zoom,
+  dispatch,
   formula = '',
   notice = null,
 }: StatusBarProps): React.JSX.Element {
@@ -87,7 +99,13 @@ export function StatusBar({
         </button>
       </div>
       <div className="zoom" onMouseDown={pressKeepsFocus}>
-        <ZoomButton id="zoom-out" label="Zoom out (Ctrl+−)" tip={STATUS_TIPS.zoomOut}>
+        <ZoomButton
+          id="zoom-out"
+          label="Zoom out (Ctrl+−)"
+          tip={STATUS_TIPS.zoomOut}
+          disabled={stepZoom(zoom, -1) === zoom}
+          onPress={() => dispatch({ type: 'zoom-step', dir: -1 })}
+        >
           <Icon name="zoom-out" size={16} />
         </ZoomButton>
         <ZoomButton
@@ -95,13 +113,25 @@ export function StatusBar({
           label="Reset zoom (Ctrl+1)"
           tip={STATUS_TIPS.zoomReset}
           className="btn-zoom"
+          onPress={() => dispatch({ type: 'zoom-reset' })}
         >
-          150%
+          {zoomPercent(zoom)}%
         </ZoomButton>
-        <ZoomButton id="zoom-in" label="Zoom in (Ctrl+=)" tip={STATUS_TIPS.zoomIn}>
+        <ZoomButton
+          id="zoom-in"
+          label="Zoom in (Ctrl+=)"
+          tip={STATUS_TIPS.zoomIn}
+          disabled={stepZoom(zoom, 1) === zoom}
+          onPress={() => dispatch({ type: 'zoom-step', dir: 1 })}
+        >
           <Icon name="zoom-in" size={16} />
         </ZoomButton>
-        <ZoomButton id="zoom-fit" label="Zoom to fit (Ctrl+0)" tip={STATUS_TIPS.zoomFit}>
+        <ZoomButton
+          id="zoom-fit"
+          label="Zoom to fit (Ctrl+0)"
+          tip={STATUS_TIPS.zoomFit}
+          onPress={() => dispatch({ type: 'zoom-fit' })}
+        >
           <Icon name="fit" size={16} />
         </ZoomButton>
       </div>

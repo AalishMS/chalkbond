@@ -15,7 +15,7 @@ import {
   type SubDoc,
 } from '@core/doc-model';
 import compounds from '../../../../resources/compounds/compounds.json';
-import { createDerive } from '../model/derive';
+import { createDerive, type Derive } from '../model/derive';
 import type { Point } from '../model/geometry';
 import { stepZoom } from '../model/viewport';
 import { initialState, type EditorState } from './editor-state';
@@ -84,6 +84,8 @@ export interface EditorController {
   subscribe(listener: (e: EditorEvent) => void): () => void;
   /** Which Ctrl shortcuts the editor handles itself. */
   readonly shortcuts: 'all' | 'canvas-only';
+  /** Perception and scene of the committed and the preview document, cached. */
+  readonly derive: Derive;
   /** The editor's own state, for the view and for tools. */
   readonly store: Store;
 }
@@ -119,8 +121,9 @@ const snapshot = (s: EditorState, dirty: boolean): Snapshot => ({
 
 export function createEditorController(options: EditorOptions): EditorController {
   const doc = options.doc ?? emptyDoc(options.clock());
+  const derive = createDerive();
   const ctx: ReducerContext = {
-    derive: createDerive(),
+    derive,
     names: options.names ?? builtInNames(),
     logError: options.logError ?? ((error) => console.error(error)),
   };
@@ -204,6 +207,7 @@ export function createEditorController(options: EditorOptions): EditorController
       };
     },
     shortcuts: options.shortcuts ?? 'all',
+    derive,
     store,
   };
 }

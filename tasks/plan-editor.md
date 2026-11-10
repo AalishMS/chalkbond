@@ -85,7 +85,7 @@ Everything else is sequential: each phase builds on the previous one.
 ### Phase 2: canvas and documents
 - [x] E10: Viewport, geometry, derive and patch models (pure)
 - [x] E11: Store, reducer core, controller and host seam
-- [ ] E12: Canvas mounting, pan and zoom
+- [x] E12: Canvas mounting, pan and zoom
 - [ ] E13: Name field: suggestions, insert, not found, reveal, formula
 
 ### Checkpoint N — documents appear on the canvas
