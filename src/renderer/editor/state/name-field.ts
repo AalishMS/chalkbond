@@ -1,7 +1,9 @@
 // The name field's reducer steps (SPEC-editor.md "Name field and reaction text", N1 and N2).
 import { structureFromText } from '@core/chem-core';
-import { current, insert, type Doc } from '@core/doc-model';
+import { current, insert, type Doc, type Point } from '@core/doc-model';
+import type { Scene } from '@core/svg-render';
 import { insertPosition } from '../model/placement';
+import { buildScheme, parseScheme, type SchemeItem, type SchemeToken } from '../model/scheme-text';
 import { frame, screenToBlu } from '../model/viewport';
 import { nameError, suggestionRows } from '../model/suggestions';
 import type { EditorState, NameField } from './editor-state';
@@ -55,44 +57,18 @@ export function nameEnter(
   return insertText(state, row === undefined ? field.text : row.entry.name, ctx, commit);
 }
 
-/**
- * N2: insert a structure from text (a name, SMILES, Molfile). Success: one "Insert <name>"
- * commit placed by P7, the inserted items selected, Select active, the view framed (V7), the
- * field cleared, "Inserted <name>" announced. Failure: nothing changes but the not-found state.
- */
-export function insertText(
+/** The commit and the settling of the state after any insert from the field (N2, N3). */
+function insertDone(
   state: EditorState,
-  text: string,
   ctx: ReducerContext,
   commit: (state: EditorState, action: Commit) => EditorState,
+  label: string,
+  recipe: (doc: Doc) => Doc,
+  announced: string,
 ): EditorState {
-  const result = structureFromText(text, ctx.names);
-  if (!result.ok) {
-    if (result.error.code === 'empty') return state;
-    return {
-      ...state,
-      nameField: { text, open: false, highlighted: 0, error: nameError(text, result.error) },
-    };
-  }
-  const { sub, entry } = result.value;
-  const doc: Doc = current(state.history);
-  const { scene } = ctx.derive.committed(doc);
-  const { size } = state.viewport;
-  const centre = screenToBlu(
-    state.viewport,
-    { x: size.w / 2, y: size.h / 2 },
-    scene.style.bondLength,
-  );
-  const at = insertPosition(doc, scene, sub, centre);
-  const name = entry?.name;
-  const done = commit(state, {
-    type: 'commit',
-    label: name === undefined ? 'Insert structure' : `Insert ${name}`,
-    recipe: (d) => insert(d, sub, at)[0],
-    selection: 'inserted',
-  });
+  const done = commit(state, { type: 'commit', label, recipe, selection: 'inserted' });
   if (done.history === state.history) return done;
-
+  const { size } = state.viewport;
   const after = ctx.derive.committed(current(done.history)).scene;
   const viewport =
     after.bounds === null || size.w === 0 || size.h === 0
@@ -104,7 +80,91 @@ export function insertText(
     tool: 'select',
     viewport,
     nameField: CLEAR_FIELD,
-    notice: { id, kind: 'info', text: `Inserted ${name ?? 'structure'}` },
+    notice: { id, kind: 'info', text: announced },
     noticeSeq: id,
   };
+}
+
+/** The point of the document under the canvas centre, BLU. */
+function canvasCentre(state: EditorState, scene: Scene): Point {
+  const { size } = state.viewport;
+  return screenToBlu(state.viewport, { x: size.w / 2, y: size.h / 2 }, scene.style.bondLength);
+}
+
+/**
+ * N3: insert a reaction. Every part goes through `structureFromText`; the first that fails stops
+ * everything and the not-found panel names it. Success: one "Insert reaction" commit.
+ */
+function insertScheme(
+  state: EditorState,
+  text: string,
+  items: readonly SchemeToken[],
+  ctx: ReducerContext,
+  commit: (state: EditorState, action: Commit) => EditorState,
+): EditorState {
+  const built: SchemeItem[] = [];
+  for (const item of items) {
+    if (item.kind === 'plus' || item.kind === 'arrow') {
+      built.push(item);
+      continue;
+    }
+    const result = structureFromText(item.name, ctx.names);
+    if (!result.ok) {
+      const span = { start: item.start, end: item.end };
+      return {
+        ...state,
+        nameField: {
+          text,
+          open: false,
+          highlighted: 0,
+          error: nameError(item.name, result.error, span),
+        },
+      };
+    }
+    if (item.coefficient !== null) built.push({ kind: 'coefficient', text: item.coefficient });
+    built.push({ kind: 'structure', sub: result.value.sub });
+  }
+  const doc: Doc = current(state.history);
+  const { scene } = ctx.derive.committed(doc);
+  const { recipe } = buildScheme(doc, scene, built, canvasCentre(state, scene));
+  return insertDone(state, ctx, commit, 'Insert reaction', recipe, 'Inserted reaction');
+}
+
+/**
+ * N2: insert a structure from text (a name, SMILES, Molfile); N3: with an arrow token, a whole
+ * reaction. Success: one "Insert <name>" commit placed by P7, the inserted items selected, Select
+ * active, the view framed (V7), the field cleared, "Inserted <name>" announced. Failure: nothing
+ * changes but the not-found state.
+ */
+export function insertText(
+  state: EditorState,
+  text: string,
+  ctx: ReducerContext,
+  commit: (state: EditorState, action: Commit) => EditorState,
+): EditorState {
+  const scheme = parseScheme(text);
+  if (scheme.kind === 'invalid') return state;
+  if (scheme.kind === 'scheme') return insertScheme(state, text, scheme.items, ctx, commit);
+
+  const result = structureFromText(text, ctx.names);
+  if (!result.ok) {
+    if (result.error.code === 'empty') return state;
+    return {
+      ...state,
+      nameField: { text, open: false, highlighted: 0, error: nameError(text, result.error) },
+    };
+  }
+  const { sub, entry } = result.value;
+  const doc: Doc = current(state.history);
+  const { scene } = ctx.derive.committed(doc);
+  const at = insertPosition(doc, scene, sub, canvasCentre(state, scene));
+  const name = entry?.name;
+  return insertDone(
+    state,
+    ctx,
+    commit,
+    name === undefined ? 'Insert structure' : `Insert ${name}`,
+    (d) => insert(d, sub, at)[0],
+    `Inserted ${name ?? 'structure'}`,
+  );
 }

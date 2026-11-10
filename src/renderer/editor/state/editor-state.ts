@@ -11,6 +11,7 @@ import {
 import { resolveStyle } from '@core/svg-render';
 import type { Point } from '../model/geometry';
 import type { Hit } from '../model/hit-test';
+import type { NameError } from '../model/suggestions';
 import type { TextEditState } from '../model/text-edit';
 import type { TextTarget } from '../model/text-ops';
 import { initialViewport, type Viewport } from '../model/viewport';
@@ -105,7 +106,7 @@ export interface NameField {
   text: string;
   open: boolean;
   highlighted: number;
-  error: { readonly message: string; readonly suggestions: readonly string[] } | null;
+  error: NameError | null;
 }
 
 export interface Notice {

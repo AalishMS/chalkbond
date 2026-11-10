@@ -1,5 +1,6 @@
 // The name field's pure models: when to suggest, the dropdown rows and the not-found panel
 // (SPEC-editor.md rules R9, R10, N1, N2).
+import { hasSchemeSyntax } from './scheme-text';
 import { normaliseName, type ChemError, type CompoundEntry, type NameIndex } from '@core/chem-core';
 
 /** Rows in the dropdown (N1). */
@@ -9,23 +10,9 @@ export const MAX_CHIPS = 3;
 /** Typed characters before suggestions appear (N1). */
 const MIN_CHARS = 2;
 
-const ARROWS = ['<=>', '⇌', '->', '→', '=>'];
-
-/** True when `pred` holds at an index outside brackets and parentheses. */
-function outside(text: string, pred: (rest: string) => boolean): boolean {
-  let depth = 0;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === '(' || c === '[') depth++;
-    else if (c === ')' || c === ']') depth = Math.max(0, depth - 1);
-    else if (depth === 0 && pred(text.slice(i))) return true;
-  }
-  return false;
-}
-
-/** R9: no `+` and no arrow token outside brackets and parentheses. */
+/** R9: no arrow token and no `+` that separates parts (outside brackets and parentheses). */
 export function isSingleName(text: string): boolean {
-  return !outside(text, (rest) => rest.startsWith('+') || ARROWS.some((a) => rest.startsWith(a)));
+  return !hasSchemeSyntax(text);
 }
 
 export interface SuggestionRow {
@@ -70,18 +57,46 @@ export function suggestionRows(names: NameIndex, text: string): SuggestionRow[] 
 export interface NameError {
   readonly message: string;
   readonly suggestions: readonly string[];
+  /** N3: where the failing part stands in the typed reaction text; absent for a single name. */
+  readonly span?: { readonly start: number; readonly end: number };
 }
 
-/** N2: the not-found panel for a failed insert of `text`. */
-export function nameError(text: string, error: ChemError): NameError {
+/** The text a "Did you mean" chip inserts: the failing part replaced, else the chip's name alone. */
+export const chipText = (text: string, error: NameError, name: string): string =>
+  error.span === undefined ? name : replaceSpan(text, error.span, name);
+
+/** `text` with the characters of `span` replaced by `name` (a chip replaces just that part). */
+export function replaceSpan(
+  text: string,
+  span: { readonly start: number; readonly end: number },
+  name: string,
+): string {
+  return text.slice(0, span.start) + name + text.slice(span.end);
+}
+
+/**
+ * N2: the not-found panel for a failed insert of `text`. For a part of a reaction (N3) `text` is
+ * the part's name and `span` where it stands in the typed text.
+ */
+export function nameError(
+  text: string,
+  error: ChemError,
+  span?: { readonly start: number; readonly end: number },
+): NameError {
+  const where = span === undefined ? {} : { span };
   if (error.code === 'not-found') {
     return {
       message: `No compound named “${text.trim()}”.`,
       suggestions: (error.suggestions ?? []).slice(0, MAX_CHIPS),
+      ...where,
     };
   }
   if (error.code === 'too-large') {
-    return { message: 'That structure is too big to draw (over 1000 atoms).', suggestions: [] };
+    return {
+      message: 'That structure is too big to draw (over 1000 atoms).',
+      suggestions: [],
+      ...where,
+    };
   }
-  return { message: error.message, suggestions: [] };
+  return { message: error.message, suggestions: [], ...where };
 }

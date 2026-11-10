@@ -1,6 +1,8 @@
 // SPEC.md SC1 / SC2 as actions on the editor state: a key press, a click, a hover with a key.
 import { formulaOf } from '@core/chem-core';
 import { current, type AtomId } from '@core/doc-model';
+import { insertText as insertEditText } from '../model/text-edit';
+import { itemBoxes } from '../model/move';
 import { describe, expect, it } from 'vitest';
 import type { CanvasEvent, MoveEvent } from '../model/canvas-event';
 import { formulaText } from '../model/formula';
@@ -86,5 +88,77 @@ describe('SC2 toluene in 3 actions', () => {
     actions.push('hover + 1');
     expect(actions).toHaveLength(3);
     expect(formulaOfDoc(c)).toBe('C7H8 · 92.14 g/mol');
+  });
+});
+
+describe('SC3 reaction with conditions in at most 15 actions', () => {
+  it('insert the text, Text tool, click above the arrow, H2SO4 + Enter, click below, Δ + Enter', () => {
+    const c = make();
+    const { store } = c;
+    const actions: string[] = [];
+    const typeText = (text: string): void => {
+      const s = store.getState();
+      if (s.editing?.kind !== 'text') throw new Error('no text editor');
+      store.dispatch({ type: 'edit-set', edit: insertEditText(s.editing.edit, text) });
+    };
+
+    store.dispatch({
+      type: 'insert-text',
+      text: 'ethanol + acetic acid -> ethyl acetate + water',
+    });
+    actions.push('insert the reaction');
+    store.dispatch({ type: 'select-tool', tool: 'text' });
+    actions.push('Text tool');
+
+    const arrowOf = () => {
+      const a = Object.values(c.getDoc().objects).find((o) => o.type === 'arrow');
+      if (a?.type !== 'arrow') throw new Error('no arrow');
+      return a;
+    };
+    const mid = (side: 1 | -1): Point => {
+      const a = arrowOf();
+      return bluToScreen(
+        store.getState().viewport,
+        { x: (a.from.x + a.to.x) / 2, y: a.from.y - side * 0.5 },
+        BL,
+      );
+    };
+    click(c, mid(1));
+    actions.push('click above the arrow');
+    typeText('H2SO4');
+    actions.push('type H2SO4');
+    store.dispatch({ type: 'edit-commit' });
+    actions.push('Enter');
+    click(c, mid(-1));
+    actions.push('click below the arrow');
+    store.dispatch({ type: 'edit-insert', text: 'Δ' });
+    actions.push('Ctrl+Shift+D');
+    store.dispatch({ type: 'edit-commit' });
+    actions.push('Enter');
+    expect(actions.length).toBeLessThanOrEqual(15);
+
+    const doc = c.getDoc();
+    const arrow = arrowOf();
+    expect(arrow.from.y).toBe(arrow.to.y);
+    const texts = Object.values(doc.objects).filter((o) => o.type === 'text');
+    expect(texts).toHaveLength(2);
+    const slots = texts.map((t) => (t.type === 'text' ? t.attachedTo?.slot : undefined)).sort();
+    expect(slots).toEqual(['above', 'below']);
+    // Conditions centred on the arrow's midpoint (±0.01 BLU).
+    for (const t of texts) {
+      if (t.type !== 'text') continue;
+      const { scene } = c.derive.committed(doc);
+      const ink = scene.extents[`obj:${t.id}`];
+      if (ink === undefined) throw new Error('no ink');
+      expect((ink.x + ink.w / 2) / BL).toBeCloseTo((arrow.from.x + arrow.to.x) / 2, 1);
+    }
+    // Molecules and plus signs have their ink centres on the arrow's shaft (±0.01 BLU).
+    const { scene } = c.derive.committed(doc);
+    const row = itemBoxes(doc, scene).filter(
+      (i) => i.object === undefined || doc.objects[i.object]?.type === 'plus',
+    );
+    expect(row).toHaveLength(6);
+    for (const i of row)
+      expect(Math.abs((i.box.y + i.box.h / 2) / BL - arrow.from.y)).toBeLessThan(0.01);
   });
 });

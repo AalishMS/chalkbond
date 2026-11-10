@@ -120,10 +120,10 @@ Everything else is sequential: each phase builds on the previous one.
 - [x] E26: `finishText` formatter (pure)
 - [ ] E27: Text tool and WYSIWYG text editor
 - [ ] E28: Conditions and Tidy reaction
-- [ ] E29: Reaction text in the name field
+- [x] E29: Reaction text in the name field
 
 ### Checkpoint Q — reactions
-- [ ] `npm run check` green; SC3 reaction in ≤ 15 actions (`state/scenarios.test.ts`, `e2e/editor-reaction.spec.ts`)
+- [x] `npm run check` green; SC3 reaction in ≤ 15 actions (`state/scenarios.test.ts`, `e2e/editor-reaction.spec.ts`)
 - [ ] Commit + push
 
 ### Phase 6: preset, hardening, acceptance

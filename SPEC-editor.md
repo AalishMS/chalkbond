@@ -1052,6 +1052,10 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
   empty doc → centred on the canvas centre; else its ink box's left edge at the document's left
   edge and its top 1.5 BLU below the document's bottom. Then V7; the inserted items are selected
   and the tool becomes Select.
+  A `+` is a charge sign, not a separator, when it touches the character before it and a space,
+  the end of the text, an arrow token or another `+` follows (`NH4+ + OH- -> NH3 + H2O` has two
+  parts on the left); any other `+` separates. An arrow with a missing part or side (`ethanol ->`)
+  does nothing. After the insert the status slot announces "Inserted reaction".
 - **N4** Empty-state chips and `insert-text` commands go through N2/N3 exactly.
 - **N5** The dictionary is imported as JSON and `createNameIndex` is called once per controller
   (time measured in the perf test).

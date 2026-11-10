@@ -880,9 +880,9 @@ horizontal, centres on one baseline within 0.01 BLU, conditions centred within 0
 screen px.
 
 **Acceptance criteria:**
-- [ ] SC2 (reaction half) met by the scenario test and the e2e
-- [ ] The reaction chip inserts the esterification scheme on an empty doc and zooms out to fit if needed (Decision 8: readout ≤ 150 %)
-- [ ] One undo step removes the whole inserted scheme
+- [x] SC2 (reaction half) met by the scenario test and the e2e
+- [x] The reaction chip inserts the esterification scheme on an empty doc and zooms out to fit if needed (Decision 8: readout ≤ 150 %)
+- [x] One undo step removes the whole inserted scheme
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E29` → `E29/reaction-chip.png` (scripted: click the third empty-state chip; compare `08-reaction.png`), `E29/reaction-conditions.png` (scripted: add H₂SO₄ above and Δ below), `E29/reaction-notfound.png` (scripted: type the misspelt reaction + Enter)
 
@@ -893,7 +893,7 @@ screen px.
 **Scope:** M
 
 ### Checkpoint Q — reactions
-- [ ] `npm run check` green; SC3 reaction in ≤ 15 actions (`state/scenarios.test.ts`, `e2e/editor-reaction.spec.ts`)
+- [x] `npm run check` green; SC3 reaction in ≤ 15 actions (`state/scenarios.test.ts`, `e2e/editor-reaction.spec.ts`)
 - [ ] Commit + push
 
 ---

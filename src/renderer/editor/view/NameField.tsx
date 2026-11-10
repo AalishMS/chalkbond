@@ -1,5 +1,5 @@
 import { formulaRuns } from '../model/formula';
-import type { SuggestionRow } from '../model/suggestions';
+import { chipText, type SuggestionRow } from '../model/suggestions';
 import type { NameField as NameFieldState } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
 import { FormulaText } from './FormulaText';
@@ -30,6 +30,7 @@ const keepFocus = (e: React.MouseEvent): void => e.preventDefault();
  */
 export function NameField({ field, rows, dispatch }: NameFieldProps): React.JSX.Element {
   const showRows = field.open && rows.length > 0;
+  const error = field.error;
   const insertName = (text: string): void => dispatch({ type: 'insert-text', text });
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -101,24 +102,24 @@ export function NameField({ field, rows, dispatch }: NameFieldProps): React.JSX.
           ))}
         </div>
       )}
-      {field.error !== null && (
+      {error !== null && (
         <div className="dropdown" role="alert" data-testid="name-notfound">
           <div className="notfound">
             <Icon name="warning" size={20} />
-            <span>{field.error.message}</span>
+            <span>{error.message}</span>
           </div>
-          {field.error.suggestions.length > 0 && (
+          {error.suggestions.length > 0 && (
             <div className="suggest">
               Did you mean
               <div className="suggest-chips">
-                {field.error.suggestions.map((name) => (
+                {error.suggestions.map((name) => (
                   <button
                     key={name}
                     type="button"
                     className="chip"
                     data-testid="name-chip"
                     onMouseDown={keepFocus}
-                    onClick={() => insertName(name)}
+                    onClick={() => insertName(chipText(field.text, error, name))}
                   >
                     {name}
                   </button>

@@ -1,7 +1,7 @@
 import { ChemError, createNameIndex, structureFromText } from '@core/chem-core';
 import { describe, expect, it } from 'vitest';
 import compounds from '../../../../resources/compounds/compounds.json';
-import { isSingleName, nameError, suggestionRows } from './suggestions';
+import { chipText, isSingleName, nameError, suggestionRows } from './suggestions';
 
 const names = createNameIndex(compounds);
 
@@ -73,5 +73,17 @@ describe('nameError (N2)', () => {
   it('shows other chem-core messages as given', () => {
     const state = nameError('x', new ChemError('invalid-molfile', 'Bad molfile.'));
     expect(state).toEqual({ message: 'Bad molfile.', suggestions: [] });
+  });
+});
+
+describe('chipText (N3)', () => {
+  const error = { message: 'x', suggestions: [], span: { start: 10, end: 20 } };
+  it('replaces just the failing part of a reaction', () => {
+    expect(chipText('ethanol + acetic acd -> water', error, 'acetic acid')).toBe(
+      'ethanol + acetic acid -> water',
+    );
+  });
+  it('is the chip alone for a single name', () => {
+    expect(chipText('ethanl', { message: 'x', suggestions: [] }, 'ethanol')).toBe('ethanol');
   });
 });
