@@ -18,7 +18,7 @@ import {
   type Point,
   type Rect,
 } from '../doc-model';
-import { bondClipBox, buildAtomLabel, isLabelled, type AtomLabel } from './atom-label';
+import { bondClipBoxes, buildAtomLabel, isLabelled, type AtomLabel } from './atom-label';
 import { layoutBond } from './bonds';
 import { circledRings, ringCircle } from './circles';
 import { rectUnion, unionAll } from './geom';
@@ -225,17 +225,17 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
       skip(key, 'bond has an atom with a non-finite coordinate');
       continue;
     }
-    const clipAt = (atom: AtomId, from: Point, to: Point) => {
+    const clipAt = (atom: AtomId) => {
       const label = labels.get(atom);
-      return label ? bondClipBox(label, { x: to.x - from.x, y: to.y - from.y }, style) : null;
+      return label ? bondClipBoxes(label, style) : null;
     };
     const ring = smallestRing.get(id);
     const centroid = ring ? bluToPt(ringCentroid(doc, ring), style) : null;
     const layout = layoutBond(
       {
         bond,
-        a: { pos: p1, clip: clipAt(bond.a1, p1, p2), others: vectorsFrom(bond.a1, id) },
-        b: { pos: p2, clip: clipAt(bond.a2, p2, p1), others: vectorsFrom(bond.a2, id) },
+        a: { pos: p1, clip: clipAt(bond.a1), others: vectorsFrom(bond.a1, id) },
+        b: { pos: p2, clip: clipAt(bond.a2), others: vectorsFrom(bond.a2, id) },
         ringCentroid: centroid && finite(centroid) ? centroid : null,
         circled: bond.order === 1.5 && circledBonds.has(id),
       },

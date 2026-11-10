@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Atom, AtomId, Doc, Point, Rect, TextRun } from '../doc-model';
-import { bondClipBox, buildAtomLabel, isLabelled, type AtomLabel } from './atom-label';
+import { bondClipBoxes, buildAtomLabel, isLabelled, type AtomLabel } from './atom-label';
+import { growRect } from './geom';
 import { ADVANCE_REGULAR } from './font-metrics';
 import { resolveStyle } from './style';
 
@@ -269,7 +270,7 @@ describe('isotopes, hydrogen isotopes and charge', () => {
     expect(text({ element: 'O', charge: 0 }, LEFT, 0)).toBe('O');
   });
 
-  it('moves the charge off the label when a bond leaves within 45 degrees of NE', () => {
+  it('moves the charge off the label when a bond line crosses the superscript', () => {
     // A bond up-right would run through a superscript at the upper right (nitro O-).
     const up30: Point = { x: Math.cos(Math.PI / 6), y: -0.5 };
     const l = build({ element: 'O', charge: -1 }, [up30], 0);
@@ -282,6 +283,9 @@ describe('isotopes, hydrogen isotopes and charge', () => {
       expect(k.chargeSatellite).toBe(false);
       expect(k.text).toBe(`O${MINUS}`);
     }
+    // A bond that clears the superscript leaves it in the text.
+    const steep: Point = { x: Math.cos((70 * Math.PI) / 180), y: -Math.sin((70 * Math.PI) / 180) };
+    expect(build({ element: 'O', charge: -1 }, [steep], 0).chargeSatellite).toBe(false);
     // No charge, nothing to move.
     expect(build({ element: 'O' }, [up30], 0).chargeSatellite).toBe(false);
   });
@@ -406,56 +410,39 @@ describe('label geometry for satellites', () => {
   });
 });
 
-describe('bondClipBox', () => {
+describe('bondClipBoxes', () => {
   const m = style.labelMargin;
+  const grown = (r: Rect): Rect => growRect(r, m);
 
-  it('grows the anchor box by labelMargin for a bond on the symbol side', () => {
-    const l = build({ element: 'N' }, LEFT, 2); // NH2: bond arrives from the left
-    const box = bondClipBox(l, { x: -1, y: 0 }, style);
-    near(box.x, l.anchorBox.x - m);
-    near(box.x + box.w, l.anchorBox.x + l.anchorBox.w + m);
-    near(box.y, l.anchorBox.y - m);
-    near(box.y + box.h, l.anchorBox.y + l.anchorBox.h + m);
+  it('is the margin-grown anchor box alone for a bare symbol', () => {
+    const l = build({ element: 'N' }, LEFT, 0);
+    expect(bondClipBoxes(l, style)).toEqual([grown(l.anchorBox)]);
   });
 
-  it('extends over the H part first when the bond leaves up-right on NH2', () => {
-    const l = build({ element: 'N' }, LEFT, 2);
-    const box = bondClipBox(l, { x: 1, y: -1 }, style);
-    near(box.x, l.anchorBox.x - m);
-    near(box.x + box.w, l.textBox.x + l.textBox.w + m);
-    // Covers the subscript's full height on that side.
-    expect(box.y + box.h).toBeGreaterThanOrEqual(l.textBox.y + l.textBox.h + m - 1e-9);
+  it('adds one margin-grown box per other part: the H, the subscript, the charge', () => {
+    const l = build({ element: 'N', charge: 1 }, LEFT, 2); // NH2+
+    const boxes = bondClipBoxes(l, style);
+    expect(boxes[0]).toEqual(grown(l.anchorBox));
+    expect(boxes.slice(1)).toEqual([...l.obstacles, l.chargeBox!].map(grown));
+    expect(l.obstacles).toHaveLength(2); // H and the 2
   });
 
-  it('extends leftwards over a leading H part (HO with a bond to the left)', () => {
-    const l = build({ element: 'O' }, RIGHT, 1);
-    const box = bondClipBox(l, { x: -1, y: 0.5 }, style);
-    near(box.x, l.textBox.x - m);
-    near(box.x + box.w, l.anchorBox.x + l.anchorBox.w + m);
-  });
-
-  it('does not extend for a vertical bond or when there is no text on that side', () => {
-    const l = build({ element: 'N' }, LEFT, 2);
-    const vertical = bondClipBox(l, { x: 0, y: -1 }, style);
-    near(vertical.x + vertical.w, l.anchorBox.x + l.anchorBox.w + m);
-    const back = bondClipBox(l, { x: -1, y: 1 }, style);
-    near(back.x + back.w, l.anchorBox.x + l.anchorBox.w + m);
+  it('puts a leading H part and an isotope in their own boxes', () => {
+    const l = build({ element: 'O', isotope: 18 }, RIGHT, 1); // H 18 O
+    expect(bondClipBoxes(l, style)).toHaveLength(3);
   });
 
   it('is just the margin-grown whole text for a label without a reversed form', () => {
     const l = build({ label: 'Ph' }, RIGHT);
-    const box = bondClipBox(l, { x: -1, y: 0 }, style);
-    near(box.x, l.textBox.x - m);
-    near(box.w, l.textBox.w + 2 * m);
+    const [box] = bondClipBoxes(l, style);
+    near(box!.x, l.textBox.x - m);
+    near(box!.w, l.textBox.w + 2 * m);
   });
 
-  it('leaves a bond on the attachment side of CO2H untouched and extends the far side', () => {
-    const l = build({ label: 'CO2H' }, LEFT);
-    near(bondClipBox(l, { x: -1, y: 0 }, style).x, l.anchorBox.x - m);
-    near(
-      bondClipBox(l, { x: 1, y: 0 }, style).x + bondClipBox(l, { x: 1, y: 0 }, style).w,
-      l.textBox.x + l.textBox.w + m,
-    );
+  it('keeps the charge box clear of the symbol box when no bond crosses it', () => {
+    const l = build({ element: 'N', charge: 1 }, [{ x: 1, y: 0.7 }], 0);
+    expect(l.chargeSatellite).toBe(false);
+    expect(l.chargeBox).not.toBeNull();
   });
 });
 

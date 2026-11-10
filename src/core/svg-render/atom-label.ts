@@ -3,7 +3,7 @@
 // text boxes, the positioned `<text>` markup and the box bonds are clipped against.
 // Chemistry stays in chem-core: the H count comes in as `AtomInfo.implicitH`.
 import type { Atom, Point, Rect, TextRun } from '../doc-model';
-import { growRect, normalize, rectUnion, unionAll } from './geom';
+import { growRect, normalize, segmentBoxInterval, unionAll } from './geom';
 import { labelDisplay } from './label-display';
 import { svgText } from './svg-write';
 import type { ResolvedStyle } from './style';
@@ -137,8 +137,31 @@ function typedSymbolBox(
   return { ...anchorBox, x: anchorBox.x + before, w: symbol };
 }
 
-/** Builds the label of a labelled atom. */
+/** A ray this long from the atom reaches past any label part. */
+const FAR = 1e6;
+
+/**
+ * Builds the label of a labelled atom. The formal charge stands in the text unless a bond's line
+ * genuinely crosses the superscript's glyph box (nitro `O-` with the nitrogen up-right): then the
+ * sign is left out and becomes a satellite.
+ */
 export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): AtomLabel {
+  const label = buildLabel(input, style, false);
+  const box = label.chargeBox;
+  if (!box) return label;
+  const { x, y } = input.position;
+  const crossed = input.neighbors.some((v) => {
+    const u = normalize(v);
+    return u !== null && segmentBoxInterval({ x, y }, { x: x + u.x * FAR, y: y + u.y * FAR }, box);
+  });
+  return crossed ? buildLabel(input, style, true) : label;
+}
+
+function buildLabel(
+  input: AtomLabelInput,
+  style: ResolvedStyle,
+  chargeAsSatellite: boolean,
+): AtomLabel {
   const { atom, position } = input;
   const dirs = input.neighbors.flatMap((v) => normalize(v) ?? []);
   const bonded = input.neighbors.length > 0;
@@ -180,17 +203,7 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
   const n =
     !hasLabel && Number.isFinite(input.implicitH) ? Math.max(0, Math.floor(input.implicitH)) : 0;
   const hBefore = bonded ? sx > SIDE_DEAD_ZONE : bareHydrogenFirst(atom.element, n);
-  const northEast = { x: Math.SQRT1_2, y: -Math.SQRT1_2 };
-  const chargeSatellite =
-    atom.charge !== 0 &&
-    dirs.some(
-      (u) =>
-        Math.atan2(
-          Math.abs(u.x * northEast.y - u.y * northEast.x),
-          u.x * northEast.x + u.y * northEast.y,
-        ) <
-        Math.PI / 4 - 1e-9,
-    );
+  const chargeSatellite = atom.charge !== 0 && chargeAsSatellite;
   const chargeRuns: TextRun[] =
     atom.charge === 0 || chargeSatellite
       ? []
@@ -303,20 +316,13 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
 }
 
 /**
- * The box a bond leaving the atom along `direction` is clipped against: the anchor box, first
- * extended over the label text on the bond's side (so a bond leaving up-right on `NH2` does not
- * cross the `H2`), then grown by `labelMargin`. No halo and no clip path: geometry only.
+ * The boxes a bond is clipped against, each grown by `labelMargin`: the anchor box and,
+ * separately, every other part of the label (H, counts and subscripts, isotope, formal charge).
+ * A bond ends at the farthest exit among the boxes its line actually intersects, so one passing
+ * under a superscript or over a subscript is not shortened by it. No halo and no clip path:
+ * geometry only.
  */
-export function bondClipBox(label: AtomLabel, direction: Point, style: ResolvedStyle): Rect {
-  const { anchorBox: a, textBox: t } = label;
-  const u = normalize(direction);
-  let box = a;
-  if (u && Math.abs(u.x) > SIDE_DEAD_ZONE) {
-    const side: Rect =
-      u.x > 0
-        ? { x: a.x + a.w, y: t.y, w: Math.max(0, t.x + t.w - a.x - a.w), h: t.h }
-        : { x: t.x, y: t.y, w: Math.max(0, a.x - t.x), h: t.h };
-    if (side.w > 0) box = rectUnion(a, side);
-  }
-  return growRect(box, style.labelMargin);
+export function bondClipBoxes(label: AtomLabel, style: ResolvedStyle): readonly Rect[] {
+  const parts = label.chargeBox ? [...label.obstacles, label.chargeBox] : label.obstacles;
+  return [label.anchorBox, ...parts].map((b) => growRect(b, style.labelMargin));
 }

@@ -4,16 +4,16 @@
 import type { Bond, Point, Rect } from '../doc-model';
 import {
   add,
-  clipSegmentOutsideBox,
   cross,
   dot,
   growRect,
+  lerp,
   leftNormal,
   length,
   normalize,
   quadBounds,
-  rayExitBox,
   rectFromPoints,
+  segmentBoxInterval,
   scale,
   sub,
   unionAll,
@@ -27,8 +27,8 @@ import { INK, type ResolvedStyle } from './style';
 export interface BondEnd {
   /** The atom's position, pt (finite). */
   readonly pos: Point;
-  /** The box the bond is clipped against (`bondClipBox`), or `null` at a skeleton vertex. */
-  readonly clip: Rect | null;
+  /** The boxes the bond is clipped against (`bondClipBoxes`), or `null` at a skeleton vertex. */
+  readonly clip: readonly Rect[] | null;
   /** Vectors from this atom to its other neighbours (not this bond's other end), any length. */
   readonly others: readonly Point[];
 }
@@ -126,13 +126,39 @@ interface LineSpec {
   readonly short?: readonly [number, number];
 }
 
-/** The segment's pieces left after cutting the boxes out. */
-function clipOut(a: Point, b: Point, boxes: readonly (Rect | null)[]): [Point, Point][] {
-  let pieces: [Point, Point][] = [[a, b]];
-  for (const box of boxes) {
-    if (box) pieces = pieces.flatMap(([p, q]) => clipSegmentOutsideBox(p, q, box));
-  }
-  return pieces;
+/**
+ * The part of segment `a`-`b` left after the clip boxes of its two ends: it starts at the
+ * farthest exit among the boxes of the `a` end that the segment intersects, and stops at the
+ * nearest entry of the `b` end's boxes. `[t0, t1]` are fractions of the segment; `null` when
+ * nothing is left.
+ */
+function clipSpan(
+  a: Point,
+  b: Point,
+  ca: readonly Rect[] | null,
+  cb: readonly Rect[] | null,
+): [number, number] | null {
+  let t0 = 0;
+  let t1 = 1;
+  for (const box of ca ?? []) t0 = Math.max(t0, segmentBoxInterval(a, b, box)?.[1] ?? 0);
+  for (const box of cb ?? []) t1 = Math.min(t1, segmentBoxInterval(a, b, box)?.[0] ?? 1);
+  return t1 - t0 > 1e-9 ? [t0, t1] : null;
+}
+
+/** The line from `a` to `b` cut at both ends' clip boxes (see `clipSpan`), or `null`. */
+function clipSegment(
+  a: Point,
+  b: Point,
+  ca: readonly Rect[] | null,
+  cb: readonly Rect[] | null,
+): [Point, Point] | null {
+  const span = clipSpan(a, b, ca, cb);
+  if (!span) return null;
+  const start = span[0] > 0 ? lerp(a, b, span[0]) : a;
+  // The far end is measured from the cut start, like a second cut of the remaining piece.
+  let t = 1;
+  for (const box of cb ?? []) t = Math.min(t, segmentBoxInterval(start, b, box)?.[0] ?? 1);
+  return [start, t < 1 ? lerp(start, b, t) : b];
 }
 
 function lineSpecs(
@@ -195,7 +221,8 @@ function strokedLines(
     const shift = scale(n, spec.offset);
     const from = add(add(a.pos, shift), scale(u, s1));
     const to = sub(add(b.pos, shift), scale(u, s2));
-    for (const [p, q] of clipOut(from, to, [a.clip, b.clip])) {
+    const piece = clipSegment(from, to, a.clip, b.clip);
+    for (const [p, q] of piece ? [piece] : []) {
       svg.push(
         el('path', {
           d: pathD([p, q], ['M', 'L']),
@@ -213,12 +240,11 @@ function strokedLines(
   return box ? { svg: svg.join('\n'), ink: box } : null;
 }
 
-/** The part of the axis outside both label boxes, as distances from `a`; `null` if none is left. */
-function axisSpan(input: BondInput, u: Point, len: number): [number, number] | null {
+/** The part of the axis outside both ends' label boxes, as distances from `a`; `null` if none is left. */
+function axisSpan(input: BondInput, len: number): [number, number] | null {
   const { a, b } = input;
-  const t0 = a.clip ? (rayExitBox(a.pos, u, a.clip) ?? 0) : 0;
-  const t1 = len - (b.clip ? (rayExitBox(b.pos, { x: -u.x, y: -u.y }, b.clip) ?? 0) : 0);
-  return t1 - t0 > 1e-9 ? [t0, t1] : null;
+  const span = clipSpan(a.pos, b.pos, a.clip, b.clip);
+  return span ? [span[0] * len, span[1] * len] : null;
 }
 
 function filled(points: readonly Point[], color: string): BondLayout {
@@ -249,7 +275,7 @@ export function layoutBond(input: BondInput, style: ResolvedStyle): BondLayout |
 
   switch (stereo) {
     case 'wedge': {
-      const span = axisSpan(input, u, len);
+      const span = axisSpan(input, len);
       if (!span) return null;
       const [t0, t1] = span;
       const h0 = (style.wedgeWide / 2) * (t0 / len);
@@ -262,13 +288,13 @@ export function layoutBond(input: BondInput, style: ResolvedStyle): BondLayout |
       );
     }
     case 'bold': {
-      const span = axisSpan(input, u, len);
+      const span = axisSpan(input, len);
       if (!span) return null;
       const h = style.boldWidth / 2;
       return filled([at(span[0], h), at(span[1], h), at(span[1], -h), at(span[0], -h)], color);
     }
     case 'hash': {
-      const span = axisSpan(input, u, len);
+      const span = axisSpan(input, len);
       if (!span) return null;
       const count = Math.max(3, Math.round(len / style.hashSpacing));
       const svg: string[] = [];
@@ -293,7 +319,7 @@ export function layoutBond(input: BondInput, style: ResolvedStyle): BondLayout |
       return box ? { svg: svg.join('\n'), ink: box } : null;
     }
     case 'wavy': {
-      const span = axisSpan(input, u, len);
+      const span = axisSpan(input, len);
       if (!span) return null;
       const [t0, t1] = span;
       const waves = Math.max(2, 2 * Math.round((t1 - t0) / style.wavyLength / 2));

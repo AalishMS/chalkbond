@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Atom, AtomId, Bond, BondId, Doc, Point, Rect } from '../doc-model';
-import { buildAtomLabel, bondClipBox } from './atom-label';
+import { buildAtomLabel, bondClipBoxes } from './atom-label';
+import { length, normalize, rayExitBox } from './geom';
 import { doubleSide, layoutBond, type BondEnd, type BondInput } from './bonds';
 import { checkXml } from './__fixtures__/xml-check';
 import { resolveStyle } from './style';
@@ -22,9 +23,13 @@ const bondOf = (over: Partial<Bond> = {}): Bond => ({
   ...over,
 });
 
-const end = (pos: Point, others: Point[] = [], clip: Rect | null = null): BondEnd => ({
+const end = (
+  pos: Point,
+  others: Point[] = [],
+  clip: Rect | readonly Rect[] | null = null,
+): BondEnd => ({
   pos,
-  clip,
+  clip: clip === null ? null : 'x' in clip ? [clip] : clip,
   others,
 });
 
@@ -498,7 +503,7 @@ describe('clipping at label boxes', () => {
       { atom, implicitH: 1, neighbors: [{ x: -140, y: 0 }], position: pos },
       fs100,
     );
-    const clip = bondClipBox(label, { x: -1, y: 0 }, fs100);
+    const clip = bondClipBoxes(label, fs100);
     const i: BondInput = {
       bond: bondOf({ stereo: 'wedge' }),
       a: end({ x: 60, y: 100 }),
@@ -533,7 +538,7 @@ describe('bond ends at abbreviation labels', () => {
       { atom: atom(label), implicitH: 0, neighbors: [toward], position: pos },
       fs100,
     );
-    const clip = bondClipBox(built, toward, fs100);
+    const clip = bondClipBoxes(built, fs100);
     const i: BondInput = {
       bond: bondOf(),
       a: end(from),
@@ -592,5 +597,88 @@ describe('determinism and safety', () => {
       ),
     ).svg;
     for (const n of svg.match(/-?\d+(?:\.\d+)?/g) ?? []) expect(n).toMatch(/^-?\d+(\.\d{1,3})?$/);
+  });
+});
+
+describe('clipping per glyph box', () => {
+  const st = resolveStyle({ preset: 'slides', overrides: { fontSize: 24 } } as Doc['style']);
+  const pos = { x: 200, y: 100 };
+  const atomOf = (over: Partial<Atom>): Atom => ({
+    id: 'a2' as AtomId,
+    x: 0,
+    y: 0,
+    element: 'C',
+    charge: 0,
+    radical: 0,
+    ...over,
+  });
+
+  /** The bond from a skeleton atom `len` away (towards `dir`) to the labelled atom at `pos`. */
+  function stopDistance(
+    atom: Atom,
+    implicitH: number,
+    neighbors: Point[],
+    dir: Point,
+    len = 40,
+  ): { stop: number; label: ReturnType<typeof buildAtomLabel> } {
+    const u = normalize(dir)!;
+    const label = buildAtomLabel({ atom, implicitH, neighbors, position: pos }, st);
+    const from = { x: pos.x + u.x * len, y: pos.y + u.y * len };
+    const i: BondInput = {
+      bond: bondOf(),
+      a: end(from),
+      b: end(pos, [], bondClipBoxes(label, st)),
+      ringCentroid: null,
+      circled: false,
+    };
+    const out = layoutBond(i, st);
+    const l = out ? lines(out.svg)[0] : undefined;
+    // Distance from the labelled atom to where the drawn line stops.
+    const stop = l ? length({ x: l.pts[1]!.x - pos.x, y: l.pts[1]!.y - pos.y }) : len;
+    return { stop, label };
+  }
+
+  /** Distance from the atom to where its ray leaves the anchor box grown by the margin. */
+  const symbolExit = (label: ReturnType<typeof buildAtomLabel>, dir: Point): number => {
+    const box = {
+      x: label.anchorBox.x - st.labelMargin,
+      y: label.anchorBox.y - st.labelMargin,
+      w: label.anchorBox.w + 2 * st.labelMargin,
+      h: label.anchorBox.h + 2 * st.labelMargin,
+    };
+    return rayExitBox(pos, normalize(dir)!, box)!;
+  };
+
+  it('nitromethane: the N+ to CH3 bond lower right is not shortened by the + sign', () => {
+    const toC = { x: 1, y: 0.7 };
+    const n = atomOf({ element: 'N', charge: 1 });
+    const { stop, label } = stopDistance(n, 0, [toC, { x: -1, y: -0.8 }, { x: -1, y: 0.8 }], toC);
+    expect(label.chargeBox).not.toBeNull();
+    near(stop, symbolExit(label, toC));
+    expect(40 - stop).toBeGreaterThanOrEqual(0.6 * (40 - symbolExit(label, toC)));
+  });
+
+  it('a bond passing under a superscript charge stops at the symbol box', () => {
+    const dir = { x: 1, y: 0.35 };
+    const { stop, label } = stopDistance(atomOf({ element: 'O', charge: -1 }), 0, [dir], dir);
+    expect(label.chargeBox).not.toBeNull();
+    near(stop, symbolExit(label, dir));
+  });
+
+  it('a bond passing over a subscript count stops at the symbol box', () => {
+    // NH2, bond to the left, so the H2 stands on the right; a steep bond up-right leaves through
+    // the top of the N and clears both the H and the lowered subscript.
+    const steep = { x: 1, y: -3 };
+    const { stop, label } = stopDistance(atomOf({ element: 'N' }), 2, [{ x: -1, y: 0 }], steep);
+    expect(label.obstacles.length).toBeGreaterThan(1);
+    near(stop, symbolExit(label, steep));
+  });
+
+  it('NH2: a bond leaving up-right still stops before the H2', () => {
+    const dir = { x: 1, y: -0.3 };
+    const { stop, label } = stopDistance(atomOf({ element: 'N' }), 2, [{ x: -1, y: 0 }], dir);
+    const lastX = pos.x + normalize(dir)!.x * stop;
+    const h = label.obstacles[0]!; // the H; the raised bond clears the lowered 2
+    near(lastX, h.x + h.w + st.labelMargin);
   });
 });
