@@ -74,6 +74,11 @@
   --option-btn: 32px;
   --topbar-btn: 32px;
   --status-btn: 24px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --accent-bar-w: 3px;
+  --kekule-btn-w: 109px;
 }
 
 @media (prefers-reduced-motion: reduce) {

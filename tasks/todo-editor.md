@@ -157,7 +157,7 @@ first") when `out/main/index.js` is missing (checked at the top of the helper).
 
 ### Checkpoint L — foundations
 - [x] `npm run check` green; `npm run test:e2e` green; `npm run shots -- E5` writes its PNGs
-- [ ] Commit + push
+- [x] Commit + push
 
 ---
 
@@ -215,10 +215,10 @@ absent without an abbreviation, present with one; Show Kekulé vs Show circle la
 needs `esbuild: { jsx: 'automatic' }` for `.tsx` tests, add it to `vitest.config.mts`.
 
 **Acceptance criteria:**
-- [ ] Clicking a rail button or pressing nothing else changes only the tool; clicking an option changes the variant and the rail icon (Ring → Cyclopentane shows `ring-5` on the rail)
-- [ ] Option sets and order exactly as Decisions 1–3 and 9 (markup tests)
-- [ ] e2e boxes: rail buttons 56×48 at x = 4 (relative to the rail), first at y = 8, 2 px gaps, separators 32×1 with 8 px above and below; option buttons 32×32, 2 px apart; Atom bar fits at 960 px (no horizontal scroll: `scrollWidth === clientWidth`)
-- [ ] The rail fits at 960×640 without scrolling
+- [x] Clicking a rail button or pressing nothing else changes only the tool; clicking an option changes the variant and the rail icon (Ring → Cyclopentane shows `ring-5` on the rail)
+- [x] Option sets and order exactly as Decisions 1–3 and 9 (markup tests)
+- [x] e2e boxes: rail buttons 56×48 at x = 4 (relative to the rail), first at y = 8, 2 px gaps, separators 32×1 with 8 px above and below; option buttons 32×32, 2 px apart; Atom bar fits at 960 px (no horizontal scroll: `scrollWidth === clientWidth`)
+- [x] The rail fits at 960×640 without scrolling
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E7` → `E7/bond-options.png` (launch), `E7/ring-options.png` (scripted: click Ring, then Cyclopentane; compare screen 04's top bar and rail), `E7/atom-options.png` (scripted: click Atom; screen 05), `E7/select-actions.png` (scripted: click Select; screen 03 bar with Clean up/Kekulé/Tidy disabled on an empty doc), `E7/atom-options-960.png`
 

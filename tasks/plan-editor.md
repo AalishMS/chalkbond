@@ -73,7 +73,7 @@ Everything else is sequential: each phase builds on the previous one.
 
 ### Phase 1: static chrome
 - [ ] E6: Editor shell: lifted tokens and icons, window grid, `<Editor>` in the scaffold
-- [ ] E7: Tool rail, options bars, selection actions bar, tool/option selection
+- [x] E7: Tool rail, options bars, selection actions bar, tool/option selection
 - [ ] E8: Top bar, status bar, empty state
 - [ ] E9: Tooltips, focus order, control states
 
