@@ -197,6 +197,18 @@ describe('Expand (C2)', () => {
     expect(perceive(docOf(s)).warnings).toEqual([]);
   });
 
+  it('clears a hover on the atom it replaced (property 1, seed -2001893259)', () => {
+    const { doc, ph } = phenylEthane();
+    const s0 = {
+      ...ready(doc),
+      selection: wholeOf(doc, [ph]),
+      hover: { kind: 'atom', id: ph } as const,
+    };
+    const s = run(s0, { type: 'expand' });
+    expect(docOf(s).atoms[ph]).toBeUndefined();
+    expect(s.hover).toBeNull();
+  });
+
   it('does nothing without an abbreviation in the selection', () => {
     const { doc } = phenylEthane();
     const plain = ids(doc).find((id) => doc.atoms[id]?.label === undefined) as AtomId;

@@ -84,11 +84,13 @@ export function expandLabels(state: EditorState, derive: Derive, commit: Run): E
     const label = doc.atoms[id]?.label;
     return label !== undefined && interpretLabel(label).kind === 'abbreviation';
   });
-  return commit(state, {
+  const done = commit(state, {
     type: 'commit',
     label: 'Expand label',
     recipe: (d) => targets.reduce((acc, id) => expandLabel(acc, id), d),
   });
+  // The abbreviation atom is gone; a hover on it would point at nothing until the next move.
+  return done.history === state.history ? done : { ...done, hover: null };
 }
 
 /** TR1: the notice when there is no arrow in scope. */
