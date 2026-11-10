@@ -36,6 +36,10 @@ export function globalCommand(e: KeyInfo, shortcuts: 'all' | 'canvas-only'): Edi
   if (key === 'y' && !e.shiftKey) return 'redo';
   if (key === 'f' && !e.shiftKey) return 'focus-name-field';
   if (key === 'a' && !e.shiftKey) return 'select-all';
+  if (key === 'c' && !e.shiftKey) return 'copy';
+  if (key === 'x' && !e.shiftKey) return 'cut';
+  if (key === 'v' && !e.shiftKey) return 'paste';
+  if (key === 'd' && !e.shiftKey) return 'duplicate';
   // Ctrl+= and Ctrl++ (Ctrl+Shift+=) zoom in; the shifted forms need no layout knowledge.
   if (key === '=' || key === '+') return 'zoom-in';
   if (key === '-' || key === '_') return 'zoom-out';

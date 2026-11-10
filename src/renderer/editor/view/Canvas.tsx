@@ -47,7 +47,8 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
   const { preview } = state;
   // A preview that only translates parts shows the committed scene; any other preview shows its
   // own document (SPEC-editor.md "Rendering" steps 3 and 4).
-  const showPreview = preview !== null && preview.translate === undefined;
+  const showPreview =
+    preview !== null && preview.translate === undefined && preview.faded === undefined;
   const doc = showPreview ? preview.doc : committed;
   const { scene } = showPreview ? controller.derive.preview(doc) : controller.derive.committed(doc);
   const { dispatch } = controller.store;
@@ -75,6 +76,17 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
       for (const g of moved) g.removeAttribute('transform');
     };
   }, [translate, scene]);
+
+  // Erase: the parts about to go stay where they are, ghosted at `--erase-ghost-opacity` (E1).
+  const faded = preview?.faded;
+  useLayoutEffect(() => {
+    if (faded === undefined) return;
+    const parts = faded.flatMap((key) => nodes.current.get(key as ItemKey) ?? []);
+    for (const g of parts) g.style.opacity = 'var(--erase-ghost-opacity)';
+    return () => {
+      for (const g of parts) g.style.removeProperty('opacity');
+    };
+  }, [faded, scene]);
 
   // Focus at launch; the ring shows only when Tab brought focus here (K4).
   useEffect(() => {
@@ -112,7 +124,7 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
     return () => observer.disconnect();
   }, [dispatch]);
 
-  useCanvasInput(ref, controller.store, controller.derive);
+  useCanvasInput(ref, controller);
 
   const k = viewport.zoom * PX_PER_PT;
   const cursor = cursorFor(state.tool, state.hover, state.spaceHeld, state.gesture?.kind ?? null);

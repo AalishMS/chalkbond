@@ -6,6 +6,7 @@ import {
   type History,
   type ObjectId,
   type Selection,
+  type SubDoc,
 } from '@core/doc-model';
 import { resolveStyle } from '@core/svg-render';
 import type { Point } from '../model/geometry';
@@ -67,6 +68,8 @@ export interface Preview {
   /** Item keys not in the committed scene: drawn at ghost opacity. */
   readonly added: ReadonlySet<string>;
   readonly mergeTarget?: AtomId;
+  /** Erase: these parts stay in place and are drawn at `--erase-ghost-opacity`. */
+  readonly faded?: readonly string[];
   /** Drag fast path: only these parts' `<g>` move, by (dx, dy) pt. */
   readonly translate?: {
     readonly keys: readonly string[];
@@ -114,8 +117,8 @@ export interface EditorState {
   notice: Notice | null;
   /** Source of the next notice id. */
   noticeSeq: number;
-  /** Set by Ctrl+C; the content is a `SubDoc` once E18 lands. */
-  clipboard: null;
+  /** What Copy or Cut last took (CB1); null until something is copied. */
+  clipboard: SubDoc | null;
   spaceHeld: boolean;
 }
 

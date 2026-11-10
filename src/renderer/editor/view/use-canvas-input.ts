@@ -2,10 +2,9 @@ import { useEffect, type RefObject } from 'react';
 import { current } from '@core/doc-model';
 import { canvasEvent, type CanvasEvent } from '../model/canvas-event';
 import { createCoalescer } from '../model/coalesce';
-import type { Derive } from '../model/derive';
 import type { Point } from '../model/geometry';
+import type { EditorController } from '../state/controller';
 import { hoverAt } from '../state/hover';
-import type { Store } from '../state/store';
 
 /** Runs `run` on the next animation frame; returns the cancel function. */
 const nextFrame = (run: () => void): (() => void) => {
@@ -23,13 +22,18 @@ const nextFrame = (run: () => void): (() => void) => {
  */
 export function useCanvasInput(
   canvas: RefObject<HTMLElement | null>,
-  store: Store,
-  derive: Derive,
+  controller: EditorController,
 ): void {
+  const { store, derive } = controller;
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
     const { dispatch } = store;
+    /** A pointer event's position in canvas px. */
+    const canvasPx = (e: MouseEvent): Point => {
+      const rect = el.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
 
     // Wheel: native listener, because React's wheel handlers are passive and cannot prevent the
     // browser's own page zoom or scroll.
@@ -74,6 +78,8 @@ export function useCanvasInput(
       (screen) => dispatch({ type: 'set-hover', hover: hoverAt(store.getState(), derive, screen) }),
     );
     let drag: { id: number; at: Point } | null = null;
+    /** A right press cancelled a gesture: the `contextmenu` that follows is part of that. */
+    let menuSpent = false;
     /** The pointer that runs a tool gesture, while one does. */
     let gesture: number | null = null;
     const toEvent = (type: 'down' | 'move' | 'up', e: PointerEvent): CanvasEvent => {
@@ -106,8 +112,10 @@ export function useCanvasInput(
       // Controls drawn over the canvas (the empty-state chips) keep their own clicks: capturing
       // the pointer would redirect the click to the canvas.
       if (e.target !== el) return;
+      menuSpent = false;
       if (e.button === 2 && gesture !== null) {
         cancelGesture();
+        menuSpent = true;
         return;
       }
       if (e.button !== 0) return;
@@ -119,6 +127,7 @@ export function useCanvasInput(
       }
     };
     const onPointerMove = (e: PointerEvent): void => {
+      controller.setPointer(canvasPx(e));
       if (gesture === e.pointerId) {
         moves.push(toEvent('move', e));
         return;
@@ -150,8 +159,19 @@ export function useCanvasInput(
     };
     // A middle press starts browser autoscroll unless the mouse-down is cancelled too.
     const onPointerLeave = (): void => {
+      controller.setPointer(null);
       hover.cancel();
       dispatch({ type: 'set-hover', hover: null });
+    };
+    // CM1: no menu is drawn. A gesture is cancelled; otherwise the host is told what is there.
+    const onContextMenu = (e: MouseEvent): void => {
+      e.preventDefault();
+      if (menuSpent || gesture !== null) {
+        menuSpent = false;
+        cancelGesture();
+        return;
+      }
+      controller.contextMenuAt(canvasPx(e));
     };
     const onMouseDown = (e: MouseEvent): void => {
       if (e.button === 1) e.preventDefault();
@@ -167,6 +187,7 @@ export function useCanvasInput(
     el.addEventListener('pointercancel', onPointerCancel);
     el.addEventListener('pointerleave', onPointerLeave);
     el.addEventListener('mousedown', onMouseDown);
+    el.addEventListener('contextmenu', onContextMenu);
     return () => {
       panDelta.cancel();
       hover.cancel();
@@ -181,6 +202,7 @@ export function useCanvasInput(
       el.removeEventListener('pointercancel', onPointerCancel);
       el.removeEventListener('pointerleave', onPointerLeave);
       el.removeEventListener('mousedown', onMouseDown);
+      el.removeEventListener('contextmenu', onContextMenu);
     };
-  }, [canvas, store, derive]);
+  }, [canvas, controller, store, derive]);
 }

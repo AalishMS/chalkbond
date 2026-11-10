@@ -232,7 +232,7 @@ All values live in `tokens.css` (normative). Summary:
   `--empty-art`.
 - **Canvas overlay alphas** (group opacity, never per shape): `--overlay-hover` 0.45,
   `--overlay-selection` 0.24, `--overlay-marquee` 0.08, `--overlay-merge` 0.32, `--ghost-opacity`
-  0.45, `--guide-opacity` 0.6.
+  0.45, `--erase-ghost-opacity` 0.3 (E1), `--guide-opacity` 0.6.
 - **Type**: `--font-ui` (Segoe UI Variable Text, Segoe UI, system-ui; nothing bundled);
   `--type-xs` 12/16 (status controls, tooltips, captions under editors), `--type-sm` 13/18
   (action labels, chips), `--type-md` 14/20 (name field, dropdown names, option glyphs 600,

@@ -19,7 +19,9 @@ import { createDerive, type Derive } from '../model/derive';
 import type { Point } from '../model/geometry';
 import { stepZoom } from '../model/viewport';
 import { initialState, type EditorState } from './editor-state';
-import { canDelete } from './commands';
+import { handleHit } from '../model/handles';
+import { HIT_ALL, hitTest } from '../model/hit-test';
+import { canCopy, canDelete, canPaste } from './commands';
 import { isDirty, type ReducerContext } from './reducer';
 import { createStore, type Store } from './store';
 
@@ -62,7 +64,7 @@ export interface EditorOptions {
   names?: NameIndex;
   /** `canvas-only` when the host's menu owns the Ctrl shortcuts (K1). */
   shortcuts?: 'all' | 'canvas-only';
-  /** clipboard-export hook: called with what Copy takes (used from E18). */
+  /** clipboard-export hook: called with what Copy or Cut takes (CB1). */
   onCopy?: (sub: SubDoc, doc: Doc, selection: Selection) => void;
   /** Where unexpected errors are logged (X1); default `console.error`. */
   logError?: (error: unknown) => void;
@@ -83,6 +85,17 @@ export interface EditorController {
   undoLabel(): string | undefined;
   redoLabel(): string | undefined;
   subscribe(listener: (e: EditorEvent) => void): () => void;
+  /**
+   * The view reports where the pointer is over the canvas (canvas px), or null when it has left:
+   * Paste lands there (CB1).
+   */
+  setPointer(screen: Point | null): void;
+  /**
+   * The view reports a `contextmenu` on the canvas at `screen` (canvas px). A gesture in progress
+   * is cancelled and nothing else happens; otherwise a `context-menu` event goes to the
+   * subscribers with the item there (CM1). The selection never changes.
+   */
+  contextMenuAt(screen: Point): void;
   /** Which Ctrl shortcuts the editor handles itself. */
   readonly shortcuts: 'all' | 'canvas-only';
   /** Perception and scene of the committed and the preview document, cached. */
@@ -91,6 +104,22 @@ export interface EditorController {
   readonly store: Store;
   /** The name index (N5), built once per controller from the dictionary. */
   readonly names: NameIndex;
+}
+
+/** The H1/H2 item under `screen` for the host: atoms, bonds and objects; handles and slots are null. */
+function hostHitAt(state: EditorState, derive: Derive, screen: Point): HostHit | null {
+  const doc = current(state.history);
+  const { scene } = derive.committed(doc);
+  if (handleHit(doc, scene, state.viewport, state.selection, screen) !== null) return null;
+  const hit = hitTest(doc, scene, state.viewport, screen, HIT_ALL);
+  switch (hit?.kind) {
+    case 'atom':
+    case 'bond':
+    case 'object':
+      return { kind: hit.kind, id: hit.id } as HostHit;
+    default:
+      return null;
+  }
 }
 
 let defaultNames: NameIndex | undefined;
@@ -169,14 +198,26 @@ export function createEditorController(options: EditorOptions): EditorController
         return true;
       case 'delete':
         return canDelete(s);
+      case 'cut':
+      case 'copy':
+      case 'duplicate':
+        return canCopy(s);
+      case 'paste':
+        return canPaste(s);
       case 'select-all':
         return s.editing === null;
       default:
         if (typeof cmd === 'object' && cmd.type === 'insert-text') return true;
-        // Later tasks (clipboard, selection actions, name field) turn these on.
+        if (typeof cmd === 'object' && cmd.type === 'paste-sub') {
+          return s.gesture === null && s.editing === null;
+        }
+        // Later tasks (selection actions) turn the rest on.
         return false;
     }
   };
+
+  /** Where the pointer is over the canvas, canvas px; null when it is not (CB1 paste position). */
+  let pointerAt: Point | null = null;
 
   return {
     getDoc: () => current(store.getState().history),
@@ -204,12 +245,31 @@ export function createEditorController(options: EditorOptions): EditorController
         case 'delete':
           store.dispatch({ type: 'delete' });
           break;
+        case 'copy':
+        case 'cut': {
+          // The host hook sees what was taken, from the document as it was before a cut.
+          const before = store.getState();
+          store.dispatch({ type: cmd });
+          const taken = store.getState().clipboard;
+          if (taken !== null && taken !== before.clipboard) {
+            options.onCopy?.(taken, current(before.history), before.selection);
+          }
+          break;
+        }
+        case 'paste':
+          store.dispatch({ type: 'paste', at: pointerAt });
+          break;
+        case 'duplicate':
+          store.dispatch({ type: 'duplicate' });
+          break;
         case 'select-all':
           store.dispatch({ type: 'select-all' });
           break;
         default:
           if (typeof cmd === 'object' && cmd.type === 'insert-text') {
             store.dispatch({ type: 'insert-text', text: cmd.text });
+          } else if (typeof cmd === 'object' && cmd.type === 'paste-sub') {
+            store.dispatch({ type: 'paste', at: pointerAt, sub: cmd.sub });
           }
           break;
       }
@@ -222,6 +282,18 @@ export function createEditorController(options: EditorOptions): EditorController
       return () => {
         listeners.delete(listener);
       };
+    },
+    setPointer(screen) {
+      pointerAt = screen;
+    },
+    contextMenuAt(screen) {
+      const state = store.getState();
+      if (state.gesture !== null) {
+        // CM1: a gesture is cancelled and that is all.
+        store.dispatch({ type: 'escape' });
+        return;
+      }
+      emit({ type: 'context-menu', target: hostHitAt(state, derive, screen), screen });
     },
     shortcuts: options.shortcuts ?? 'all',
     derive,

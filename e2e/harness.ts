@@ -142,3 +142,48 @@ export async function canvasPoint(
     y: canvas.y + Number(m[4]) + blu.y * bondLength * k,
   };
 }
+
+/** What the host seam reported through `subscribe`, as `listenEvents` collected it. */
+export type SeamEvent =
+  | { type: string }
+  | { type: 'context-menu'; target: { kind: string; id: string } | null; screen: Point };
+type Point = { x: number; y: number };
+
+/**
+ * Subscribes to the controller as a host would and keeps what it hears; read it with
+ * `heardEvents`. The collection lives in the page under a name only this helper uses.
+ */
+export async function listenEvents(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    interface Fiber {
+      return: Fiber | null;
+      memoizedProps: unknown;
+    }
+    interface Listening {
+      subscribe?: (listener: (e: unknown) => void) => () => void;
+    }
+    const root = document.querySelector('.editor');
+    if (!root) throw new Error('no editor root');
+    const key = Object.keys(root).find((k) => k.startsWith('__reactFiber$'));
+    if (key === undefined) throw new Error('no React fiber on the editor root');
+    let fiber: Fiber | null = (root as unknown as Record<string, Fiber>)[key] ?? null;
+    for (; fiber; fiber = fiber.return) {
+      const props = fiber.memoizedProps as { controller?: Listening } | null;
+      const subscribe = props?.controller?.subscribe;
+      if (typeof subscribe === 'function') {
+        const heard: unknown[] = [];
+        (window as unknown as { heardByHarness: unknown[] }).heardByHarness = heard;
+        subscribe.call(props?.controller, (e) => heard.push(e));
+        return;
+      }
+    }
+    throw new Error('no controller in the React tree');
+  });
+}
+
+/** The events `listenEvents` has collected so far. */
+export async function heardEvents(page: Page): Promise<SeamEvent[]> {
+  return page.evaluate(
+    () => (window as unknown as { heardByHarness: SeamEvent[] }).heardByHarness ?? [],
+  );
+}

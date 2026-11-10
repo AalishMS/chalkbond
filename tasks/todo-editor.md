@@ -559,9 +559,9 @@ extracted sub-doc; context-menu event carries `{ kind: 'atom', id }` over an ato
 empty canvas, and nothing during a drag except the cancel.
 
 **Acceptance criteria:**
-- [ ] Erase and clipboard commands are one undo step each (unit)
-- [ ] `canRun('paste')` false until something is copied
-- [ ] Right-click shows no menu (e2e: no new window/element appears; a listener on the controller receives the event)
+- [x] Erase and clipboard commands are one undo step each (unit)
+- [x] `canRun('paste')` false until something is copied
+- [x] Right-click shows no menu (e2e: no new window/element appears; a listener on the controller receives the event)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E18` → `E18/erase-drag.png` (scripted: insert hexane, Erase, drag across two bonds; capture mid-drag with ghosted parts), `E18/pasted.png` (scripted: select ethanol, Ctrl+C, move the pointer, Ctrl+V)
 
@@ -572,7 +572,7 @@ empty canvas, and nothing during a drag except the cancel.
 **Scope:** M
 
 ### Checkpoint O — selection and transforms
-- [ ] `npm run check` green; every Select/Erase gesture is one undo step (tool-machine tests)
+- [x] `npm run check` green; every Select/Erase gesture is one undo step (tool-machine tests)
 - [ ] Commit + push
 
 ---

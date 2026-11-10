@@ -32,6 +32,7 @@
   --overlay-marquee: 0.08;
   --overlay-merge: 0.32;
   --ghost-opacity: 0.45;
+  --erase-ghost-opacity: 0.3;
   --guide-opacity: 0.6;
 
   /* Type */

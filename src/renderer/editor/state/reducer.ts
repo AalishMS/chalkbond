@@ -9,6 +9,7 @@ import {
   undo,
   type Doc,
   type Selection,
+  type SubDoc,
 } from '@core/doc-model';
 import type { CanvasEvent } from '../model/canvas-event';
 import type { Derive } from '../model/derive';
@@ -26,10 +27,14 @@ import {
 import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
 import {
+  copySelection,
+  cutSelection,
   deleteSelection,
+  duplicateSelection,
   escape,
   flipSelection,
   nudgeSelection,
+  pasteFragment,
   selectEverything,
 } from './commands';
 import { differs } from './dirty';
@@ -86,6 +91,11 @@ export type EditorAction =
   | { type: 'nudge'; dx: number; dy: number }
   | { type: 'select-all' }
   | { type: 'flip'; axis: 'h' | 'v' }
+  | { type: 'copy' }
+  | { type: 'cut' }
+  /** `at`: the pointer, canvas px, or null for the canvas centre. `sub`: a fragment from the host. */
+  | { type: 'paste'; at: Point | null; sub?: SubDoc }
+  | { type: 'duplicate' }
   | { type: 'escape' }
   | { type: 'undo' }
   | { type: 'redo' }
@@ -268,6 +278,14 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return nudgeSelection(state, action.dx, action.dy, (s, a) => commit(s, a, ctx));
     case 'select-all':
       return selectEverything(state);
+    case 'copy':
+      return copySelection(state);
+    case 'cut':
+      return cutSelection(state, (s, a) => commit(s, a, ctx));
+    case 'paste':
+      return pasteFragment(state, action.at, action.sub, ctx.derive, (s, a) => commit(s, a, ctx));
+    case 'duplicate':
+      return duplicateSelection(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'flip':
       return flipSelection(state, action.axis, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'escape':

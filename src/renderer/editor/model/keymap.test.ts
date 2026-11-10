@@ -39,6 +39,29 @@ describe('K1 undo and redo keys', () => {
   });
 });
 
+describe('K1 clipboard keys', () => {
+  it('Ctrl+C / X / V copy, cut and paste; Ctrl+D duplicates', () => {
+    expect(globalCommand(key('c'), 'all')).toBe('copy');
+    expect(globalCommand(key('x'), 'all')).toBe('cut');
+    expect(globalCommand(key('v'), 'all')).toBe('paste');
+    expect(globalCommand(key('d'), 'all')).toBe('duplicate');
+    expect(globalCommand(key('C'), 'all')).toBe('copy');
+  });
+
+  it('need Ctrl alone, and are left to the host in canvas-only mode', () => {
+    for (const k of ['c', 'x', 'v', 'd']) {
+      expect(globalCommand(key(k, { ctrlKey: false }), 'all')).toBeNull();
+      expect(globalCommand(key(k, { shiftKey: true }), 'all')).toBeNull();
+      expect(globalCommand(key(k, { altKey: true }), 'all')).toBeNull();
+      expect(globalCommand(key(k), 'canvas-only')).toBeNull();
+    }
+  });
+
+  it('never reach the document from the name field', () => {
+    for (const k of ['c', 'x', 'v', 'd']) expect(fieldCommand(key(k), 'all', '')).toBeNull();
+  });
+});
+
 describe('K1 zoom keys', () => {
   it('Ctrl+= and Ctrl++ zoom in; Ctrl+- zooms out', () => {
     expect(globalCommand(key('='), 'all')).toBe('zoom-in');
