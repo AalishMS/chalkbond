@@ -126,6 +126,25 @@ describe('H2 priority and ties', () => {
     expect(hit(d3, v, p)).toEqual({ kind: 'object', id: text, type: 'text' });
   });
 
+  it('a strongly bent curved arrow is hit along its drawn (cubic) curve, not a quadratic', () => {
+    const v = viewport(1.5);
+    // Chord 3 BLU, bend 2.6: the drawn curve's handles are square to the chord. At t = 0.2 it is at
+    // (0.312, -2.496); the quadratic with the same bend is at (0.6, -2.496) there, ~22 px away.
+    const [doc, curved] = addObject(empty(), {
+      type: 'curved-arrow',
+      head: 'full',
+      from: { kind: 'point', p: { x: 0, y: 0 } },
+      to: { kind: 'point', p: { x: 3, y: 0 } },
+      bend: 2.6,
+    });
+    expect(hit(doc, v, screenOf(v, { x: 0.312, y: -2.496 }))).toEqual({
+      kind: 'object',
+      id: curved,
+      type: 'curved-arrow',
+    });
+    expect(hit(doc, v, screenOf(v, { x: 0.6, y: -2.496 }))).toBeNull();
+  });
+
   it('a curved arrow ranks below a straight one and above a plus', () => {
     const v = viewport(1.5);
     const [d1, plus] = addObject(empty(), { type: 'plus', at: { x: 5, y: -1 } });

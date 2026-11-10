@@ -10,15 +10,13 @@ import {
   type ObjectId,
   type Selection,
 } from '@core/doc-model';
-import { resolveStyle, type Scene } from '@core/svg-render';
+import { curveControls, resolveStyle, type Scene } from '@core/svg-render';
 import type { ToolId } from '../state/editor-state';
 import {
-  distToQuad,
+  distToCubic,
   distToSegment,
   distance,
   growRect,
-  length,
-  normalize,
   rectContains,
   rectInside,
   sub,
@@ -128,22 +126,13 @@ function screenRect(v: Viewport, r: Rect): Rect {
 
 const centre = (r: Rect): Point => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
 
-/** The control point of a curved arrow, as svg-render lays it out: chord midpoint + bend x chord x left normal. */
-export function curveControl(from: Point, to: Point, bend: number): Point {
-  const chord = sub(to, from);
-  const u = normalize(chord);
-  const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
-  const k = bend * length(chord);
-  return { x: mid.x + u.y * k, y: mid.y - u.x * k };
-}
-
-/** Screen end points of an arrow, or of a curved arrow with its control point. */
+/** Screen end points of an arrow, or of a curved arrow with its drawn curve's two handles. */
 function pathOf(
   doc: Doc,
   obj: DrawObject,
   v: Viewport,
   bondLength: number,
-): { from: Point; to: Point; control?: Point } | null {
+): { from: Point; to: Point; controls?: readonly [Point, Point] } | null {
   if (obj.type === 'arrow') {
     return {
       from: bluToScreen(v, obj.from, bondLength),
@@ -153,7 +142,8 @@ function pathOf(
   if (obj.type === 'curved-arrow') {
     const from = bluToScreen(v, resolveAnchor(doc, obj.from), bondLength);
     const to = bluToScreen(v, resolveAnchor(doc, obj.to), bondLength);
-    return { from, to, control: curveControl(from, to, obj.bend) };
+    const [, c1, c2] = curveControls(from, to, obj.bend);
+    return { from, to, controls: [c1, c2] };
   }
   return null;
 }
@@ -169,9 +159,9 @@ function objectDistance(
   const path = pathOf(doc, obj, v, scene.style.bondLength);
   if (path !== null) {
     const d =
-      path.control === undefined
+      path.controls === undefined
         ? distToSegment(p, path.from, path.to)
-        : distToQuad(p, path.from, path.control, path.to);
+        : distToCubic(p, path.from, path.controls[0], path.controls[1], path.to);
     return d <= LINE_PX ? d : null;
   }
   const ink = scene.extents[`obj:${obj.id}`];

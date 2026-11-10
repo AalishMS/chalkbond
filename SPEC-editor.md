@@ -136,6 +136,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R34 | `finishText` reads a trailing `+` / `-` after a digit run as a charge (T4 step 3): `Fe2+` → Fe²⁺, `NH4+` → NH₄⁺, `SO42-` → SO₄²⁻ | Teachers type `NH4+` and `Fe2+` constantly; the E26 rule left them flat | 2026-11-10 |
 | R35 | Text editor (E27): the Text tool opens the box on release, not on press (the press would give focus back to the canvas and close it); the box stands on the object's `at` by its `align` (left edge, centre or right edge, first line centred on `at.y`) and its lines align the same way; Insert buttons add plain non-explicit text; a paste or drop takes the clipboard's `text/plain` only (a `plaintext-only` box otherwise turns rich HTML into its own text); the empty state is hidden while an editor is open | A press-opened box lost focus at once; a left-aligned text drew centred lines in the box; rich clipboard HTML pasted with wrong line breaks; the chips sat behind a new box | 2026-11-10 |
 | R36 | Conditions and Tidy (E28): "above" is screen-up for a horizontal arrow whichever way it points, else the left of its travel direction (T3); a tilted arrow's ink reaches half the thickness of the same arrow lying flat beyond its shaft; a new condition is placed by the content it is committed with (and again when edited, resized or rotated), a nominal one-line `H` stands in for the slot box and the editor; the Text tool shows a slot for the pointer's side within 1.0 BLU of a shaft, after texts; Tidy attaches a free text to a slot only if the slot is free and sets `align` to `center`; changes under 1e-9 BLU are noise, so a tidied document plans nothing and a second Tidy records no step; Ctrl+Shift+T runs whenever the editor is idle and says "Nothing to tidy" when no arrow is in scope (the Tidy button stays disabled without any arrow) | The rules left these open; each is what makes T3 and TR6 exact and idempotent | 2026-11-10 |
+| R37 | Short curly arrows (E25 follow-up; svg-render Decision 13 draws `\|bend\| > 0.5` as a cubic whose ends are square to the chord): when either anchor is an atom drawn with a label, the default apex height is at least `0.9 − 0.5 × chord` BLU (chord 0.5: 0.65, bend 2.6; from chord 0.9 on R33 alone decides, so chord ≥ 0.9 arrows are unchanged). Hit-testing (H1), the hover band and the bend handle use svg-render's `curveControls`, so they follow the drawn curve | At bend 1.8 the label's clearance (≈ 0.3 BLU) ate the return leg and the head sat beside the O pointing away from it; with 0.65 the arc leaves the bond sideways and the head arrives at the label edge pointing at it (head within 20° of the label centre, visible arc ≥ 5 head lengths in both presets) | 2026-11-10 |
 
 ---
 
@@ -626,7 +627,7 @@ type Hit =
 
 | H# | Rule |
 |---|---|
-| H1 | Tolerances in screen px: atom 10 px around the vertex, or inside its `extents['atom:id']` grown 4 px for a labelled atom; bond 6 px from the segment between its atoms; straight arrow 6 px from `from→to`; curved arrow 6 px from the quadratic sampled at 32 steps (anchors via `resolveAnchor`); handles: their hit boxes; text, caption, plus, bracket, shape, callout: inside `extents` grown 4 px |
+| H1 | Tolerances in screen px: atom 10 px around the vertex, or inside its `extents['atom:id']` grown 4 px for a labelled atom; bond 6 px from the segment between its atoms; straight arrow 6 px from `from→to`; curved arrow 6 px from the drawn curve (svg-render's `curveControls`) sampled at 32 steps (anchors via `resolveAnchor`); handles: their hit boxes; text, caption, plus, bracket, shape, callout: inside `extents` grown 4 px |
 | H2 | Priority: handles of the selection > atoms > bonds > text-like objects (text, caption, callout) > straight arrows > curved arrows > plus > brackets > shapes. Within a class the nearest wins; ties by lower id number |
 | H3 | Merge target while dragging an atom or a bond end: the nearest other atom within 12 px (screen) or 0.3 BLU, whichever is larger, excluding the atoms being moved |
 | H4 | Marquee: atoms whose position is inside; bonds whose two atoms are inside; objects whose `extents` box is entirely inside. Shift adds to the selection |
@@ -932,8 +933,9 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 - **R3** Curved arrow: press on an atom or bond (else nothing, notice "Start on an atom or a
   bond." (info)), release on an atom, a bond or empty canvas. Anchors: atom → `{ kind: 'atom',
   atom }`, bond → `{ kind: 'bond', bond, t: 0.5 }`, empty → `{ kind: 'point', p }`. Same start and
-  end → cancel. Default `bend` (R33): apex height `h = max(0.2 × chord, 0.45 BLU)`, so
-  `|bend| = 2h / chord`; the sign puts the apex on the side farther from the nearest atom that is
+  end → cancel. Default `bend` (R33, R37): apex height `h = max(0.2 × chord, 0.45 BLU)`, raised
+  to `0.9 − 0.5 × chord` BLU when either anchor is an atom drawn with a label (svg-render's
+  `isLabelled`; chord 0.5 BLU: 0.65), so `|bend| = 2h / chord`; the sign puts the apex on the side farther from the nearest atom that is
   not an anchor's own (both atoms of a bond anchor), and when the two distances differ by less
   than 0.1 BLU, on the side away from the centroid of the atoms of the fragments the anchors
   touch (`+` when the centroid lies on the chord). Head = the option.

@@ -1,10 +1,13 @@
 import {
+  addAtom,
+  addBond,
   fragments,
   resolveAnchor,
   type Anchor,
   type ArrowObject,
   type AtomId,
   type Bond,
+  type BondId,
   type CurvedArrowObject,
   type Doc,
   type ObjectId,
@@ -150,7 +153,8 @@ describe('curved arrows (R3)', () => {
     expect(c.from).toEqual({ kind: 'bond', bond: bond.id, t: 0.5 });
     expect(c.to).toEqual({ kind: 'atom', atom: oxygen });
     expect(c.head).toBe('full');
-    expect(Math.abs(c.bend)).toBeCloseTo(1.8, 9);
+    // Chord 0.5 BLU into a labelled O: apex 0.65 BLU (R37).
+    expect(Math.abs(c.bend)).toBeCloseTo(2.6, 9);
     expect(resolveAnchor(edit[0], c.from).x).toBeTypeOf('number');
   });
 
@@ -250,6 +254,15 @@ describe('default curved-arrow bend (apex height, R3)', () => {
     expect(defaultBendSize(2.25)).toBeCloseTo(0.4, 9);
   });
 
+  it('with a labelled end the apex is at least 0.9 - 0.5 x chord (R37); from chord 0.9 no change', () => {
+    expect(defaultBendSize(0.5, true)).toBeCloseTo(2.6, 9); // apex 0.65
+    expect(defaultBendSize(0.7, true)).toBeCloseTo((2 * 0.55) / 0.7, 9);
+    expect(defaultBendSize(0.9, true)).toBeCloseTo(1, 9); // apex 0.45 either way
+    expect(defaultBendSize(1, true)).toBeCloseTo(0.9, 9);
+    expect(defaultBendSize(2.46, true)).toBeCloseTo(0.4, 9);
+    expect(defaultBendSize(0.5, false)).toBeCloseTo(1.8, 9);
+  });
+
   /** The apex of the arc and the nearest foreign atom to it, for a bend of either sign. */
   function apexGaps(doc: Doc, from: Anchor, to: Anchor): { chosen: number; other: number } {
     const a = resolveAnchor(doc, from);
@@ -285,10 +298,10 @@ describe('default curved-arrow bend (apex height, R3)', () => {
   const carbonOf = (b: Bond): AtomId =>
     [b.a1, b.a2].find((id) => acetic.atoms[id]?.element === 'C') as AtomId;
 
-  it('the electron-pair arrow from the C=O bond to O: apex 0.45 BLU, on the side away from the rest', () => {
+  it('the electron-pair arrow from the C=O bond to O: apex 0.65 BLU, on the side away from the rest', () => {
     const from = { kind: 'bond', bond: carbonylBond.id, t: 0.5 } as const;
     const to = { kind: 'atom', atom: oxygenOf(carbonylBond) } as const;
-    expect(Math.abs(curvedBend(acetic, from, to))).toBeCloseTo(1.8, 9);
+    expect(Math.abs(curvedBend(acetic, from, to))).toBeCloseTo(2.6, 9);
     const { chosen, other } = apexGaps(acetic, from, to);
     expect(chosen).toBeGreaterThanOrEqual(other - 1e-9);
   });
@@ -301,5 +314,48 @@ describe('default curved-arrow bend (apex height, R3)', () => {
     const to = { kind: 'atom', atom: carbonOf(oh) } as const;
     const { chosen, other } = apexGaps(acetic, from, to);
     expect(chosen).toBeGreaterThanOrEqual(other - 0.1);
+  });
+});
+
+describe('default bend over short chords: which ends are labelled (R37)', () => {
+  const C30 = Math.cos(Math.PI / 6);
+  /** CH3-CH(CH3)-O(-): an alkoxide, built atom by atom. */
+  function alkoxide(): { doc: Doc; o: AtomId; c: AtomId; co: BondId; cc: BondId } {
+    let doc = drawn();
+    const [d1, c1] = addAtom(doc, { element: 'C', x: 0, y: 0 });
+    const [d2, c] = addAtom(d1, { element: 'C', x: C30, y: -0.5 });
+    const [d3, o] = addAtom(d2, { element: 'O', x: 2 * C30, y: 0, charge: -1 });
+    const [d4, c3] = addAtom(d3, { element: 'C', x: C30, y: -1.5 });
+    const [d5, cc] = addBond(d4, c1, c);
+    const [d6, co] = addBond(d5, c, o);
+    [doc] = addBond(d6, c, c3);
+    return { doc, o, c, co, cc };
+  }
+
+  it('lone pair on O(-) to the adjacent C-O bond: 2.6, bulging away from the other carbons', () => {
+    const { doc, o, co } = alkoxide();
+    const from = { kind: 'atom', atom: o } as const;
+    const to = { kind: 'bond', bond: co, t: 0.5 } as const;
+    expect(Math.abs(curvedBend(doc, from, to))).toBeCloseTo(2.6, 9);
+  });
+
+  it('bare ends keep R33: C-C bond to its own skeleton carbon is 1.8', () => {
+    const { doc, c, cc } = alkoxide();
+    const from = { kind: 'bond', bond: cc, t: 0.5 } as const;
+    expect(Math.abs(curvedBend(doc, from, { kind: 'atom', atom: c }))).toBeCloseTo(1.8, 9);
+  });
+
+  it('a bond anchor is not a labelled end even when its atoms are: bond to bond is R33', () => {
+    const { doc, co, cc } = alkoxide();
+    const from = { kind: 'bond', bond: cc, t: 0.5 } as const;
+    const to = { kind: 'bond', bond: co, t: 0.5 } as const;
+    const chord = distance(resolveAnchor(doc, from), resolveAnchor(doc, to));
+    expect(Math.abs(curvedBend(doc, from, to))).toBeCloseTo(defaultBendSize(chord), 9);
+  });
+
+  it('O(-) to its bonded carbon (chord 1 BLU) is unchanged at 0.9', () => {
+    const { doc, o, c } = alkoxide();
+    const bend = curvedBend(doc, { kind: 'atom', atom: o }, { kind: 'atom', atom: c });
+    expect(Math.abs(bend)).toBeCloseTo(0.9, 9);
   });
 });

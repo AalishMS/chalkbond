@@ -33,7 +33,10 @@ describe('Overlay markup', () => {
             kind: 'band',
             from: { x: 1, y: 2 },
             to: { x: 3, y: 4 },
-            control: { x: 5, y: 6 },
+            controls: [
+              { x: 5, y: 6 },
+              { x: 7, y: 8 },
+            ],
             width: 8,
           },
           { kind: 'box', rect: { x: 1, y: 2, w: 30, h: 40 }, radius: 4 },
@@ -41,7 +44,7 @@ describe('Overlay markup', () => {
       },
     ]);
     expect(html).toContain('<path class="overlay-band" d="M1 2L3 4" stroke-width="8"></path>');
-    expect(html).toContain('d="M1 2Q5 6 3 4"');
+    expect(html).toContain('d="M1 2C5 6 7 8 3 4"');
     expect(html).toContain('<rect x="1" y="2" width="30" height="40" rx="4"></rect>');
   });
 

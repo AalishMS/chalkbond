@@ -9,10 +9,9 @@ import {
   type Selection,
 } from '@core/doc-model';
 import type { Perception } from '@core/chem-core';
-import type { Scene } from '@core/svg-render';
+import { curveControls, type Scene } from '@core/svg-render';
 import type { GestureState, Hit, Preview, ToolId } from '../state/editor-state';
 import { NOMINAL_RUNS, placeCondition } from './conditions';
-import { curveControl } from './hit-test';
 import { FRAME_GROW, frameRect, screenRect, selectionInk } from './frame';
 import { growRect, type Point, type Rect } from './geometry';
 import { selectionHandles } from './handles';
@@ -45,12 +44,12 @@ export const SLOT_RADIUS = 4;
 
 export type OverlayShape =
   | { readonly kind: 'circle'; readonly c: Point; readonly r: number }
-  /** A round-capped stroke from `from` to `to`, straight or bent through `control`. */
+  /** A round-capped stroke from `from` to `to`, straight or a cubic through its two `controls`. */
   | {
       readonly kind: 'band';
       readonly from: Point;
       readonly to: Point;
-      readonly control?: Point;
+      readonly controls?: readonly [Point, Point];
       readonly width: number;
     }
   | { readonly kind: 'box'; readonly rect: Rect; readonly radius: number }
@@ -154,13 +153,8 @@ function hoverShape(hit: Hit, doc: Doc, scene: Scene, v: Viewport): OverlayShape
       if (obj.type === 'curved-arrow') {
         const from = bluToScreen(v, resolveAnchor(doc, obj.from), bl);
         const to = bluToScreen(v, resolveAnchor(doc, obj.to), bl);
-        return {
-          kind: 'band',
-          from,
-          to,
-          control: curveControl(from, to, obj.bend),
-          width: HOVER_BAND,
-        };
+        const [, c1, c2] = curveControls(from, to, obj.bend);
+        return { kind: 'band', from, to, controls: [c1, c2], width: HOVER_BAND };
       }
       const ink = scene.extents[`obj:${hit.id}`];
       return ink === undefined ? null : boxShape(v, ink);
@@ -226,7 +220,9 @@ function shifted(shape: OverlayShape, by: Point): OverlayShape {
         ...shape,
         from: shiftPoint(shape.from, by),
         to: shiftPoint(shape.to, by),
-        ...(shape.control === undefined ? {} : { control: shiftPoint(shape.control, by) }),
+        ...(shape.controls === undefined
+          ? {}
+          : { controls: [shiftPoint(shape.controls[0], by), shiftPoint(shape.controls[1], by)] }),
       };
     case 'box':
       return { ...shape, rect: { ...shape.rect, x: shape.rect.x + by.x, y: shape.rect.y + by.y } };

@@ -43,7 +43,7 @@ describe('Curved arrow (R3)', () => {
       from: { kind: 'bond', bond, t: 0.5 },
       to: { kind: 'atom', atom: oxygen },
     });
-    expect(Math.abs(c?.bend ?? 0)).toBeCloseTo(1.8, 9);
+    expect(Math.abs(c?.bend ?? 0)).toBeCloseTo(2.6, 9); // apex 0.65 into a labelled O (R37)
   });
 
   it('the option picks the head', () => {

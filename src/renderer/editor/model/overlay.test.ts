@@ -10,7 +10,7 @@ import {
   type Doc,
   type ObjectId,
 } from '@core/doc-model';
-import { render } from '@core/svg-render';
+import { curveControls, render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import type { Hit } from './hit-test';
 import {
@@ -119,21 +119,28 @@ describe('hover shapes (Canvas appearance)', () => {
     ]);
   });
 
-  it('a curved arrow gets a band along its curve (control point of the layout)', () => {
-    const [doc, id] = addObject(emptyDoc(NOW), {
-      type: 'curved-arrow',
-      head: 'full',
-      from: { kind: 'point', p: { x: 0, y: 0 } },
-      to: { kind: 'point', p: { x: 2, y: 0 } },
-      bend: 0.5,
-    });
-    const [shape] = shapesOf({ kind: 'object', id, type: 'curved-arrow' }, doc);
-    expect(shape).toMatchObject({ kind: 'band', width: 8 });
-    // Travelling east, a positive bend bulges up: the control point is above the chord.
-    const control = shape?.kind === 'band' ? shape.control : undefined;
-    const mid = bluToScreen(v, { x: 1, y: 0 }, BL);
-    expect(control?.x).toBeCloseTo(mid.x, 6);
-    expect(control?.y).toBeCloseTo(mid.y - 1 * BL * 2, 6);
+  it('a curved arrow gets a band along its drawn curve (svg-render curveControls)', () => {
+    for (const bend of [0.5, 2.6]) {
+      const [doc, id] = addObject(emptyDoc(NOW), {
+        type: 'curved-arrow',
+        head: 'full',
+        from: { kind: 'point', p: { x: 0, y: 0 } },
+        to: { kind: 'point', p: { x: 2, y: 0 } },
+        bend,
+      });
+      const [shape] = shapesOf({ kind: 'object', id, type: 'curved-arrow' }, doc);
+      expect(shape).toMatchObject({ kind: 'band', width: 8 });
+      const from = bluToScreen(v, { x: 0, y: 0 }, BL);
+      const to = bluToScreen(v, { x: 2, y: 0 }, BL);
+      const [, c1, c2] = curveControls(from, to, bend);
+      const controls = shape?.kind === 'band' ? shape.controls : undefined;
+      expect(controls?.[0].x).toBeCloseTo(c1.x, 6);
+      expect(controls?.[0].y).toBeCloseTo(c1.y, 6);
+      expect(controls?.[1].x).toBeCloseTo(c2.x, 6);
+      expect(controls?.[1].y).toBeCloseTo(c2.y, 6);
+      // Travelling east, a positive bend bulges up: the handles are above the chord.
+      expect(c1.y).toBeLessThan(from.y);
+    }
   });
 
   it('a plus or a text gets its extents grown 3 px, radius 4', () => {

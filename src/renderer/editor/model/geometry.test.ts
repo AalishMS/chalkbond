@@ -5,14 +5,14 @@ import {
   angleDeg,
   cross,
   distance,
-  distToQuad,
+  cubicAt,
+  distToCubic,
   distToSegment,
   dot,
   growRect,
   length,
   lerp,
   normalize,
-  quadAt,
   rectCenter,
   rectContains,
   rectFromPoints,
@@ -118,31 +118,44 @@ describe('distance to a segment', () => {
   });
 });
 
-describe('quadratic curves', () => {
+describe('cubic curves', () => {
+  // The degree-raised quadratic 0,0 / 5,10 / 10,0: its midpoint is (5, 5).
   const p0 = { x: 0, y: 0 };
-  const c = { x: 5, y: 10 };
+  const c1 = { x: 10 / 3, y: 20 / 3 };
+  const c2 = { x: 20 / 3, y: 20 / 3 };
   const p1 = { x: 10, y: 0 };
 
-  it('quadAt hits the end points and the midpoint formula', () => {
-    expect(quadAt(p0, c, p1, 0)).toEqual(p0);
-    expect(quadAt(p0, c, p1, 1)).toEqual(p1);
-    expect(quadAt(p0, c, p1, 0.5)).toEqual({ x: 5, y: 5 });
+  it('cubicAt hits the end points and the midpoint formula', () => {
+    expect(cubicAt(p0, c1, c2, p1, 0)).toEqual(p0);
+    expect(cubicAt(p0, c1, c2, p1, 1)).toEqual(p1);
+    const mid = cubicAt(p0, c1, c2, p1, 0.5);
+    close(mid.x, 5, 9);
+    close(mid.y, 5, 9);
   });
 
-  it('distToQuad is 0 on the curve and small near it', () => {
-    close(distToQuad({ x: 5, y: 5 }, p0, c, p1), 0, 6);
-    expect(distToQuad({ x: 5, y: 7 }, p0, c, p1)).toBeCloseTo(2, 1);
+  it('distToCubic is 0 on the curve and small near it', () => {
+    close(distToCubic({ x: 5, y: 5 }, p0, c1, c2, p1), 0, 6);
+    expect(distToCubic({ x: 5, y: 7 }, p0, c1, c2, p1)).toBeCloseTo(2, 1);
   });
 
-  it('a straight control point degenerates to a segment', () => {
-    close(distToQuad({ x: 5, y: 3 }, p0, { x: 5, y: 0 }, p1), 3);
+  it('straight handles degenerate to a segment', () => {
+    close(distToCubic({ x: 5, y: 3 }, p0, { x: 3, y: 0 }, { x: 7, y: 0 }, p1), 3);
   });
 
-  it('is never larger than the distance to the sample points', () => {
-    const d = distToQuad({ x: 2, y: 8 }, p0, c, p1);
+  it('is never larger than the distance to the 32 sample points', () => {
+    const d = distToCubic({ x: 2, y: 8 }, p0, c1, c2, p1);
     for (let i = 0; i <= 32; i++) {
-      expect(d).toBeLessThanOrEqual(distance({ x: 2, y: 8 }, quadAt(p0, c, p1, i / 32)) + 1e-9);
+      expect(d).toBeLessThanOrEqual(
+        distance({ x: 2, y: 8 }, cubicAt(p0, c1, c2, p1, i / 32)) + 1e-9,
+      );
     }
+  });
+
+  it('follows a U-shaped arc (handles square to the chord) round its far side', () => {
+    // A short chord with long handles: the far side is 7.5 off the chord, near (5, 7.5).
+    const u1 = { x: 0, y: 10 };
+    const u2 = { x: 10, y: 10 };
+    close(distToCubic({ x: 5, y: 7.5 }, p0, u1, u2, p1), 0, 6);
   });
 });
 

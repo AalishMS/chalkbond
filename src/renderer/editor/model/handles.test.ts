@@ -8,7 +8,7 @@ import {
   type ObjectId,
   type Selection,
 } from '@core/doc-model';
-import { render } from '@core/svg-render';
+import { curveControls, render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import { EMPTY_SELECTION } from '../state/editor-state';
 import { drawn, wholeOf } from '../state/testing';
@@ -139,6 +139,34 @@ describe('curved-arrow handles', () => {
     // (up on screen for a chord running right).
     const mid = { x: (from.x + to.x) / 2, y: from.y - 0.5 * (v.zoom * (4 / 3) * BL) };
     expect(b?.shapes).toEqual([{ kind: 'diamond', c: mid, size: 9 }]);
+  });
+});
+
+describe('curved-arrow bend handle on a short, strongly bent arrow', () => {
+  it('sits on the drawn curve at t = 0.5 (svg-render curveControls)', () => {
+    const [d1, a] = addAtom(drawn(), { element: 'C', x: 0, y: 0 });
+    const [d2, b] = addAtom(d1, { element: 'O', x: 0, y: -1 });
+    const [d3, bond] = addBond(d2, a, b, { order: 2 });
+    const [doc, curve] = addObject(d3, {
+      type: 'curved-arrow',
+      head: 'full',
+      from: { kind: 'bond', bond, t: 0.5 },
+      to: { kind: 'atom', atom: b },
+      bend: 2.6,
+    });
+    const handles = selectionHandles(doc, render(doc), v, sel({ objects: new Set([curve]) }));
+    const bendHandle = handles.find(
+      (h) => h.hit.kind === 'handle' && h.hit.handle === 'curve-bend',
+    );
+    const from = bluToScreen(v, { x: 0, y: -0.5 }, BL);
+    const to = bluToScreen(v, { x: 0, y: -1 }, BL);
+    const [p0, c1, c2, p3] = curveControls(from, to, 2.6);
+    const mid = {
+      x: (p0.x + 3 * c1.x + 3 * c2.x + p3.x) / 8,
+      y: (p0.y + 3 * c1.y + 3 * c2.y + p3.y) / 8,
+    };
+    expect(bendHandle?.at.x).toBeCloseTo(mid.x, 6);
+    expect(bendHandle?.at.y).toBeCloseTo(mid.y, 6);
   });
 });
 

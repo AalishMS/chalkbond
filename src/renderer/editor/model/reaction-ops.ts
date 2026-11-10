@@ -4,6 +4,7 @@
 import {
   addObject,
   fragments,
+  neighbors,
   resolveAnchor,
   updateObject,
   type Anchor,
@@ -12,7 +13,7 @@ import {
   type Doc,
   type ObjectId,
 } from '@core/doc-model';
-import type { Scene } from '@core/svg-render';
+import { isLabelled, type Scene } from '@core/svg-render';
 import type { Guide } from '../state/editor-state';
 import { distance, dot, snapAngle, type Point } from './geometry';
 import { itemBoxes } from './move';
@@ -28,6 +29,13 @@ export const ARROW_DEFAULT_BLU = 2.5;
 export const CURVE_BEND = 0.4;
 /** R3: the lowest apex height (BLU) of a new curved arrow, so a short chord still reads as a curve. */
 export const CURVE_MIN_APEX = 0.45;
+/**
+ * R37: with an end on a labelled atom the apex is at least `CURVE_LABEL_APEX - CURVE_LABEL_SLOPE x
+ * chord` BLU (0.65 over a bond-to-own-atom chord of 0.5), so the arc clears the label and its
+ * head arrives at the label edge pointing at it; from chord 0.9 R33 alone decides.
+ */
+export const CURVE_LABEL_APEX = 0.9;
+export const CURVE_LABEL_SLOPE = 0.5;
 /** R3: apex distances to the nearest foreign atom closer than this (BLU) do not decide the side. */
 export const CURVE_SIDE_TIE = 0.1;
 
@@ -91,11 +99,22 @@ function fragmentOf(doc: Doc, anchor: Anchor): readonly AtomId[] {
   return fragments(doc).find((f) => f.includes(atom)) ?? [];
 }
 
-/** R3: the size of the default bend over a chord: apex height `max(0.2 × chord, 0.45 BLU)`. */
-export function defaultBendSize(chord: number): number {
+/**
+ * R3: the size of the default bend over a chord: apex height `max(0.2 × chord, 0.45 BLU)`, and at
+ * least `0.9 - 0.5 × chord` when an end is a labelled atom (R37).
+ */
+export function defaultBendSize(chord: number, labelled = false): number {
   if (chord <= 0) return CURVE_BEND;
-  const apex = Math.max(CURVE_BEND * 0.5 * chord, CURVE_MIN_APEX);
+  const label = labelled ? CURVE_LABEL_APEX - CURVE_LABEL_SLOPE * chord : 0;
+  const apex = Math.max(CURVE_BEND * 0.5 * chord, CURVE_MIN_APEX, label);
   return (2 * apex) / chord;
+}
+
+/** R37: an atom anchor on an atom svg-render draws with a label (its end is clipped out of it). */
+function onLabel(doc: Doc, anchor: Anchor): boolean {
+  if (anchor.kind !== 'atom') return false;
+  const atom = doc.atoms[anchor.atom];
+  return atom !== undefined && isLabelled(atom, neighbors(doc, atom.id).length);
 }
 
 /** The atoms an anchor stands on: its atom, or both atoms of its bond. */
@@ -109,19 +128,20 @@ function ownAtoms(doc: Doc, anchor: Anchor): readonly AtomId[] {
 }
 
 /**
- * R3: the default bend of a new curved arrow. Its size is `defaultBendSize`. Its sign puts the
+ * R3: the default bend of a new curved arrow. Its size is `defaultBendSize` (labelled when either
+ * anchor is an atom drawn with a label). Its sign puts the
  * apex on the side farther from the nearest atom that is not one of the anchors' own atoms; when
  * the two distances differ by less than 0.1 BLU the side bulges away from the centroid of the
  * atoms of the fragments the anchors touch (`+` when that centroid lies on the chord).
- * svg-render puts the control point at the chord midpoint + bend x chord length x (u.y, -u.x), u
- * the unit chord, so the apex is bend x chord / 2 from the midpoint.
+ * svg-render's curve passes the chord midpoint + bend x chord / 2 x (u.y, -u.x) at t = 0.5, u the
+ * unit chord (`curveControls`), so that is the apex.
  */
 export function curvedBend(doc: Doc, from: Anchor, to: Anchor): number {
   const a = resolveAnchor(doc, from);
   const b = resolveAnchor(doc, to);
   const len = distance(a, b);
   if (len === 0) return CURVE_BEND;
-  const size = defaultBendSize(len);
+  const size = defaultBendSize(len, onLabel(doc, from) || onLabel(doc, to));
   const normal = { x: (b.y - a.y) / len, y: -(b.x - a.x) / len };
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 

@@ -9,11 +9,11 @@ function Shape({ shape }: { shape: OverlayShape }): React.JSX.Element {
     case 'circle':
       return <circle cx={n(shape.c.x)} cy={n(shape.c.y)} r={shape.r} />;
     case 'band': {
-      const { from, to, control } = shape;
+      const { from, to, controls } = shape;
       const d =
-        control === undefined
+        controls === undefined
           ? `M${n(from.x)} ${n(from.y)}L${n(to.x)} ${n(to.y)}`
-          : `M${n(from.x)} ${n(from.y)}Q${n(control.x)} ${n(control.y)} ${n(to.x)} ${n(to.y)}`;
+          : `M${n(from.x)} ${n(from.y)}C${n(controls[0].x)} ${n(controls[0].y)} ${n(controls[1].x)} ${n(controls[1].y)} ${n(to.x)} ${n(to.y)}`;
       return <path className="overlay-band" d={d} strokeWidth={shape.width} />;
     }
     case 'line':

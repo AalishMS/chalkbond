@@ -60,24 +60,28 @@ export function distToSegment(p: Point, a: Point, b: Point): number {
   return distance(p, { x: a.x + ab.x * t, y: a.y + ab.y * t });
 }
 
-/** The point at `t` of the quadratic Bézier `p0`, control `c`, `p1`. */
-export function quadAt(p0: Point, c: Point, p1: Point, t: number): Point {
+/** The point at `t` of the cubic Bézier `p0`, `c1`, `c2`, `p1`. */
+export function cubicAt(p0: Point, c1: Point, c2: Point, p1: Point, t: number): Point {
   const u = 1 - t;
+  const a = u * u * u;
+  const b = 3 * u * u * t;
+  const c = 3 * u * t * t;
+  const d = t * t * t;
   return {
-    x: u * u * p0.x + 2 * u * t * c.x + t * t * p1.x,
-    y: u * u * p0.y + 2 * u * t * c.y + t * t * p1.y,
+    x: a * p0.x + b * c1.x + c * c2.x + d * p1.x,
+    y: a * p0.y + b * c1.y + c * c2.y + d * p1.y,
   };
 }
 
 /** Samples of a curve used for hit-testing (H1). */
 const CURVE_STEPS = 32;
 
-/** Distance from `p` to the quadratic sampled at 32 steps (the polyline through the samples). */
-export function distToQuad(p: Point, p0: Point, c: Point, p1: Point): number {
+/** Distance from `p` to the cubic sampled at 32 steps (the polyline through the samples). */
+export function distToCubic(p: Point, p0: Point, c1: Point, c2: Point, p1: Point): number {
   let best = Infinity;
   let prev = p0;
   for (let i = 1; i <= CURVE_STEPS; i++) {
-    const next = quadAt(p0, c, p1, i / CURVE_STEPS);
+    const next = cubicAt(p0, c1, c2, p1, i / CURVE_STEPS);
     best = Math.min(best, distToSegment(p, prev, next));
     prev = next;
   }

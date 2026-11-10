@@ -2,10 +2,10 @@
 // above the frame, the end handles of a selected arrow, the end and bend handles of a selected
 // curved arrow. Pure data in screen px; handles are tested before every other hit (H2).
 import { resolveAnchor, type Doc, type Selection } from '@core/doc-model';
-import type { Scene } from '@core/svg-render';
+import { curveControls, type Scene } from '@core/svg-render';
 import { frameRect, selectionInk } from './frame';
-import { distance, type Point } from './geometry';
-import { curveControl, type Hit } from './hit-test';
+import { cubicAt, distance, type Point } from './geometry';
+import type { Hit } from './hit-test';
 import type { OverlayShape } from './overlay';
 import { isEmptySelection } from './selection';
 import { bluToScreen, type Viewport } from './viewport';
@@ -86,12 +86,9 @@ export function selectionHandles(
     } else if (obj?.type === 'curved-arrow') {
       const from = shift(bluToScreen(v, resolveAnchor(doc, obj.from), bl));
       const to = shift(bluToScreen(v, resolveAnchor(doc, obj.to), bl));
-      const control = curveControl(from, to, obj.bend);
-      // The quadratic's midpoint: (from + 2 control + to) / 4.
-      const mid = {
-        x: (from.x + 2 * control.x + to.x) / 4,
-        y: (from.y + 2 * control.y + to.y) / 4,
-      };
+      // The drawn curve's t = 0.5 point (svg-render `curveControls`): its apex.
+      const [p0, c1, c2, p3] = curveControls(from, to, obj.bend);
+      const mid = cubicAt(p0, c1, c2, p3, 0.5);
       const end = (handle: 'curve-from' | 'curve-to', at: Point): Handle => ({
         hit: { kind: 'handle', handle, id },
         at,

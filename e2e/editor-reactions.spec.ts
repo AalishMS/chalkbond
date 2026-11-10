@@ -237,11 +237,26 @@ test('Curly tool: acetic acid C=O bond to its O atom, anchored, full head, hover
     expect(c.from).toEqual({ kind: 'bond', bond: carbonyl.id, t: 0.5 });
     expect(c.to).toEqual({ kind: 'atom', atom: oxygen });
     expect(c.head).toBe('full');
-    expect(Math.abs(c.bend)).toBeCloseTo(1.8, 9);
+    expect(Math.abs(c.bend)).toBeCloseTo(2.6, 9); // apex 0.65 BLU into a labelled O (R37)
     // Rendered by svg-render: a path in the part, and its ink stays clear of the label's glyphs.
     const scene = render(after);
     const ink = scene.extents[`obj:${c.id}`];
     expect(ink).toBeDefined();
+    // The head ends near the O and points at it (svg-render Decision 13).
+    const svg = scene.parts.find((p) => p.key === `obj:${c.id}`)?.svg ?? '';
+    const head = (/points="([^"]+)"/.exec(svg)?.[1] ?? '')
+      .split(' ')
+      .map((xy) => xy.split(',').map(Number) as [number, number]);
+    const [tip, b1, b2] = head as [[number, number], [number, number], [number, number]];
+    const bl = scene.style.bondLength;
+    const centre = doc.atoms[oxygen] as Pt;
+    const toO = { x: centre.x * bl - tip[0], y: centre.y * bl - tip[1] };
+    const dir = { x: tip[0] - (b1[0] + b2[0]) / 2, y: tip[1] - (b1[1] + b2[1]) / 2 };
+    const gap = Math.hypot(toO.x, toO.y);
+    expect((toO.x * dir.x + toO.y * dir.y) / (gap * Math.hypot(dir.x, dir.y))).toBeGreaterThan(
+      Math.cos(Math.PI / 4),
+    );
+    expect(gap).toBeLessThan(0.6 * bl);
     await page.keyboard.press('Control+z');
     expect(curves(await readDocument(page))).toHaveLength(0);
   } finally {
