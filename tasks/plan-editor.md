@@ -124,11 +124,11 @@ Everything else is sequential: each phase builds on the previous one.
 
 ### Checkpoint Q — reactions
 - [x] `npm run check` green; SC3 reaction in ≤ 15 actions (`state/scenarios.test.ts`, `e2e/editor-reaction.spec.ts`)
-- [ ] Commit + push
+- [x] Commit + push
 
 ### Phase 6: preset, hardening, acceptance
 - [x] E30: Preset switch
-- [ ] E31: Property suite and controller completeness
+- [x] E31: Property suite and controller completeness
 - [ ] E32: Performance measurement
 - [ ] E33: Coverage and accessibility pass
 - [ ] E34: Windows checklist, AGENTS.md, success-criteria sweep

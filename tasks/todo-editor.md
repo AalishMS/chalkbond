@@ -894,7 +894,7 @@ screen px.
 
 ### Checkpoint Q — reactions
 - [x] `npm run check` green; SC3 reaction in ≤ 15 actions (`state/scenarios.test.ts`, `e2e/editor-reaction.spec.ts`)
-- [ ] Commit + push
+- [x] Commit + push
 
 ---
 
@@ -933,14 +933,14 @@ command, `paste-sub`, `insert-text`, `shortcuts: 'canvas-only'` leaves Ctrl keys
 (AGENTS.md).
 
 **Acceptance criteria:**
-- [ ] Properties 1 and 2 pass at 1,000 runs (SC3, SC4)
-- [ ] Every `EditorCommand` has a `canRun` and `run` test
+- [x] Properties 1 and 2 pass at 1,000 runs (SC3, SC4)
+- [x] Every `EditorCommand` has a `canRun` and `run` test
 
 **Verification:** `npm test -- src/renderer/editor/state` (run twice to vary seeds), `npm run check`
 
 **Dependencies:** E30
 
-**Files:** `src/renderer/editor/state/{editor.prop.test.ts,controller.test.ts,controller.ts}`
+**Files:** `src/renderer/editor/state/{editor.prop.test.ts,controller-commands.test.ts}` (no `controller.ts` change was needed)
 
 **Scope:** M
 

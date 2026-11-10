@@ -665,7 +665,7 @@ interface EditorController {
 }
 type EditorCommand =
   | 'undo' | 'redo' | 'cut' | 'copy' | 'paste' | 'duplicate' | 'delete' | 'select-all'
-  | 'zoom-in' | 'zoom-out' | 'zoom-fit' | 'zoom-reset' | 'clean-up' | 'toggle-kekule'
+  | 'zoom-in' | 'zoom-out' | 'zoom-fit' | 'zoom-reset' | 'clean-up' | 'toggle-kekulé'
   | 'tidy-reaction' | 'focus-name-field'
   | { type: 'set-preset'; preset: StylePreset }
   | { type: 'paste-sub'; sub: SubDoc }        // host read a Chalkbond fragment from the clipboard
@@ -677,6 +677,10 @@ type EditorEvent =
   | { type: 'context-menu'; target: HostHit | null; screen: Point };   // CM1
 ```
 
+- `focus-name-field` is carried out by the view, which owns the DOM focus: on the controller its
+  `canRun` is false and `run` does nothing. Every other command's `canRun` and `run` agree: with
+  `canRun` false `run` changes nothing, with it true `run` has its documented effect
+  (`state/controller-commands.test.ts`).
 - `clipboard-export` renders with svg-render from `getDoc()` and `getSelection()` (or the
   `onCopy` payload); the editor never builds export SVG.
 - `app-shell` owns save/open and calls `load` / `markSaved`; it shows the dirty marker from the
