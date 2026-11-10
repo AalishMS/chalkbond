@@ -417,6 +417,149 @@ describe('render: satellites', () => {
   });
 });
 
+describe('render: arrows, plus signs, shapes and brackets', () => {
+  const scheme = (): { doc: Doc; ids: Record<string, ObjectId>; m: Molecule } => {
+    const m = ethanol();
+    let doc = m.doc;
+    const ids: Record<string, ObjectId> = {};
+    const add = (name: string, init: Parameters<typeof addObject>[1]) => {
+      [doc, ids[name]] = addObject(doc, init) as [Doc, ObjectId];
+    };
+    add('arrow', { type: 'arrow', kind: 'equilibrium', from: { x: 3, y: 0 }, to: { x: 5, y: 0 } });
+    add('plus', { type: 'plus', at: { x: 2, y: 0 } });
+    add('shape', {
+      type: 'shape',
+      shape: 'ellipse',
+      rect: { x: -1, y: -1, w: 4, h: 3 },
+      fill: '#ffee00',
+      fillOpacity: 0.3,
+    });
+    add('bracket', {
+      type: 'bracket',
+      shape: 'square',
+      rect: { x: 6, y: -1, w: 2, h: 2 },
+      corner: [{ text: 'n' }],
+    });
+    return { doc, ids, m };
+  };
+
+  it('draws each type under its obj key, with an extents entry', () => {
+    const { doc, ids } = scheme();
+    const scene = render(doc);
+    for (const id of Object.values(ids)) {
+      expect(keys(scene)).toContain(`obj:${id}`);
+      expect(scene.extents[`obj:${id}`]).toBeDefined();
+    }
+    expect(scene.notices).toEqual([]);
+  });
+
+  it('shapes paint beneath structures; other objects paint above them, by zOrder', () => {
+    const { doc, ids } = scheme();
+    const order = keys(render(doc));
+    const k = (name: string) => order.indexOf(`obj:${ids[name]}`);
+    const firstAtomOrBond = order.findIndex((x) => x.startsWith('atom:') || x.startsWith('bond:'));
+    const lastAtomOrBond = order.map((x) => /^(atom|bond):/.test(x)).lastIndexOf(true);
+    expect(k('shape')).toBe(0);
+    expect(k('shape')).toBeLessThan(firstAtomOrBond);
+    expect(k('arrow')).toBeGreaterThan(lastAtomOrBond);
+    expect(k('arrow')).toBeLessThan(k('plus'));
+    expect(k('plus')).toBeLessThan(k('bracket'));
+  });
+
+  it('bounds equal the independent ink scan of the whole scene', () => {
+    const { doc } = scheme();
+    const scene = render(doc);
+    const scan = inkScan(joined(scene))!;
+    const b = scene.bounds as Rect;
+    expect(Math.abs(b.x - scan.x)).toBeLessThan(0.01);
+    expect(Math.abs(b.y - scan.y)).toBeLessThan(0.01);
+    expect(Math.abs(b.w - scan.w)).toBeLessThan(0.01);
+    expect(Math.abs(b.h - scan.h)).toBeLessThan(0.01);
+  });
+
+  it('extents include arrowheads and stroke half-widths', () => {
+    const m = ethanol();
+    const [doc, id] = addObject(m.doc, {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 5 },
+      to: { x: 2, y: 5 },
+    });
+    const e = render(doc).extents[`obj:${id}`]!;
+    const s = resolveStyle(doc.style);
+    near(e.x, -s.lineWidth / 2);
+    near(e.w, 2 * s.bondLength + s.lineWidth / 2);
+    near(e.h, 2 * s.arrowHeadHalfWidth);
+  });
+
+  it('a selected object draws alone, byte-identical to the full render', () => {
+    const { doc, ids } = scheme();
+    const full = render(doc);
+    const sub = render(doc, { only: only([], [], [ids.arrow!, ids.shape!]) });
+    expect(keys(sub)).toEqual([`obj:${ids.shape}`, `obj:${ids.arrow}`]);
+    for (const p of sub.parts) expect(p.svg).toBe(part(full, p.key).svg);
+  });
+
+  it('bracket corner text reports unmeasured glyphs with the other notices', () => {
+    const m = ethanol();
+    const [doc] = addObject(m.doc, {
+      type: 'bracket',
+      shape: 'round',
+      rect: { x: 0, y: 5, w: 1, h: 1 },
+      corner: [{ text: '中' }],
+    });
+    expect(render(doc).notices).toEqual([{ code: 'unmeasured-glyph', chars: '中' }]);
+  });
+
+  it('skips with a notice instead of throwing: zero-length arrow, empty shape, bad coordinates', () => {
+    const m = ethanol();
+    let doc = m.doc;
+    const ids: ObjectId[] = [];
+    const valid = [
+      { type: 'arrow', kind: 'forward', from: { x: 1, y: 1 }, to: { x: 1, y: 1 } },
+      { type: 'shape', shape: 'rect', rect: { x: 0, y: 0, w: 1, h: 1 }, fillOpacity: 1 },
+      { type: 'plus', at: { x: 0, y: 0 } },
+      { type: 'arrow', kind: 'forward', from: { x: 0, y: 0 }, to: { x: 1, y: 0 } },
+      { type: 'bracket', shape: 'curly', rect: { x: 0, y: 0, w: 1, h: 1 } },
+      {
+        type: 'shape',
+        shape: 'rect',
+        rect: { x: 0, y: 0, w: 1, h: 1 },
+        fill: '#000000',
+        fillOpacity: 1,
+      },
+    ] as Parameters<typeof addObject>[1][];
+    for (const init of valid) {
+      let id: ObjectId;
+      [doc, id] = addObject(doc, init);
+      ids.push(id);
+    }
+    // A hand-edited file can hold what addObject refuses: patch the stored objects directly.
+    const patches: Record<number, object> = {
+      2: { at: { x: Number.NaN, y: 0 } },
+      3: { to: { x: Infinity, y: 0 } },
+      4: { rect: { x: 0, y: 0, w: Number.NaN, h: 1 } },
+      5: { rect: { x: 0, y: Infinity, w: 1, h: 1 } },
+    };
+    const objects = { ...doc.objects };
+    for (const [i, patch] of Object.entries(patches)) {
+      const id = ids[Number(i)]!;
+      objects[id] = { ...objects[id]!, ...patch } as (typeof objects)[ObjectId];
+    }
+    const scene = render({ ...doc, objects });
+    // Shapes are visited first (beneath layer), so compare as sets.
+    expect(scene.notices.map((n) => (n.code === 'skipped-item' ? n.key : n.code)).sort()).toEqual(
+      ids.map((id) => `obj:${id}`).sort(),
+    );
+    expect(keys(scene).some((x) => x.startsWith('obj:'))).toBe(false);
+  });
+
+  it('every object part is well-formed with only allow-listed elements', () => {
+    const { doc } = scheme();
+    expect(() => checkXml(`<g>\n${joined(render(doc))}\n</g>`)).not.toThrow();
+  });
+});
+
 describe('render: subsets', () => {
   const m = ethanol();
   const full = render(m.doc);
@@ -596,13 +739,13 @@ describe('render: notices', () => {
     ]);
   });
 
-  it('objects are not implemented yet: each drawn one gives a skipped-item notice', () => {
+  it('object types without a rule yet give a skipped-item notice when drawn', () => {
     const m = ethanol();
     const [doc, id] = addObject(m.doc, {
-      type: 'arrow',
-      kind: 'forward',
-      from: { x: 0, y: 3 },
-      to: { x: 2, y: 3 },
+      type: 'text',
+      at: { x: 0, y: 3 },
+      runs: [{ text: 'x' }],
+      align: 'left',
     });
     expect(render(doc).notices).toEqual([
       { code: 'skipped-item', key: `obj:${id}`, reason: expect.any(String) as string },

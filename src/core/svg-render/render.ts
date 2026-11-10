@@ -6,14 +6,13 @@
 // byte-identical to the same-key part of the full render.
 //
 // Paint order: beneath objects, ring circles, bonds, atoms, above objects. Later tasks plug in
-// here: satellites join an atom's part; `drawObject` gains the real object rules (S9, S10).
+// here: satellites join an atom's part; `drawObject` (objects.ts) holds the object rules (S9, S10).
 import { perceive } from '../chem-core';
 import {
   paintLayers,
   type AtomId,
   type BondId,
   type Doc,
-  type DrawObject,
   type ObjectId,
   type Point,
   type Rect,
@@ -22,7 +21,8 @@ import { bondClipBox, buildAtomLabel, isLabelled, type AtomLabel } from './atom-
 import { layoutBond } from './bonds';
 import { circledRings, ringCircle } from './circles';
 import { rectUnion, unionAll } from './geom';
-import { exhaustive, sortedIds } from './order';
+import { drawObject } from './objects';
+import { sortedIds } from './order';
 import { ringCentroid, ringsByBond } from './rings';
 import { layoutSatellites } from './satellites';
 import { bluToPt, resolveStyle } from './style';
@@ -41,27 +41,6 @@ interface Neighbour {
 }
 
 const finite = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
-
-/**
- * The rule for one object, or the reason it is skipped. Exhaustive over `DrawObject`; the cases
- * that have no rule yet are skipped with a notice (removed as S9 and S10 land).
- */
-function drawObject(obj: DrawObject): Item | string {
-  switch (obj.type) {
-    case 'arrow':
-    case 'curved-arrow':
-    case 'plus':
-    case 'text':
-    case 'caption':
-    case 'callout':
-    case 'bracket':
-    case 'shape':
-      return `${obj.type} is not rendered yet`;
-    default:
-      exhaustive(obj);
-      return 'unknown object type';
-  }
-}
 
 /** Merges the labels' unmeasured-glyph notices into one (deduplicated, sorted by code point). */
 function mergeGlyphNotices(all: readonly UnmeasuredGlyphNotice[]): RenderNotice[] {
@@ -166,9 +145,13 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
     for (const id of ids) {
       const obj = doc.objects[id];
       if (!obj || (sel && !sel.objects.has(id))) continue;
-      const out = drawObject(obj);
-      if (typeof out === 'string') skip(`obj:${id}`, out);
-      else items.push(out);
+      const out = drawObject(obj, style);
+      if (typeof out === 'string') {
+        skip(`obj:${id}`, out);
+        continue;
+      }
+      items.push({ key: `obj:${id}`, svg: out.svg, ink: out.ink });
+      glyphNotices.push(...(out.notices ?? []));
     }
   };
 

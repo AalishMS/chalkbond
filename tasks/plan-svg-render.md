@@ -88,7 +88,7 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 
 ### Phase 3: satellites and the other item types
 - [x] S8: satellites (lone pairs, radicals, charge on a vertex, partial charge, atom number)
-- [ ] S9: arrows (5 kinds), plus signs, shapes, brackets
+- [x] S9: arrows (5 kinds), plus signs, shapes, brackets
 - [ ] S10: text, caption, callout, curved arrows
 
 ### Checkpoint J — every item type renders

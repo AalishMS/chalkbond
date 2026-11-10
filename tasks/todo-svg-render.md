@@ -261,9 +261,9 @@ length; plus arms; shape fill/stroke/opacity combinations and nothing-drawn case
 shape; corner runs bottom-right vs `sup` top-right; paint layers (shapes beneath).
 
 **Acceptance criteria:**
-- [ ] Every `ArrowKind`, bracket shape and shape variant has a rule and a test (SC2)
-- [ ] Shapes paint beneath structures, other objects above, by `zOrder` (SC2)
-- [ ] Extents include arrowheads and stroke half-widths (SC5)
+- [x] Every `ArrowKind`, bracket shape and shape variant has a rule and a test (SC2)
+- [x] Shapes paint beneath structures, other objects above, by `zOrder` (SC2)
+- [x] Extents include arrowheads and stroke half-widths (SC5)
 
 **Verification:** `npm test -- src/core/svg-render`
 
