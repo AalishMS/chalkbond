@@ -155,8 +155,14 @@ Vitest projects (`vitest.config.mts`):
   `e2e/editor-*.spec.ts`. Look at the PNGs after any visual change.
 - e2e seams (`e2e/harness.ts`): `openApp`, `insertName`, `canvasPoint`, `readDocument`,
   `loadDocument`; `data-testid`s on every control; `data-key` on parts; `data-layer="content"`
-  carries the viewport transform. There is no test-only global: `readDocument` / `loadDocument`
-  reach the controller through React's fibers.
+  carries the viewport transform. `loadDocument`, `readDocument`, `readSelection`, `listenEvents`,
+  `heardEvents`, `heardNotices`, `heardCommands` use the test hook `window.__chalkbondTest`
+  (`src/renderer/app/model/test-hook.ts`). Main enables it only for an unpackaged build started with
+  `--chalkbond-test-hooks`; `launchApp` always passes it (`{ testHooks: false }` launches without),
+  with a fresh `--chalkbond-user-data` temp folder per launch (`{ userData }` reuses one) and
+  `{ dialogs: [...] }` scripts `dialog.showMessageBox/showOpenDialog/showSaveDialog` in order
+  (`e2e/stub-dialogs.mjs`; calls are logged on `globalThis.__chalkbondDialogLog`). Windows-only
+  specs go in `e2e/win/` (ignored on other platforms by `testIgnore`).
 - The accessibility facts are tested, not assumed: `e2e/editor-a11y.spec.ts` (keyboard walkthrough,
   focus rings, names, hit targets, reduced motion) and `editor-keyboard.spec.ts` (tab order, K4).
 - Coverage: `vitest.config.mts` enforces 70 % lines for `src/renderer/editor/**` under
@@ -211,6 +217,4 @@ Write `SPEC-clipboard-export.md` first and get it approved. The editor hands it 
 - `focus-name-field` is view-only: on the controller `canRun` is false and `run` does nothing.
   `shortcuts: 'canvas-only'` leaves the Ctrl rows (K1) to the host's menu.
 - `isDirty()`, `markSaved()`, `load(doc)` and the `dirty` event (app-shell owns save and open).
-- The e2e `loadDocument` / `readDocument` helpers reach the controller through React internals;
-  replace them with a proper test hook when app-shell owns the controller.
 - Open for later: the Windows "Editor" checklist (IME, Word paste, scaling) is still unticked.

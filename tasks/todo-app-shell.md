@@ -80,8 +80,8 @@ without `--chalkbond-test-hooks` (explicit option) has `typeof window.__chalkbon
 records a `showMessageBox` call made from `app.evaluate`.
 
 **Acceptance criteria:**
-- [ ] `SPEC-editor.md` bullet edited first (same commit)
-- [ ] `grep -n "__reactFiber" e2e/` finds nothing; the full editor e2e suite passes unchanged on the hook
+- [x] `SPEC-editor.md` bullet edited first (same commit)
+- [x] `grep -n "__reactFiber" e2e/` finds nothing; the full editor e2e suite passes on the hook (one pre-existing race in the editor-canvas resize test fixed: it now waits for the ResizeObserver update)
 - [ ] Unit and e2e tests above pass; Linux run ignores `e2e/win/` (empty for now) without skipping anything
 
 **Verification:** `npm test -- src/main/model`, `npm run check`, `npm run test:e2e`. No visible

@@ -696,7 +696,7 @@ type EditorEvent =
   `undo`, `redo`, `name-field`, `name-dropdown`, `hint`, `formula`, `warnings`, `preset-slides`,
   `preset-handout`, `zoom-out`, `zoom-reset`, `zoom-in`, `zoom-fit`, `canvas`, `text-editor`,
   `label-editor`, `empty-state`); each mounted part's `<g>` has `data-key`; the content layer
-  carries its transform. No test-only globals; e2e reads document geometry from part bounding
+  carries its transform. The editor defines no test-only globals: app-shell's test hook (SPEC-app-shell.md TH1-TH3) exposes the controller to e2e in an unpackaged build started with `--chalkbond-test-hooks`, and e2e reads document geometry from part bounding
   boxes and the content transform.
 
 ### Dependencies

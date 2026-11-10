@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, Menu, shell } from 'electron';
+import { testFlags } from './model/args';
 
 const APP_ID = 'com.chalkbond.app';
 
@@ -31,11 +32,24 @@ function createMainWindow(): BrowserWindow {
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
   if (!app.isPackaged && devUrl) {
-    void win.loadURL(devUrl);
+    void win.loadURL(flags.hooks ? `${devUrl}?testHooks=1` : devUrl);
   } else {
-    void win.loadFile(join(__dirname, '../renderer/index.html'));
+    void win.loadFile(
+      join(__dirname, '../renderer/index.html'),
+      flags.hooks ? { query: { testHooks: '1' } } : undefined,
+    );
   }
   return win;
+}
+
+// Test flags (TH1): honoured only for an unpackaged build. The user-data folder is set before
+// anything else, so settings, logs and the single-instance lock all live in it.
+const flags = testFlags(process.argv, app.isPackaged);
+if (flags.userData !== null) app.setPath('userData', flags.userData);
+if (flags.hooks) {
+  (globalThis as { __chalkbondTestMain?: { blockedRequests: number } }).__chalkbondTestMain = {
+    blockedRequests: 0,
+  };
 }
 
 app.setAppUserModelId(APP_ID);

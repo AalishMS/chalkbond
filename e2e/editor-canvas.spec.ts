@@ -303,10 +303,22 @@ test('resizing the window keeps the document point under the canvas centre', asy
       .poll(async () => (await box(page.getByTestId('canvas'))).width)
       .toBeCloseTo(960 - 65, 0);
     const c1 = await box(page.getByTestId('canvas'));
-    const after = await content(page);
-    expect(after.k).toBe(before.k);
-    near((c1.width / 2 - after.x) / after.k, (c0.width / 2 - before.x) / before.k, 0.01);
-    near((c1.height / 2 - after.y) / after.k, (c0.height / 2 - before.y) / before.k, 0.01);
+    // The viewport follows the canvas size through a ResizeObserver, a frame after the layout
+    // change: wait for the content layer to settle before comparing, do not assume it already has.
+    const centre0 = {
+      x: (c0.width / 2 - before.x) / before.k,
+      y: (c0.height / 2 - before.y) / before.k,
+    };
+    await expect
+      .poll(async () => {
+        const now = await content(page);
+        return Math.max(
+          Math.abs((c1.width / 2 - now.x) / now.k - centre0.x),
+          Math.abs((c1.height / 2 - now.y) / now.k - centre0.y),
+        );
+      })
+      .toBeLessThanOrEqual(0.01);
+    expect((await content(page)).k).toBe(before.k);
   } finally {
     await app.close();
   }

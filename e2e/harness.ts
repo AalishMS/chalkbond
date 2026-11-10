@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { ElectronApplication, Page } from '@playwright/test';
 import { parse, type Doc } from '../src/core/doc-model';
-import { launchApp } from './launch';
+import { launchApp, type LaunchOptions } from './launch';
 
 const ROOT = resolve(__dirname, '..');
 
@@ -24,12 +24,17 @@ export async function resizeContent(app: ElectronApplication, size: Size): Promi
  * Launches the built app at a fixed device scale factor and content size (default 1280x800)
  * and waits until the page has that size and has loaded.
  */
-export async function openApp(opts: { size?: Size } = {}): Promise<OpenedApp> {
+export async function openApp(
+  opts: { size?: Size; launch?: LaunchOptions } = {},
+): Promise<OpenedApp> {
   if (!existsSync(resolve(ROOT, 'out/main/index.js'))) {
     throw new Error('The app is not built: run npm run build first (npm run shots does it).');
   }
   const size = opts.size ?? [1280, 800];
-  const app = await launchApp(['--force-device-scale-factor=1']);
+  const app = await launchApp({
+    ...opts.launch,
+    extraArgs: ['--force-device-scale-factor=1', ...(opts.launch?.extraArgs ?? [])],
+  });
   try {
     const page = await app.firstWindow();
     await page.waitForLoadState('load');
@@ -64,53 +69,62 @@ export function goldenDoc(name: string): Doc {
   return parsed.value;
 }
 
-/**
- * Puts a document into the running editor, as the host's `load` does. The spec allows no
- * test-only global, so the controller is found through React's fiber: the `Editor` element is
- * the parent of the `.editor` root and holds `controller` in its props.
- */
+/** The page side of `src/renderer/app/model/test-hook.ts` (TH2), as the specs use it. */
+interface PageHook {
+  load(doc: unknown): void;
+  getDoc(): unknown;
+  getSelection(): { atoms: string[]; bonds: string[]; objects: string[] };
+  events(): unknown[];
+  clearEvents(): void;
+  notices(): { kind: string; text: string }[];
+  commands(): string[];
+}
+type HookWindow = Window & { __chalkbondTest?: PageHook };
+
+/** Waits until the page has defined `window.__chalkbondTest` (every launch has the hook on). */
+async function waitForHook(page: Page): Promise<void> {
+  await page.waitForFunction(() => (window as HookWindow).__chalkbondTest !== undefined);
+}
+
+/** Puts a document into the running editor as an Untitled document, through the test hook. */
 export async function loadDocument(page: Page, doc: Doc): Promise<void> {
+  await waitForHook(page);
   await page.evaluate((payload) => {
-    interface Fiber {
-      return: Fiber | null;
-      memoizedProps: unknown;
-    }
-    const root = document.querySelector('.editor');
-    if (!root) throw new Error('no editor root');
-    const key = Object.keys(root).find((k) => k.startsWith('__reactFiber$'));
-    if (key === undefined) throw new Error('no React fiber on the editor root');
-    let fiber: Fiber | null = (root as unknown as Record<string, Fiber>)[key] ?? null;
-    for (; fiber; fiber = fiber.return) {
-      const props = fiber.memoizedProps as { controller?: { load?: (d: unknown) => void } } | null;
-      if (props?.controller && typeof props.controller.load === 'function') {
-        props.controller.load(payload);
-        return;
-      }
-    }
-    throw new Error('no controller in the React tree');
+    (window as HookWindow).__chalkbondTest?.load(payload);
   }, doc);
 }
 
-/** The editor's current document, read through the controller as the host's `getDoc` does. */
+/** The editor's current document, read through the test hook. */
 export async function readDocument(page: Page): Promise<Doc> {
-  return page.evaluate(() => {
-    interface Fiber {
-      return: Fiber | null;
-      memoizedProps: unknown;
-    }
-    const root = document.querySelector('.editor');
-    if (!root) throw new Error('no editor root');
-    const key = Object.keys(root).find((k) => k.startsWith('__reactFiber$'));
-    if (key === undefined) throw new Error('no React fiber on the editor root');
-    let fiber: Fiber | null = (root as unknown as Record<string, Fiber>)[key] ?? null;
-    for (; fiber; fiber = fiber.return) {
-      const props = fiber.memoizedProps as { controller?: { getDoc?: () => unknown } } | null;
-      if (props?.controller && typeof props.controller.getDoc === 'function') {
-        return props.controller.getDoc() as never;
-      }
-    }
-    throw new Error('no controller in the React tree');
-  });
+  await waitForHook(page);
+  return page.evaluate(() => (window as HookWindow).__chalkbondTest?.getDoc() as never);
+}
+
+/** The ids the editor has selected, through the test hook. */
+export async function readSelection(
+  page: Page,
+): Promise<{ atoms: string[]; bonds: string[]; objects: string[] }> {
+  await waitForHook(page);
+  return page.evaluate(
+    () =>
+      (window as HookWindow).__chalkbondTest?.getSelection() ?? {
+        atoms: [],
+        bonds: [],
+        objects: [],
+      },
+  );
+}
+
+/** The host notices the test hook has collected (empty until the shell produces some). */
+export async function heardNotices(page: Page): Promise<{ kind: string; text: string }[]> {
+  await waitForHook(page);
+  return page.evaluate(() => (window as HookWindow).__chalkbondTest?.notices() ?? []);
+}
+
+/** The `main:event` commands the test hook has collected (empty until the shell receives some). */
+export async function heardCommands(page: Page): Promise<string[]> {
+  await waitForHook(page);
+  return page.evaluate(() => (window as HookWindow).__chalkbondTest?.commands() ?? []);
 }
 
 /** Types `text` into the name field and presses Enter (the field keeps focus after an insert). */
@@ -150,40 +164,18 @@ export type SeamEvent =
 type Point = { x: number; y: number };
 
 /**
- * Subscribes to the controller as a host would and keeps what it hears; read it with
- * `heardEvents`. The collection lives in the page under a name only this helper uses.
+ * Starts collecting editor events afresh: the hook has heard them since start, so this clears
+ * what came before; read them with `heardEvents`.
  */
 export async function listenEvents(page: Page): Promise<void> {
+  await waitForHook(page);
   await page.evaluate(() => {
-    interface Fiber {
-      return: Fiber | null;
-      memoizedProps: unknown;
-    }
-    interface Listening {
-      subscribe?: (listener: (e: unknown) => void) => () => void;
-    }
-    const root = document.querySelector('.editor');
-    if (!root) throw new Error('no editor root');
-    const key = Object.keys(root).find((k) => k.startsWith('__reactFiber$'));
-    if (key === undefined) throw new Error('no React fiber on the editor root');
-    let fiber: Fiber | null = (root as unknown as Record<string, Fiber>)[key] ?? null;
-    for (; fiber; fiber = fiber.return) {
-      const props = fiber.memoizedProps as { controller?: Listening } | null;
-      const subscribe = props?.controller?.subscribe;
-      if (typeof subscribe === 'function') {
-        const heard: unknown[] = [];
-        (window as unknown as { heardByHarness: unknown[] }).heardByHarness = heard;
-        subscribe.call(props?.controller, (e) => heard.push(e));
-        return;
-      }
-    }
-    throw new Error('no controller in the React tree');
+    (window as HookWindow).__chalkbondTest?.clearEvents();
   });
 }
 
-/** The events `listenEvents` has collected so far. */
+/** The events the editor has emitted since start or the last `listenEvents`. */
 export async function heardEvents(page: Page): Promise<SeamEvent[]> {
-  return page.evaluate(
-    () => (window as unknown as { heardByHarness: SeamEvent[] }).heardByHarness ?? [],
-  );
+  await waitForHook(page);
+  return page.evaluate(() => ((window as HookWindow).__chalkbondTest?.events() ?? []) as never);
 }
