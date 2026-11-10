@@ -181,6 +181,9 @@ Vitest projects (`vitest.config.mts`):
   them there.
 - `npm run test:e2e` builds first and launches Electron (`--project=e2e` only; `shots` is its own project). `golden:sheet -- --png` needs
   Playwright's Chromium: run `npx playwright install chromium` if it is missing.
+- E2E windows are real OS windows. Every launch must go through `e2e/launch.ts`, which preloads
+  `e2e/no-os-mouse.mjs` so the physical cursor cannot send real pointer events into a test window
+  and cancel a synthetic hover. `e2e/os-mouse.spec.ts` moves the real cursor briefly (restored).
 - Put temporary files and logs in the OS temp directory, never in the repo root or the drive
   root. `out/`, `coverage/`, `test-results/` and `dist/` are git-ignored.
 - Keep the project green on Windows and Linux: no POSIX-only syntax in npm scripts and LF line
