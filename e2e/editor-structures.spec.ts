@@ -338,3 +338,154 @@ test('Bond tool: over a labelled atom no ghost and a light box; over a skeleton 
     await app.close();
   }
 });
+
+const formulaText = (page: Page) => page.getByTestId('formula');
+
+test('Chain tool: a drag of 280 px grows a pentane zig-zag, 80 px bonds, 120 degrees, count label, one undo step', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-chain').click();
+    const before = await readDocument(page);
+    await page.mouse.move(START.x, START.y);
+    await page.mouse.down();
+    await page.mouse.move(START.x + 140, START.y, { steps: 4 });
+    await page.mouse.move(START.x + 280, START.y, { steps: 4 });
+    // Mid-drag: the ghost, the bond count by the pointer, the angle hint.
+    await expect(page.getByTestId('overlay-count').locator('text')).toHaveText('4');
+    expect(await ghosts(page)).not.toEqual([]);
+    await expect(hint(page)).toHaveText('Hold Shift for any angle.');
+    await page.mouse.up();
+    const doc = await readDocument(page);
+    expect(atomIds(doc)).toHaveLength(5);
+    expect(bondIds(doc)).toHaveLength(4);
+    const pts = await Promise.all(atomIds(doc).map((id) => px(page, doc, id)));
+    expect(dist(pts[0] as Pt, START)).toBeLessThan(0.5);
+    for (let i = 1; i < pts.length; i++) {
+      expect(Math.abs(dist(pts[i - 1] as Pt, pts[i] as Pt) - BOND_PX)).toBeLessThan(0.01);
+    }
+    for (let i = 1; i + 1 < pts.length; i++) {
+      const a = angle(pts[i] as Pt, pts[i - 1] as Pt);
+      const b = angle(pts[i] as Pt, pts[i + 1] as Pt);
+      expect(Math.abs(Math.abs(((a - b + 540) % 360) - 180) - 120)).toBeLessThan(0.01);
+    }
+    await expect(formulaText(page)).toHaveText('C5H12 · 72.15 g/mol');
+    await expect(page.getByTestId('overlay-count')).toHaveCount(0);
+    await page.keyboard.press('Control+z');
+    expect(await readDocument(page)).toEqual(before);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Chain tool: Esc cancels a drag; a click adds one bond', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-chain').click();
+    await page.mouse.move(START.x, START.y);
+    await page.mouse.down();
+    await page.mouse.move(START.x + 200, START.y, { steps: 5 });
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    expect(atomIds(await readDocument(page))).toHaveLength(0);
+    await page.mouse.click(START.x, START.y);
+    expect(bondIds(await readDocument(page))).toHaveLength(1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Ring tool: the five templates in order; one Benzene click is C6H6; a ghost follows the pointer', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-ring').click();
+    const ids = await page
+      .getByTestId('options')
+      .locator('[data-testid^="opt-"]')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
+    expect(ids).toEqual([
+      'opt-benzene',
+      'opt-cyclohexane',
+      'opt-cyclopentane',
+      'opt-cyclobutane',
+      'opt-cyclopropane',
+    ]);
+    await page.mouse.move(START.x, START.y);
+    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
+    expect((await ghosts(page)).some((k) => k.startsWith('ring:'))).toBe(true);
+    await page.mouse.click(START.x, START.y);
+    await expect(formulaText(page)).toHaveText('C6H6 · 78.11 g/mol');
+    const doc = await readDocument(page);
+    expect(Object.values(doc.bonds).every((b) => b.order === 1.5)).toBe(true);
+    await page.keyboard.press('Control+z');
+    expect(atomIds(await readDocument(page))).toHaveLength(0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Ring tool: each option draws its ring with 80 px bonds', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-ring').click();
+    for (const [opt, n] of [
+      ['cyclohexane', 6],
+      ['cyclopentane', 5],
+      ['cyclobutane', 4],
+      ['cyclopropane', 3],
+    ] as const) {
+      await page.getByTestId(`opt-${opt}`).click();
+      await page.mouse.click(600, 400);
+      const doc = await readDocument(page);
+      expect(atomIds(doc)).toHaveLength(n);
+      const [b] = Object.values(doc.bonds);
+      const pa = await px(page, doc, b?.a1 as AtomId);
+      const pb = await px(page, doc, b?.a2 as AtomId);
+      expect(Math.abs(dist(pa, pb) - BOND_PX)).toBeLessThan(0.01);
+      await page.keyboard.press('Control+z');
+    }
+  } finally {
+    await app.close();
+  }
+});
+
+test('Ring tool: a second benzene clicked on a bond is naphthalene, C10H8; click on an atom attaches', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-ring').click();
+    await page.mouse.click(600, 400);
+    const doc = await readDocument(page);
+    const bond = Object.values(doc.bonds)[0] as Doc['bonds'][BondId];
+    const pa = await px(page, doc, bond.a1);
+    const pb = await px(page, doc, bond.a2);
+    await page.mouse.click((pa.x + pb.x) / 2, (pa.y + pb.y) / 2);
+    await expect(formulaText(page)).toHaveText('C10H8 · 128.17 g/mol');
+    const after = await readDocument(page);
+    expect(atomIds(after)).toHaveLength(10);
+    expect(Object.values(after.bonds).every((b) => b.order === 1.5)).toBe(true);
+    await page.keyboard.press('Control+z');
+    expect(atomIds(await readDocument(page))).toHaveLength(6);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Toluene in 3 actions: press R, click the canvas, hover a ring atom and press 1 (SC2, R5)', async () => {
+  const { app, page } = await openApp();
+  try {
+    let actions = 0;
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('r');
+    actions += 1;
+    await page.mouse.click(600, 400);
+    actions += 1;
+    const doc = await readDocument(page);
+    const at = await px(page, doc, atomIds(doc)[0] as AtomId);
+    await page.mouse.move(at.x, at.y);
+    await page.keyboard.press('1');
+    actions += 1;
+    await expect(formulaText(page)).toHaveText('C7H8 · 92.14 g/mol');
+    expect(actions).toBe(3);
+  } finally {
+    await app.close();
+  }
+});

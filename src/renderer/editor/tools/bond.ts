@@ -3,7 +3,6 @@
 // and for the commit, so the ids the ghost shows are the ids the commit issues.
 import type { AtomId, BondId, Doc } from '@core/doc-model';
 import {
-  addedKeys,
   bondSpec,
   clickBond,
   dragBond,
@@ -17,8 +16,9 @@ import type { CanvasEvent } from '../model/canvas-event';
 import { distance, type Point } from '../model/geometry';
 import { mergeTarget } from '../model/hit-test';
 import { atomDrawsLabel } from '../model/overlay';
-import type { GestureState, Hit, Preview } from '../state/editor-state';
-import { DRAG_PX, type Tool, type ToolCommit, type ToolContext, type ToolStep } from './tool';
+import type { GestureState, Hit } from '../state/editor-state';
+import { commitOf, ghostOf } from './ghost';
+import { DRAG_PX, type Tool, type ToolContext, type ToolStep } from './tool';
 
 /** The pointer is down and has not moved past the drag threshold. */
 interface Press extends GestureState {
@@ -48,17 +48,6 @@ function asDrag(g: GestureState | null): Drag | null {
   return g !== null && g.kind === 'bond-drag' ? (g as Drag) : null;
 }
 
-/** The ghost of an edit: the document it makes, the new parts and the atom it joins. */
-function ghostOf(before: Doc, edit: BondEdit | null, hovering: boolean): Preview | null {
-  if (edit === null) return null;
-  return {
-    doc: edit.doc,
-    added: addedKeys(before, edit.doc),
-    ...(edit.merge === undefined ? {} : { mergeTarget: edit.merge }),
-    ...(hovering ? { hovering: true } : {}),
-  };
-}
-
 /** The ghost bond of a click at `p` on `hit` (null: nothing to show). B6. */
 function clickEdit(doc: Doc, hit: Hit | null, p: Point, spec: BondSpec): BondEdit | null {
   if (hit === null) return newBond(doc, p, spec);
@@ -71,11 +60,6 @@ function dragEdit(g: Drag, ev: PointerEv, ctx: ToolContext): BondEdit | null {
   const exclude = new Set<AtomId>('atom' in g.start ? [g.start.atom] : []);
   const target = mergeTarget(ctx.doc, ctx.viewport, ev.screen, exclude);
   return dragBond(ctx.doc, g.start, ev.p, ev.mods.shift, target, bondSpec(ctx.variant));
-}
-
-/** The commit of an edit: it is recomputed on the document the transaction gives. */
-function commitOf(label: string, edit: (doc: Doc) => Doc | null): ToolCommit {
-  return { label, recipe: (doc) => edit(doc) ?? doc };
 }
 
 function down(ev: PointerEv, ctx: ToolContext): ToolStep {

@@ -127,6 +127,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R25 | Ctrl+V and Ctrl+D place the copy at the source's position + (1.0, 1.0) BLU; further pastes cascade by another (1.0, 1.0); a cut's first paste lands in place; an explicit point (context menu) centres the copy there (rule CB1) | A paste at the pointer usually landed on the original, as if nothing had happened | 2026-11-10 |
 | R26 | P1 tie-break for a one-neighbour atom whose neighbour has no other neighbours: the candidate nearer horizontal, then more upward, then more rightward (draft: more upward first, which sprouted straight up from the end of a lone bond and drew a bent chain, not the propane zig-zag) | Propane by two clicks must be the textbook zig-zag (E19) | 2026-11-10 |
 | R27 | A hovered labelled atom gets a box around its label's ink (2 px padding, radius 4) at alpha 0.25 (`--overlay-hover-label`), not the 0.45 box, and no hover ghost (HV4). Skeleton atoms keep the Ø 18 circle at 0.45, bonds the 8 px band at 0.45 | The heavy box hid the letters and the ghost bond ran through the H of "OH" | 2026-11-10 |
+| R28 | Chain and Ring corrections (E21): P2 counts one bond per cos 30 BLU, so a 4 BLU drag is 5 bonds; P4 with one neighbour points the ring straight away from it (mock-up 04), not along P1; P5 gives a pointer within 4 px of the bond line no choice of side, so a click on a ring bond fuses outside it; templates are vertex lists, not SubDocs | The first draft of each rule contradicted its own mock-up or example (a ring bond along the existing bond; a click inside the ring it fuses to) | 2026-11-10 |
 
 ---
 
@@ -834,20 +835,32 @@ atom, so a wedge's narrow end is where the gesture started.
   counter-clockwise from +x). "Next candidate" = the other ±120° direction, then the bisector of
   the second-largest gap.
 - **P2** **Chain**: zig-zag of single bonds from the start (empty point or atom) along the
-  snapped drag direction (30° steps, Shift free): atom k at start + k·cos 30°·d̂ ± (sin 30°/2)·n̂,
-  alternating sides (bond length 1.0), n = round(projected drag length / cos 30°), 1 ≤ n ≤ 20.
-  When the start atom has a neighbour, the first zig goes to P1's side. The count label follows
-  the pointer. A click (no drag) adds one bond as B1/B3.
+  snapped drag direction d̂ (30° steps, Shift free): the bonds alternate between the two
+  directions 30° either side of d̂ (atom 2k lies on the axis through the start, atom 2k+1
+  0.5 BLU off it; bond length 1.0), n = round(projected drag length / cos 30°), 1 ≤ n ≤ 20 (a
+  drag of 4 BLU is 5 bonds). First bond: when the start atom has a neighbour, the direction nearest
+  P1's default direction (the zig-zag continues); otherwise the more upward, then the more
+  rightward. The count label follows the pointer. A click (no drag) adds one bond as B1/B3; a
+  press on a bond starts nothing. One "Add chain" commit.
 - **P3** **Ring onto empty canvas**: the template centred at the click, canonical orientation
   (vertex up for 3, 5, 6; square axis-aligned).
-- **P4** **Ring onto an atom**: the ring shares that atom; its centre lies on P1's direction at
-  the circumradius R = 1 / (2 sin(π/n)), oriented so the shared atom is a vertex.
-- **P5** **Ring onto a bond**: fused, sharing the bond, on the pointer's side (ties: the side with
-  fewer neighbour atoms). Benzene onto a bond of an all-1.5 ring → all new bonds 1.5 (naphthalene:
-  two circles). Benzene onto any other bond → Kekulé, alternating so that a shared double bond
-  stays double and a shared single bond stays single. The shared bond's order never changes.
-- **P6** **Merging coincident atoms**: after placing a template or chain, every new atom within
-  0.15 BLU of an existing atom is merged into it (`mergeAtoms(doc, existing, new)`).
+- **P4** **Ring onto an atom**: the ring shares that atom; its centre lies at the circumradius
+  R = 1 / (2 sin(π/n)) in the *away* direction, oriented so the shared atom is a vertex. Away =
+  P1's default direction (30° up-right for a lone atom, the bisector of the largest gap for two
+  or more neighbours), but for **one** neighbour straight away from it, so the existing bond
+  leaves the ring vertex outward as in screen 04 (P1's ±120° would run a ring bond along the
+  existing bond).
+- **P5** **Ring onto a bond**: fused, sharing the bond, on the pointer's side. A pointer within
+  0.05 BLU (4 px) of the bond's line does not choose (a click that hits a bond is within 6 px of
+  it): the side with fewer neighbour atoms of the bond's two ends, then the higher one, then the
+  right-hand one, so a click on a bond of a ring fuses outside it. Benzene onto a bond of an
+  all-1.5 ring → all new bonds 1.5 (naphthalene: two circles). Benzene onto any other bond →
+  Kekulé, alternating so that a shared double bond stays double and a shared single bond stays
+  single. The shared bond's order never changes.
+- **P6** **Merging coincident atoms**: every new atom of a template or chain within 0.15 BLU of an
+  existing atom (nearest first, each existing atom at most once) is that atom instead of a new
+  one (the same result as `mergeAtoms(doc, existing, new)`; a bond that exists keeps its fields).
+  A ring that adds nothing is not committed.
 - **P7** **Insert placement** (a single structure from the name field, a chip or `insert-text`):
   empty doc → centred on the canvas centre. Otherwise its ink box's left edge 1.0 BLU right of the
   document's ink box right edge, vertically centred on the centre of the rightmost fragment or
@@ -856,7 +869,10 @@ atom, so a wedge's narrow end is where the gesture started.
 
 ### Ring templates
 
-Generated in `templates.ts` as `SubDoc`s centred on the origin, bond length 1.0: Benzene (regular
+Generated in `templates.ts` as vertex lists (`RingTemplate`) centred on the origin, bond length
+1.0; `ring-ops.ts` turns, moves and draws them (P3-P6). A press released more than 4 px from where
+it began adds no ring. The hover ghost follows the pointer, snapped to the atom or bond under it
+(none over an atom that draws a label, HV4). Benzene (regular
 hexagon, vertex up, all order 1.5, drawn with a circle); Cyclohexane, Cyclopentane, Cyclobutane,
 Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 

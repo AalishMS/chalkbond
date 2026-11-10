@@ -300,6 +300,16 @@ describe('canvasOverlay: marquee, guides, merge', () => {
     expect(groups.map((g) => g.kind)).toEqual(['selection', 'frame', 'hover', 'handle']);
   });
 
+  it('a chain gesture draws its bond count as one text shape at the pointer, last of all', () => {
+    const at = { x: 321.5, y: 210 };
+    const groups = canvasOverlay({
+      ...view,
+      gesture: { kind: 'chain-drag', overlay: { count: { at, n: 7 } } },
+    });
+    expect(groups.at(-1)?.kind).toBe('count');
+    expect(only('count', groups)).toEqual([{ kind: 'text', at, text: '7' }]);
+  });
+
   it('while a translate preview runs the selection shapes follow it', () => {
     const s = wholeOf(doc, ringAtoms(doc));
     const still = canvasOverlay({ ...view, selection: s });

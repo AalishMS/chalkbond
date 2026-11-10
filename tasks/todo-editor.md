@@ -648,16 +648,16 @@ fused onto a cyclohexane bond → alternating with the shared bond single; P6 me
 atoms (spiro onto a ring atom adds exactly n − 1 atoms).
 
 **Acceptance criteria:**
-- [ ] P2–P6 and the five templates covered by named tests; one undo step per gesture
-- [ ] Ring option order Benzene, Cyclohexane, Cyclopentane, Cyclobutane, Cyclopropane (Decision 2)
-- [ ] Benzene by one Ring click shows "C6H6 · 78.11 g/mol" (e2e, SC1); naphthalene by two clicks shows "C10H8 · 128.17 g/mol"
-- [ ] Toluene in 3 actions (press `R`, click the canvas, hover a ring atom + `1`) → "C7H8 · 92.14 g/mol": scenario test in `state/scenarios.test.ts` and e2e with an action counter (SC2, R5)
+- [x] P2–P6 and the five templates covered by named tests; one undo step per gesture
+- [x] Ring option order Benzene, Cyclohexane, Cyclopentane, Cyclobutane, Cyclopropane (Decision 2)
+- [x] Benzene by one Ring click shows "C6H6 · 78.11 g/mol" (e2e, SC1); naphthalene by two clicks shows "C10H8 · 128.17 g/mol"
+- [x] Toluene in 3 actions (press `R`, click the canvas, hover a ring atom + `1`) → "C7H8 · 92.14 g/mol": scenario test in `state/scenarios.test.ts` and e2e with an action counter (SC2, R5)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E21` → `E21/chain-count.png` (scripted: Chain drag mid-way; count label visible), `E21/ring-ghost.png` (scripted: Ring hover over empty canvas; compare `04-ring-options.png`), `E21/naphthalene.png` (scripted: click, then click a ring bond), `E21/toluene.png` (scripted: Ring click, hover atom + `1`)
 
 **Dependencies:** E20
 
-**Files:** `src/renderer/editor/tools/{chain.ts,ring.ts}` (+ tests), `src/renderer/editor/model/{templates.ts,placement.ts,overlay.ts}` (+ tests), `src/renderer/editor/state/scenarios.test.ts`, `e2e/editor-structures.spec.ts`, `e2e/shots/E21.shot.ts`
+**Files:** `src/renderer/editor/tools/{chain.ts,ring.ts,ghost.ts,testing.ts}` (+ tests), `src/renderer/editor/model/{templates.ts,chain-ops.ts,ring-ops.ts,placement.ts,overlay.ts}` (+ tests; the recipes live in `chain-ops.ts` and `ring-ops.ts`), `src/renderer/editor/state/scenarios.test.ts`, `e2e/editor-structures.spec.ts`, `e2e/shots/E21.shot.ts`
 
 **Scope:** M
 

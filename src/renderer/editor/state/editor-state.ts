@@ -60,6 +60,8 @@ export interface GestureOverlay {
   /** Opposite corners of the marquee, BLU. */
   readonly marquee?: { readonly from: Point; readonly to: Point };
   readonly guides?: readonly Guide[];
+  /** Chain: the number of bonds, drawn at `at` (canvas px) by the pointer. */
+  readonly count?: { readonly at: Point; readonly n: number };
 }
 
 /** A ghost document for the gesture in progress; never enters history. */

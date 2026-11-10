@@ -26,6 +26,12 @@ function Shape({ shape }: { shape: OverlayShape }): React.JSX.Element {
       const points = `${n(c.x)},${n(c.y - h)} ${n(c.x + h)},${n(c.y)} ${n(c.x)},${n(c.y + h)} ${n(c.x - h)},${n(c.y)}`;
       return <polygon points={points} />;
     }
+    case 'text':
+      return (
+        <text x={n(shape.at.x)} y={n(shape.at.y)}>
+          {shape.text}
+        </text>
+      );
     case 'box':
       return (
         <rect

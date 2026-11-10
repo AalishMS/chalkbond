@@ -48,12 +48,22 @@ export type OverlayShape =
   | { readonly kind: 'box'; readonly rect: Rect; readonly radius: number }
   | { readonly kind: 'line'; readonly from: Point; readonly to: Point }
   /** A square turned 45 degrees, `size` px along each side. */
-  | { readonly kind: 'diamond'; readonly c: Point; readonly size: number };
+  | { readonly kind: 'diamond'; readonly c: Point; readonly size: number }
+  /** A short text whose top left is at `at` (the chain's bond count). */
+  | { readonly kind: 'text'; readonly at: Point; readonly text: string };
 
 /** Shapes drawn together at one group opacity. */
 export interface OverlayGroup {
   readonly kind:
-    'selection' | 'frame' | 'hover' | 'hover-label' | 'merge' | 'marquee' | 'guide' | 'handle';
+    | 'selection'
+    | 'frame'
+    | 'hover'
+    | 'hover-label'
+    | 'merge'
+    | 'marquee'
+    | 'guide'
+    | 'handle'
+    | 'count';
   readonly shapes: readonly OverlayShape[];
 }
 
@@ -156,6 +166,8 @@ function shifted(shape: OverlayShape, by: Point): OverlayShape {
       return { ...shape, from: shiftPoint(shape.from, by), to: shiftPoint(shape.to, by) };
     case 'diamond':
       return { ...shape, c: shiftPoint(shape.c, by) };
+    case 'text':
+      return { ...shape, at: shiftPoint(shape.at, by) };
   }
 }
 
@@ -281,6 +293,10 @@ export function canvasOverlay(view: OverlayView): OverlayGroup[] {
         return { kind: 'line', from: { x: 0, y }, to: { x: v.size.w, y } };
       }),
     });
+  }
+  const count = gesture?.overlay?.count;
+  if (count !== undefined) {
+    groups.push({ kind: 'count', shapes: [{ kind: 'text', at: count.at, text: String(count.n) }] });
   }
   const handles = selectionHandles(doc, scene, v, view.selection, offset);
   if (handles.length > 0) {

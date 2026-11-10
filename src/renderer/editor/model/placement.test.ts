@@ -11,7 +11,7 @@ import {
 import { render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import type { Point } from './geometry';
-import { insertPosition, sproutDirections, subInk } from './placement';
+import { awayDirection, insertPosition, sproutDirections, subInk } from './placement';
 
 const names = createNameIndex({
   format: 'chalkbond-compounds',
@@ -214,5 +214,39 @@ describe('P1 sproutDirections', () => {
     const { doc, ids } = graph([{ x: 0, y: 0 }], []);
     const v = sproutDirections(doc, ids[0] as AtomId)[0] as Point;
     expect(Math.hypot(v.x, v.y)).toBeCloseTo(1, 12);
+  });
+});
+
+describe('P4 awayDirection', () => {
+  const near = (v: Point | null, x: number, y: number): void => {
+    expect(v?.x).toBeCloseTo(x, 9);
+    expect(v?.y).toBeCloseTo(y, 9);
+  };
+
+  it('a lone atom: 30 degrees up and to the right', () => {
+    const [d, a] = addAtom(empty(), { element: 'C', x: 0, y: 0 });
+    near(awayDirection(d, a), Math.cos(Math.PI / 6), -0.5);
+  });
+
+  it('one neighbour: straight away from it, not the zig-zag direction of P1', () => {
+    const [d1, a] = addAtom(empty(), { element: 'C', x: 0, y: 0 });
+    const [d2, b] = addAtom(d1, { element: 'C', x: 0, y: -1 });
+    let d = d2;
+    d = addBond(d, a, b)[0];
+    near(awayDirection(d, a), 0, 1);
+    expect(sproutDirections(d, a)[0]?.y).not.toBeCloseTo(1, 3);
+  });
+
+  it('two neighbours: the bisector of the largest gap, as P1', () => {
+    const [d1, a] = addAtom(empty(), { element: 'C', x: 0, y: 0 });
+    const [d2, l] = addAtom(d1, { element: 'C', x: -0.866, y: 0.5 });
+    const [d3, r] = addAtom(d2, { element: 'C', x: 0.866, y: 0.5 });
+    let d = d3;
+    d = addBond(addBond(d, a, l)[0], a, r)[0];
+    near(awayDirection(d, a), 0, -1);
+  });
+
+  it('an unknown atom: null', () => {
+    expect(awayDirection(empty(), 'a9' as AtomId)).toBeNull();
   });
 });

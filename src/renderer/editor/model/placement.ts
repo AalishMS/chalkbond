@@ -141,3 +141,21 @@ export function sproutDirections(doc: Doc, atom: AtomId): Point[] {
   gaps.sort((a, b) => (Math.abs(a.size - b.size) > TIE ? b.size - a.size : a.start - b.start));
   return gaps.map((g) => direction(g.start + g.size / 2));
 }
+
+/**
+ * P4: the direction (unit vector, BLU, y down) a ring placed on `atom` points to. One neighbour:
+ * straight away from it, so the existing bond is the ring atom's bond outside the ring (screen
+ * 04). Otherwise P1's default direction: 30 degrees up and to the right for a lone atom, the
+ * bisector of the largest gap for two or more neighbours.
+ */
+export function awayDirection(doc: Doc, atom: AtomId): Point | null {
+  const at = doc.atoms[atom];
+  if (!at) return null;
+  const around = neighbors(doc, atom).flatMap((id) => doc.atoms[id] ?? []);
+  if (around.length === 1) {
+    const only = around[0] as Point;
+    const u = normalize({ x: only.x - at.x, y: only.y - at.y });
+    return { x: -u.x, y: -u.y };
+  }
+  return sproutDirections(doc, atom)[0] ?? null;
+}

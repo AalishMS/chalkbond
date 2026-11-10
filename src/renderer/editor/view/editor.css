@@ -328,6 +328,14 @@
   fill: var(--accent);
 }
 
+/* The chain bond count: --type-xs in --text-muted, 12 px below and right of the pointer. */
+.overlay-count text {
+  font: var(--type-xs);
+  fill: var(--text-muted);
+  dominant-baseline: hanging;
+  user-select: none;
+}
+
 /* Selection (screen 03): bands, circles and label boxes in one group at --overlay-selection. */
 .overlay-selection {
   opacity: var(--overlay-selection);
