@@ -314,17 +314,21 @@ export function layoutSatellites(
 
   /**
    * Is `placed` clear of everything? The charge sign is ignored for an E dot (it will move).
-   * Bonds are checked for dots only: text is kept off them by the 45 degree rule (a sign's
-   * cap-height box is much taller than its ink, so a wide-angle bond may graze the box).
+   * Bonds are checked for dots with the dot radius as clearance; for text the cap-height box,
+   * grown by the half line width only, must not touch the bond line.
    */
   const clear = (placed: Placed, slot: Slot, movesCharge: boolean): boolean =>
     placed.rects.every(
       (rect) =>
         !(label?.obstacles ?? []).some((o) => overlapsRect(rect, growRect(o, r))) &&
         !(charge && !(movesCharge && slot === 'E') && overlapsRect(rect, growRect(charge, r))) &&
-        !(
-          movesCharge &&
-          bondSegments.some(([p, q]) => segmentBoxInterval(p, q, growRect(rect, bondHalf)) !== null)
+        !bondSegments.some(
+          ([p, q]) =>
+            segmentBoxInterval(
+              p,
+              q,
+              growRect(rect, movesCharge ? bondHalf : style.lineWidth / 2),
+            ) !== null,
         ) &&
         !placedRects.some((other) => overlapsRect(rect, growRect(other, r))),
     );

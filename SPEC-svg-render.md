@@ -290,7 +290,7 @@ text (superscript at the upper right) except as the next rule says.
 
 Each satellite takes the first slot in its list that is not blocked, not already taken and whose
 ink does not touch another glyph of the label (H part, subscript, charge sign), the charge sign,
-a bond leaving the atom (lone pairs and dots only) or an earlier satellite.
+a bond leaving the atom (a dot or pair keeps its radius clear of the line; a text's cap-height box must not touch it) or an earlier satellite.
 
 *Formal charge beside an E dot.* If a lone pair or radical dot takes the E slot and the label has
 a charge superscript, the superscript moves right so that it starts `satelliteGap` beyond the dots

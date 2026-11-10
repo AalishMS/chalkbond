@@ -259,6 +259,12 @@ describe('satellites of bonded atoms', () => {
     expect(l.sats!.svg).toContain('−');
   });
 
+  it('a number on a V-shaped vertex stays off the bonds: S, not the notch', () => {
+    // Bonds 30 degrees above horizontal graze a digit standing at N.
+    const l = lay({ atom: { number: '2' }, bonds: [210, 330], vertex: true });
+    expect(l.slots).toEqual(['S']);
+  });
+
   it('a bond blocks a slot only when strictly closer than 45 degrees', () => {
     // Cardinal bonds on all four sides leave the four diagonals, each exactly 45 degrees away.
     const four = lay({ atom: { element: 'Cl', lonePairs: 4 }, bonds: [0, 90, 180, 270] });
