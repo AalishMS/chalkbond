@@ -5,8 +5,8 @@
 //   node docs/mockups/editor/build.mjs --png <dir>  also screenshot every NN-*.html into <dir>
 //   node docs/mockups/editor/build.mjs --serve      serve the folder on 127.0.0.1 to look around
 //
-// The canvas layers are real svg-render output (Slides preset, zoom 100 %, so 1 pt = 4/3 px)
-// mounted the way SPEC-editor.md "Rendering" describes: one `matrix(k 0 0 k panX panY)` group of
+// The canvas layers are real svg-render output (Slides preset, zoom 150 %, so 1 pt = 2 px; the
+// reaction scheme at its zoom-to-fit value) mounted the way SPEC-editor.md "Rendering" describes: one `matrix(k 0 0 k panX panY)` group of
 // parts, then an overlay drawn in screen px (hover, selection, ghost, warnings, pointer). Pages
 // are served over HTTP because Chromium refuses `<use href="icons.svg#…">` across file:// URLs.
 import { createServer as createHttpServer } from 'node:http';
@@ -18,15 +18,31 @@ import { buildPages } from './screens.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..', '..', '..');
 
-/** Chrome around the canvas (px): rail 56 + 1 border, top bar 48 + 1, status bar 28 + 1. */
-const RAIL = 57;
+/** Chrome around the canvas (px): rail 64 + 1 border, top bar 48 + 1, status bar 28 + 1. */
+const RAIL = 65;
 const TOP = 49;
 const STATUS = 29;
-const K = 4 / 3;
+/** svg-render units are pt; at zoom 100 % 1 pt = 4/3 px. Default zoom is 150 % (k = 2). */
+const PT = 4 / 3;
+const DEFAULT_ZOOM = 150;
+/** Zoom to fit: margin on every side, px. */
+const FIT_MARGIN = 48;
 const ACCENT = '#1F5FD1';
 const WARNING = '#B42318';
+/** Hover and selection marks (SPEC-editor.md "Canvas appearance", amended in DEVIATIONS.md). */
+const HOVER = { alpha: 0.45, r: 9, band: 8 };
+const SELECTION = { alpha: 0.24, r: 12, band: 12 };
 
 const r2 = (v) => Math.round(v * 100) / 100;
+const r4 = (v) => Math.round(v * 10000) / 10000;
+const scaleOf = (zoom) => r4((PT * zoom) / 100);
+
+/** Largest whole-percent zoom <= 150 % at which the ink box fits with FIT_MARGIN on every side. */
+function fitZoom(core, doc, { width, height }) {
+  const b = core.sr.render(doc).bounds;
+  const z = Math.min((width - 2 * FIT_MARGIN) / (b.w * PT), (height - 2 * FIT_MARGIN) / (b.h * PT));
+  return Math.min(DEFAULT_ZOOM, Math.floor(z * 100));
+}
 
 async function loadCore() {
   const { createServer } = await import('vite');
@@ -129,7 +145,21 @@ function builder(core) {
 }
 
 /** One canvas layer: parts under the view transform, overlay shapes in screen px. */
-function canvasSvg(core, { width, height, doc, center, pan, ghost = [], overlay = () => '' }) {
+function canvasSvg(
+  core,
+  {
+    width,
+    height,
+    doc,
+    zoom = DEFAULT_ZOOM,
+    center,
+    pan,
+    ghost = [],
+    hidden = [],
+    overlay = () => '',
+  },
+) {
+  const K = scaleOf(zoom);
   const scene = core.sr.render(doc);
   const b = scene.bounds;
   let px = 0;
@@ -143,6 +173,8 @@ function canvasSvg(core, { width, height, doc, center, pan, ghost = [], overlay 
   const view = {
     scene,
     doc,
+    k: K,
+    pan: { x: px, y: py },
     pt: (p) => ({ x: p.x * 40 * K + px, y: p.y * 40 * K + py }),
     atom: (id) => view.pt(doc.atoms[id]),
     box: (key, grow = 0) => {
@@ -157,7 +189,9 @@ function canvasSvg(core, { width, height, doc, center, pan, ghost = [], overlay 
     },
   };
   const ghostKeys = new Set(ghost);
+  const hiddenKeys = new Set(hidden);
   const parts = scene.parts
+    .filter((p) => !hiddenKeys.has(p.key))
     .map((p) =>
       ghostKeys.has(p.key)
         ? `<g data-key="${p.key}" opacity="0.45">${p.svg}</g>`
@@ -167,7 +201,7 @@ function canvasSvg(core, { width, height, doc, center, pan, ghost = [], overlay 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">\n` +
     `<rect width="${width}" height="${height}" fill="#FFFFFF"/>\n` +
-    `<g data-layer="content" transform="matrix(${r2(K)} 0 0 ${r2(K)} ${px} ${py})" fill="none" stroke-linecap="round" stroke-linejoin="round">\n` +
+    `<g data-layer="content" transform="matrix(${K} 0 0 ${K} ${px} ${py})" fill="none" stroke-linecap="round" stroke-linejoin="round">\n` +
     `${parts}\n</g>\n<g data-layer="overlay">\n${overlay(view)}\n</g>\n</svg>\n`
   );
 }
@@ -213,13 +247,13 @@ function bondSegment(view, bondId) {
  * overlaps do not darken. A skeleton vertex whose bonds are marked too gets no circle of its own:
  * the round-capped bond bands already cover it, and circles there read as a string of beads.
  */
-function marks(view, { atoms = [], bonds = [], boxes = [] }, alpha) {
+function marks(view, { atoms = [], bonds = [], boxes = [] }, { alpha, r, band }) {
   const banded = new Set(bonds.flatMap((id) => [view.doc.bonds[id].a1, view.doc.bonds[id].a2]));
   const out = [];
   for (const id of bonds) {
     const [p, q] = bondSegment(view, id);
     out.push(
-      `<line x1="${r2(p.x)}" y1="${r2(p.y)}" x2="${r2(q.x)}" y2="${r2(q.y)}" stroke="${ACCENT}" stroke-width="12" stroke-linecap="round"/>`,
+      `<line x1="${r2(p.x)}" y1="${r2(p.y)}" x2="${r2(q.x)}" y2="${r2(q.y)}" stroke="${ACCENT}" stroke-width="${band}" stroke-linecap="round"/>`,
     );
   }
   for (const id of atoms) {
@@ -227,11 +261,22 @@ function marks(view, { atoms = [], bonds = [], boxes = [] }, alpha) {
     if (b) out.push(rect(b, `rx="4" fill="${ACCENT}"`));
     else if (!banded.has(id)) {
       const c = view.atom(id);
-      out.push(`<circle cx="${r2(c.x)}" cy="${r2(c.y)}" r="12" fill="${ACCENT}"/>`);
+      out.push(`<circle cx="${r2(c.x)}" cy="${r2(c.y)}" r="${r}" fill="${ACCENT}"/>`);
     }
   }
   for (const key of boxes) out.push(rect(view.box(key, 4), `rx="4" fill="${ACCENT}"`));
   return `<g opacity="${alpha}">${out.join('')}</g>`;
+}
+
+/** The runs of a rendered text part, for the WYSIWYG editor: x, baseline y, size (pt), text. */
+function textRuns(svg) {
+  const re = /<text x="([-\d.]+)" y="([-\d.]+)"[^>]*font-size="([\d.]+)"[^>]*>([^<]*)<\/text>/g;
+  return [...svg.matchAll(re)].map((m) => ({
+    x: Number(m[1]),
+    y: Number(m[2]),
+    size: Number(m[3]),
+    text: m[4],
+  }));
 }
 
 function union(boxes) {
@@ -353,7 +398,8 @@ function screens(core) {
       ghost: [`bond:${ghostBond}`, `atom:${ghostAtom}`],
       overlay: (v) => {
         const c = v.atom(end);
-        return marks(v, { atoms: [end] }, 0.16) + crosshair({ x: c.x + 4, y: c.y + 3 });
+        // The pointer a few px off the atom (inside the hover tolerance), so it hides less of the mark.
+        return marks(v, { atoms: [end] }, HOVER) + crosshair({ x: c.x + 7, y: c.y + 6 });
       },
     });
   }
@@ -374,13 +420,30 @@ function screens(core) {
       overlay: (v) => {
         const ringKeys = Object.keys(v.scene.extents).filter((k) => k.startsWith('ring:'));
         return (
-          marks(v, { atoms: [...ring.atoms], bonds: [...ring.bonds] }, 0.24) +
+          marks(v, { atoms: [...ring.atoms], bonds: [...ring.bonds] }, SELECTION) +
           frame(
             v,
             keys.concat(ringKeys).filter((k) => v.scene.extents[k]),
           )
         );
       },
+    });
+  }
+
+  // 03b: Select, the "Ph" label of benzyl alcohol (Ph-CH2-OH) selected (Expand appears).
+  {
+    let doc = b.empty();
+    let sel;
+    [doc, sel] = b.add(doc, 'ethanol', { x: 0, y: 0 });
+    const end = [...sel.atoms].find(
+      (id) => doc.atoms[id].element === 'C' && dm.neighbors(doc, id).length === 1,
+    );
+    doc = dm.updateAtom(doc, end, { label: 'Ph' });
+    info.formula03b = cc.formulaOf(doc, [end]);
+    out['03b-select-abbrev'] = canvasSvg(core, {
+      ...FULL,
+      doc,
+      overlay: (v) => marks(v, { atoms: [end] }, SELECTION) + frame(v, [`atom:${end}`]),
     });
   }
 
@@ -407,14 +470,16 @@ function screens(core) {
     const warnings = cc.perceive(doc).warnings;
     info.warnings08 = warnings.length;
     info.message08 = warnings[0].message;
+    info.zoom08 = fitZoom(core, doc, FULL);
     out['08-reaction'] = canvasSvg(core, {
       ...FULL,
       doc,
+      zoom: info.zoom08,
       overlay: (v) => {
         const w = v.box(`atom:${water}`, 0);
         info.water08 = w;
         return (
-          marks(v, { atoms: [water] }, 0.16) +
+          marks(v, { atoms: [water] }, HOVER) +
           warnings
             .flatMap((x) => x.atoms)
             .map((id) => warningMark(v, id))
@@ -425,22 +490,35 @@ function screens(core) {
     });
   }
 
-  // 09: the same scheme without its conditions; the text editor (HTML) is open above the arrow.
+  // 09: the same scheme; its condition text is re-opened for editing. The text part is hidden
+  // under the WYSIWYG editor (HTML), which shows the same runs at the same zoom.
   {
-    const [doc, ids] = reactionDoc(b, { showText: false, typo: false });
+    const [doc, ids] = reactionDoc(b, { typo: false });
+    const key = `obj:${ids.texts[0]}`;
+    // The view is the one from 08 (fixing the H20 label does not re-fit the window).
+    info.zoom09 = info.zoom08;
     out['09-text-editing'] = canvasSvg(core, {
       ...FULL,
       doc,
+      zoom: info.zoom09,
+      hidden: [key],
       overlay: (v) => {
-        const a = ids.arrows[0];
-        const m = v.pt({ x: (a.from.x + a.to.x) / 2, y: a.inkTop });
-        info.arrow09 = { mid: m };
+        const part = v.scene.parts.find((p) => p.key === key);
+        info.text09 = {
+          k: v.k,
+          runs: textRuns(part.svg).map((r) => ({
+            ...r,
+            x: r.x * v.k + v.pan.x,
+            y: r.y * v.k + v.pan.y,
+          })),
+        };
         return '';
       },
     });
   }
   const nf = cc.structureFromText('ethanl', core.names);
   info.suggest07 = nf.ok ? [] : nf.error.suggestions;
+  console.log(`07 suggestions from chem-core: ${info.suggest07.join(', ')}`);
   return { out, info };
 }
 
@@ -450,6 +528,7 @@ const PAGES = [
   ['01-empty', 1280, 800],
   ['02-drawing', 1280, 800],
   ['03-select', 1280, 800],
+  ['03b-select-abbrev', 1280, 800],
   ['04-ring-options', 1280, 800],
   ['05-atom-options', 1280, 800],
   ['06-name-dropdown', 1280, 800],

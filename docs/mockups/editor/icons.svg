@@ -166,24 +166,52 @@
     <path d="M16 12L13.5 10.5V13.5Z" fill="currentColor"/>
   </g>
 </symbol>
-<symbol id="number" viewBox="0 0 24 24">
+<!-- Show Kekulé: hexagon with three inner double-bond strokes. Show circle: the benzene glyph. -->
+<symbol id="show-kekule" viewBox="0 0 24 24">
   <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M8.5 4.5L13.26 7.25V12.75L8.5 15.5L3.74 12.75V7.25Z"/>
-    <path d="M16.5 14.5L18.5 13V20M16.5 20H20.5"/>
+    <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z"/>
+    <path d="M12.7 7L16 8.9M16 15.1L12.7 17M7.6 13.9V10.1"/>
   </g>
 </symbol>
+<symbol id="show-circle" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M12 4L18.93 8V16L12 20L5.07 16V8Z"/>
+    <circle cx="12" cy="12" r="4.2"/>
+  </g>
+</symbol>
+<!-- Expand: a label box opening, by an arrow, into a ring. -->
+<symbol id="expand" viewBox="0 0 24 24">
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.5 3.5H9.5V8.5H2.5Z" fill="none"/>
+    <path d="M6 8.5V14.5H7.5" fill="none"/>
+    <path d="M9.6 14.5L7.4 13V16Z" fill="currentColor"/>
+    <path d="M10.5 14.5L13.25 9.74H18.75L21.5 14.5L18.75 19.26H13.25Z" fill="none"/>
+  </g>
+</symbol>
+<!-- Flip: one isosceles triangle, filled, and its outline mirror image across a dashed axis
+     (butt-capped dashes so the gaps stay open). flip-v is flip-h turned so the axis is
+     horizontal; with isosceles triangles the turned pair is still a true mirror pair. -->
 <symbol id="flip-h" viewBox="0 0 24 24">
   <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 3V21" fill="none" stroke-dasharray="2 2"/>
-    <path d="M10 6V18H3Z" fill="currentColor"/>
-    <path d="M14 6V18H21Z" fill="none"/>
+    <path d="M12 3V21" fill="none" stroke-linecap="butt" stroke-dasharray="2 2"/>
+    <path d="M9.5 5V19L3 12Z" fill="currentColor"/>
+    <path d="M14.5 5V19L21 12Z" fill="none"/>
   </g>
 </symbol>
 <symbol id="flip-v" viewBox="0 0 24 24">
-  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="rotate(90 12 12)">
-    <path d="M12 3V21" fill="none" stroke-dasharray="2 2"/>
-    <path d="M10 6V18H3Z" fill="currentColor"/>
-    <path d="M14 6V18H21Z" fill="none"/>
+  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12H21" fill="none" stroke-linecap="butt" stroke-dasharray="2 2"/>
+    <path d="M5 9.5H19L12 3Z" fill="currentColor"/>
+    <path d="M5 14.5H19L12 21Z" fill="none"/>
   </g>
+</symbol>
+
+<!-- Text-editing inserts drawn to match the 14 px / 600 "Δ" beside them (stroke 2 in the grid,
+     1.67 px at 20 px): degree ring at cap height, arrow on the x-height middle. -->
+<symbol id="glyph-degree" viewBox="0 0 24 24">
+  <circle cx="12" cy="9.2" r="2.9" fill="none" stroke="currentColor" stroke-width="2"/>
+</symbol>
+<symbol id="glyph-arrow" viewBox="0 0 24 24">
+  <path d="M4.5 13H19M14.5 8.5L19 13L14.5 17.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </symbol>
 </svg>

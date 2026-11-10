@@ -27,7 +27,7 @@
   --empty-art: #c9ced6;
 
   /* Canvas overlays: --accent at these alphas (applied as group opacity, see DEVIATIONS.md) */
-  --overlay-hover: 0.16;
+  --overlay-hover: 0.45;
   --overlay-selection: 0.24;
   --overlay-marquee: 0.08;
   --overlay-merge: 0.32;
@@ -40,6 +40,8 @@
   --type-sm: 400 13px / 18px var(--font-ui);
   --type-md: 400 14px / 20px var(--font-ui);
   --type-rail: 600 18px / 24px var(--font-ui);
+  --type-caption: 500 11px / 14px var(--font-ui);
+  --type-hint: 400 13px / 18px var(--font-ui);
 
   /* Spacing scale */
   --space-1: 2px;
@@ -65,9 +67,10 @@
 
   /* Layout */
   --topbar-h: 48px;
-  --rail-w: 56px;
+  --rail-w: 64px;
   --statusbar-h: 28px;
-  --rail-btn: 40px;
+  --rail-btn-w: 56px;
+  --rail-btn-h: 48px;
   --option-btn: 32px;
   --topbar-btn: 32px;
   --status-btn: 24px;

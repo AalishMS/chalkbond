@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1215" height="722" viewBox="0 0 1215 722">
+<rect width="1215" height="722" fill="#FFFFFF"/>
+<g data-layer="content" transform="matrix(2 0 0 2 619 348)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<g data-key="bond:b4"><path d="M15.565 -1.014L0 -10" stroke="#000000" stroke-width="2"/></g>
+<g data-key="bond:b5"><path d="M0 -10L-20.905 2.07" stroke="#000000" stroke-width="2"/></g>
+<g data-key="atom:a1"><text x="19.965" y="18.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">Ph</text></g>
+<g data-key="atom:a3"><text x="-61.305" y="18.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="-43.977" y="18.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text></g>
+</g>
+<g data-layer="overlay">
+<g opacity="0.24"><rect x="653.53" y="338.74" width="69.5" height="59.62" rx="4" fill="#1F5FD1"/></g><rect x="649.5" y="334.5" width="80" height="70" fill="none" stroke="#1F5FD1" stroke-width="1" stroke-dasharray="4 3"/><line x1="690.5" y1="334.5" x2="690.5" y2="315.5" stroke="#1F5FD1" stroke-width="1"/><circle cx="690.5" cy="310.5" r="5" fill="#FFFFFF" stroke="#1F5FD1" stroke-width="1.5"/>
+</g>
+</svg>

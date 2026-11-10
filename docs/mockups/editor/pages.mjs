@@ -29,32 +29,36 @@ const HINTS = {
   hoverAtom: 'Type O, N, Cl… to change this atom. Enter for any label.',
   nameField: 'Enter inserts. Write a reaction like: ethanol + acetic acid -> ethyl acetate',
   textEditing:
-    'Enter finishes. Shift+Enter starts a new line. H2SO4 gets its subscripts by itself.',
+    'Enter finishes. Shift+Enter starts a new line. Formulas like H2SO4 get their subscripts when you finish.',
 };
 export { HINTS };
 
+/** id, accessible name, key, default glyph, one-word caption under the icon. */
 const TOOLS = [
-  ['select', 'Select', 'V', 'select'],
-  ['erase', 'Erase', 'E', 'erase'],
+  ['select', 'Select', 'V', 'select', 'Select'],
+  ['erase', 'Erase', 'E', 'erase', 'Erase'],
   '|',
-  ['bond', 'Bond', 'B', 'bond-single'],
-  ['chain', 'Chain', 'Z', 'chain'],
-  ['ring', 'Ring', 'R', 'ring-benzene'],
-  ['atom', 'Atom', 'L', 'C'],
+  ['bond', 'Bond', 'B', 'bond-single', 'Bond'],
+  ['chain', 'Chain', 'Z', 'chain', 'Chain'],
+  ['ring', 'Ring', 'R', 'ring-benzene', 'Ring'],
+  ['atom', 'Atom', 'L', 'C', 'Atom'],
   '|',
-  ['arrow', 'Arrow', 'A', 'arrow-forward'],
-  ['plus', 'Plus', '+', 'plus'],
-  ['curved', 'Curved arrow', 'M', 'curved-full'],
-  ['text', 'Text', 'T', 'text'],
+  ['arrow', 'Arrow', 'A', 'arrow-forward', 'Arrow'],
+  ['plus', 'Plus', '+', 'plus', 'Plus'],
+  ['curved', 'Curved arrow', 'M', 'curved-full', 'Curly'],
+  ['text', 'Text', 'T', 'text', 'Text'],
 ];
 export { TOOLS };
 
-export function railButton([id, label, key, glyph], { active = false, state = '', current } = {}) {
+export function railButton(
+  [id, label, key, glyph, caption],
+  { active = false, state = '', current } = {},
+) {
   const g = current ?? glyph;
   const inner = /^[A-Z][a-z]?$/.test(g) ? `<span class="rail-glyph">${g}</span>` : icon(g);
   return (
     `<button class="btn btn-rail${stateClass(state)}" id="tool-${id}" aria-label="${label} (${key})"` +
-    ` aria-pressed="${active}">${inner}</button>`
+    ` aria-pressed="${active}">${inner}<span class="rail-caption" aria-hidden="true">${caption}</span></button>`
   );
 }
 
@@ -168,24 +172,38 @@ export function action(iconName, label, { disabled = false, state = '', id, cls 
   );
 }
 
-export function selectionActions({ kekule = 'Show Kekulé', enabled = {} } = {}) {
+/**
+ * Selection actions. `kekule` is 'kekule' (shows "Show Kekulé") or 'circle' ("Show circle").
+ * Expand is rendered only when the selection contains an abbreviation (`expand: true`).
+ */
+export function selectionActions({ kekule = 'kekule', enabled = {}, expand = false } = {}) {
   const on = (k) => enabled[k] !== false;
-  return [
+  const flip = (id, name, label) =>
+    `<button class="btn btn-opt" id="act-${id}" aria-label="${label}"${on('flip') ? '' : ' aria-disabled="true"'}>${icon(name, 20)}</button>`;
+  const items = [
     action('clean-up', 'Clean up', { disabled: !on('clean'), id: 'act-clean' }),
-    action(null, kekule, { disabled: !on('kekule'), cls: ' btn-kekule', id: 'act-kekule' }),
+    kekule === 'circle'
+      ? action('show-circle', 'Show circle', { disabled: !on('kekule'), id: 'act-kekule' })
+      : action('show-kekule', 'Show Kekulé', { disabled: !on('kekule'), id: 'act-kekule' }),
     action('tidy', 'Tidy reaction', { disabled: !on('tidy'), id: 'act-tidy' }),
     '<div class="options-sep" role="separator"></div>',
-    action('number', 'Number', { disabled: !on('number'), id: 'act-number' }),
-    `<button class="btn btn-opt" id="act-flip-h" aria-label="Flip horizontal"${on('flip') ? '' : ' aria-disabled="true"'}>${icon('flip-h', 20)}</button>`,
-    `<button class="btn btn-opt" id="act-flip-v" aria-label="Flip vertical"${on('flip') ? '' : ' aria-disabled="true"'}>${icon('flip-v', 20)}</button>`,
-    '<div class="options-sep" role="separator"></div>',
-    action(null, 'Expand', { disabled: !on('expand'), id: 'act-expand' }),
-  ].join('\n');
+    flip('flip-h', 'flip-h', 'Flip horizontal'),
+    flip('flip-v', 'flip-v', 'Flip vertical'),
+  ];
+  if (expand) {
+    items.push(
+      '<div class="options-sep" role="separator"></div>',
+      action('expand', 'Expand', { id: 'act-expand' }),
+    );
+  }
+  return items.join('\n');
 }
 
 export function textOptions({ selected = [] } = {}) {
   const t = (text, label, id) =>
     optText(text, label, { selected: selected.includes(id), id: `txt-${id}` });
+  const g = (name, label, id) =>
+    optIcon(name, label, { selected: selected.includes(id), id: `txt-${id}` });
   return [
     t('x<span class="sub">2</span>', 'Subscript', 'sub'),
     t('x<span class="sup">2</span>', 'Superscript', 'sup'),
@@ -195,8 +213,8 @@ export function textOptions({ selected = [] } = {}) {
     `<span class="options-caption">Insert</span>`,
     t('Δ', 'Insert Δ (heat)', 'delta'),
     t('hν', 'Insert hν (light)', 'hv'),
-    t('°', 'Insert °', 'deg'),
-    t('→', 'Insert →', 'arrow'),
+    g('glyph-degree', 'Insert °', 'deg'),
+    g('glyph-arrow', 'Insert →', 'arrow'),
   ].join('\n');
 }
 
@@ -236,7 +254,7 @@ export function statusbar({
   formula = '',
   warnings = 0,
   preset = 'slides',
-  zoom = 100,
+  zoom = 150,
 } = {}) {
   const parts = [`<div class="hint" role="status" aria-live="polite">${hint}</div>`];
   if (formula) parts.push(`<div class="formula" data-testid="formula">${formula}</div>`);
@@ -281,7 +299,7 @@ export function tooltip(forId, side, title, { key, help } = {}) {
 export function emptyState() {
   return `<div class="empty">
 <svg class="empty-art" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4L18.93 8V16L12 20L5.07 16V8Z"/><circle cx="12" cy="12" r="4.2"/></svg>
-<p class="empty-text">Type a compound name above, or pick a tool and click here.</p>
+<p class="empty-text">Type a compound name above, or click anywhere to start drawing.</p>
 <div class="empty-try"><span>Try:</span>
 <button class="chip">ethanol</button>
 <button class="chip">benzene</button>

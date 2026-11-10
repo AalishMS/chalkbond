@@ -27,15 +27,49 @@ import {
 const img = (name) => `<img class="canvas-art" src="canvas/${name}.svg" alt="">`;
 
 const SUGGESTIONS = [
-  ['ethane', 'C₂H₆'],
-  ['ethene', 'C₂H₄'],
-  ['ethyne', 'C₂H₂'],
-  ['ethanol', 'C₂H₆O'],
-  ['ethylamine', 'C₂H₇N'],
-  ['ethylbenzene', 'C₈H₁₀'],
-  ['ethyl acetate', 'C₄H₈O₂'],
-  ['ethyl formate', 'C₃H₆O₂'],
+  ['ethane', 'C2H6'],
+  ['ethene', 'C2H4'],
+  ['ethyne', 'C2H2'],
+  ['ethanol', 'C2H6O'],
+  ['ethylamine', 'C2H7N'],
+  ['ethylbenzene', 'C8H10'],
+  ['ethyl acetate', 'C4H8O2'],
+  ['ethyl formate', 'C3H6O2'],
 ];
+
+/** Formula with its digits in real <sub> elements (dropdown rows). */
+const formulaHtml = (f) => f.replace(/[0-9]+/g, (d) => `<sub>${d}</sub>`);
+
+/** "Did you mean" chips, closest match first (orchestrator decision; chem-core's own order differs). */
+const DID_YOU_MEAN = ['ethanol', 'ethane', 'acetaldehyde'];
+
+/**
+ * The WYSIWYG text editor over the condition text: the same runs, sizes and sub offsets as the
+ * rendered part (Arial: ascent 0.905, descent 0.212 em), caret at the end.
+ */
+function textEditor({ runs, k }) {
+  const main = Math.max(...runs.map((r) => r.size));
+  const base = runs.find((r) => r.size === main);
+  const F = main * k;
+  const scale = (v) => Math.round(v * 100) / 100;
+  const lineH = Math.round(F * 1.15);
+  const baselineInBox = (lineH - 1.117 * F) / 2 + 0.905 * F;
+  const left = Math.round(runs[0].x) - 8;
+  const top = Math.round(base.y - 2 - baselineInBox);
+  const body = runs
+    .map((r) =>
+      r.size === main
+        ? r.text
+        : `<span class="run-${r.y > base.y ? 'sub' : 'sup'}" style="font-size: ${scale(r.size * k)}px; top: ${scale(r.y - base.y)}px">${r.text}</span>`,
+    )
+    .join('');
+  const caret = `<span class="caret" style="height: ${Math.round(F * 1.05)}px; vertical-align: -${Math.round(F * 0.2)}px"></span>`;
+  return (
+    // A <span> so Prettier keeps the runs on one line (it may re-wrap a <div>'s content).
+    `<span class="text-editor" role="textbox" aria-multiline="true" aria-label="Text" ` +
+    `style="left: ${left}px; top: ${top}px; font-size: ${scale(F)}px; line-height: ${lineH}px">${body}${caret}</span>`
+  );
+}
 
 function statesSheet() {
   const cols = ['Rest', 'Hover', 'Pressed', 'Selected', 'Disabled', 'Keyboard focus'];
@@ -47,7 +81,7 @@ function statesSheet() {
   const na = '<span class="spec-na">—</span>';
   const drop = (extra, note = '', cls = '') =>
     `<div class="spec-drop"><div class="dropdown-row${cls}"${extra}><span class="dropdown-name">ethanol</span>` +
-    `<span class="dropdown-formula">C₂H₆O</span></div></div>${note}`;
+    `<span class="dropdown-formula">${formulaHtml('C2H6O')}</span></div></div>${note}`;
   const rows = [
     row('Rail button', [
       railButton(bond),
@@ -110,7 +144,7 @@ function statesSheet() {
       `<div class="spec-field">${nameField({ focus: true, notfound: true, value: 'ethanl' })}</div><span class="spec-note">focused, not found</span>`,
     ]),
     row('Status controls', [
-      `<div class="spec-pair"><button class="btn btn-status" aria-label="Zoom in">${icon('zoom-in', 16)}</button><button class="btn btn-status btn-zoom">100%</button></div>`,
+      `<div class="spec-pair"><button class="btn btn-status" aria-label="Zoom in">${icon('zoom-in', 16)}</button><button class="btn btn-status btn-zoom">150%</button></div>`,
       `<div class="spec-pair"><button class="btn btn-status is-hover" aria-label="Zoom in">${icon('zoom-in', 16)}</button></div>`,
       `<div class="spec-pair"><button class="btn btn-status is-pressed" aria-label="Zoom in">${icon('zoom-in', 16)}</button></div>`,
       `<div class="segmented"><button class="btn btn-status" aria-pressed="true">Slides</button><button class="btn btn-status" aria-pressed="false">Handout</button></div>`,
@@ -192,12 +226,23 @@ export function buildPages(info) {
   p['03-select'] = page({
     title: 'Selection',
     topbar: topbar({
-      options: selectionActions({ enabled: { tidy: false, expand: false } }),
+      options: selectionActions({ enabled: { tidy: false } }),
       canUndo: true,
     }),
     rail: rail('select'),
     canvas: img('03-select'),
     status: statusbar({ hint: HINTS.select, formula: formulaText(info.formula03) }),
+  });
+
+  p['03b-select-abbrev'] = page({
+    title: 'Selection with an abbreviation',
+    topbar: topbar({
+      options: selectionActions({ enabled: { kekule: false, tidy: false }, expand: true }),
+      canUndo: true,
+    }),
+    rail: rail('select'),
+    canvas: img('03b-select-abbrev'),
+    status: statusbar({ hint: HINTS.select, formula: formulaText(info.formula03b) }),
   });
 
   p['04-ring-options'] = page({
@@ -224,7 +269,7 @@ export function buildPages(info) {
   const dropdownRows = SUGGESTIONS.map(
     ([name, f]) =>
       `<div class="dropdown-row${name === 'ethanol' ? ' is-hover' : ''}" role="option" aria-selected="false">` +
-      `<span class="dropdown-name"><b>eth</b>${name.slice(3)}</span><span class="dropdown-formula">${f}</span></div>`,
+      `<span class="dropdown-name"><b>eth</b>${name.slice(3)}</span><span class="dropdown-formula">${formulaHtml(f)}</span></div>`,
   ).join('\n');
   p['06-name-dropdown'] = page({
     title: 'Name suggestions',
@@ -235,7 +280,7 @@ export function buildPages(info) {
     extra: `<div class="dropdown" role="listbox" aria-label="Suggestions">\n${dropdownRows}\n</div>`,
   });
 
-  const chips = info.suggest07.map((s) => `<button class="chip">${s}</button>`).join('\n');
+  const chips = DID_YOU_MEAN.map((s) => `<button class="chip">${s}</button>`).join('\n');
   p['07-name-nomatch'] = page({
     title: 'Name not found',
     topbar: topbar({
@@ -259,29 +304,23 @@ ${chips}
   p['08-reaction'] = page({
     title: 'Reaction scheme',
     topbar: topbar({
-      options: selectionActions({
-        enabled: { kekule: false, number: false, flip: false, expand: false },
-      }),
+      options: selectionActions({ enabled: { kekule: false, flip: false } }),
       canUndo: true,
     }),
     rail: rail('select'),
     canvas:
       img('08-reaction') +
       `\n<div class="anchor" id="atom-h20" style="left: ${Math.round(w.x)}px; top: ${Math.round(w.y)}px; width: ${Math.round(w.w)}px; height: ${Math.round(w.h)}px"></div>`,
-    status: statusbar({ hint: HINTS.select, warnings: info.warnings08 }),
+    status: statusbar({ hint: HINTS.select, warnings: info.warnings08, zoom: info.zoom08 }),
     extra: tooltip('atom-h20', 'above', info.message08.replace(/"([^"]*)"/, '“$1”')),
   });
 
-  const a = info.arrow09;
   p['09-text-editing'] = page({
     title: 'Editing conditions',
     topbar: topbar({ options: textOptions(), canUndo: true }),
     rail: rail('text'),
-    canvas:
-      img('09-text-editing') +
-      `\n<div class="editor-row" style="width: ${Math.round(a.mid.x) * 2}px; top: ${Math.round(a.mid.y - 11 - 37)}px">` +
-      `<div class="text-editor" role="textbox" aria-multiline="true" aria-label="Text">conc. H2SO4, Δ<span class="caret"></span></div></div>`,
-    status: statusbar({ hint: HINTS.textEditing }),
+    canvas: `${img('09-text-editing')}\n${textEditor(info.text09)}`,
+    status: statusbar({ hint: HINTS.textEditing, zoom: info.zoom09 }),
   });
 
   p['10-states'] = statesSheet();

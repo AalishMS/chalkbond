@@ -67,7 +67,7 @@ body.specimen {
 
 .spec-rail {
   position: relative;
-  padding-left: var(--space-3);
+  padding-left: var(--space-2);
 }
 
 .spec-field .namefield {

@@ -244,24 +244,57 @@ input {
   color: var(--text-disabled);
 }
 
+/*
+ * Rail button 56 x 48: the 24 px icon box at top 4 (its 20 px glyph area starts 6 px down), the
+ * caption line box (14 px) right under it at top 28, so the caption baseline is 9 px above the
+ * bottom.
+ */
 .btn-rail {
-  width: var(--rail-btn);
-  height: var(--rail-btn);
+  flex-direction: column;
+  justify-content: flex-start;
+  width: var(--rail-btn-w);
+  height: var(--rail-btn-h);
+  padding-top: var(--space-2);
 }
 
-/* Active tool: 3 x 20 accent bar at the rail's left edge (the non-colour cue). */
+.btn-rail:focus-visible,
+.btn-rail.is-focus {
+  outline-offset: 0;
+}
+
+.rail-caption {
+  display: block;
+  color: var(--text-muted);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+
+.btn-rail:hover .rail-caption,
+.btn-rail.is-hover .rail-caption,
+.btn-rail:active .rail-caption,
+.btn-rail.is-pressed .rail-caption {
+  color: var(--text);
+}
+
+.btn-rail[aria-pressed='true'] .rail-caption {
+  color: var(--active-fg);
+}
+
+/* Active tool: 3 x 24 accent bar at the rail's left edge (the non-colour cue). */
 .btn-rail[aria-pressed='true']::before {
   content: '';
   position: absolute;
-  left: calc(-1 * var(--space-3));
-  top: 10px;
+  left: calc(-1 * var(--space-2));
+  top: var(--space-4);
   width: 3px;
-  height: 20px;
+  height: 24px;
   border-radius: 0 2px 2px 0;
   background: var(--accent);
 }
 
 .rail-glyph {
+  display: block;
+  height: 24px;
   font: var(--type-rail);
 }
 
@@ -299,10 +332,6 @@ input {
   padding: 0 var(--space-3);
 }
 
-.btn-kekule {
-  width: 104px;
-}
-
 .btn-top {
   width: var(--topbar-btn);
   height: var(--topbar-btn);
@@ -330,18 +359,23 @@ input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   padding: var(--space-3) 0;
   border-right: 1px solid var(--border);
   overflow-y: auto;
   scrollbar-width: none;
 }
 
+.rail > .btn {
+  flex: none;
+}
+
+/* 8 px above and below: the 2 px flex gap plus 6 px margin. */
 .rail-sep {
   flex: none;
   width: 32px;
   height: 1px;
-  margin: var(--space-2) 0;
+  margin: calc(var(--space-3) - var(--space-1)) 0;
   background: var(--border);
 }
 
@@ -434,24 +468,31 @@ input {
   outline-offset: 2px;
 }
 
-/* Text editor (rule T2): borderless textarea over the text, 1 px accent outline. */
+/*
+ * Text editor (rule T2): a WYSIWYG box over the text, 1 px accent outline. It shows the runs as
+ * svg-render draws them (Arial, real sub/superscripts), at the canvas zoom; build.mjs sets the
+ * zoom-dependent sizes inline from the rendered text part.
+ */
 .text-editor {
   position: absolute;
-  display: flex;
-  align-items: center;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-3);
   outline: 1px solid var(--accent);
   background: var(--canvas-bg);
   color: #000000;
-  font:
-    32px/37px Arial,
-    Helvetica,
-    sans-serif;
-  white-space: pre;
+  font-family: Arial, Helvetica, sans-serif;
+  white-space: nowrap;
+}
+
+.text-editor .run-sub,
+.text-editor .run-sup {
+  position: relative;
+  line-height: 0;
 }
 
 .text-editor .caret {
-  height: 30px;
+  position: relative;
+  margin-left: 1px;
+  vertical-align: baseline;
   background: #000000;
 }
 
@@ -475,6 +516,7 @@ input {
 
 .hint {
   flex: 1;
+  font: var(--type-hint);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -634,6 +676,15 @@ kbd {
   white-space: nowrap;
 }
 
+/* Real subscripts, 10 px, dropped 3 px; line-height 0 keeps the row height. */
+.dropdown-formula sub {
+  position: relative;
+  top: 3px;
+  font-size: 10px;
+  line-height: 0;
+  vertical-align: baseline;
+}
+
 .notfound {
   display: flex;
   align-items: flex-start;
@@ -673,15 +724,4 @@ kbd {
   border-top: 1px solid var(--border);
   color: var(--text-muted);
   font: var(--type-xs);
-}
-
-.editor-row {
-  position: absolute;
-  left: 0;
-  display: flex;
-  justify-content: center;
-}
-
-.editor-row .text-editor {
-  position: static;
 }
