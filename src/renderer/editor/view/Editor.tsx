@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { canRedo, canUndo, current } from '@core/doc-model';
-import { statusFormula } from '../model/formula';
+import { createStatusFormula } from '../model/status-formula';
 import { selectionScope } from '../model/scope';
 import { canvasKey, fieldCommand, globalCommand, hoverKeys } from '../model/keymap';
 import { suggestionRows } from '../model/suggestions';
@@ -114,6 +114,7 @@ export function Editor({ controller, actions }: EditorProps): React.JSX.Element 
   const field = state.nameField;
   const rows = field.open ? suggestionRows(controller.names, field.text) : [];
   const { perception } = controller.derive.committed(doc);
+  const statusFormula = useMemo(() => createStatusFormula(), []);
   const formula = statusFormula(doc, perception, state.selection);
   const scope = useMemo(
     () => selectionScope(doc, perception, state.selection),

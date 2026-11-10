@@ -40,3 +40,31 @@ spare. The cold start includes launching Electron and resizing the window.
 
 Raster and compositing time, and the frame rate on the owner's laptop: `docs/windows-checklist.md`
 "Checkpoint E32" asks for the run there.
+
+## Checkpoint S corrective profiling (Linux, 2026-11-10)
+
+The isolated checkpoint run missed whole-fragment drag: median 10.4 ms, p95 16.2 ms.
+One targeted CDP CPU profile, with the unchanged 91-event frame probe, measured median
+11.0 ms, p95 15.8 ms (script median 11.0 ms, layout 0.0 ms). This passing sample does not
+invalidate the checkpoint miss. Profile spans 6003 ms including 4614 ms idle and 771 ms
+unattributed program work. Inclusive sampled CPU: React synchronous work 488 ms, Editor
+221 ms, statusFormula 215 ms, formulaOf 212 ms, perceiveFragment 194 ms, buildMolecule
+162 ms. The selection spans multiple fragments, triggering formulaOf on each Editor render,
+even though committed doc, perception and selection have identical identities during drag.
+The existing committed/preview derive caches and translate fast path do not cache this value.
+Host session publication listens to doc/dirty only and deduplicates identical updates; pointer
+frames do not publish sessions. No check/coverage worker was running; pre-run load average
+was 0.48/2.43/3.01 and no competing CPU-heavy process appeared in the process snapshot.
+
+Correction: retain one status formula per mounted Editor, invalidating on doc, perception or
+selection identity. No core or public API changes. The deterministic regression failed with
+91 chemistry calls instead of one before caching, then passed; each input invalidates the
+cache separately. This addresses the measured repeated chemistry work, not renderer caching;
+no createRenderer API request is supported by this profile. Windows performance remains pending.
+
+Raw profile and run logs: `/tmp/chalkbond-checkpoint-fixes-1ApUoY/` (`drag.cpuprofile`,
+`profile.log`, `perf-red.log`, `perf-green.log`, `perf-fixed.log`). Temporary CDP instrumentation
+was removed after profiling; the frame probe and all budgets are unchanged.
+
+After correction, targeted e2e (5/5): whole-fragment median 8.8 ms / p95 9.4 ms; bond preview
+p95 9.1 ms; partial selection p95 6.4 ms; commit maximum/p95 40.8 ms; cold start 442 ms.
