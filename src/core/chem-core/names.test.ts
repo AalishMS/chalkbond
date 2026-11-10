@@ -31,6 +31,8 @@ describe('compound dictionary integrity', () => {
     expect((dictionary as { source: string }).source).toMatch(/PubChem/);
   });
 
+  // Whole-dictionary correctness loop, not a timing check: wall time depends on parallel load
+  // (perf budgets live in perf.test.ts). 60 s matches the --coverage testTimeout.
   it('every entry parses; formula equals PubChem’s; MW within PubChem’s precision', () => {
     const problems: string[] = [];
     for (const e of entries) {
@@ -57,7 +59,7 @@ describe('compound dictionary integrity', () => {
       if (p.warnings.length > 0) problems.push(`${e.name}: ${p.warnings[0]!.message}`);
     }
     expect(problems).toEqual([]);
-  });
+  }, 60_000);
 
   it('no name or synonym is valid SMILES (it would shadow SMILES input)', () => {
     const shadowing: string[] = [];

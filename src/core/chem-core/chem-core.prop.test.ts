@@ -26,6 +26,8 @@ const docs = (cmds: readonly Parameters<typeof run>[1][]): Doc[] => {
 const hills = (doc: Doc) => perceive(doc).fragments.map((f) => f.formula.text);
 
 describe('chem-core properties', () => {
+  // Correctness property, not a timing check: wall time depends on parallel load (perf budgets
+  // live in perf.test.ts). 60 s matches the --coverage testTimeout so it is never lowered there.
   it('perceive never throws on a reachable doc', () => {
     fc.assert(
       fc.property(sequence, (cmds) => {
@@ -33,7 +35,7 @@ describe('chem-core properties', () => {
       }),
       { numRuns: 300 },
     );
-  });
+  }, 60_000);
 
   it('a cached perceiver always equals perceive across an edit sequence (never stale)', () => {
     fc.assert(
