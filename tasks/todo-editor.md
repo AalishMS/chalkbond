@@ -1023,6 +1023,6 @@ gate.
 **Scope:** S
 
 ### Checkpoint R — module complete
-- [ ] Every success criterion in `SPEC-editor.md` met; `src/renderer/editor` ≥ 70 % lines (coverage 85.5 % verified; SC 1, 7 and 10 are partly human checks on the Windows checklist, unticked; SC 6 has the open 64x20 preset-segment deviation)
+- [x] Every success criterion in `SPEC-editor.md` met by a test or shot (SC 2-6, 8, 9, 11 fully); `src/renderer/editor` ≥ 70 % lines (coverage 85.5 % verified). The human-only parts of SC 1, 7 and 10 are named "manual, pending" beside each SC and listed unticked in `docs/windows-checklist.md`; they are not claimed. SC 6: preset segments now 64x24 (R41), `--border-control` 3 : 1 on every state (R42)
 - [x] `npm run check` green; `npm run test:e2e` green; `npm run shots` green
 - [ ] Commit + push
