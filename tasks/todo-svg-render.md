@@ -144,10 +144,10 @@ by neighbour side; `H2O`, `H3O+`, `H2S`, `HCl`, `OH−`, `NH3`, `NH4+`; isotopes
 an up-right bond on `NH2`.
 
 **Acceptance criteria:**
-- [ ] Heteroatom labels show `implicitH` and read away from the bonds (SC7)
-- [ ] `CO2H`, `OMe`, `NO2` attach through the correct glyph (SC7)
-- [ ] Bare atoms read as formulas (SC7)
-- [ ] Unknown glyphs produce `unmeasured-glyph` notices, never throw
+- [x] Heteroatom labels show `implicitH` and read away from the bonds (SC7)
+- [x] `CO2H`, `OMe`, `NO2` attach through the correct glyph (SC7)
+- [x] Bare atoms read as formulas (SC7)
+- [x] Unknown glyphs produce `unmeasured-glyph` notices, never throw
 
 **Verification:** `npm test -- src/core/svg-render`
 
