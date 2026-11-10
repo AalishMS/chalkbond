@@ -39,6 +39,8 @@ export interface ToolStep {
   readonly commit?: ToolCommit;
   /** The selection after the step (not undoable); undefined = unchanged. */
   readonly selection?: Selection;
+  /** A notice to show with this step (a mark clicked on empty canvas). */
+  readonly notice?: { readonly kind: 'info' | 'error'; readonly text: string };
 }
 
 export interface Tool {

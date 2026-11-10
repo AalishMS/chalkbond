@@ -1,4 +1,5 @@
 import type { ToolId } from '../state/editor-state';
+import { atomTool } from './atom';
 import { bondTool } from './bond';
 import { chainTool } from './chain';
 import { eraseTool } from './erase';
@@ -13,5 +14,6 @@ export function toolFor(id: ToolId): Tool | null {
   if (id === 'bond') return bondTool;
   if (id === 'chain') return chainTool;
   if (id === 'ring') return ringTool;
+  if (id === 'atom') return atomTool;
   return null;
 }

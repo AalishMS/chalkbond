@@ -85,6 +85,10 @@ export function pointer(
     notice: ev.type === 'down' ? null : state.notice,
   };
   if (step.selection !== undefined) next = { ...next, selection: step.selection as Selection };
+  if (step.notice !== undefined) {
+    const id = next.noticeSeq + 1;
+    next = { ...next, notice: { id, ...step.notice }, noticeSeq: id };
+  }
   if (step.commit !== undefined) {
     const c = step.commit;
     next = commit(next, {

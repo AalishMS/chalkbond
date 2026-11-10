@@ -107,7 +107,7 @@ Everything else is sequential: each phase builds on the previous one.
 - [ ] E19: Bond tool and ghost previews
 - [ ] E20: Keymap, hover keys and tool keys
 - [x] E21: Chain and Ring tools
-- [ ] E22: Atom tool and marks
+- [x] E22: Atom tool and marks
 - [ ] E23: Text-editing model and label editor
 - [ ] E24: Warnings overlay, Clean up, Kekulé ⇄ circle, Expand
 

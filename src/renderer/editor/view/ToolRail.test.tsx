@@ -63,6 +63,13 @@ describe('ToolRail markup', () => {
     expect(h).toContain('#bond-wedge');
   });
 
+  it('shows the chosen element on the Atom button: Cl after choosing Chlorine (screen 05)', () => {
+    const s = reduce(initialState(), { type: 'select-variant', tool: 'atom', variant: 'Cl' });
+    const h = render(s);
+    expect(h).toContain('<span class="rail-glyph">Cl</span>');
+    expect(h).not.toContain('#mark-plus');
+  });
+
   it('shows a mark option as its icon on the Atom button', () => {
     const s = reduce(initialState(), { type: 'select-variant', tool: 'atom', variant: 'plus' });
     const h = render(s);

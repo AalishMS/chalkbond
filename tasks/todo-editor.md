@@ -674,14 +674,14 @@ lone N (renders NH3, formula "H3N · 17.03 g/mol"); drag from an atom with Cl �
 notice, no step.
 
 **Acceptance criteria:**
-- [ ] A1–A3 covered by named tests; one undo step each
-- [ ] Rail Atom button shows "Cl" after choosing Chlorine (markup test; screen 05)
+- [x] A1–A3 covered by named tests; one undo step each
+- [x] Rail Atom button shows "Cl" after choosing Chlorine (markup test; screen 05)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E22` → `E22/atom-options.png` (scripted: insert propan-1-ol, Atom, Chlorine selected, hover a carbon; compare `05-atom-options.png`), `E22/marks.png` (scripted: insert water; Atom tool, Lone pair option, click the O twice; δ− option, click the O)
 
 **Dependencies:** E21
 
-**Files:** `src/renderer/editor/tools/atom.ts` (+ tests), `src/renderer/editor/view/{ToolRail.tsx,OptionsBar.tsx}`, `e2e/shots/E22.shot.ts`
+**Files:** `src/renderer/editor/tools/atom.ts`, `src/renderer/editor/model/atom-ops.ts` (+ tests), `src/renderer/editor/tools/tool.ts` (`ToolStep.notice`), `src/renderer/editor/state/pointer.ts`, `src/renderer/editor/view/{ToolRail.tsx,OptionsBar.tsx}`, `e2e/shots/E22.shot.ts`
 
 **Scope:** S
 

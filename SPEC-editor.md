@@ -128,6 +128,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R26 | P1 tie-break for a one-neighbour atom whose neighbour has no other neighbours: the candidate nearer horizontal, then more upward, then more rightward (draft: more upward first, which sprouted straight up from the end of a lone bond and drew a bent chain, not the propane zig-zag) | Propane by two clicks must be the textbook zig-zag (E19) | 2026-11-10 |
 | R27 | A hovered labelled atom gets a box around its label's ink (2 px padding, radius 4) at alpha 0.25 (`--overlay-hover-label`), not the 0.45 box, and no hover ghost (HV4). Skeleton atoms keep the Ø 18 circle at 0.45, bonds the 8 px band at 0.45 | The heavy box hid the letters and the ghost bond ran through the H of "OH" | 2026-11-10 |
 | R28 | Chain and Ring corrections (E21): P2 counts one bond per cos 30 BLU, so a 4 BLU drag is 5 bonds; P4 with one neighbour points the ring straight away from it (mock-up 04), not along P1; P5 gives a pointer within 4 px of the bond line no choice of side, so a click on a ring bond fuses outside it; templates are vertex lists, not SubDocs | The first draft of each rule contradicted its own mock-up or example (a ring bond along the existing bond; a click inside the ring it fuses to) | 2026-11-10 |
+| R29 | Atom tool (E22): a mark clicked on empty canvas gives its info notice through the tool step (`ToolStep.notice`), not a document change; lone pairs store 0 explicitly after 4 (the cycle returns to 0); radical toggles 0 and 1 (a stored 2 becomes 0) | The tool machine must be able to tell the user why nothing happened; the cycle needs a defined end | 2026-11-10 |
 
 ---
 
@@ -880,12 +881,14 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 
 - **A1** Element option: click an atom → set its element (A2); click empty canvas → a lone atom
   of that element (a lone O renders "H₂O"); drag from an atom → bond to a new atom of that element
-  (B4 geometry).
+  (B4 geometry). A press on a bond, a drag from empty canvas and a press released more than 4 px
+  away (other than a drag from an atom) change nothing. Commit labels: "Change atom", "Add atom", "Add bond".
 - **A2** Setting an element: `updateAtom(element, label: undefined, explicitH: undefined)`;
   charge and marks kept. Setting the element it already has does nothing.
 - **A3** Mark options on a clicked atom (Shift+click reverses): Positive / Negative charge ±1
   (clamped −4…4); Lone pair: `lonePairs` 0 → 1 → … → 4 → 0; Radical 0 ↔ 1; δ+ / δ−: set, or clear
-  if already that value. On empty canvas: nothing, notice "Click an atom to add this." (info).
+  if already that value. On empty canvas: nothing, notice "Click an atom to add this." (info). A mark option dragged does nothing. A charge already at ±4 pressed again, and a click that
+  changes nothing, make no undo step.
 
 ### Label editor
 

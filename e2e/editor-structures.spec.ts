@@ -489,3 +489,106 @@ test('Toluene in 3 actions: press R, click the canvas, hover a ring atom and pre
     await app.close();
   }
 });
+
+test('Atom tool: N on empty canvas is NH3; O on a carbon makes it O; one undo step each', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-atom').click();
+    await page.getByTestId('opt-N').click();
+    await page.mouse.click(START.x, START.y);
+    await expect(formulaText(page)).toHaveText('H3N · 17.03 g/mol');
+    await page.keyboard.press('Control+z');
+    expect(atomIds(await readDocument(page))).toHaveLength(0);
+    await page.getByTestId('opt-C').click();
+    await page.mouse.click(START.x, START.y);
+    await expect(formulaText(page)).toHaveText('CH4 · 16.04 g/mol');
+    await page.getByTestId('opt-O').click();
+    await page.mouse.click(START.x, START.y);
+    const doc = await readDocument(page);
+    expect(Object.values(doc.atoms).map((a) => a.element)).toEqual(['O']);
+    await expect(formulaText(page)).toHaveText('H2O · 18.02 g/mol');
+    await page.keyboard.press('Control+z');
+    expect(Object.values((await readDocument(page)).atoms).map((a) => a.element)).toEqual(['C']);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Atom tool: acetic acid from a chain, Atom drags for =O and -OH', async () => {
+  const { app, page } = await openApp();
+  try {
+    // CH3-C: one chain bond up-right.
+    await page.getByTestId('tool-chain').click();
+    await page.mouse.click(START.x, START.y);
+    const doc = await readDocument(page);
+    const carbonyl = await px(page, doc, atomIds(doc)[1] as AtomId);
+    await page.getByTestId('tool-atom').click();
+    await page.getByTestId('opt-O').click();
+    // Up for the carbonyl O, down-right for the OH.
+    await page.mouse.move(carbonyl.x, carbonyl.y);
+    await page.mouse.down();
+    await page.mouse.move(carbonyl.x, carbonyl.y - 60, { steps: 4 });
+    await page.mouse.up();
+    await page.mouse.move(carbonyl.x, carbonyl.y);
+    await page.mouse.down();
+    await page.mouse.move(carbonyl.x + 60, carbonyl.y + 35, { steps: 4 });
+    await page.mouse.up();
+    // The carbonyl bond becomes double.
+    await page.getByTestId('tool-bond').click();
+    await page.getByTestId('opt-double').click();
+    const after = await readDocument(page);
+    const keep = atomIds(after)[1] as AtomId;
+    const at = (id: AtomId): Pt => after.atoms[id] as Pt;
+    const bond = Object.values(after.bonds).find(
+      (b) => b.a1 === keep && at(b.a2).y < at(keep).y - 0.5,
+    ) as Doc['bonds'][BondId];
+    const mid = await canvasPoint(page, {
+      x: (at(bond.a1).x + at(bond.a2).x) / 2,
+      y: (at(bond.a1).y + at(bond.a2).y) / 2,
+    });
+    await page.mouse.click(mid.x, mid.y);
+    await expect(formulaText(page)).toHaveText('C2H4O2 · 60.05 g/mol');
+  } finally {
+    await app.close();
+  }
+});
+
+test('Atom tool marks: charges step with Shift reversing, lone pairs cycle, radical and delta toggle; empty canvas gives a notice', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('tool-atom').click();
+    await page.getByTestId('opt-O').click();
+    await page.mouse.click(START.x, START.y);
+    const only = atomIds(await readDocument(page))[0] as AtomId;
+    const state = async () => (await readDocument(page)).atoms[only];
+    await page.getByTestId('opt-plus').click();
+    await page.mouse.click(START.x, START.y);
+    await page.mouse.click(START.x, START.y);
+    expect((await state())?.charge).toBe(2);
+    await page.keyboard.down('Shift');
+    await page.mouse.click(START.x, START.y);
+    await page.keyboard.up('Shift');
+    expect((await state())?.charge).toBe(1);
+    await page.getByTestId('opt-lone-pair').click();
+    for (let i = 0; i < 5; i++) await page.mouse.click(START.x, START.y);
+    expect((await state())?.lonePairs).toBe(0);
+    await page.mouse.click(START.x, START.y);
+    expect((await state())?.lonePairs).toBe(1);
+    await page.getByTestId('opt-radical').click();
+    await page.mouse.click(START.x, START.y);
+    expect((await state())?.radical).toBe(1);
+    await page.getByTestId('opt-delta-minus').click();
+    await page.mouse.click(START.x, START.y);
+    expect((await state())?.partialCharge).toBe('δ-');
+    await page.mouse.click(START.x, START.y);
+    expect((await state())?.partialCharge).toBeUndefined();
+    // A mark on empty canvas: a notice, no new atom.
+    await page.mouse.click(START.x + 300, START.y - 200);
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Click an atom to add this.' }),
+    ).toBeVisible();
+    expect(atomIds(await readDocument(page))).toHaveLength(1);
+  } finally {
+    await app.close();
+  }
+});
