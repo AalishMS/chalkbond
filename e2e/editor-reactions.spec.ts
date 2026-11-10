@@ -237,7 +237,7 @@ test('Curly tool: acetic acid C=O bond to its O atom, anchored, full head, hover
     expect(c.from).toEqual({ kind: 'bond', bond: carbonyl.id, t: 0.5 });
     expect(c.to).toEqual({ kind: 'atom', atom: oxygen });
     expect(c.head).toBe('full');
-    expect(Math.abs(c.bend)).toBeCloseTo(0.4, 9);
+    expect(Math.abs(c.bend)).toBeCloseTo(1.8, 9);
     // Rendered by svg-render: a path in the part, and its ink stays clear of the label's glyphs.
     const scene = render(after);
     const ink = scene.extents[`obj:${c.id}`];

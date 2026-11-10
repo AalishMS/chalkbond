@@ -132,11 +132,76 @@ describe('finishText (T4): formula tokens', () => {
     expect(finish('NaOH + HCl')).toBe('NaOH + HCl');
   });
 
-  it('a sign after a digit is not a charge: type Fe^2+ and NH4^+ (T4 as written)', () => {
-    expect(finish('Fe2+')).toBe('Fe₂+');
-    expect(finish('NH4+')).toBe('NH₄+');
+  it('NH4^+ and Fe^2+ typed with the marker still work', () => {
     expect(finish('NH4^+')).toBe('NH₄⁺');
     expect(finish('Fe^2+')).toBe('Fe²⁺');
+  });
+});
+
+describe('finishText (T4): trailing ion charges after a digit', () => {
+  it.each([
+    // one element symbol and one digit: the digit is the charge
+    ['Fe2+', 'Fe²⁺'],
+    ['Cu2+', 'Cu²⁺'],
+    ['Al3+', 'Al³⁺'],
+    ['Ca2+', 'Ca²⁺'],
+    ['O2-', 'O²⁻'],
+    ['S2-', 'S²⁻'],
+    ['N3-', 'N³⁻'],
+    // a one-digit run in a larger formula: the digit is a count
+    ['NH4+', 'NH₄⁺'],
+    ['NO3-', 'NO₃⁻'],
+    ['MnO4-', 'MnO₄⁻'],
+    ['HCO3-', 'HCO₃⁻'],
+    // a longer run: the last digit is the charge
+    ['SO42-', 'SO₄²⁻'],
+    ['CO32-', 'CO₃²⁻'],
+    ['PO43-', 'PO₄³⁻'],
+    ['Cr2O72-', 'Cr₂O₇²⁻'],
+    ['S2O32-', 'S₂O₃²⁻'],
+    ['Hg22+', 'Hg₂²⁺'],
+    ['O22-', 'O₂²⁻'],
+    // a sign after a letter, and things that are not formulas
+    ['H3O+', 'H₃O⁺'],
+    ['OH-', 'OH⁻'],
+    ['2+', '2+'],
+    ['10-', '10-'],
+    ['pH-', 'pH-'],
+    ['C-C', 'C-C'],
+    ['Fe2+ and SO42- ions', 'Fe²⁺ and SO₄²⁻ ions'],
+  ])('%s -> %s', (input, expected) => {
+    expect(finish(input)).toBe(expected);
+  });
+
+  it('a sign followed by a letter or digit is never a charge', () => {
+    expect(finish('Fe2+Cl')).toBe('Fe₂+Cl');
+    expect(finish('NH4-2')).toBe('NH₄-2');
+  });
+
+  it('explicit characters win', () => {
+    const plainDigit: EditRun[] = [{ text: 'Fe' }, { text: '2', explicit: true }, { text: '+' }];
+    expect(show(finishText(plainDigit, {}))).toBe('Fe2+');
+    const plainSign: EditRun[] = [{ text: 'NH4' }, { text: '+', explicit: true }];
+    expect(show(finishText(plainSign, {}))).toBe('NH₄+');
+  });
+
+  it('formatting the output again changes nothing', () => {
+    for (const t of ['Fe2+', 'SO42-', 'NH4+', 'Cr2O72-']) {
+      const once = finishText(typed(t), {});
+      const twice = finishText(
+        once.map((r) => ({
+          text: r.text,
+          ...(r.script === undefined ? {} : { script: r.script }),
+        })),
+        {},
+      );
+      expect(twice).toEqual(once);
+    }
+  });
+
+  it('a hyphen charge is the true minus', () => {
+    const sup = finishText(typed('SO42-'), {}).find((r) => r.script === 'sup');
+    expect(sup?.text).toBe('2−');
   });
 });
 

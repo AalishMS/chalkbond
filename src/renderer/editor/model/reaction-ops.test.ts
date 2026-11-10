@@ -1,6 +1,7 @@
 import {
   fragments,
   resolveAnchor,
+  type Anchor,
   type ArrowObject,
   type AtomId,
   type Bond,
@@ -22,6 +23,7 @@ import {
   curvedBend,
   curvedHeadOf,
   defaultArrowEnds,
+  defaultBendSize,
   setArrowKind,
 } from './reaction-ops';
 
@@ -148,7 +150,7 @@ describe('curved arrows (R3)', () => {
     expect(c.from).toEqual({ kind: 'bond', bond: bond.id, t: 0.5 });
     expect(c.to).toEqual({ kind: 'atom', atom: oxygen });
     expect(c.head).toBe('full');
-    expect(Math.abs(c.bend)).toBe(CURVE_BEND);
+    expect(Math.abs(c.bend)).toBeCloseTo(1.8, 9);
     expect(resolveAnchor(edit[0], c.from).x).toBeTypeOf('number');
   });
 
@@ -210,11 +212,14 @@ describe('curved arrows (R3)', () => {
     }
   });
 
-  it('+0.4 when the centroid lies on the chord', () => {
+  it('+0.9 over a one-bond chord when the centroid lies on the chord', () => {
     const doc = drawn({ name: 'ethane', x: 0, y: 0 });
     const [a, b] = Object.keys(doc.atoms) as AtomId[];
     if (!a || !b) throw new Error('atoms');
-    expect(curvedBend(doc, { kind: 'atom', atom: a }, { kind: 'atom', atom: b })).toBe(CURVE_BEND);
+    expect(curvedBend(doc, { kind: 'atom', atom: a }, { kind: 'atom', atom: b })).toBeCloseTo(
+      0.9,
+      9,
+    );
   });
 
   it('uses the atoms of both fragments when the anchors touch two', () => {
@@ -234,5 +239,67 @@ describe('curved arrows (R3)', () => {
     if (!a) throw new Error('atoms');
     const bend = curvedBend(doc, { kind: 'atom', atom: a }, { kind: 'point', p: { x: 5, y: 5 } });
     expect(Math.abs(bend)).toBe(CURVE_BEND);
+  });
+});
+
+describe('default curved-arrow bend (apex height, R3)', () => {
+  it('apex is max(0.2 x chord, 0.45 BLU): bend 1.8 at 0.5, 0.9 at 1, 0.4 at 3', () => {
+    expect(defaultBendSize(0.5)).toBeCloseTo(1.8, 9);
+    expect(defaultBendSize(1)).toBeCloseTo(0.9, 9);
+    expect(defaultBendSize(3)).toBeCloseTo(0.4, 9);
+    expect(defaultBendSize(2.25)).toBeCloseTo(0.4, 9);
+  });
+
+  /** The apex of the arc and the nearest foreign atom to it, for a bend of either sign. */
+  function apexGaps(doc: Doc, from: Anchor, to: Anchor): { chosen: number; other: number } {
+    const a = resolveAnchor(doc, from);
+    const b = resolveAnchor(doc, to);
+    const len = distance(a, b);
+    const bend = curvedBend(doc, from, to);
+    const own = new Set<AtomId>();
+    for (const anchor of [from, to]) {
+      if (anchor.kind === 'atom') own.add(anchor.atom);
+      if (anchor.kind === 'bond') {
+        own.add(doc.bonds[anchor.bond]?.a1 as AtomId);
+        own.add(doc.bonds[anchor.bond]?.a2 as AtomId);
+      }
+    }
+    const others = Object.values(doc.atoms).filter((atom) => !own.has(atom.id));
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const n = { x: (b.y - a.y) / len, y: -(b.x - a.x) / len };
+    const gap = (sign: number): number => {
+      const apex = {
+        x: mid.x + n.x * sign * Math.abs(bend) * len * 0.5,
+        y: mid.y + n.y * sign * Math.abs(bend) * len * 0.5,
+      };
+      return Math.min(...others.map((o) => distance(apex, o)));
+    };
+    const s = Math.sign(bend);
+    return { chosen: gap(s), other: gap(-s) };
+  }
+
+  const acetic = drawn({ name: 'acetic acid', x: 0, y: 0 });
+  const carbonylBond = Object.values(acetic.bonds).find((b) => b.order === 2) as Bond;
+  const oxygenOf = (b: Bond): AtomId =>
+    [b.a1, b.a2].find((id) => acetic.atoms[id]?.element === 'O') as AtomId;
+  const carbonOf = (b: Bond): AtomId =>
+    [b.a1, b.a2].find((id) => acetic.atoms[id]?.element === 'C') as AtomId;
+
+  it('the electron-pair arrow from the C=O bond to O: apex 0.45 BLU, on the side away from the rest', () => {
+    const from = { kind: 'bond', bond: carbonylBond.id, t: 0.5 } as const;
+    const to = { kind: 'atom', atom: oxygenOf(carbonylBond) } as const;
+    expect(Math.abs(curvedBend(acetic, from, to))).toBeCloseTo(1.8, 9);
+    const { chosen, other } = apexGaps(acetic, from, to);
+    expect(chosen).toBeGreaterThanOrEqual(other - 1e-9);
+  });
+
+  it('a fishhook from the OH oxygen to the carbonyl carbon bulges away from the other atoms', () => {
+    const oh = Object.values(acetic.bonds).find(
+      (b) => b.order === 1 && [b.a1, b.a2].some((id) => acetic.atoms[id]?.element === 'O'),
+    ) as Bond;
+    const from = { kind: 'atom', atom: oxygenOf(oh) } as const;
+    const to = { kind: 'atom', atom: carbonOf(oh) } as const;
+    const { chosen, other } = apexGaps(acetic, from, to);
+    expect(chosen).toBeGreaterThanOrEqual(other - 0.1);
   });
 });

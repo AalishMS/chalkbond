@@ -24,8 +24,12 @@ export const ARROW_SNAP_DEG = 15;
 export const ARROW_MIN_BLU = 0.5;
 /** R1: the length of the arrow a click makes. */
 export const ARROW_DEFAULT_BLU = 2.5;
-/** R3: the bend of a curved arrow, before its sign. */
+/** R3: the bend of a curved arrow over a long chord, before its sign (`0.2 × chord` apex). */
 export const CURVE_BEND = 0.4;
+/** R3: the lowest apex height (BLU) of a new curved arrow, so a short chord still reads as a curve. */
+export const CURVE_MIN_APEX = 0.45;
+/** R3: apex distances to the nearest foreign atom closer than this (BLU) do not decide the side. */
+export const CURVE_SIDE_TIE = 0.1;
 
 export interface ArrowEnds {
   readonly from: Point;
@@ -87,30 +91,69 @@ function fragmentOf(doc: Doc, anchor: Anchor): readonly AtomId[] {
   return fragments(doc).find((f) => f.includes(atom)) ?? [];
 }
 
+/** R3: the size of the default bend over a chord: apex height `max(0.2 × chord, 0.45 BLU)`. */
+export function defaultBendSize(chord: number): number {
+  if (chord <= 0) return CURVE_BEND;
+  const apex = Math.max(CURVE_BEND * 0.5 * chord, CURVE_MIN_APEX);
+  return (2 * apex) / chord;
+}
+
+/** The atoms an anchor stands on: its atom, or both atoms of its bond. */
+function ownAtoms(doc: Doc, anchor: Anchor): readonly AtomId[] {
+  if (anchor.kind === 'atom') return [anchor.atom];
+  if (anchor.kind === 'bond') {
+    const bond = doc.bonds[anchor.bond];
+    return bond === undefined ? [] : [bond.a1, bond.a2];
+  }
+  return [];
+}
+
 /**
- * R3: the bend that bulges away from the centroid of the atoms of the fragments the anchors
- * touch: `+` when the centroid lies on the chord. svg-render puts the control point at the chord
- * midpoint + bend x chord length x (u.y, -u.x), u the unit chord.
+ * R3: the default bend of a new curved arrow. Its size is `defaultBendSize`. Its sign puts the
+ * apex on the side farther from the nearest atom that is not one of the anchors' own atoms; when
+ * the two distances differ by less than 0.1 BLU the side bulges away from the centroid of the
+ * atoms of the fragments the anchors touch (`+` when that centroid lies on the chord).
+ * svg-render puts the control point at the chord midpoint + bend x chord length x (u.y, -u.x), u
+ * the unit chord, so the apex is bend x chord / 2 from the midpoint.
  */
 export function curvedBend(doc: Doc, from: Anchor, to: Anchor): number {
-  const atoms = new Set<AtomId>([...fragmentOf(doc, from), ...fragmentOf(doc, to)]);
-  if (atoms.size === 0) return CURVE_BEND;
-  let cx = 0;
-  let cy = 0;
-  for (const id of atoms) {
-    cx += doc.atoms[id]?.x ?? 0;
-    cy += doc.atoms[id]?.y ?? 0;
-  }
-  const centroid = { x: cx / atoms.size, y: cy / atoms.size };
   const a = resolveAnchor(doc, from);
   const b = resolveAnchor(doc, to);
   const len = distance(a, b);
   if (len === 0) return CURVE_BEND;
+  const size = defaultBendSize(len);
   const normal = { x: (b.y - a.y) / len, y: -(b.x - a.x) / len };
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  const side = dot({ x: centroid.x - mid.x, y: centroid.y - mid.y }, normal);
-  // On the chord (within 1e-9 BLU): `+`.
-  return side > 1e-9 ? -CURVE_BEND : CURVE_BEND;
+
+  const atoms = new Set<AtomId>([...fragmentOf(doc, from), ...fragmentOf(doc, to)]);
+  let preferred = 1;
+  if (atoms.size > 0) {
+    let cx = 0;
+    let cy = 0;
+    for (const id of atoms) {
+      cx += doc.atoms[id]?.x ?? 0;
+      cy += doc.atoms[id]?.y ?? 0;
+    }
+    const centroid = { x: cx / atoms.size, y: cy / atoms.size };
+    const side = dot({ x: centroid.x - mid.x, y: centroid.y - mid.y }, normal);
+    // On the chord (within 1e-9 BLU): `+`.
+    preferred = side > 1e-9 ? -1 : 1;
+  }
+
+  const own = new Set<AtomId>([...ownAtoms(doc, from), ...ownAtoms(doc, to)]);
+  const others = Object.values(doc.atoms).filter((atom) => !own.has(atom.id));
+  if (others.length === 0) return preferred * size;
+  const apexGap = (sign: number): number => {
+    const apex = {
+      x: mid.x + normal.x * sign * size * len * 0.5,
+      y: mid.y + normal.y * sign * size * len * 0.5,
+    };
+    return Math.min(...others.map((atom) => distance(apex, atom)));
+  };
+  const plus = apexGap(1);
+  const minus = apexGap(-1);
+  if (Math.abs(plus - minus) < CURVE_SIDE_TIE) return preferred * size;
+  return (plus > minus ? 1 : -1) * size;
 }
 
 /** True when the two anchors are the same atom or the same bond. */

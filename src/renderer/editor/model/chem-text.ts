@@ -165,6 +165,31 @@ function isFormula(token: string): boolean {
   });
 }
 
+/**
+ * A token that ends in a digit run: whether a sign right after it makes a charge, and whether the
+ * run's last digit belongs to the charge (`Fe2+`, `SO42-`) or is a count (`NH4+`, `NO3-`). Null
+ * when the run is not after a letter or bracket, or its last digit is not free.
+ */
+function digitCharge(
+  cells: readonly Cell[],
+  from: number,
+  end: number,
+): { readonly cell: Cell; readonly digitIsCharge: boolean } | null {
+  let start = end;
+  while (start > from && isDigit(cells[start - 1]?.ch ?? '')) start -= 1;
+  const cell = cells[end - 1];
+  if (start === end || cell?.free !== true) return null;
+  const before = cells[start - 1]?.ch ?? '';
+  if (!isLetter(before) && !isClosing(before)) return null;
+  const run = end - start;
+  const text = cells
+    .slice(from, end)
+    .map((c) => c.ch)
+    .join('');
+  const oneElement = /^[A-Z][a-z]?\d$/.test(text);
+  return { cell, digitIsCharge: run >= 2 || oneElement };
+}
+
 /** T4 step 3: subscripts and a trailing charge in each formula token. */
 function formulas(cells: Cell[]): void {
   let i = 0;
@@ -180,6 +205,7 @@ function formulas(cells: Cell[]): void {
       .map((c) => c.ch)
       .join('');
     if (isFormula(token)) {
+      const charge = digitCharge(cells, i, end);
       for (let k = i; k < end; k += 1) {
         const cell = cells[k];
         const before = cells[k - 1]?.ch ?? '';
@@ -193,13 +219,14 @@ function formulas(cells: Cell[]): void {
       const last = cells[end - 1]?.ch ?? '';
       const sign = cells[end];
       const after = cells[end + 1]?.ch ?? '';
-      if (
-        sign?.free === true &&
-        isSign(sign.ch) &&
-        (isLetter(last) || isClosing(last)) &&
-        !isTokenChar(after)
-      ) {
-        setScript(sign, 'sup');
+      if (sign?.free === true && isSign(sign.ch) && !isTokenChar(after)) {
+        if (isLetter(last) || isClosing(last)) {
+          setScript(sign, 'sup');
+        } else if (charge !== null && isDigit(last)) {
+          setScript(sign, 'sup');
+          // `Fe2+`, `SO42-`: the last digit is part of the charge, not a count.
+          if (charge.digitIsCharge) setScript(charge.cell, 'sup');
+        }
       }
     }
     i = end;

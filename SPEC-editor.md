@@ -132,6 +132,8 @@ resolutions of the draft's open questions and of problems found in review.
 | R30 | Empty state hides while something is drawn (E22 fix): it shows only when the document is empty AND no gesture runs AND no preview exists. Amended 2026-11-10: while the document is empty there is NO hover ghost for any tool, so moving the pointer never hides the block or its chips; it stays until a gesture starts (a pointer press on the canvas) or the document becomes non-empty, and returns after Esc cancels that first gesture or after undo empties the document. Once the document has an item, hover ghosts behave as before | The first bond's ghost drew over the art and the sentence; the rule is the function `emptyStateVisible(doc, gesture, preview)` | 2026-11-10 |
 | R31 | Chain count badge shows carbon atoms including the start atom (`bonds + 1`: pentane reads 5; three bonds from an existing atom read 4), as a tooltip-style badge with the same colour tokens, kept inside the canvas | A teacher counts carbons, not bonds; the tiny tinted digit was unreadable | 2026-11-10 |
 | R32 | With the Select tool, a hovered item that is already selected shows no hover highlight (HV5); the cursor, hover keys and tooltips are unchanged | A selected label atom under the pointer stacked the selection and hover tints into a heavy blue box | 2026-11-10 |
+| R33 | Default curved-arrow bend (E25 fix): apex height `max(0.2 × chord, 0.45 BLU)`, `\|bend\| = 2h / chord` (chord 0.5 BLU: 1.8; 1.0: 0.9; 3.0: 0.4); side = apex farther from the nearest atom that is not an anchor's own, ties under 0.1 BLU keep the away-from-centroid side. Stored documents and the bend handle are unchanged | A 0.4 bend over a bond-to-own-atom chord (0.5 BLU) was a 5 px bump lying on the bond with its head stuck to it | 2026-11-10 |
+| R34 | `finishText` reads a trailing `+` / `-` after a digit run as a charge (T4 step 3): `Fe2+` → Fe²⁺, `NH4+` → NH₄⁺, `SO42-` → SO₄²⁻ | Teachers type `NH4+` and `Fe2+` constantly; the E26 rule left them flat | 2026-11-10 |
 
 ---
 
@@ -928,8 +930,11 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 - **R3** Curved arrow: press on an atom or bond (else nothing, notice "Start on an atom or a
   bond." (info)), release on an atom, a bond or empty canvas. Anchors: atom → `{ kind: 'atom',
   atom }`, bond → `{ kind: 'bond', bond, t: 0.5 }`, empty → `{ kind: 'point', p }`. Same start and
-  end → cancel. `bend` = ±0.4, the sign that bulges away from the centroid of the atoms of the
-  fragments the anchors touch (`+` when the centroid lies on the chord). Head = the option.
+  end → cancel. Default `bend` (R33): apex height `h = max(0.2 × chord, 0.45 BLU)`, so
+  `|bend| = 2h / chord`; the sign puts the apex on the side farther from the nearest atom that is
+  not an anchor's own (both atoms of a bond anchor), and when the two distances differ by less
+  than 0.1 BLU, on the side away from the centroid of the atoms of the fragments the anchors
+  touch (`+` when the centroid lies on the chord). Head = the option.
 
 ### Text tool and conditions
 
@@ -987,7 +992,10 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
      characters included), but only non-explicit characters change.
      Clarified in E26: a character that already has a script is never changed either (so the
      formatter is idempotent); a sign counts as a charge only when no letter or digit follows it
-     (`NaOH+HCl` is left alone); a sign after a digit is not a charge (type `NH4^+`, `Fe^2+`).
+     (`NaOH+HCl` is left alone). Amended 2026-11-10 (R34): a trailing sign after a digit run is a
+     charge: one element symbol plus one digit (`Fe2+`, `O2-`) makes digit and sign superscript;
+     otherwise a one-digit run keeps its subscript and only the sign is superscript (`NH4+`,
+     `NO3-`); a longer run gives its last digit to the charge (`SO42-`, `Cr2O72-`, `Hg22+`).
   4. Adjacent runs with equal script/bold/italic merge; bold/italic come from the object.
   `fromStored(runs)` inverts the storage form (all explicit). `labelDisplayRuns(text)` is the
   display-only formatter of L1.
