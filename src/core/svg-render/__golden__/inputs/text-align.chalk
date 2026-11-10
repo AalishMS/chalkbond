@@ -1,0 +1,175 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {},
+    "bonds": {},
+    "groups": {},
+    "meta": {
+      "created": "2026-11-10T00:00:00.000Z",
+      "modified": "2026-11-10T00:00:00.000Z",
+      "title": "text-align"
+    },
+    "nextId": 5,
+    "objects": {
+      "o1": {
+        "id": "o1",
+        "type": "text",
+        "align": "left",
+        "at": {
+          "x": 0,
+          "y": 0
+        },
+        "runs": [
+          {
+            "text": "Align "
+          },
+          {
+            "bold": true,
+            "text": "left"
+          },
+          {
+            "text": " x"
+          },
+          {
+            "script": "sup",
+            "text": "2"
+          },
+          {
+            "text": " y"
+          },
+          {
+            "script": "sub",
+            "text": "i"
+          }
+        ]
+      },
+      "o2": {
+        "id": "o2",
+        "type": "text",
+        "align": "center",
+        "at": {
+          "x": 0,
+          "y": 0.9
+        },
+        "runs": [
+          {
+            "text": "Align "
+          },
+          {
+            "bold": true,
+            "text": "center"
+          },
+          {
+            "text": " x"
+          },
+          {
+            "script": "sup",
+            "text": "2"
+          },
+          {
+            "text": " y"
+          },
+          {
+            "script": "sub",
+            "text": "i"
+          }
+        ]
+      },
+      "o3": {
+        "id": "o3",
+        "type": "text",
+        "align": "right",
+        "at": {
+          "x": 0,
+          "y": 1.8
+        },
+        "runs": [
+          {
+            "text": "Align "
+          },
+          {
+            "bold": true,
+            "text": "right"
+          },
+          {
+            "text": " x"
+          },
+          {
+            "script": "sup",
+            "text": "2"
+          },
+          {
+            "text": " y"
+          },
+          {
+            "script": "sub",
+            "text": "i"
+          }
+        ]
+      },
+      "o4": {
+        "id": "o4",
+        "type": "text",
+        "align": "center",
+        "at": {
+          "x": 0,
+          "y": 3
+        },
+        "runs": [
+          {
+            "text": "Cu"
+          },
+          {
+            "script": "sup",
+            "text": "2+"
+          },
+          {
+            "text": " + 4 NH"
+          },
+          {
+            "script": "sub",
+            "text": "3"
+          },
+          {
+            "color": "#cc0000",
+            "text": " → "
+          },
+          {
+            "text": "[Cu(NH"
+          },
+          {
+            "script": "sub",
+            "text": "3"
+          },
+          {
+            "text": ")"
+          },
+          {
+            "script": "sub",
+            "text": "4"
+          },
+          {
+            "text": "]"
+          },
+          {
+            "italic": true,
+            "script": "sup",
+            "text": "2+"
+          }
+        ]
+      }
+    },
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o1",
+      "o2",
+      "o3",
+      "o4"
+    ]
+  }
+}

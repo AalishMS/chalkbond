@@ -1,0 +1,94 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {},
+    "bonds": {},
+    "groups": {},
+    "meta": {
+      "created": "2026-11-10T00:00:00.000Z",
+      "modified": "2026-11-10T00:00:00.000Z",
+      "title": "arrows"
+    },
+    "nextId": 6,
+    "objects": {
+      "o1": {
+        "id": "o1",
+        "type": "arrow",
+        "kind": "forward",
+        "from": {
+          "x": 0,
+          "y": 0
+        },
+        "to": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      "o2": {
+        "id": "o2",
+        "type": "arrow",
+        "kind": "equilibrium",
+        "from": {
+          "x": 0,
+          "y": 1.2
+        },
+        "to": {
+          "x": 3,
+          "y": 1.2
+        }
+      },
+      "o3": {
+        "id": "o3",
+        "type": "arrow",
+        "kind": "retro",
+        "from": {
+          "x": 0,
+          "y": 2.4
+        },
+        "to": {
+          "x": 3,
+          "y": 2.4
+        }
+      },
+      "o4": {
+        "id": "o4",
+        "type": "arrow",
+        "kind": "resonance",
+        "from": {
+          "x": 0,
+          "y": 3.5999999999999996
+        },
+        "to": {
+          "x": 3,
+          "y": 3.5999999999999996
+        }
+      },
+      "o5": {
+        "id": "o5",
+        "type": "arrow",
+        "kind": "no-go",
+        "from": {
+          "x": 0,
+          "y": 4.8
+        },
+        "to": {
+          "x": 3,
+          "y": 4.8
+        }
+      }
+    },
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o1",
+      "o2",
+      "o3",
+      "o4",
+      "o5"
+    ]
+  }
+}

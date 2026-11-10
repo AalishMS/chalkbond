@@ -1,0 +1,174 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0.8660254037844387,
+        "y": 0.25,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0,
+        "y": -0.25,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": -0.8660254037844387,
+        "y": 0.25,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a7": {
+        "id": "a7",
+        "x": 4.366025403784438,
+        "y": 0.75,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a8": {
+        "id": "a8",
+        "x": 3.5,
+        "y": 0.25,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a9": {
+        "id": "a9",
+        "x": 3.4999999999999996,
+        "y": -0.75,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a10": {
+        "id": "a10",
+        "x": 2.633974596215561,
+        "y": 0.75,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b4": {
+        "id": "b4",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b5": {
+        "id": "b5",
+        "a1": "a2",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b11": {
+        "id": "b11",
+        "a1": "a7",
+        "a2": "a8",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b12": {
+        "id": "b12",
+        "a1": "a8",
+        "a2": "a9",
+        "doublePlacement": "auto",
+        "order": 2,
+        "stereo": "none"
+      },
+      "b13": {
+        "id": "b13",
+        "a1": "a8",
+        "a2": "a10",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-10T00:00:00.000Z",
+      "modified": "2026-11-10T00:00:00.000Z",
+      "title": "captions"
+    },
+    "nextId": 16,
+    "objects": {
+      "o6": {
+        "id": "o6",
+        "type": "caption",
+        "runs": [
+          {
+            "text": "1"
+          }
+        ],
+        "target": [
+          "a1",
+          "a2",
+          "a3"
+        ]
+      },
+      "o14": {
+        "id": "o14",
+        "type": "caption",
+        "runs": [
+          {
+            "bold": true,
+            "text": "2"
+          },
+          {
+            "italic": true,
+            "text": " (R"
+          },
+          {
+            "script": "sub",
+            "text": "f"
+          },
+          {
+            "text": ")"
+          }
+        ],
+        "target": [
+          "a7",
+          "a8",
+          "a9",
+          "a10"
+        ]
+      },
+      "o15": {
+        "id": "o15",
+        "type": "plus",
+        "at": {
+          "x": 1.8,
+          "y": 0
+        }
+      }
+    },
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o6",
+      "o14",
+      "o15"
+    ]
+  }
+}

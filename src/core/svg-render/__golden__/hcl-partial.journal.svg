@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="31.808pt" height="16.615pt" viewBox="0 0 31.808 16.615">
+<g transform="translate(18.394 10.915)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M-9.206 0L-6.304 0" stroke="#000000" stroke-width="0.6"/>
+<text x="-18.01" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="-18.394" y="-4.58" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">δ+</text>
+<text x="-4.72" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<circle cx="6.22" cy="-1.2" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="6.22" cy="1.2" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="-1.2" cy="-5.08" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="1.2" cy="-5.08" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="-1.2" cy="5.08" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="1.2" cy="5.08" r="0.5" fill="#000000" stroke="none"/>
+<text x="5.427" y="-4.287" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">δ−</text>
+</g>
+</svg>

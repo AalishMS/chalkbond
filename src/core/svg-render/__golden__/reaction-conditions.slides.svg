@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700.641pt" height="95.276pt" viewBox="0 0 700.641 95.276">
+<g transform="translate(65.749 47.316)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M34.641 10L0 -10" stroke="#000000" stroke-width="2"/>
+<path d="M0 -10L-19.349 1.171" stroke="#000000" stroke-width="2"/>
+<path d="M170.641 30L136 10" stroke="#000000" stroke-width="2"/>
+<path d="M132.4 10L132.4 -15.576" stroke="#000000" stroke-width="2"/>
+<path d="M139.6 10L139.6 -15.576" stroke="#000000" stroke-width="2"/>
+<path d="M136 10L116.651 21.171" stroke="#000000" stroke-width="2"/>
+<path d="M501.282 30L466.641 10" stroke="#000000" stroke-width="2"/>
+<path d="M463.041 10L463.041 -15.576" stroke="#000000" stroke-width="2"/>
+<path d="M470.241 10L470.241 -15.576" stroke="#000000" stroke-width="2"/>
+<path d="M466.641 10L447.292 21.171" stroke="#000000" stroke-width="2"/>
+<path d="M416.708 21.171L397.359 10" stroke="#000000" stroke-width="2"/>
+<path d="M397.359 10L362.718 30" stroke="#000000" stroke-width="2"/>
+<text x="-65.749" y="20.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="-45.533" y="20.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="125.108" y="-19.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="70.251" y="40.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="90.467" y="40.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="455.749" y="-19.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="421.108" y="40.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="581.994" y="22.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="602.21" y="27.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="613.108" y="22.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<circle cx="620.64" cy="-2.224" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="627.36" cy="-2.224" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="620.64" cy="26.224" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="627.36" cy="26.224" r="1.4" fill="#000000" stroke="none"/>
+<path d="M62 0L74 0M68 -6L68 6" stroke="#000000" stroke-width="2"/>
+<path d="M208 -2.4L327.2 -2.4" stroke="#000000" stroke-width="2"/>
+<polygon points="336,-2.4 327.2,-2.4 327.2,-6" fill="#000000" stroke="none"/>
+<path d="M336 2.4L216.8 2.4" stroke="#000000" stroke-width="2"/>
+<polygon points="208,2.4 216.8,2.4 216.8,6" fill="#000000" stroke="none"/>
+<text x="194.98" y="-21.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="215.196" y="-16.376" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="226.094" y="-21.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">SO</text>
+<text x="266.554" y="-16.376" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">4</text>
+<text x="277.452" y="-21.976" font-family="Arial, Helvetica, sans-serif" font-size="28" font-style="italic" fill="#000000" stroke="none" xml:space="preserve"> (cat.)</text>
+<text x="186.289" y="42.024" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">Δ</text>
+<text x="206.421" y="42.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">, 80 °C, 2 h</text>
+<text x="346.813" y="30.824" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">a</text>
+<path d="M554 0L566 0M560 -6L560 6" stroke="#000000" stroke-width="2"/>
+</g>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="205.541pt" height="51.14pt" viewBox="0 0 205.541 51.14">
+<g transform="translate(0.3 27.07)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 0L12.47 -7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M12.47 -7.2L15.997 -5.164" stroke="#000000" stroke-width="0.6"/>
+<path d="M86.4 0L98.87 -7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M98.87 -7.2L98.87 -16.436" stroke="#000000" stroke-width="0.6"/>
+<path d="M96.278 -8.696L96.278 -16.436" stroke="#000000" stroke-width="0.6"/>
+<path d="M172.8 0L185.27 -7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M183.974 -7.2L183.974 -16.436" stroke="#000000" stroke-width="0.6"/>
+<path d="M186.566 -7.2L186.566 -16.436" stroke="#000000" stroke-width="0.6"/>
+<path d="M185.27 -7.2L188.797 -5.164" stroke="#000000" stroke-width="0.6"/>
+<text x="17.441" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">OH</text>
+<text x="94.98" y="-18.02" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="181.38" y="-18.02" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="190.241" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">OH</text>
+<path d="M36 -3.6L61.632 -3.6" stroke="#000000" stroke-width="0.6"/>
+<polygon points="64.8,-3.6 61.632,-4.896 61.632,-2.304" fill="#000000" stroke="none"/>
+<text x="39.845" y="-7.22" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">PCC</text>
+<text x="34.568" y="8.62" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">CH</text>
+<text x="49.008" y="10.62" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="52.9" y="8.62" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<text x="62.34" y="10.62" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<path d="M122.4 -3.6L148.032 -3.6" stroke="#000000" stroke-width="0.6"/>
+<polygon points="151.2,-3.6 148.032,-4.896 148.032,-2.304" fill="#000000" stroke="none"/>
+<text x="120.684" y="-7.22" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">KMnO</text>
+<text x="149.024" y="-5.22" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">4</text>
+<text x="125.31" y="8.62" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="132.53" y="10.62" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">3</text>
+<text x="136.422" y="8.62" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="144.202" y="4.62" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">+</text>
+<text x="13.44" y="21.95" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">1</text>
+<text x="91.8" y="16.25" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="186.24" y="21.95" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">3</text>
+</g>
+</svg>

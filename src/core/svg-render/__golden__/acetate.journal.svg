@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="36.219pt" height="34.055pt" viewBox="0 0 36.219 34.055">
+<g transform="translate(0.3 6.755)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 0L12.47 7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M13.766 7.2L13.766 16.436" stroke="#000000" stroke-width="0.6"/>
+<path d="M11.174 7.2L11.174 16.436" stroke="#000000" stroke-width="0.6" stroke-dasharray="3.6 2.16"/>
+<path d="M11.822 6.078L19.467 1.664" stroke="#000000" stroke-width="0.6"/>
+<path d="M13.118 8.322L19.467 4.657" stroke="#000000" stroke-width="0.6" stroke-dasharray="3.6 2.16"/>
+<text x="8.58" y="25.18" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<circle cx="11.27" cy="26.68" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="13.67" cy="26.68" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="17.86" cy="20.4" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="17.86" cy="22.8" r="0.5" fill="#000000" stroke="none"/>
+<text x="21.051" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="31.831" y="-0.42" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">−</text>
+<circle cx="30.331" cy="-1.2" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="30.331" cy="1.2" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="23.741" cy="-5.08" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="26.141" cy="-5.08" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="23.741" cy="5.08" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="26.141" cy="5.08" r="0.5" fill="#000000" stroke="none"/>
+</g>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="18.332pt" height="12.644pt" viewBox="0 0 18.332 12.644">
+<g transform="translate(3.61 5.58)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<text x="-3.61" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">N</text>
+<text x="3.61" y="3.58" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="10.83" y="5.58" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">3</text>
+<circle cx="-1.2" cy="-5.08" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="1.2" cy="-5.08" r="0.5" fill="#000000" stroke="none"/>
+</g>
+</svg>

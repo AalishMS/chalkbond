@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="133.686pt" height="95.095pt" viewBox="0 0 133.686 95.095">
+<g transform="translate(97.646 55.316)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 0L-20.132 11.624" stroke="#000000" stroke-width="2"/>
+<path d="M-0.233 -3.333L0.233 -3.333" stroke="#000000" stroke-width="2"/>
+<path d="M-0.7 -10L0.7 -10" stroke="#000000" stroke-width="2"/>
+<path d="M-1.167 -16.667L1.167 -16.667" stroke="#000000" stroke-width="2"/>
+<path d="M-1.633 -23.333L1.633 -23.333" stroke="#000000" stroke-width="2"/>
+<polygon points="0,0 36.04,17.575 33.24,22.425" fill="#000000" stroke="none"/>
+<text x="-97.646" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">HO</text>
+<text x="-55.646" y="35.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="-44.748" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">C</text>
+<text x="-25.665" y="-29.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">NH</text>
+<text x="14.767" y="-24.376" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
+</g>
+</svg>

@@ -1,0 +1,80 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": -0.866,
+        "y": 0.5,
+        "charge": 0,
+        "element": "R",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": 0,
+        "y": -1,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a4": {
+        "id": "a4",
+        "x": 0.866,
+        "y": 0.5,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b5": {
+        "id": "b5",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b6": {
+        "id": "b6",
+        "a1": "a2",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 2,
+        "stereo": "none"
+      },
+      "b7": {
+        "id": "b7",
+        "a1": "a2",
+        "a2": "a4",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-10T00:00:00.000Z",
+      "modified": "2026-11-10T00:00:00.000Z",
+      "title": "r-acid"
+    },
+    "nextId": 8,
+    "objects": {},
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": []
+  }
+}

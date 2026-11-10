@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="125.92pt" height="91.584pt" viewBox="0 0 125.92 91.584">
+<g transform="translate(70.28 55.624)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<polygon points="1.4,2.425 -33.24,22.425 -36.04,17.575 -1.4,-2.425" fill="#000000" stroke="none"/>
+<path d="M0 0Q-0.386 6.244 4.829 2.788Q10.043 -0.668 9.658 5.576" stroke="#000000" stroke-width="2"/>
+<path d="M0 0L0 -25.576" stroke="#000000" stroke-width="2"/>
+<path d="M-34.64 20L-69.28 0" stroke="#000000" stroke-width="2"/>
+<text x="13.64" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">OH</text>
+<text x="-13.216" y="-29.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<circle cx="-3.36" cy="-54.224" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="3.36" cy="-54.224" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="17.416" cy="-43.36" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="17.416" cy="-36.64" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="-17.416" cy="-43.36" r="1.4" fill="#000000" stroke="none"/>
+<circle cx="-17.416" cy="-36.64" r="1.4" fill="#000000" stroke="none"/>
+</g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="43.8pt" height="71.938pt" viewBox="0 0 43.8 71.938">
+<g transform="translate(0.3 1.296)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 0L40.032 0" stroke="#000000" stroke-width="0.6"/>
+<polygon points="43.2,0 40.032,-1.296 40.032,1.296" fill="#000000" stroke="none"/>
+<path d="M0 16.416L40.032 16.416" stroke="#000000" stroke-width="0.6"/>
+<polygon points="43.2,16.416 40.032,16.416 40.032,15.12" fill="#000000" stroke="none"/>
+<path d="M43.2 18.144L3.168 18.144" stroke="#000000" stroke-width="0.6"/>
+<polygon points="0,18.144 3.168,18.144 3.168,19.44" fill="#000000" stroke="none"/>
+<path d="M0 33.696L41.088 33.696" stroke="#000000" stroke-width="0.6"/>
+<path d="M0 35.424L41.088 35.424" stroke="#000000" stroke-width="0.6"/>
+<path d="M40.032 33.264L43.2 34.56L40.032 35.856" stroke="#000000" stroke-width="0.6"/>
+<path d="M3.168 51.84L40.032 51.84" stroke="#000000" stroke-width="0.6"/>
+<polygon points="43.2,51.84 40.032,50.544 40.032,53.136" fill="#000000" stroke="none"/>
+<polygon points="0,51.84 3.168,50.544 3.168,53.136" fill="#000000" stroke="none"/>
+<path d="M0 69.12L40.032 69.12" stroke="#000000" stroke-width="0.6"/>
+<polygon points="43.2,69.12 40.032,67.824 40.032,70.416" fill="#000000" stroke="none"/>
+<path d="M20.378 70.342L22.822 67.898" stroke="#000000" stroke-width="0.6"/>
+<path d="M20.378 67.898L22.822 70.342" stroke="#000000" stroke-width="0.6"/>
+</g>
+</svg>

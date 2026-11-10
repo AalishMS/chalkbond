@@ -1,0 +1,169 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0.866,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": 1.732,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a7": {
+        "id": "a7",
+        "x": 4.5,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a8": {
+        "id": "a8",
+        "x": 5.366,
+        "y": 0.5,
+        "charge": 1,
+        "element": "N",
+        "radical": 0
+      },
+      "a11": {
+        "id": "a11",
+        "x": 9.5,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a12": {
+        "id": "a12",
+        "x": 10.366,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b4": {
+        "id": "b4",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b5": {
+        "id": "b5",
+        "a1": "a2",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b9": {
+        "id": "b9",
+        "a1": "a7",
+        "a2": "a8",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b13": {
+        "id": "b13",
+        "a1": "a11",
+        "a2": "a12",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-10T00:00:00.000Z",
+      "modified": "2026-11-10T00:00:00.000Z",
+      "title": "brackets"
+    },
+    "nextId": 15,
+    "objects": {
+      "o6": {
+        "id": "o6",
+        "type": "bracket",
+        "corner": [
+          {
+            "text": "n"
+          }
+        ],
+        "rect": {
+          "x": -0.6,
+          "y": -0.5,
+          "w": 2.932,
+          "h": 1.6
+        },
+        "shape": "square"
+      },
+      "o10": {
+        "id": "o10",
+        "type": "bracket",
+        "corner": [
+          {
+            "text": "2"
+          },
+          {
+            "script": "sup",
+            "text": "+"
+          }
+        ],
+        "rect": {
+          "x": 3.6,
+          "y": -0.5,
+          "w": 3.4,
+          "h": 1.6
+        },
+        "shape": "round"
+      },
+      "o14": {
+        "id": "o14",
+        "type": "bracket",
+        "corner": [
+          {
+            "text": "‡"
+          }
+        ],
+        "rect": {
+          "x": 8.9,
+          "y": -0.5,
+          "w": 2.066,
+          "h": 1.6
+        },
+        "shape": "curly"
+      }
+    },
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o6",
+      "o10",
+      "o14"
+    ]
+  }
+}

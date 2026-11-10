@@ -1,0 +1,51 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 1,
+  "doc": {
+    "schemaVersion": 1,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": -1,
+        "y": 0,
+        "charge": 0,
+        "element": "H",
+        "partialCharge": "δ+",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0,
+        "y": 0,
+        "charge": 0,
+        "element": "Cl",
+        "lonePairs": 3,
+        "partialCharge": "δ-",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b3": {
+        "id": "b3",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-10T00:00:00.000Z",
+      "modified": "2026-11-10T00:00:00.000Z",
+      "title": "hcl-partial"
+    },
+    "nextId": 4,
+    "objects": {},
+    "style": {
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": []
+  }
+}

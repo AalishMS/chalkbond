@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="177.09pt" height="25.46pt" viewBox="0 0 177.09 25.46">
+<g transform="translate(8.94 7.5)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 0L12.47 7.2" stroke="#000000" stroke-width="0.6"/>
+<path d="M12.47 7.2L24.941 0" stroke="#000000" stroke-width="0.6"/>
+<path d="M64.8 0L72.076 4.201" stroke="#000000" stroke-width="0.6"/>
+<path d="M136.8 0L149.27 7.2" stroke="#000000" stroke-width="0.6"/>
+<text x="73.66" y="10.78" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">N</text>
+<text x="80.88" y="10.78" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="88.1" y="12.78" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">3</text>
+<text x="91.992" y="6.78" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">+</text>
+<path d="M-5.76 -7.2L-8.64 -7.2L-8.64 15.84L-5.76 15.84" stroke="#000000" stroke-width="0.6"/>
+<path d="M30.701 -7.2L33.581 -7.2L33.581 15.84L30.701 15.84" stroke="#000000" stroke-width="0.6"/>
+<text x="35.381" y="15.84" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">n</text>
+<path d="M51.84 -7.2Q48.384 4.32 51.84 15.84" stroke="#000000" stroke-width="0.6"/>
+<path d="M100.8 -7.2Q104.256 4.32 100.8 15.84" stroke="#000000" stroke-width="0.6"/>
+<text x="104.328" y="15.84" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="109.888" y="11.84" font-family="Arial, Helvetica, sans-serif" font-size="7" fill="#000000" stroke="none" xml:space="preserve">+</text>
+<path d="M128.16 -7.2C127.368 -7.2 126.72 -6.552 126.72 -5.76L126.72 2.88C126.72 3.672 125.928 4.32 125.28 4.32C125.928 4.32 126.72 4.968 126.72 5.76L126.72 14.4C126.72 15.192 127.368 15.84 128.16 15.84" stroke="#000000" stroke-width="0.6"/>
+<path d="M157.91 -7.2C158.702 -7.2 159.35 -6.552 159.35 -5.76L159.35 2.88C159.35 3.672 160.142 4.32 160.79 4.32C160.142 4.32 159.35 4.968 159.35 5.76L159.35 14.4C159.35 15.192 158.702 15.84 157.91 15.84" stroke="#000000" stroke-width="0.6"/>
+<text x="162.59" y="15.84" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">‡</text>
+</g>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="492.408pt" height="70.936pt" viewBox="0 0 492.408 70.936">
+<g transform="translate(25 21)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 0L34.64 20" stroke="#000000" stroke-width="2"/>
+<path d="M34.64 20L69.28 0" stroke="#000000" stroke-width="2"/>
+<path d="M180 0L200.132 11.624" stroke="#000000" stroke-width="2"/>
+<path d="M380 0L414.64 20" stroke="#000000" stroke-width="2"/>
+<text x="204.532" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">N</text>
+<text x="224.748" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="244.964" y="35.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">3</text>
+<text x="255.862" y="18.824" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">+</text>
+<path d="M-16 -20L-24 -20L-24 44L-16 44" stroke="#000000" stroke-width="2"/>
+<path d="M85.28 -20L93.28 -20L93.28 44L85.28 44" stroke="#000000" stroke-width="2"/>
+<text x="98.48" y="44" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">n</text>
+<path d="M144 -20Q134.4 12 144 44" stroke="#000000" stroke-width="2"/>
+<path d="M280 -20Q289.6 12 280 44" stroke="#000000" stroke-width="2"/>
+<text x="290" y="44" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="305.568" y="32.8" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">+</text>
+<path d="M356 -20C353.8 -20 352 -18.2 352 -16L352 8C352 10.2 349.8 12 348 12C349.8 12 352 13.8 352 16L352 40C352 42.2 353.8 44 356 44" stroke="#000000" stroke-width="2"/>
+<path d="M438.64 -20C440.84 -20 442.64 -18.2 442.64 -16L442.64 8C442.64 10.2 444.84 12 446.64 12C444.84 12 442.64 13.8 442.64 16L442.64 40C442.64 42.2 440.84 44 438.64 44" stroke="#000000" stroke-width="2"/>
+<text x="451.84" y="44" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">‡</text>
+</g>
+</svg>
