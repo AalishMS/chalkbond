@@ -130,6 +130,21 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
     };
   }, [editedAtom, parts]);
 
+  // T2: likewise the part of the text being edited.
+  const editedText =
+    state.editing?.kind === 'text' && state.editing.target.kind === 'existing'
+      ? state.editing.target.object
+      : undefined;
+  useLayoutEffect(() => {
+    if (editedText === undefined) return;
+    const g = nodes.current.get(`obj:${editedText}`);
+    if (!g) return;
+    g.style.visibility = 'hidden';
+    return () => {
+      g.style.removeProperty('visibility');
+    };
+  }, [editedText, parts]);
+
   // Focus at launch; the ring shows only when Tab brought focus here (K4).
   useEffect(() => {
     const canvas = ref.current;

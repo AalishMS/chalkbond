@@ -5,6 +5,7 @@ import {
   fromStored,
   fromText,
   insertLineBreak,
+  insertPlain,
   insertText,
   moveSelection,
   reconcile,
@@ -327,5 +328,24 @@ describe('reconcile (IME)', () => {
     const s = reconcile(s0, 'H2Oz');
     expect(textOf(s)).toBe('H2Oz');
     expect(s.runs[1]).toMatchObject({ text: '2', script: 'sub' });
+  });
+});
+
+describe('insertPlain (insert buttons)', () => {
+  it('inserts plain, non-explicit text whatever the character before it is', () => {
+    const s = fromStored([{ text: 'H' }, { text: '2', script: 'sub' }]);
+    expect(show(insertPlain(s, 'Δ'))).toBe('H* sub(2)* Δ');
+  });
+
+  it('replaces the selection and leaves the caret after the text', () => {
+    const s = setSelection(fromText('abc'), 1, 2);
+    const out = insertPlain(s, '°');
+    expect(textOf(out)).toBe('a°c');
+    expect(selectionOf(out)).toEqual({ start: 2, end: 2 });
+  });
+
+  it('empty text changes nothing', () => {
+    const s = fromText('a');
+    expect(insertPlain(s, '')).toBe(s);
   });
 });

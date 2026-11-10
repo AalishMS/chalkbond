@@ -247,6 +247,17 @@ export function insertText(s: TextEditState, text: string): TextEditState {
   return replace(s, start, end, text, format);
 }
 
+/**
+ * The insert buttons (Δ, hν, °, →; T2): `text` as plain, non-explicit characters at the caret,
+ * whatever script or format the character before it has, so formula typing that follows is
+ * still formatted when the text is finished.
+ */
+export function insertPlain(s: TextEditState, text: string): TextEditState {
+  if (text === '') return s;
+  const { start, end } = selectionOf(s);
+  return replace(s, start, end, text, {});
+}
+
 export function insertLineBreak(s: TextEditState): TextEditState {
   return insertText(s, '\n');
 }

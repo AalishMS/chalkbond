@@ -4,6 +4,7 @@ import type { Perception } from '@core/chem-core';
 import type { Doc, Selection } from '@core/doc-model';
 import type { Scene } from '@core/svg-render';
 import type { CanvasEvent, MoveEvent } from '../model/canvas-event';
+import type { TextTarget } from '../model/text-ops';
 import type { Viewport } from '../model/viewport';
 import type { GestureState, Hit, Preview, ToolId } from '../state/editor-state';
 
@@ -39,6 +40,8 @@ export interface ToolStep {
   readonly commit?: ToolCommit;
   /** The selection after the step (not undoable); undefined = unchanged. */
   readonly selection?: Selection;
+  /** Open the text editor on this target (the Text tool's click, T1). */
+  readonly edit?: TextTarget;
   /** A notice to show with this step (a mark clicked on empty canvas). */
   readonly notice?: { readonly kind: 'info' | 'error'; readonly text: string };
 }

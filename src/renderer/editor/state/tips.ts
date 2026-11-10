@@ -34,6 +34,18 @@ export function actionTip(title: string, key: string | undefined, state: ActionS
   return tip;
 }
 
+/** The text-editing options (T5, K3), by button id. */
+export const TEXT_OPTION_TIPS = {
+  'txt-sub': { title: 'Subscript', key: 'Ctrl+=' },
+  'txt-sup': { title: 'Superscript', key: 'Ctrl+Shift+=' },
+  'txt-bold': { title: 'Bold', key: 'Ctrl+B' },
+  'txt-italic': { title: 'Italic', key: 'Ctrl+I' },
+  'txt-delta': { title: 'Insert Δ (heat)', key: 'Ctrl+Shift+D' },
+  'txt-hv': { title: 'Insert hν (light)', key: 'Ctrl+Shift+H' },
+  'txt-deg': { title: 'Insert °' },
+  'txt-arrow': { title: 'Insert →' },
+} as const satisfies Record<string, TipContent>;
+
 export const HISTORY_TIPS = {
   undo: { title: 'Undo', key: 'Ctrl+Z' },
   redo: { title: 'Redo', key: 'Ctrl+Y' },

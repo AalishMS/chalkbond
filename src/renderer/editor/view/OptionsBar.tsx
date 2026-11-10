@@ -7,7 +7,8 @@ import {
   type ActionState,
   type SelectionScope,
 } from '../state/selection-actions';
-import { actionTip, optionTip } from '../state/tips';
+import { scriptAtCaret } from '../model/text-edit';
+import { actionTip, optionTip, TEXT_OPTION_TIPS } from '../state/tips';
 import { Icon } from './Icon';
 import { pressKeepsFocus } from './press';
 import { tipProps } from './Tooltip';
@@ -154,6 +155,93 @@ function SelectionBar({
   );
 }
 
+type TextButton = keyof typeof TEXT_OPTION_TIPS;
+
+/**
+ * T5: the options while a text editor is open (screen 09): x2, x2, B, I, then Insert Δ hν ° →.
+ * The four toggles show the model's state at the caret or selection.
+ */
+function TextOptions({
+  editing,
+  roving,
+  dispatch,
+}: {
+  editing: Extract<NonNullable<EditorState['editing']>, { kind: 'text' }>;
+  roving: Roving;
+  dispatch: (action: EditorAction) => void;
+}): React.JSX.Element {
+  const script = scriptAtCaret(editing.edit);
+  const button = (
+    id: TextButton,
+    label: string,
+    content: React.ReactNode,
+    onPress: () => void,
+    pressed?: boolean,
+    glyph = false,
+  ): React.JSX.Element => (
+    <button
+      key={id}
+      type="button"
+      className={glyph ? 'btn btn-opt text' : 'btn btn-opt'}
+      data-testid={id}
+      aria-label={label}
+      aria-pressed={pressed}
+      {...roving.item(id)}
+      {...tipProps(TEXT_OPTION_TIPS[id], 'below')}
+      onClick={onPress}
+    >
+      {content}
+    </button>
+  );
+  const insert = (text: string) => (): void => dispatch({ type: 'edit-insert', text });
+  return (
+    <>
+      {button(
+        'txt-sub',
+        'Subscript',
+        <>
+          x<span className="sub">2</span>
+        </>,
+        () => dispatch({ type: 'edit-script', script: 'sub' }),
+        script === 'sub',
+        true,
+      )}
+      {button(
+        'txt-sup',
+        'Superscript',
+        <>
+          x<span className="sup">2</span>
+        </>,
+        () => dispatch({ type: 'edit-script', script: 'sup' }),
+        script === 'sup',
+        true,
+      )}
+      {button(
+        'txt-bold',
+        'Bold',
+        'B',
+        () => dispatch({ type: 'edit-style', flag: 'bold' }),
+        editing.bold,
+        true,
+      )}
+      {button(
+        'txt-italic',
+        'Italic',
+        <i>I</i>,
+        () => dispatch({ type: 'edit-style', flag: 'italic' }),
+        editing.italic,
+        true,
+      )}
+      <Separator />
+      <span className="options-caption">Insert</span>
+      {button('txt-delta', 'Insert Δ (heat)', 'Δ', insert('Δ'), undefined, true)}
+      {button('txt-hv', 'Insert hν (light)', 'hν', insert('hν'), undefined, true)}
+      {button('txt-deg', 'Insert °', <Icon name="glyph-degree" size={20} />, insert('°'))}
+      {button('txt-arrow', 'Insert →', <Icon name="glyph-arrow" size={20} />, insert('→'))}
+    </>
+  );
+}
+
 /**
  * The tool options in the top bar: the active tool's variants, or the selection actions for
  * Select. A mouse press does not take focus (K5).
@@ -161,10 +249,11 @@ function SelectionBar({
 export function OptionsBar({ state, scope, dispatch }: OptionsBarProps): React.JSX.Element {
   const tool = state.tool;
   const variant = isVariantTool(tool) ? state.variants[tool] : '';
+  const textEditing = state.editing?.kind === 'text' ? state.editing : null;
   const roving = useRoving(
     'horizontal',
-    isVariantTool(tool) ? variant : 'act-clean',
-    `${tool}:${variant}`,
+    textEditing !== null ? 'txt-sub' : isVariantTool(tool) ? variant : 'act-clean',
+    textEditing !== null ? 'text-editing' : `${tool}:${variant}`,
   );
   return (
     <div
@@ -175,8 +264,14 @@ export function OptionsBar({ state, scope, dispatch }: OptionsBarProps): React.J
       onMouseDown={pressKeepsFocus}
       onKeyDown={roving.onKeyDown}
     >
-      {tool === 'select' && <SelectionBar scope={scope} roving={roving} dispatch={dispatch} />}
-      {isVariantTool(tool) &&
+      {textEditing !== null && (
+        <TextOptions editing={textEditing} roving={roving} dispatch={dispatch} />
+      )}
+      {textEditing === null && tool === 'select' && (
+        <SelectionBar scope={scope} roving={roving} dispatch={dispatch} />
+      )}
+      {textEditing === null &&
+        isVariantTool(tool) &&
         OPTIONS[tool].map((o) => (
           <Fragment key={o.id}>
             {o.separatorBefore === true && <Separator />}

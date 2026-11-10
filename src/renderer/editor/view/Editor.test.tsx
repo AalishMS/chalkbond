@@ -127,3 +127,65 @@ describe('the label editor in the window (L1, L2)', () => {
     expect(html(c)).not.toMatch(/_\{|\^\{/);
   });
 });
+
+describe('the text editor in the window (T1, T2, T5)', () => {
+  const make = () => {
+    const c = createEditorController({ clock: () => '2026-01-01T00:00:00.000Z' });
+    c.store.dispatch({ type: 'canvas-resized', size: { w: 1200, h: 700 } });
+    c.store.dispatch({
+      type: 'open-text',
+      target: { kind: 'new', fresh: { at: { x: 1, y: 1 }, align: 'left' } },
+    });
+    return c;
+  };
+  const html = (c: ReturnType<typeof createEditorController>): string =>
+    renderToStaticMarkup(<Editor controller={c} />);
+
+  it('hides the empty state while the box is open on an empty document', () => {
+    expect(html(make())).not.toContain('Type a compound name above');
+  });
+
+  it('shows a multi-line box anchored at its left edge, with the text hint', () => {
+    const out = html(make());
+    expect(out).toContain('data-mode="text"');
+    expect(out).toContain('data-anchor="left"');
+    expect(out).toContain('aria-multiline="true"');
+    expect(out).toContain('Enter finishes. Shift+Enter starts a new line.');
+    expect(out).not.toContain('e.g. OH, NH2');
+  });
+
+  it('replaces the options with the text options and disables Undo and Redo', () => {
+    const out = html(make());
+    for (const id of [
+      'txt-sub',
+      'txt-sup',
+      'txt-bold',
+      'txt-italic',
+      'txt-delta',
+      'txt-hv',
+      'txt-deg',
+      'txt-arrow',
+    ]) {
+      expect(out).toContain(`data-testid="${id}"`);
+    }
+    expect(out).toContain('Insert');
+    expect(out).not.toContain('data-testid="opt-');
+    expect(out).toContain('data-testid="undo" aria-label="Undo (Ctrl+Z)" aria-disabled="true"');
+  });
+
+  it('shows the pressed state of B, I and x2 from the model', () => {
+    const c = make();
+    expect(html(c)).not.toMatch(/data-testid="txt-[a-z]+"[^>]*aria-pressed="true"/);
+    c.store.dispatch({ type: 'edit-style', flag: 'bold' });
+    c.store.dispatch({ type: 'edit-script', script: 'sub' });
+    const out = html(c);
+    expect(out).toMatch(/data-testid="txt-bold"[^>]*aria-pressed="true"/);
+    expect(out).toMatch(/data-testid="txt-sub"[^>]*aria-pressed="true"/);
+    expect(out).toMatch(/data-testid="txt-sup"[^>]*aria-pressed="false"/);
+    expect(out).toMatch(/data-testid="txt-italic"[^>]*aria-pressed="false"/);
+  });
+
+  it('shows no markup syntax', () => {
+    expect(html(make())).not.toMatch(/_\{|\^\{/);
+  });
+});

@@ -9,6 +9,7 @@ import { emptyStateVisible } from '../state/empty-doc';
 import { Canvas } from './Canvas';
 import { EmptyState } from './EmptyState';
 import { LabelEditor } from './LabelEditor';
+import { TextEditor } from './TextEditor';
 import sprite from './icons.svg?raw';
 import { StatusBar } from './StatusBar';
 import { ToolRail } from './ToolRail';
@@ -101,6 +102,12 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
     refresh();
   };
   const idle = state.editing === null;
+  // The box is going: focus returns to the canvas, and what rests under the pointer is hovered
+  // again.
+  const boxClosed = (): void => {
+    document.querySelector<HTMLElement>('[data-testid="canvas"]')?.focus();
+    controller.refreshHover();
+  };
   const field = state.nameField;
   const rows = field.open ? suggestionRows(controller.names, field.text) : [];
   const { perception } = controller.derive.committed(doc);
@@ -127,17 +134,20 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
       />
       <ToolRail state={state} dispatch={dispatch} />
       <Canvas controller={controller}>
-        {emptyStateVisible(doc, state.gesture, state.preview) && <EmptyState dispatch={dispatch} />}
+        {state.editing === null && emptyStateVisible(doc, state.gesture, state.preview) && (
+          <EmptyState dispatch={dispatch} />
+        )}
         <LabelEditor
           controller={controller}
           state={state}
           dispatch={dispatch}
-          onClosed={() => {
-            // The box is going: focus returns to the canvas, and what rests under the pointer is
-            // hovered again.
-            document.querySelector<HTMLElement>('[data-testid="canvas"]')?.focus();
-            controller.refreshHover();
-          }}
+          onClosed={boxClosed}
+        />
+        <TextEditor
+          controller={controller}
+          state={state}
+          dispatch={dispatch}
+          onClosed={boxClosed}
         />
       </Canvas>
       <StatusBar

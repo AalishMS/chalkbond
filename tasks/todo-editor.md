@@ -821,9 +821,9 @@ the editor shows `<span data-script="sub">2</span>`; select "2" with Shift+← a
 restores the original text.
 
 **Acceptance criteria:**
-- [ ] No markup characters (`_`, `^`, `{`) ever appear in the editor DOM for these flows (e2e)
-- [ ] T2, T5, K3 covered by unit and e2e tests; one undo step per commit
-- [ ] Undo/Redo buttons disabled while editing; Ctrl+Z inside undoes the last typing step (e2e)
+- [x] No markup characters (`_`, `^`, `{`) ever appear in the editor DOM for these flows (e2e)
+- [x] T2, T5, K3 covered by unit and e2e tests; one undo step per commit
+- [x] Undo/Redo buttons disabled while editing; Ctrl+Z inside undoes the last typing step (e2e)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E27` → `E27/text-editing.png` (scripted: Text tool, click, type "conc. H2SO4" without committing; compare `09-text-editing.png` box and options bar), `E27/text-committed.png` (after Enter: subscripts drawn), `E27/text-reopened.png` (scripted: Select, double-click the text)
 

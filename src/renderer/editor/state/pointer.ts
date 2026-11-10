@@ -6,7 +6,7 @@ import { hoverFilter, hitTest } from '../model/hit-test';
 import { toolFor } from '../tools';
 import { isVariantTool } from './catalog';
 import { isEmptyDoc } from './empty-doc';
-import { openLabelEditor } from './editing';
+import { openLabelEditor, openTextEditor } from './editing';
 import { hoverAt, sameHit } from './hover';
 import type { ToolContext } from '../tools/tool';
 import type { EditorState, Hit } from './editor-state';
@@ -75,7 +75,11 @@ function doubleClick(
 ): EditorState {
   if (state.tool !== 'select' || state.gesture !== null) return state;
   const hit = hitForPress(state, ctx, screen);
-  return hit?.kind === 'atom' ? openLabelEditor(state, hit.id) : state;
+  if (hit?.kind === 'atom') return openLabelEditor(state, hit.id);
+  if (hit?.kind === 'object' && hit.type === 'text') {
+    return openTextEditor(state, { kind: 'existing', object: hit.id });
+  }
+  return state;
 }
 
 /**
@@ -106,6 +110,7 @@ export function pointer(
     notice: ev.type === 'down' ? null : state.notice,
   };
   if (step.selection !== undefined) next = { ...next, selection: step.selection as Selection };
+  if (step.edit !== undefined) next = openTextEditor(next, step.edit);
   if (step.notice !== undefined) {
     const id = next.noticeSeq + 1;
     next = { ...next, notice: { id, ...step.notice }, noticeSeq: id };

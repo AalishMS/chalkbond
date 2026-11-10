@@ -124,7 +124,8 @@ describe('pointer events with the Select tool', () => {
   it('with another tool active the Select machine does not run', () => {
     let s = run(ready(), { type: 'select-tool', tool: 'text' });
     s = run(s, ev(s, 'down', atomPx(s, ring(s)[0] as AtomId)));
-    expect(s.gesture).toBeNull();
+    // The Text tool's own machine runs (E27), not Select's.
+    expect(s.gesture?.kind).toBe('text-press');
   });
 
   it('is ignored while Space is held (the pointer pans)', () => {

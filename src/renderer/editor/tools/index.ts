@@ -8,6 +8,7 @@ import { eraseTool } from './erase';
 import { plusTool } from './plus';
 import { ringTool } from './ring';
 import { selectTool } from './select';
+import { textTool } from './text';
 import type { Tool } from './tool';
 
 /** The tool that runs for `id`, or null for tools that arrive with later tasks. */
@@ -21,5 +22,6 @@ export function toolFor(id: ToolId): Tool | null {
   if (id === 'arrow') return arrowTool;
   if (id === 'plus') return plusTool;
   if (id === 'curved') return curvedTool;
+  if (id === 'text') return textTool;
   return null;
 }

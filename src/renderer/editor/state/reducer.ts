@@ -26,7 +26,8 @@ import {
   type Viewport,
 } from '../model/viewport';
 import type { HoverEdit } from '../model/keymap';
-import type { TextEditState } from '../model/text-edit';
+import type { Script, TextEditState } from '../model/text-edit';
+import type { TextTarget } from '../model/text-ops';
 import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
 import {
@@ -44,7 +45,16 @@ import {
 import { differs } from './dirty';
 import { showNotice } from './notice';
 import { cleanUp, expandLabels, showWarning, toggleKekule } from './structure-commands';
-import { cancelEditing, commitEditing, openLabelEditor, setEditModel } from './editing';
+import {
+  cancelEditing,
+  commitEditing,
+  editInsert,
+  editScript,
+  editStyle,
+  openLabelEditor,
+  openTextEditor,
+  setEditModel,
+} from './editing';
 import {
   EMPTY_SELECTION,
   type Editing,
@@ -131,6 +141,14 @@ export type EditorAction =
   | { type: 'set-editing'; editing: Editing | null }
   /** L1: open the label editor on an atom. */
   | { type: 'open-label'; atom: AtomId }
+  /** T1: open the text editor on a stored text or a new one. */
+  | { type: 'open-text'; target: TextTarget }
+  /** x2 / x2 in the text options: the selection's script, or the next typed character's. */
+  | { type: 'edit-script'; script: Script }
+  /** B / I in the text options. */
+  | { type: 'edit-style'; flag: 'bold' | 'italic' }
+  /** Δ, hν, °, → in the text options: plain text at the caret. */
+  | { type: 'edit-insert'; text: string }
   /** The editing model changed (a keystroke or a selection move in the box). */
   | { type: 'edit-set'; edit: TextEditState }
   /** Enter or a click elsewhere: commit the open editor. */
@@ -369,6 +387,14 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return { ...state, editing: action.editing };
     case 'open-label':
       return openLabelEditor(state, action.atom);
+    case 'open-text':
+      return openTextEditor(state, action.target);
+    case 'edit-script':
+      return editScript(state, action.script);
+    case 'edit-style':
+      return editStyle(state, action.flag);
+    case 'edit-insert':
+      return editInsert(state, action.text);
     case 'edit-set':
       return setEditModel(state, action.edit);
     case 'edit-commit':

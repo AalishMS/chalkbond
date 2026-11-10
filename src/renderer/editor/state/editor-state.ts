@@ -12,6 +12,7 @@ import { resolveStyle } from '@core/svg-render';
 import type { Point } from '../model/geometry';
 import type { Hit } from '../model/hit-test';
 import type { TextEditState } from '../model/text-edit';
+import type { TextTarget } from '../model/text-ops';
 import { initialViewport, type Viewport } from '../model/viewport';
 
 /** Tool ids in rail order (SPEC-editor.md "Tool rail"). */
@@ -91,7 +92,14 @@ export interface Preview {
  */
 export type Editing =
   | { readonly kind: 'label'; readonly atom: AtomId; readonly edit: TextEditState }
-  | { readonly kind: 'text'; readonly object: ObjectId; readonly edit: TextEditState };
+  | {
+      readonly kind: 'text';
+      readonly target: TextTarget;
+      readonly edit: TextEditState;
+      /** B / I apply to the whole object (T2). */
+      readonly bold: boolean;
+      readonly italic: boolean;
+    };
 
 export interface NameField {
   text: string;

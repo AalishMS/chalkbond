@@ -19,6 +19,34 @@ import {
   type DisplayRun,
 } from './text-dom';
 
+/** K3: the text editor's shortcuts, as what they do. */
+export type TextShortcut =
+  | { readonly type: 'script'; readonly script: 'sub' | 'sup' }
+  | { readonly type: 'style'; readonly flag: 'bold' | 'italic' }
+  | { readonly type: 'insert'; readonly text: string };
+
+/** K3: the shortcut a key press is, or null (text mode only). */
+export function shortcutOf(e: {
+  readonly key: string;
+  readonly ctrlKey: boolean;
+  readonly shiftKey: boolean;
+  readonly altKey: boolean;
+  readonly metaKey: boolean;
+}): TextShortcut | null {
+  if (!e.ctrlKey || e.altKey || e.metaKey) return null;
+  const key = e.key.toLowerCase();
+  if (!e.shiftKey) {
+    if (key === 'b') return { type: 'style', flag: 'bold' };
+    if (key === 'i') return { type: 'style', flag: 'italic' };
+    if (key === '=') return { type: 'script', script: 'sub' };
+    return null;
+  }
+  if (key === '+' || key === '=') return { type: 'script', script: 'sup' };
+  if (key === 'd') return { type: 'insert', text: 'Δ' };
+  if (key === 'h') return { type: 'insert', text: 'hν' };
+  return null;
+}
+
 export interface TextBoxProps {
   /** The pure model the box is a projection of. */
   edit: TextEditState;
@@ -26,8 +54,13 @@ export interface TextBoxProps {
   runs: readonly DisplayRun[];
   /** `label`: one line, Enter always commits. `text`: Shift+Enter breaks the line. */
   mode: 'label' | 'text';
-  /** Where the box is centred, canvas px. */
+  /** Where the box is centred, canvas px (text mode: the text's `at`, see `anchor`). */
   at: { readonly x: number; readonly y: number };
+  /** Text mode: which edge of the box stands on `at.x`; the first line is centred on `at.y`. */
+  anchor?: 'left' | 'center' | 'right';
+  /** Text mode: B / I of the whole object. */
+  bold?: boolean;
+  italic?: boolean;
   /** Font size, px: the rendered text's size at the current zoom. */
   fontPx: number;
   /** The accessible name. */
@@ -38,13 +71,19 @@ export interface TextBoxProps {
   onChange: (edit: TextEditState) => void;
   onCommit: () => void;
   onCancel: () => void;
+  /** Text mode: a K3 shortcut was pressed. */
+  onShortcut?: (shortcut: TextShortcut) => void;
 }
 
-/** Plain text of a paste or drop; a one-line box loses its line breaks. */
-function plainText(e: InputEvent, oneLine: boolean): string {
-  const raw = e.dataTransfer?.getData('text/plain') ?? e.data ?? '';
+/** Text as it goes into the model: `\n` line ends; a one-line box loses its line breaks. */
+function normalised(raw: string, oneLine: boolean): string {
   const text = raw.replace(/\r\n?/g, '\n');
   return oneLine ? text.replace(/\n/g, '') : text;
+}
+
+/** Plain text of a `beforeinput` that inserts it. */
+function plainText(e: InputEvent, oneLine: boolean): string {
+  return normalised(e.dataTransfer?.getData('text/plain') ?? e.data ?? '', oneLine);
 }
 
 /**
@@ -55,6 +94,7 @@ function plainText(e: InputEvent, oneLine: boolean): string {
  */
 export function TextBox(props: TextBoxProps): React.JSX.Element {
   const { edit, runs, mode, at, fontPx, label, caption, captionTone } = props;
+  const { anchor = 'center', bold = false, italic = false } = props;
   const root = useRef<HTMLDivElement>(null);
   /** The latest model, updated at once by each handler so two events in a tick do not collide. */
   const latest = useRef(edit);
@@ -98,13 +138,26 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
       handlers.current.onChange(next);
     };
 
+    // The browser moves the caret before `selectionchange` is delivered: an edit applies to the
+    // selection the DOM has now, not the one the model last heard of.
+    const synced = (): TextEditState => {
+      const dom = readSelection(el);
+      return dom === null ? latest.current : setSelection(latest.current, dom.anchor, dom.focus);
+    };
+
+    // A paste or drop is the clipboard's `text/plain` and nothing else: with rich content on the
+    // clipboard a `plaintext-only` box derives its own text from the HTML, with the wrong breaks.
+    const onTransfer = (e: ClipboardEvent | DragEvent): void => {
+      const data = e instanceof ClipboardEvent ? e.clipboardData : e.dataTransfer;
+      if (data === null) return;
+      e.preventDefault();
+      apply(insertText(synced(), normalised(data.getData('text/plain'), oneLine())));
+    };
+
     const onBeforeInput = (e: InputEvent): void => {
       if (composing.current || e.isComposing) return;
       if (e.cancelable) e.preventDefault();
-      // The browser moves the caret before `selectionchange` is delivered: an edit applies to
-      // the selection the DOM has now, not the one the model last heard of.
-      const dom = readSelection(el);
-      const s = dom === null ? latest.current : setSelection(latest.current, dom.anchor, dom.focus);
+      const s = synced();
       const del = deletion(e.inputType);
       if (del !== null) {
         apply(del.dir === 'backward' ? deleteBackward(s, del.unit) : deleteForward(s, del.unit));
@@ -147,6 +200,12 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
         e.preventDefault();
         const redo = key === 'y' || e.shiftKey;
         apply(redo ? redoEdit(latest.current) : undoEdit(latest.current));
+      } else if (!oneLine()) {
+        const shortcut = shortcutOf(e);
+        if (shortcut !== null) {
+          e.preventDefault();
+          handlers.current.onShortcut?.(shortcut);
+        }
       }
     };
 
@@ -175,6 +234,8 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
       if (!composing.current) handlers.current.onCommit();
     };
 
+    el.addEventListener('paste', onTransfer);
+    el.addEventListener('drop', onTransfer);
     el.addEventListener('beforeinput', onBeforeInput);
     el.addEventListener('keydown', onKeyDown);
     el.addEventListener('compositionstart', onCompositionStart);
@@ -182,6 +243,8 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
     el.addEventListener('blur', onBlur);
     document.addEventListener('selectionchange', onSelectionChange);
     return () => {
+      el.removeEventListener('paste', onTransfer);
+      el.removeEventListener('drop', onTransfer);
       el.removeEventListener('beforeinput', onBeforeInput);
       el.removeEventListener('keydown', onKeyDown);
       el.removeEventListener('compositionstart', onCompositionStart);
@@ -196,6 +259,7 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
       className="textbox"
       data-testid="textbox"
       data-mode={mode}
+      data-anchor={mode === 'text' ? anchor : undefined}
       style={{ left: at.x, top: at.y, fontSize: fontPx }}
     >
       <div
@@ -205,6 +269,10 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
         contentEditable="plaintext-only"
         suppressContentEditableWarning
         role="textbox"
+        style={{
+          ...(bold ? { fontWeight: 'bold' } : {}),
+          ...(italic ? { fontStyle: 'italic' } : {}),
+        }}
         aria-multiline={mode === 'text'}
         aria-label={label}
         spellCheck={false}

@@ -211,6 +211,27 @@
   font-weight: 600;
 }
 
+.options-caption {
+  flex: none;
+  margin-right: var(--space-2);
+  color: var(--text-muted);
+}
+
+.btn-opt .sub,
+.btn-opt .sup {
+  position: relative;
+  font-size: var(--sub-size);
+  line-height: 0;
+}
+
+.btn-opt .sub {
+  top: var(--sub-drop);
+}
+
+.btn-opt .sup {
+  top: calc(-1 * var(--sub-drop));
+}
+
 /* Selected option: 2 x 16 underline, 2 px above the bottom edge. */
 .btn-opt[aria-pressed='true']::after {
   content: '';
@@ -815,6 +836,30 @@ kbd {
   z-index: 3;
   transform: translate(-50%, -50%);
   user-select: text;
+}
+
+/* Text mode (T2): `at` is the text's anchor point, not the box centre. The first line's cap
+   centre (0.5635 em from the top of its line box in Arial) stands on it. */
+.textbox[data-mode='text'] {
+  --anchor-x: -50%;
+  transform: translate(var(--anchor-x), calc(-0.5635em - var(--space-1)));
+}
+
+.textbox[data-anchor='left'] {
+  --anchor-x: calc(-1 * var(--space-3));
+}
+
+.textbox[data-anchor='right'] {
+  --anchor-x: calc(-100% + var(--space-3));
+}
+
+/* The lines align as the stored text will (`align` of the object). */
+.textbox[data-anchor='left'] .textbox-edit {
+  text-align: left;
+}
+
+.textbox[data-anchor='right'] .textbox-edit {
+  text-align: right;
 }
 
 .textbox-edit {
