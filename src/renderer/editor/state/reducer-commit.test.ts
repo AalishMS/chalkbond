@@ -12,7 +12,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { EMPTY_SELECTION } from './editor-state';
 import { isDirty, reduce } from './reducer';
-import { addEthane, atomId, freshState, testContext, testDoc } from './testing';
+import { addEthane, atomId, freshState, labelEditing, testContext, testDoc } from './testing';
 
 const A1 = atomId(1);
 const A99 = atomId(99);
@@ -139,7 +139,7 @@ describe('undo and redo (G2, R7)', () => {
 
   it('are refused while an editor is open', () => {
     const { s, ctx } = busyState();
-    const editing = { kind: 'label', atom: A1 } as const;
+    const editing = labelEditing(A1);
     const open = { ...s, editing };
     expect(reduce(open, { type: 'undo' }, ctx)).toBe(open);
     const openRedo = { ...reduce(s, { type: 'undo' }, ctx), editing };
@@ -234,7 +234,7 @@ describe('small state actions', () => {
     expect(s.selection).toBe(sel);
     expect(s.spaceHeld).toBe(true);
     expect(reduce(s, { type: 'set-space', held: true }, ctx)).toBe(s);
-    s = reduce(s, { type: 'set-editing', editing: { kind: 'label', atom: A1 } }, ctx);
-    expect(s.editing).toEqual({ kind: 'label', atom: A1 });
+    s = reduce(s, { type: 'set-editing', editing: labelEditing(A1) }, ctx);
+    expect(s.editing).toEqual(labelEditing(A1));
   });
 });

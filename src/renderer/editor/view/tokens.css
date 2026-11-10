@@ -18,6 +18,7 @@
   --active-bg: #e3ecfb;
   --active-fg: #1a4fb0;
   --active-hover-bg: #d2e0f8;
+  --ink: #000000;
   --warning: #b42318;
   --warning-bg: #fdecea;
   --tooltip-bg: #1f2328;
@@ -53,6 +54,7 @@
   --space-5: 16px;
   --space-6: 24px;
   --space-7: 32px;
+  --textbox-min-width: 64px;
 
   /* Radii */
   --radius-sm: 4px;

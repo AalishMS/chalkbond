@@ -6,6 +6,7 @@ import { hoverFilter, hitTest } from '../model/hit-test';
 import { toolFor } from '../tools';
 import { isVariantTool } from './catalog';
 import { isEmptyDoc } from './empty-doc';
+import { openLabelEditor } from './editing';
 import { hoverAt, sameHit } from './hover';
 import type { ToolContext } from '../tools/tool';
 import type { EditorState, Hit } from './editor-state';
@@ -64,6 +65,20 @@ export function hoverMove(state: EditorState, ev: MoveEvent, ctx: ReducerContext
 }
 
 /**
+ * R2, S7: a double-click opens the label editor on the atom under it, and only with Select; with
+ * a drawing tool it is two clicks and nothing else.
+ */
+function doubleClick(
+  state: EditorState,
+  screen: { x: number; y: number },
+  ctx: ReducerContext,
+): EditorState {
+  if (state.tool !== 'select' || state.gesture !== null) return state;
+  const hit = hitForPress(state, ctx, screen);
+  return hit?.kind === 'atom' ? openLabelEditor(state, hit.id) : state;
+}
+
+/**
  * Runs the active tool on a canvas event and applies its step: the gesture, the preview, the
  * selection and, on release, one commit. A press clears the notice. Previews never reach history.
  */
@@ -75,6 +90,7 @@ export function pointer(
 ): EditorState {
   const tool = toolFor(state.tool);
   if (tool === null || state.spaceHeld || state.editing !== null) return state;
+  if (ev.type === 'dblclick') return doubleClick(state, ev.screen, ctx);
   const toolCtx = toolContext(
     state,
     ctx,

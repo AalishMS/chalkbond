@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createEditorController } from '../state/controller';
-import { addEthane, atomId } from '../state/testing';
+import { insertText } from '../model/text-edit';
+import { addEthane, atomId, labelEditing } from '../state/testing';
 import { Editor } from './Editor';
 import { Icon } from './Icon';
 
@@ -78,9 +79,51 @@ describe('Editor history buttons', () => {
   it('are disabled while an editor is open (R7)', () => {
     const c = make();
     c.store.dispatch({ type: 'commit', label: 'Add bond', recipe: addEthane });
-    c.store.dispatch({ type: 'set-editing', editing: { kind: 'label', atom: atomId(1) } });
+    c.store.dispatch({ type: 'set-editing', editing: labelEditing(atomId(1)) });
     const html = render(c);
     expect(html).toContain('data-testid="undo" aria-label="Undo (Ctrl+Z)" aria-disabled="true"');
     expect(c.canRun('undo')).toBe(false);
+  });
+});
+
+describe('the label editor in the window (L1, L2)', () => {
+  const make = () => {
+    const c = createEditorController({ clock: () => '2026-01-01T00:00:00.000Z' });
+    c.store.dispatch({ type: 'commit', label: 'Add bond', recipe: addEthane });
+    c.store.dispatch({ type: 'canvas-resized', size: { w: 1200, h: 700 } });
+    return c;
+  };
+  const html = (c: ReturnType<typeof createEditorController>): string =>
+    renderToStaticMarkup(<Editor controller={c} />);
+
+  it('is not drawn until it is opened', () => {
+    expect(html(make())).not.toContain('data-testid="textbox"');
+  });
+
+  it('shows the box with the caption and the editing hint', () => {
+    const c = make();
+    c.store.dispatch({ type: 'open-label', atom: atomId(1) });
+    const out = html(c);
+    expect(out).toContain('data-testid="textbox"');
+    expect(out).toContain('="plaintext-only"');
+    expect(out).toContain('e.g. OH, NH2, Cl, Ph, CO2H');
+    expect(out).toContain('Enter finishes. Esc cancels.');
+  });
+
+  it('turns the caption into the warning for text that is not known', () => {
+    const c = make();
+    c.store.dispatch({ type: 'open-label', atom: atomId(1) });
+    const editing = c.store.getState().editing;
+    if (editing === null) throw new Error('not open');
+    c.store.dispatch({ type: 'edit-set', edit: insertText(editing.edit, 'H20') });
+    const out = html(c);
+    expect(out).toContain('Not a known group; it will be drawn as typed.');
+    expect(out).toContain('data-tone="warning"');
+  });
+
+  it('shows no markup syntax', () => {
+    const c = make();
+    c.store.dispatch({ type: 'open-label', atom: atomId(1) });
+    expect(html(c)).not.toMatch(/_\{|\^\{/);
   });
 });

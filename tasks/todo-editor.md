@@ -704,13 +704,13 @@ boundaries merges runs; local undo restores the previous state; surrogate pairs 
 `labelDisplayRuns('NH2')` → N, H, sub 2; `CO2H`; `NH4+` with sup +. L3 commit table: `OH` →
 element O, explicitH undefined (automatic is 1); `OH2` → explicitH 2 only when automatic differs;
 `Ph` → label Ph, element C; `H20` → element `*`, label `H20`; empty → C. e2e `editor-label.spec.ts`:
-hover a carbon of ethanol, Enter, type "NH2", Enter → formula "C2H7NO · 61.08 g/mol"; the editor
+hover the oxygen of ethanol, Enter, type "NH2", Enter → formula "C2H7N · 45.08 g/mol" (the carbon-end example gave a formula the rules cannot produce); the editor
 showed "NH₂" with a real `<span data-script="sub">2</span>` while typing.
 
 **Acceptance criteria:**
-- [ ] Every op and property above passes; the label editor never shows markup (e2e reads the editor's DOM: only text and `data-script` spans)
-- [ ] L1–L3 covered; R2 (no editor on a Bond double-click: e2e double-click with Bond adds bonds and opens nothing) and R7 covered
-- [ ] Focus returns to the canvas on commit and cancel (e2e)
+- [x] Every op and property above passes; the label editor never shows markup (e2e reads the editor's DOM: only text and `data-script` spans)
+- [x] L1–L3 covered; R2 (no editor on a Bond double-click: e2e double-click with Bond adds bonds and opens nothing) and R7 covered
+- [x] Focus returns to the canvas on commit and cancel (e2e)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E23` → `E23/label-editor.png` (scripted: hover a carbon, Enter, type "CO2H" before committing; caption visible), `E23/label-unknown.png` (scripted: type "H20"; warning caption)
 

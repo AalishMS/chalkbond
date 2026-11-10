@@ -8,6 +8,7 @@ import type { EditorController } from '../state/controller';
 import { emptyStateVisible } from '../state/empty-doc';
 import { Canvas } from './Canvas';
 import { EmptyState } from './EmptyState';
+import { LabelEditor } from './LabelEditor';
 import sprite from './icons.svg?raw';
 import { StatusBar } from './StatusBar';
 import { ToolRail } from './ToolRail';
@@ -126,6 +127,17 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
       <ToolRail state={state} dispatch={dispatch} />
       <Canvas controller={controller}>
         {emptyStateVisible(doc, state.gesture, state.preview) && <EmptyState dispatch={dispatch} />}
+        <LabelEditor
+          controller={controller}
+          state={state}
+          dispatch={dispatch}
+          onClosed={() => {
+            // The box is going: focus returns to the canvas, and what rests under the pointer is
+            // hovered again.
+            document.querySelector<HTMLElement>('[data-testid="canvas"]')?.focus();
+            controller.refreshHover();
+          }}
+        />
       </Canvas>
       <StatusBar
         tool={state.tool}
@@ -136,6 +148,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
         nameFieldFocused={nameFocused}
         hover={state.hover}
         gesture={state.gesture?.kind ?? null}
+        editing={state.editing?.kind ?? null}
         notice={state.notice}
       />
       <TooltipHost />

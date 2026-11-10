@@ -7,6 +7,7 @@ import { canvasOverlay } from '../model/overlay';
 import type { Mounted } from '../model/patch';
 import { PX_PER_PT } from '../model/viewport';
 import type { EditorController } from '../state/controller';
+import { EMPTY_SELECTION } from '../state/editor-state';
 import { cssCursor } from './cursors';
 import { Overlay } from './Overlay';
 import { HINT_ID } from './StatusBar';
@@ -114,6 +115,18 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
     };
   }, [added, parts]);
 
+  // T2: the part of the atom being edited is hidden; the box stands in its place.
+  const editedAtom = state.editing?.kind === 'label' ? state.editing.atom : undefined;
+  useLayoutEffect(() => {
+    if (editedAtom === undefined) return;
+    const g = nodes.current.get(`atom:${editedAtom}`);
+    if (!g) return;
+    g.style.visibility = 'hidden';
+    return () => {
+      g.style.removeProperty('visibility');
+    };
+  }, [editedAtom, parts]);
+
   // Focus at launch; the ring shows only when Tab brought focus here (K4).
   useEffect(() => {
     const canvas = ref.current;
@@ -185,7 +198,8 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
         size={viewport.size}
         groups={canvasOverlay({
           hover: state.hover,
-          selection: state.selection,
+          // While an editor is open its box stands alone: no selection halo or handles.
+          selection: state.editing === null ? state.selection : EMPTY_SELECTION,
           gesture: state.gesture,
           preview: state.preview,
           doc,

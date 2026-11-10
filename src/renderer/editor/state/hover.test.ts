@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bluToScreen } from '../model/viewport';
 import { hoverAt } from './hover';
 import { reduce } from './reducer';
-import { addEthane, atomId, freshState, testContext } from './testing';
+import { addEthane, atomId, freshState, labelEditing, testContext } from './testing';
 
 const ctx = testContext();
 const withEthane = () => {
@@ -33,11 +33,7 @@ describe('hoverAt (HV1)', () => {
     const s = withEthane();
     const held = reduce(s, { type: 'set-space', held: true }, ctx);
     expect(hoverAt(held, ctx.derive, onFirstAtom(held))).toBeNull();
-    const editing = reduce(
-      s,
-      { type: 'set-editing', editing: { kind: 'label', atom: atomId(1) } },
-      ctx,
-    );
+    const editing = reduce(s, { type: 'set-editing', editing: labelEditing(atomId(1)) }, ctx);
     expect(hoverAt(editing, ctx.derive, onFirstAtom(editing))).toBeNull();
   });
 });

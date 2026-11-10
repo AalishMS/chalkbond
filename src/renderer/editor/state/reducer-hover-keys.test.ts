@@ -18,7 +18,7 @@ import compounds from '../../../../resources/compounds/compounds.json';
 import type { HoverEdit } from '../model/keymap';
 import type { EditorState, Hit } from './editor-state';
 import { reduce, type EditorAction } from './reducer';
-import { drawn, freshState, testContext } from './testing';
+import { drawn, freshState, labelEditing, testContext } from './testing';
 
 const ctx = { ...testContext(), names: createNameIndex(compounds) };
 const run = (s: EditorState, a: EditorAction): EditorState => reduce(s, a, ctx);
@@ -147,7 +147,7 @@ describe('hover keys need something to act on', () => {
     expect(edit(busy, { kind: 'element', element: 'O' })).toBe(busy);
     const editing = {
       ...hovering(doc, atomHit(b)),
-      editing: { kind: 'label' as const, atom: b },
+      editing: labelEditing(b),
     };
     expect(edit(editing, { kind: 'element', element: 'O' })).toBe(editing);
   });

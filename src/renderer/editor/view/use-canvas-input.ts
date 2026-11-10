@@ -172,6 +172,14 @@ export function useCanvasInput(
       }
       controller.contextMenuAt(canvasPx(e));
     };
+    // R2, S7: the double-click is the reducer's to interpret (Select opens the label editor).
+    const onDoubleClick = (e: MouseEvent): void => {
+      if (e.target !== el || e.button !== 0) return;
+      const down = toEvent('down', e as PointerEvent);
+      if (down.type === 'down') {
+        dispatch({ type: 'pointer', event: { type: 'dblclick', p: down.p, screen: down.screen } });
+      }
+    };
     const onMouseDown = (e: MouseEvent): void => {
       if (e.button === 1) e.preventDefault();
     };
@@ -187,6 +195,7 @@ export function useCanvasInput(
     el.addEventListener('pointerleave', onPointerLeave);
     el.addEventListener('mousedown', onMouseDown);
     el.addEventListener('contextmenu', onContextMenu);
+    el.addEventListener('dblclick', onDoubleClick);
     return () => {
       panDelta.cancel();
       hover.cancel();
@@ -202,6 +211,7 @@ export function useCanvasInput(
       el.removeEventListener('pointerleave', onPointerLeave);
       el.removeEventListener('mousedown', onMouseDown);
       el.removeEventListener('contextmenu', onContextMenu);
+      el.removeEventListener('dblclick', onDoubleClick);
     };
   }, [canvas, controller, store, derive]);
 }

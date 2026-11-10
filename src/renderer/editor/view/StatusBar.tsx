@@ -2,7 +2,7 @@ import type { Formula } from '@core/chem-core';
 import type { StylePreset } from '@core/doc-model';
 import { formulaRuns } from '../model/formula';
 import { stepZoom, zoomPercent } from '../model/viewport';
-import { hintFor, NAME_FIELD_HINT } from '../state/catalog';
+import { EDITOR_HINTS, hintFor, NAME_FIELD_HINT } from '../state/catalog';
 import type { Hit, Notice, ToolId } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
 import { STATUS_TIPS, type TipContent } from '../state/tips';
@@ -26,6 +26,8 @@ interface StatusBarProps {
   hover?: Hit | null;
   /** Kind of the running gesture, if any: a bond drag changes the hint. */
   gesture?: string | null;
+  /** An editor is open: its hint replaces the tool's. */
+  editing?: 'label' | 'text' | null;
   /** The name field has focus: its hint replaces the tool's. */
   nameFieldFocused?: boolean;
   /** Replaces the hint while set (X1 and the other notices). */
@@ -66,6 +68,7 @@ export function StatusBar({
   dispatch,
   formula = null,
   nameFieldFocused = false,
+  editing = null,
   hover = null,
   gesture = null,
   notice = null,
@@ -81,6 +84,8 @@ export function StatusBar({
         {notice === null ? (
           nameFieldFocused ? (
             NAME_FIELD_HINT
+          ) : editing !== null ? (
+            EDITOR_HINTS[editing]
           ) : (
             hintFor(tool, hover, gesture)
           )

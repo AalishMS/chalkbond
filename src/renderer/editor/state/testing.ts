@@ -12,7 +12,8 @@ import {
 } from '@core/doc-model';
 import compounds from '../../../../resources/compounds/compounds.json';
 import { createDerive } from '../model/derive';
-import { initialState, type EditorState } from './editor-state';
+import { fromText } from '../model/text-edit';
+import { initialState, type Editing, type EditorState } from './editor-state';
 import { reduce, type EditorAction, type ReducerContext } from './reducer';
 import { createStore, type Store } from './store';
 
@@ -90,3 +91,10 @@ export function wholeOf(doc: Doc, atoms: readonly AtomId[]): Selection {
     objects: new Set(),
   };
 }
+
+/** A label editor open on `atom`, holding `text` all selected. */
+export const labelEditing = (atom: AtomId, text = ''): Editing => ({
+  kind: 'label',
+  atom,
+  edit: fromText(text),
+});

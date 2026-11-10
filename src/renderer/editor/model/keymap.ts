@@ -86,7 +86,9 @@ export type HoverEdit =
   | { readonly kind: 'charge'; readonly delta: 1 | -1 }
   | { readonly kind: 'sprout'; readonly order: 1 | 2 | 3 }
   | { readonly kind: 'order'; readonly order: 1 | 2 | 3 }
-  | { readonly kind: 'stereo'; readonly stereo: 'wedge' | 'hash' };
+  | { readonly kind: 'stereo'; readonly stereo: 'wedge' | 'hash' }
+  /** Enter: open the label editor on the hovered atom (L1). */
+  | { readonly kind: 'label' };
 
 /** K2: element keys over an atom; `L` is chlorine and `B` bromine. */
 const ELEMENT_KEYS: Readonly<Record<string, ElementSymbol>> = {
@@ -125,7 +127,7 @@ function atomEdit(k: string): HoverEdit | null {
   if (k === '-') return { kind: 'charge', delta: -1 };
   const order = ORDERS[k];
   if (order !== undefined) return { kind: 'sprout', order };
-  // Enter opens the label editor (L1): the hook stays empty until the editor (E23) exists.
+  if (k === 'Enter') return { kind: 'label' };
   return null;
 }
 

@@ -22,6 +22,7 @@ import type { HoverEdit } from '../model/keymap';
 import { isEmptySelection, selectAll } from '../model/selection';
 import { reveal, screenToBlu } from '../model/viewport';
 import { EMPTY_SELECTION, type EditorState, type Hit } from './editor-state';
+import { openLabelEditor } from './editing';
 import { nameDismiss } from './name-field';
 import type { EditorAction } from './reducer';
 
@@ -288,6 +289,7 @@ export function hoverEdit(
 ): EditorState {
   const hit = state.hover;
   if (hit === null || state.gesture !== null || state.editing !== null) return state;
+  if (edit.kind === 'label') return hit.kind === 'atom' ? openLabelEditor(state, hit.id) : state;
   const doc = current(state.history);
   let label: string;
   let recipe: ((d: Doc) => Doc) | null = null;

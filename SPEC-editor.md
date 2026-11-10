@@ -895,8 +895,11 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 ### Label editor
 
 - **L1** Opens with Enter over a hovered atom (any tool except Erase and Text) or a double-click
-  with Select (S7): a `TextBox` in label mode centred on the atom, min 64 px, grows to 160 px,
-  28 px high, Arial at `--type-md`, radius 6, 2 px `--accent` border, `--shadow-1`; filled with
+  with Select (S7): a `TextBox` in label mode centred on the atom, min 64 px wide, Arial at the rendered
+  label's size and zoom, padding 2 8, 1 px `--accent` outline on `--canvas-bg` as in screen 09
+  (amended 2026-11-10: the earlier 28 px / 2 px / radius 6 box did not match the rendered text
+  size or screen 09); the edited atom's own label and the selection halo are hidden while it is
+  open; filled with
   the atom's label, else its element (with H count when `explicitH` is set: `OH`), all selected.
   Display is WYSIWYG through `labelDisplayRuns(text)`: digits after a letter or `)` as
   subscripts, a trailing charge as superscript; typing is plain characters, nothing to toggle.

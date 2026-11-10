@@ -66,8 +66,13 @@ describe('K2 hover keys on an atom', () => {
     }
   });
 
-  it('Enter is the label editor hook: nothing happens until the editor exists', () => {
-    expect(press('Enter', ATOM)).toBeNull();
+  it('Enter over an atom opens the label editor (L1)', () => {
+    expect(press('Enter', ATOM)).toEqual({ type: 'hover-edit', edit: { kind: 'label' } });
+  });
+
+  it('Enter over a bond, or over nothing, does nothing', () => {
+    expect(press('Enter', BOND)).toBeNull();
+    expect(press('Enter', null)).toBeNull();
   });
 
   it('a letter that is not a hover key falls through to its tool (R3)', () => {

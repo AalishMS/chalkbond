@@ -807,3 +807,55 @@ kbd {
   color: var(--active-fg);
   font-weight: 600;
 }
+
+/* The label and text editors (SPEC-editor.md L1, T2; screen 09): a box over the canvas, centred
+   on the point it is given, in the rendered text's font size. */
+.textbox {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  user-select: text;
+}
+
+.textbox-edit {
+  min-width: var(--textbox-min-width);
+  padding: var(--space-1) var(--space-3);
+  outline: 1px solid var(--accent);
+  background: var(--canvas-bg);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.15;
+  text-align: center;
+  white-space: pre-wrap;
+  caret-color: var(--ink);
+  cursor: text;
+}
+
+.textbox-edit [data-script] {
+  position: relative;
+  font-size: 0.7em;
+  line-height: 0;
+}
+
+.textbox-edit [data-script='sub'] {
+  top: calc(0.2em / 0.7);
+}
+
+.textbox-edit [data-script='sup'] {
+  top: calc(-0.4em / 0.7);
+}
+
+.textbox-caption {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-muted);
+  font: var(--type-xs);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.textbox-caption[data-tone='warning'] {
+  color: var(--warning);
+}

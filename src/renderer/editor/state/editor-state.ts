@@ -11,6 +11,7 @@ import {
 import { resolveStyle } from '@core/svg-render';
 import type { Point } from '../model/geometry';
 import type { Hit } from '../model/hit-test';
+import type { TextEditState } from '../model/text-edit';
 import { initialViewport, type Viewport } from '../model/viewport';
 
 /** Tool ids in rail order (SPEC-editor.md "Tool rail"). */
@@ -82,10 +83,13 @@ export interface Preview {
   };
 }
 
-/** An open label or text editor; the editing model itself arrives with E23. */
+/**
+ * An open label or text editor: what it edits and the pure editing model behind its box (rule T2).
+ * While one is open the document does not change; closing it commits or cancels.
+ */
 export type Editing =
-  | { readonly kind: 'label'; readonly atom: AtomId }
-  | { readonly kind: 'text'; readonly object: ObjectId };
+  | { readonly kind: 'label'; readonly atom: AtomId; readonly edit: TextEditState }
+  | { readonly kind: 'text'; readonly object: ObjectId; readonly edit: TextEditState };
 
 export interface NameField {
   text: string;

@@ -7,6 +7,7 @@ import {
   redo,
   transact,
   undo,
+  type AtomId,
   type Doc,
   type Selection,
   type SubDoc,
@@ -25,6 +26,7 @@ import {
   type Viewport,
 } from '../model/viewport';
 import type { HoverEdit } from '../model/keymap';
+import type { TextEditState } from '../model/text-edit';
 import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
 import {
@@ -40,6 +42,7 @@ import {
   selectEverything,
 } from './commands';
 import { differs } from './dirty';
+import { cancelEditing, commitEditing, openLabelEditor, setEditModel } from './editing';
 import {
   EMPTY_SELECTION,
   type Editing,
@@ -116,6 +119,14 @@ export type EditorAction =
   | { type: 'set-gesture'; gesture: GestureState | null }
   | { type: 'set-preview'; preview: Preview | null }
   | { type: 'set-editing'; editing: Editing | null }
+  /** L1: open the label editor on an atom. */
+  | { type: 'open-label'; atom: AtomId }
+  /** The editing model changed (a keystroke or a selection move in the box). */
+  | { type: 'edit-set'; edit: TextEditState }
+  /** Enter or a click elsewhere: commit the open editor. */
+  | { type: 'edit-commit' }
+  /** Esc: close the open editor without a change. */
+  | { type: 'edit-cancel' }
   | { type: 'set-space'; held: boolean }
   | { type: 'canvas-resized'; size: Size }
   | { type: 'zoom-step'; dir: 1 | -1 }
@@ -343,6 +354,14 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return { ...state, preview: action.preview };
     case 'set-editing':
       return { ...state, editing: action.editing };
+    case 'open-label':
+      return openLabelEditor(state, action.atom);
+    case 'edit-set':
+      return setEditModel(state, action.edit);
+    case 'edit-commit':
+      return commitEditing(state, (s, a) => commit(s, a, ctx));
+    case 'edit-cancel':
+      return cancelEditing(state);
     case 'set-space':
       return state.spaceHeld === action.held ? state : { ...state, spaceHeld: action.held };
     case 'canvas-resized':

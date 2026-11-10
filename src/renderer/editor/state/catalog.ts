@@ -137,6 +137,12 @@ export function railFace(state: EditorState, tool: ToolDef): RailFace {
 export const NAME_FIELD_HINT =
   'Enter inserts. Write a reaction like: ethanol + acetic acid -> ethyl acetate';
 
+/** The status-bar hint while the label or the text editor is open (SPEC-editor.md hints table). */
+export const EDITOR_HINTS = {
+  label: 'Enter finishes. Esc cancels.',
+  text: 'Enter finishes. Shift+Enter starts a new line. Formulas like H2SO4 get their subscripts when you finish.',
+} as const;
+
 /** Hints while hovering an atom or a bond with hover keys active (K2). */
 export const HOVER_HINTS = {
   atom: 'Type O, N, Cl… to change this atom. Enter for any label.',

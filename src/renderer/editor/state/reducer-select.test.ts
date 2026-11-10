@@ -16,7 +16,7 @@ import type { Point } from '../model/geometry';
 import { screenToBlu, bluToScreen } from '../model/viewport';
 import { EMPTY_SELECTION, type EditorState } from './editor-state';
 import { reduce, type EditorAction } from './reducer';
-import { drawn, freshState, testContext, wholeOf } from './testing';
+import { drawn, freshState, labelEditing, testContext, wholeOf } from './testing';
 
 const ctx = { ...testContext(), names: createNameIndex(compounds) };
 const run = (s: EditorState, a: EditorAction): EditorState => reduce(s, a, ctx);
@@ -273,7 +273,7 @@ describe('Esc ladder (K1)', () => {
     s = run(s, { type: 'select-tool', tool: 'select' });
     s = run(s, { type: 'set-selection', selection: wholeOf(doc(), ring(s)) });
     s = run(s, { type: 'notice-show', kind: 'info', text: 'Something' });
-    s = run(s, { type: 'set-editing', editing: { kind: 'label', atom: ring(s)[0] as AtomId } });
+    s = run(s, { type: 'set-editing', editing: labelEditing(ring(s)[0] as AtomId) });
     s = run(s, { type: 'set-gesture', gesture: { kind: 'select-press' } });
     return s;
   }
