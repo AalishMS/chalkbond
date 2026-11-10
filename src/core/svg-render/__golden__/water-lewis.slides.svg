@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="84.216pt" height="55.584pt" viewBox="0 0 84.216 55.584">
-<g transform="translate(42.108 15.624)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-<path d="M-17.492 13.119L-15.292 11.469" stroke="#000000" stroke-width="2"/>
-<path d="M15.292 11.469L17.492 13.119" stroke="#000000" stroke-width="2"/>
-<text x="-42.108" y="34.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
-<text x="-10.892" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
-<circle cx="-3.36" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="3.36" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="-3.36" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="3.36" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
-<text x="21.892" y="34.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="81.328pt" height="51.072pt" viewBox="0 0 81.328 51.072">
+<g transform="translate(40.664 13.392)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M-18.936 14.202L-13.736 10.302" stroke="#000000" stroke-width="2"/>
+<path d="M13.736 10.302L18.936 14.202" stroke="#000000" stroke-width="2"/>
+<text x="-40.664" y="32.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="-9.336" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<circle cx="-2.88" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="2.88" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="-2.88" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="2.88" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
+<text x="23.336" y="32.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
 </g>
 </svg>

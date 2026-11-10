@@ -15,7 +15,7 @@ describe('STYLE_PRESETS', () => {
       lineWidth: 2,
       doubleBondSpacing: 0.18,
       fontFamily: 'Arial, Helvetica, sans-serif',
-      fontSize: 28,
+      fontSize: 24,
     });
     expect(STYLE_PRESETS.journal).toEqual({
       bondLength: 14.4,
@@ -31,10 +31,10 @@ describe('STYLE_PRESETS', () => {
   });
 });
 
-describe('resolveStyle: derived values (L = 40, fs = 28)', () => {
+describe('resolveStyle: derived values (L = 40, fs = 24)', () => {
   const s = resolveStyle(slides());
   const L = 40;
-  const fs = 28;
+  const fs = 24;
   const near = (actual: number, expected: number) => expect(actual).toBeCloseTo(expected, 9);
 
   it('carries the five settings', () => {
@@ -42,7 +42,7 @@ describe('resolveStyle: derived values (L = 40, fs = 28)', () => {
     expect(s.lineWidth).toBe(2);
     expect(s.doubleBondSpacing).toBe(0.18);
     expect(s.fontFamily).toBe('Arial, Helvetica, sans-serif');
-    expect(s.fontSize).toBe(28);
+    expect(s.fontSize).toBe(24);
   });
 
   it.each([
@@ -186,7 +186,7 @@ describe('resolveStyle: overrides', () => {
   it('falls back to the slides preset for an unknown preset name and never mutates', () => {
     const style = { preset: 'nope', overrides: { bondLength: 20 } } as unknown as StyleInput;
     expect(resolveStyle(style).bondLength).toBe(20);
-    expect(resolveStyle(style).fontSize).toBe(28);
+    expect(resolveStyle(style).fontSize).toBe(24);
     expect(style.overrides).toEqual({ bondLength: 20 });
   });
 

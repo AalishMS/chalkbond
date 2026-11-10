@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="101.018pt" height="94.874pt" viewBox="0 0 101.018 94.874">
-<g transform="translate(1 18.914)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" width="96.627pt" height="89.892pt" viewBox="0 0 96.627 89.892">
+<g transform="translate(1 16.212)" fill="none" stroke-linecap="round" stroke-linejoin="round">
 <path d="M0 0L34.64 20" stroke="#000000" stroke-width="2"/>
-<path d="M38.24 20L38.24 45.576" stroke="#000000" stroke-width="2"/>
-<path d="M31.04 20L31.04 45.576" stroke="#000000" stroke-width="2" stroke-dasharray="10 6"/>
-<path d="M32.84 16.882L53.988 4.672" stroke="#000000" stroke-width="2"/>
-<path d="M36.44 23.118L53.988 12.986" stroke="#000000" stroke-width="2" stroke-dasharray="10 6"/>
-<text x="23.748" y="70.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
-<circle cx="31.28" cy="74.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="38" cy="74.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="49.732" cy="56.64" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="49.732" cy="63.36" r="1.4" fill="#000000" stroke="none"/>
-<text x="58.388" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
-<text x="88.572" y="-1.176" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">−</text>
-<circle cx="84.372" cy="-3.36" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="84.372" cy="3.36" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="65.92" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="72.64" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="65.92" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="72.64" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
+<path d="M38.24 20L38.24 47.008" stroke="#000000" stroke-width="2"/>
+<path d="M31.04 20L31.04 47.008" stroke="#000000" stroke-width="2" stroke-dasharray="10 6"/>
+<path d="M32.84 16.882L55.544 3.774" stroke="#000000" stroke-width="2"/>
+<path d="M36.44 23.118L55.544 12.088" stroke="#000000" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="25.304" y="68.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<circle cx="31.76" cy="72.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="37.52" cy="72.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="47.576" cy="57.12" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="47.576" cy="62.88" r="1.2" fill="#000000" stroke="none"/>
+<text x="59.944" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="85.816" y="-1.008" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">−</text>
+<circle cx="82.216" cy="-2.88" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="82.216" cy="2.88" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="66.4" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="72.16" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="66.4" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="72.16" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
 </g>
 </svg>

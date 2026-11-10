@@ -6,7 +6,7 @@ import { clipRange, layoutCurvedArrow, type CurveEnd } from './curved-arrow';
 import { dist } from './geom';
 import { resolveStyle } from './style';
 
-// slides: line 2, head 8.8 x 3.6 (half width), font 28.
+// slides: line 2, head 8.8 x 3.6 (half width), font 24.
 const style = resolveStyle({ preset: 'slides', overrides: {} });
 const near = (actual: number, expected: number, digits = 3) =>
   expect(actual).toBeCloseTo(expected, digits);

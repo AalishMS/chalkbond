@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="181pt" height="36.96pt" viewBox="0 0 181 36.96">
+<svg xmlns="http://www.w3.org/2000/svg" width="181pt" height="34.68pt" viewBox="0 0 181 34.68">
 <g transform="translate(1 21)" fill="none" stroke-linecap="round" stroke-linejoin="round">
 <path d="M0 0L34.64 -20" stroke="#000000" stroke-width="2"/>
-<path d="M34.64 -20L44.298 -14.424" stroke="#000000" stroke-width="2"/>
-<text x="48.28" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">OH</text>
+<path d="M34.64 -20L46.88 -12.933" stroke="#000000" stroke-width="2"/>
+<text x="51.28" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">OH</text>
 <path d="M100 -10L171.2 -10" stroke="#000000" stroke-width="2"/>
 <polygon points="180,-10 171.2,-13.6 171.2,-6.4" fill="#000000" stroke="none"/>
 </g>

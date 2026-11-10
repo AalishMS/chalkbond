@@ -1,33 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="372.495pt" height="158.693pt" viewBox="0 0 372.495 158.693">
-<g transform="translate(191.061 18.914)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-<text x="0" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">Align </text>
-<text x="70.028" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">left</text>
-<text x="112.028" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve"> x</text>
-<text x="133.812" y="-1.176" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
-<text x="144.71" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve"> y</text>
-<text x="166.494" y="15.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">i</text>
-<text x="-106.436" y="46.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">Align </text>
-<text x="-36.408" y="46.024" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">center</text>
-<text x="47.62" y="46.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve"> x</text>
-<text x="69.404" y="34.824" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
-<text x="80.301" y="46.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve"> y</text>
-<text x="102.085" y="51.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">i</text>
-<text x="-191.061" y="82.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">Align </text>
-<text x="-121.033" y="82.024" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">right</text>
-<text x="-58.817" y="82.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve"> x</text>
-<text x="-37.033" y="70.824" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
-<text x="-26.135" y="82.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve"> y</text>
-<text x="-4.351" y="87.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">i</text>
-<text x="-181.434" y="130.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">Cu</text>
-<text x="-145.65" y="118.824" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2+</text>
-<text x="-123.306" y="130.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve"> + 4 NH</text>
-<text x="-27.602" y="135.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">3</text>
-<text x="-16.705" y="130.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#cc0000" stroke="none" xml:space="preserve"> → </text>
-<text x="26.863" y="130.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">[Cu(NH</text>
-<text x="120.187" y="135.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">3</text>
-<text x="131.085" y="130.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">)</text>
-<text x="140.409" y="135.624" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">4</text>
-<text x="151.306" y="130.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">]</text>
-<text x="159.09" y="118.824" font-family="Arial, Helvetica, sans-serif" font-size="19.6" font-style="italic" fill="#000000" stroke="none" xml:space="preserve">2+</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="319.282pt" height="153.166pt" viewBox="0 0 319.282 153.166">
+<g transform="translate(163.766 16.212)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<text x="0" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">Align </text>
+<text x="60.024" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">left</text>
+<text x="96.024" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve"> x</text>
+<text x="114.696" y="-1.008" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="124.037" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve"> y</text>
+<text x="142.709" y="13.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">i</text>
+<text x="-91.231" y="44.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">Align </text>
+<text x="-31.207" y="44.592" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">center</text>
+<text x="40.817" y="44.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve"> x</text>
+<text x="59.489" y="34.992" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="68.83" y="44.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve"> y</text>
+<text x="87.502" y="49.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">i</text>
+<text x="-163.766" y="80.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">Align </text>
+<text x="-103.742" y="80.592" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">right</text>
+<text x="-50.414" y="80.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve"> x</text>
+<text x="-31.742" y="70.992" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="-22.402" y="80.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve"> y</text>
+<text x="-3.73" y="85.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">i</text>
+<text x="-155.515" y="128.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">Cu</text>
+<text x="-124.843" y="118.992" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">2+</text>
+<text x="-105.691" y="128.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve"> + 4 NH</text>
+<text x="-23.659" y="133.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">3</text>
+<text x="-14.318" y="128.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#cc0000" stroke="none" xml:space="preserve"> → </text>
+<text x="23.026" y="128.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">[Cu(NH</text>
+<text x="103.018" y="133.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">3</text>
+<text x="112.358" y="128.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">)</text>
+<text x="120.35" y="133.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">4</text>
+<text x="129.691" y="128.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">]</text>
+<text x="136.363" y="118.992" font-family="Arial, Helvetica, sans-serif" font-size="16.8" font-style="italic" fill="#000000" stroke="none" xml:space="preserve">2+</text>
 </g>
 </svg>

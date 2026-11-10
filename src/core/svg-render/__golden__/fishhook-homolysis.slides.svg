@@ -1,23 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="141.632pt" height="32.135pt" viewBox="0 0 141.632 32.135">
-<g transform="translate(18.816 15.624)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-<path d="M17.616 0L86.384 0" stroke="#000000" stroke-width="2"/>
-<text x="-13.216" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
-<circle cx="-17.416" cy="-3.36" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="-17.416" cy="3.36" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="-3.36" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="3.36" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="-3.36" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="3.36" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
-<text x="90.784" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
-<circle cx="121.416" cy="-3.36" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="121.416" cy="3.36" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="100.64" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="107.36" cy="-14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="100.64" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
-<circle cx="107.36" cy="14.224" r="1.4" fill="#000000" stroke="none"/>
-<path d="M52 0Q38.52 13.48 25.041 12.982" stroke="#000000" stroke-width="2"/>
-<polygon points="16.416,11.234 25.041,12.982 24.325,16.511" fill="#000000" stroke="none"/>
-<path d="M52 0Q65.48 13.48 78.959 12.982" stroke="#000000" stroke-width="2"/>
-<polygon points="87.584,11.234 78.959,12.982 79.675,16.511" fill="#000000" stroke="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="136.256pt" height="29.688pt" viewBox="0 0 136.256 29.688">
+<g transform="translate(16.128 13.392)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M15.728 0L88.272 0" stroke="#000000" stroke-width="2"/>
+<text x="-11.328" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<circle cx="-14.928" cy="-2.88" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="-14.928" cy="2.88" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="-2.88" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="2.88" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="-2.88" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="2.88" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
+<text x="92.672" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">Cl</text>
+<circle cx="118.928" cy="-2.88" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="118.928" cy="2.88" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="101.12" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="106.88" cy="-12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="101.12" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
+<circle cx="106.88" cy="12.192" r="1.2" fill="#000000" stroke="none"/>
+<path d="M52 0Q37.503 14.497 23.006 12.828" stroke="#000000" stroke-width="2"/>
+<polygon points="14.528,10.469 23.006,12.828 22.041,16.296" fill="#000000" stroke="none"/>
+<path d="M52 0Q66.497 14.497 80.994 12.828" stroke="#000000" stroke-width="2"/>
+<polygon points="89.472,10.469 80.994,12.828 81.959,16.296" fill="#000000" stroke="none"/>
 </g>
 </svg>

@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="110.496pt" height="91.276pt" viewBox="0 0 110.496 91.276">
-<g transform="translate(44.748 55.316)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-<path d="M-20.132 11.624L0 0" stroke="#000000" stroke-width="2"/>
-<path d="M-3.6 0L-3.6 -25.576" stroke="#000000" stroke-width="2"/>
-<path d="M3.6 0L3.6 -25.576" stroke="#000000" stroke-width="2"/>
-<path d="M0 0L19.348 11.171" stroke="#000000" stroke-width="2"/>
-<text x="-44.748" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">R</text>
-<text x="-10.892" y="-29.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
-<text x="23.748" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">O</text>
-<text x="45.532" y="30.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="104.608pt" height="86.808pt" viewBox="0 0 104.608 86.808">
+<g transform="translate(43.304 53.128)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M-21.576 12.457L0 0" stroke="#000000" stroke-width="2"/>
+<path d="M-3.6 0L-3.6 -27.008" stroke="#000000" stroke-width="2"/>
+<path d="M3.6 0L3.6 -27.008" stroke="#000000" stroke-width="2"/>
+<path d="M0 0L20.904 12.069" stroke="#000000" stroke-width="2"/>
+<text x="-43.304" y="28.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">R</text>
+<text x="-9.336" y="-31.408" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="25.304" y="28.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="43.976" y="28.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
 </g>
 </svg>

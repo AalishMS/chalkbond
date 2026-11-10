@@ -1,28 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="277.812pt" height="136.638pt" viewBox="0 0 277.812 136.638">
-<g transform="translate(30.812 41)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" width="268pt" height="134.404pt" viewBox="0 0 268 134.404">
+<g transform="translate(21 41)" fill="none" stroke-linecap="round" stroke-linejoin="round">
 <ellipse cx="70" cy="0" rx="14" ry="12" fill="#ffff00" fill-opacity="0.4" stroke="none"/>
 <path d="M0 0L34.64 -20" stroke="#000000" stroke-width="2"/>
-<path d="M34.64 -20L44.298 -14.424" stroke="#0000ff" stroke-width="2"/>
-<text x="48.28" y="10.024" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#cc0000" stroke="none" xml:space="preserve">OH</text>
-<circle cx="55.812" cy="14.224" r="1.4" fill="#cc0000" stroke="none"/>
-<circle cx="62.532" cy="14.224" r="1.4" fill="#cc0000" stroke="none"/>
-<circle cx="55.812" cy="-14.224" r="1.4" fill="#cc0000" stroke="none"/>
-<circle cx="62.532" cy="-14.224" r="1.4" fill="#cc0000" stroke="none"/>
-<text x="72.044" y="-12.004" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#cc0000" stroke="none" xml:space="preserve">δ−</text>
+<path d="M34.64 -20L46.88 -12.933" stroke="#0000ff" stroke-width="2"/>
+<text x="51.28" y="8.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#cc0000" stroke="none" xml:space="preserve">OH</text>
+<circle cx="57.736" cy="12.192" r="1.2" fill="#cc0000" stroke="none"/>
+<circle cx="63.496" cy="12.192" r="1.2" fill="#cc0000" stroke="none"/>
+<circle cx="57.736" cy="-12.192" r="1.2" fill="#cc0000" stroke="none"/>
+<circle cx="63.496" cy="-12.192" r="1.2" fill="#cc0000" stroke="none"/>
+<text x="71.649" y="-10.289" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#cc0000" stroke="none" xml:space="preserve">δ−</text>
 <path d="M120 0L191.2 0" stroke="#000000" stroke-width="2"/>
 <polygon points="200,0 191.2,-3.6 191.2,3.6" fill="#000000" stroke="none"/>
-<text x="118.764" y="-5.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">H</text>
-<text x="138.98" y="-0.376" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">2</text>
-<text x="149.878" y="-5.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">SO</text>
-<text x="190.338" y="-0.376" font-family="Arial, Helvetica, sans-serif" font-size="19.6" fill="#000000" stroke="none" xml:space="preserve">4</text>
+<text x="124.655" y="-7.408" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="141.983" y="-2.608" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="151.324" y="-7.408" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">SO</text>
+<text x="186.004" y="-2.608" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">4</text>
 <path d="M77.28 -8Q50.676 6.779 24.981 -5.67" stroke="#000000" stroke-width="2"/>
 <polygon points="17.32,-10 23.21,-2.536 26.752,-8.804" fill="#000000" stroke="none"/>
 <path d="M234 0L246 0M240 -6L240 6" stroke="#000000" stroke-width="2"/>
-<text x="39.42" y="61.3" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">1</text>
-<text x="-30.812" y="89.702" font-family="Arial, Helvetica, sans-serif" font-size="28" font-style="italic" fill="#333333" stroke="none" xml:space="preserve">nucleophile</text>
-<path d="M68 58.762L68 0" stroke="#000000" stroke-width="2"/>
+<text x="38.737" y="55.4" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">1</text>
+<text x="-20.696" y="88.316" font-family="Arial, Helvetica, sans-serif" font-size="24" font-style="italic" fill="#333333" stroke="none" xml:space="preserve">nucleophile</text>
+<path d="M68 61.796L68 0" stroke="#000000" stroke-width="2"/>
 <path d="M-12 -40L-20 -40L-20 20L-12 20" stroke="#000000" stroke-width="2"/>
 <path d="M80 -40L88 -40L88 20L80 20" stroke="#000000" stroke-width="2"/>
-<text x="93.2" y="20" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#000000" stroke="none" xml:space="preserve">‡</text>
+<text x="92.6" y="20" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">‡</text>
 </g>
 </svg>

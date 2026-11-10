@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="125.92pt" height="96.316pt" viewBox="0 0 125.92 96.316">
-<g transform="translate(35.64 55.316)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" width="122.92pt" height="94.128pt" viewBox="0 0 122.92 94.128">
+<g transform="translate(35.64 53.128)" fill="none" stroke-linecap="round" stroke-linejoin="round">
 <circle cx="0" cy="0" r="22.516" stroke="#cc0000" stroke-width="2"/>
 <path d="M0 -40L34.64 -20" stroke="#cc0000" stroke-width="2"/>
 <path d="M34.64 -20L34.64 20" stroke="#cc0000" stroke-width="2"/>
@@ -7,7 +7,7 @@
 <path d="M0 40L-34.64 20" stroke="#cc0000" stroke-width="2"/>
 <path d="M-34.64 20L-34.64 -20" stroke="#cc0000" stroke-width="2"/>
 <path d="M-34.64 -20L0 -40" stroke="#cc0000" stroke-width="2"/>
-<path d="M34.64 -20L44.298 -25.576" stroke="#0044cc" stroke-width="2"/>
-<text x="48.28" y="-29.976" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#0044cc" stroke="none" xml:space="preserve">OH</text>
+<path d="M34.64 -20L46.88 -27.067" stroke="#0044cc" stroke-width="2"/>
+<text x="51.28" y="-31.408" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#0044cc" stroke="none" xml:space="preserve">OH</text>
 </g>
 </svg>

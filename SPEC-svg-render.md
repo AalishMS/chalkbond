@@ -70,7 +70,7 @@ Presets (`STYLE_PRESETS`); first values, checked at the visual review of the gol
 
 | Preset | bondLength | lineWidth | doubleBondSpacing | fontFamily | fontSize | Intent |
 |---|---|---|---|---|---|---|
-| `slides` | 40 | 2.0 | 0.18 | `Arial, Helvetica, sans-serif` | 28 | Readable from the back of a classroom; label-to-bond ratio (0.7) as in the journal preset |
+| `slides` | 40 | 2.0 | 0.18 | `Arial, Helvetica, sans-serif` | 24 | Readable from the back of a classroom; 24 pt (not 28) so a bond between two labelled atoms (Lewis `H–O–H`, `N–H`, nitro `N–O`) keeps a visible length at a 40 pt bond (golden review) |
 | `journal` | 14.4 | 0.6 | 0.18 | `Arial, Helvetica, sans-serif` | 10 | ACS Document 1996 proportions (14.4 pt bond, 0.6 pt line, 10 pt Arial, 18 % spacing) |
 
 `resolveStyle` merges `preset` then `overrides`. An override that is not a finite number in its

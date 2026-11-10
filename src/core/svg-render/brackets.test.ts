@@ -5,7 +5,7 @@ import { pathPoints, textElements } from './__fixtures__/markup';
 import { layoutBracket } from './brackets';
 import { resolveStyle } from './style';
 
-// slides: line 2, serif 8, round bulge 4.8, curly depth 8, font 28 (cap 20.048), corner gap 4.2.
+// slides: line 2, serif 8, round bulge 4.8, curly depth 8, font 24 (cap 17.184), corner gap 3.6.
 const style = resolveStyle({ preset: 'slides', overrides: {} });
 const near = (actual: number, expected: number, digits = 3) =>
   expect(actual).toBeCloseTo(expected, digits);

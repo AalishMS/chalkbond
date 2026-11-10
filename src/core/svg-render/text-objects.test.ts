@@ -6,13 +6,13 @@ import { ADVANCE_REGULAR } from './font-metrics';
 import { resolveStyle } from './style';
 import { layoutCallout, layoutCaption, layoutTextObject } from './text-objects';
 
-// slides: font 28 (cap 20.048, line height 33.6), captionGap 20, calloutPad 5.6, line 2.
+// slides: font 24 (cap 17.184, line height 28.8), captionGap 20, calloutPad 4.8, line 2.
 const style = resolveStyle({ preset: 'slides', overrides: {} });
 const near = (actual: number, expected: number, digits = 3) =>
   expect(actual).toBeCloseTo(expected, digits);
 const P = (x: number, y: number): Point => ({ x, y });
 const adv = (s: string): number =>
-  [...s].reduce((sum, ch) => sum + ADVANCE_REGULAR[ch.codePointAt(0) ?? 0]! / 1000, 0) * 28;
+  [...s].reduce((sum, ch) => sum + ADVANCE_REGULAR[ch.codePointAt(0) ?? 0]! / 1000, 0) * 24;
 const sameBox = (a: Rect, b: Rect) => {
   expect(Math.abs(a.x - b.x)).toBeLessThan(0.01);
   expect(Math.abs(a.y - b.y)).toBeLessThan(0.01);
@@ -89,8 +89,8 @@ describe('layoutCallout', () => {
     const [t] = text(out);
     near(t!.x, 100 - adv('nucleophile') / 2);
     // The text box (the font's full ascent above the baseline, full descent below) is centred.
-    const top = t!.y - 0.905 * 28;
-    const bottom = t!.y + 0.212 * 28;
+    const top = t!.y - 0.905 * 24;
+    const bottom = t!.y + 0.212 * 24;
     near((top + bottom) / 2, 100);
   });
 
@@ -99,7 +99,7 @@ describe('layoutCallout', () => {
     const [leader] = pathPoints(out.svg) as [Point[]];
     const [t] = text(out);
     const right = t!.x + adv('nucleophile');
-    near(leader![0]!.x, right + 5.6);
+    near(leader![0]!.x, right + 4.8);
     near(leader![0]!.y, 100);
     expect(leader![1]).toEqual(P(400, 100));
   });
@@ -108,8 +108,8 @@ describe('layoutCallout', () => {
     const out = layoutCallout(runs, at, { point: P(400, 300), clip: null }, style)!;
     const [leader] = pathPoints(out.svg) as [Point[]];
     const [t] = text(out);
-    near(leader![0]!.x, t!.x + adv('nucleophile') + 5.6);
-    near(leader![0]!.y, 100 + (t!.y + 0.212 * 28 - (t!.y - 0.905 * 28)) / 2 + 5.6);
+    near(leader![0]!.x, t!.x + adv('nucleophile') + 4.8);
+    near(leader![0]!.y, 100 + (t!.y + 0.212 * 24 - (t!.y - 0.905 * 24)) / 2 + 4.8);
   });
 
   it('a leader is clipped out of the anchor atom label box', () => {

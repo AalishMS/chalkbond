@@ -11,7 +11,7 @@ export const STYLE_PRESETS: Readonly<Record<StylePreset, StyleSettings>> = Objec
     lineWidth: 2,
     doubleBondSpacing: 0.18,
     fontFamily: 'Arial, Helvetica, sans-serif',
-    fontSize: 28,
+    fontSize: 24,
   }),
   journal: Object.freeze({
     bondLength: 14.4,
