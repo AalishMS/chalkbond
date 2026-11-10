@@ -126,6 +126,13 @@ is allowed for the bitmap.
 
 ## C4: PDF incremental-update probe
 
+2026-11-10 Linux: INCONCLUSIVE original viewer control (identical original/blank
+captures after 10 s each). PD1 classic xref and P9 printing observed; real fixture captured.
+Stop C4 pending a working viewer control. No outcome selected; no acceptance boxes ticked.
+Pure embed/read test-first drafts and red run are retained only in the session's
+/tmp/chalkbond-c3-c4-oSqDHj folder, not shipped as verified APIs.
+
+
 **Description:** Decision O4, rules PD1 (probe form), PDF-A1, PDF-A3, probes P8, P9. (1)
 `e2e/pdf-facts.spec.ts` prints `renderSvg(goldenDoc('toluene'))` exactly as PD1 does (hidden
 window via `app.evaluate`, temp `page.html`, `printToPDF`), writes it to `out/pdf-facts/print.pdf`

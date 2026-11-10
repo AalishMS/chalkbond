@@ -42,6 +42,16 @@ the selection only (Copy covers parts of a drawing); batch export; print.
 
 ## Facts relied on
 
+C4 Linux observation (2026-11-10, Electron 45.2.3): PD1 prints toluene with a classic
+xref table (no XRef stream or Encrypt); P9 20×20 pt prints a PDF. Original PDF viewer
+control in the private probe-pdf partition is INCONCLUSIVE: its capture and a blank
+PDF capture are identical (0 differing pixels), each polled for the unchanged 10 s.
+Dark viewer pixels alone are insufficient evidence. Windows P8/P9 remain UNRUN.
+Probe windows are destroyed and the temporary print folder removed in finally;
+one application window remains and default SEC4 stays zero.
+Both PDF outcomes remain pending; no embedding outcome is selected.
+
+
 C3 preparation (2026-11-10): P1–P7 including P2b are **UNRUN on Linux; needs Windows**.
 The exported preferred constants are UNVERIFIED. No fallback has been selected.
 The typed selection interface includes every named CB-W1 fallback for C7.
@@ -80,6 +90,7 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 | O1 | The **Copy** button sits at the right end of the top bar, after Undo/Redo (mock-ups A01, A02): a filled primary button with icon and label; after a copy it reads "Copied" with a check for 2 s; below 1100 px window width it shows the label "Copy" with no icon (never icon-only) and the name field narrows to 204 px (A15b) | The top-right corner is where Office and browsers put "send it on"; a word is self-explanatory, two overlapping sheets are not | 2026-11-10 |
 | O2 | Ctrl+C, the Copy button and Edit > Copy copy the selection, or the whole drawing when nothing is selected, writing the picture formats and the editable drawing in one clipboard write. PNG transparent, tight, 300 dpi; SVG written too. Paste reads the system clipboard and follows the editor's cascade rule when the content is the editor's own last copy. Plain text pastes as a name or SMILES through the name-insert path | One shortcut for PowerPoint, Word and Chalkbond; the teacher never chooses a format | 2026-11-10 |
 | O3 | Export dialog exactly as mock-ups A08a–c: three format cards; Size as Screen / Print / Poster in teacher language with the live pixel line and no "dpi"; "White background" off by default and remembered; one Save… button. Selection-only export is out | PNG needs two choices a Save dialog cannot ask; plain words | 2026-11-10 |
+| C4-control | PDF outcome remains pending: Linux original-vs-blank viewer control has identical captures; stop C4 as inconclusive, never infer B | Real PD1 print succeeds; viewer control does not prove content rendering | 2026-11-10 |
 | O4 | Exports reopen as editable: PNG via a text chunk, SVG via svg-render's metadata. PDF: an early probe (C4) tries a standard incremental update; outcome A embeds, outcome B exports without embedding and says so (rule PDF-A / PDF-B) | Do not accept "no embedding" without evidence | 2026-11-10 |
 | O5 | Accepted defaults: SVG stays on the clipboard even if Office ignores it; if Office ignores 300 dpi, accept for v1; plain error wording without codes | Costs nothing; newer Office and other apps use SVG; lowering the resolution would break "sharp at 400 %" | 2026-11-10 |
 | O6 | All notice wordings as mock-up A17 | Teacher language, no "dpi", "clipboard" or "insert" | 2026-11-10 |
