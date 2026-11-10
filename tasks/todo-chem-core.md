@@ -192,4 +192,4 @@ dictionary; fast-check properties reusing doc-model's command generator; perf bu
 ### ✅ Checkpoint G — module complete
 - [x] Every success criterion in `SPEC-chem-core.md` met
 - [x] `npm run check` green; coverage ≥ 90%
-- [ ] Commit + push; human review → then write `SPEC-svg-render.md`
+- [x] Commit + push; human review → then write `SPEC-svg-render.md`

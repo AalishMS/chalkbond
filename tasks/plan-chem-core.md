@@ -73,7 +73,7 @@ C5 perceiver cache    C6 SMILES / Molfile in & out (+ stereo)
 
 ### Checkpoint G — module complete
 - [x] All `SPEC-chem-core.md` success criteria met; coverage ≥ 90% on `src/core/chem-core`
-- [ ] Commit + push; human review before `svg-render` spec
+- [x] Commit + push; human review before `svg-render` spec
 
 ## Risks and Mitigations
 
