@@ -247,9 +247,9 @@ divider 1×24 with 12 px either side; Undo/Redo 32×32, 4 px apart, 12 px from t
 status controls 24 high, readout 48 wide, preset segments 64×20; formula hidden at 960 px.
 
 **Acceptance criteria:**
-- [ ] Hints match the spec table word for word (markup test)
-- [ ] Empty state shows the Decision 13 sentence and the three chips, centred 32 px above the canvas centre (e2e box)
-- [ ] All boxes above ±1 px at 1280×800 and 960×640 (SC7); every control ≥ 24 px (SC6)
+- [x] Hints match the spec table word for word (markup test)
+- [x] Empty state shows the Decision 13 sentence and the three chips, centred 16 px above the canvas centre (the mock-up pads the bottom by 32 px) (e2e box)
+- [x] All boxes above ±1 px at 1280×800 and 960×640 (SC7); every control ≥ 24 px (SC6)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E8` → `E8/empty.png` (compare `01-empty.png` whole window), `E8/empty-960.png` (compare `11-min-window.png` chrome), `E8/hint-ring.png` (scripted: press `R`; the hint reads "Click to place the ring. Click an atom or bond to attach it.")
 

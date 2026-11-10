@@ -1,8 +1,11 @@
-import { EMPTY_SCOPE } from '../state/selection-actions';
 import type { EditorController } from '../state/controller';
+import { isEmptyDoc } from '../state/empty-doc';
+import { EMPTY_SCOPE } from '../state/selection-actions';
+import { EmptyState } from './EmptyState';
 import sprite from './icons.svg?raw';
-import { OptionsBar } from './OptionsBar';
+import { StatusBar } from './StatusBar';
 import { ToolRail } from './ToolRail';
+import { TopBar } from './TopBar';
 import { useEditorState } from './use-store';
 import './tokens.css';
 import './editor.css';
@@ -17,15 +20,23 @@ interface EditorProps {
  */
 export function Editor({ controller }: EditorProps): React.JSX.Element {
   const state = useEditorState(controller.store);
+  const doc = controller.getDoc();
+  const { dispatch } = controller.store;
   return (
     <div className="editor">
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
-      <header className="topbar" data-testid="topbar">
-        <OptionsBar state={state} scope={EMPTY_SCOPE} dispatch={controller.store.dispatch} />
-      </header>
-      <ToolRail state={state} dispatch={controller.store.dispatch} />
-      <main className="canvas" data-testid="canvas" aria-label="Drawing canvas" />
-      <footer className="statusbar" data-testid="statusbar" />
+      <TopBar
+        state={state}
+        scope={EMPTY_SCOPE}
+        canUndo={false}
+        canRedo={false}
+        dispatch={dispatch}
+      />
+      <ToolRail state={state} dispatch={dispatch} />
+      <main className="canvas" data-testid="canvas" aria-label="Drawing canvas">
+        {isEmptyDoc(doc) && <EmptyState />}
+      </main>
+      <StatusBar tool={state.tool} preset={doc.style.preset} />
     </div>
   );
 }

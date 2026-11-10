@@ -265,3 +265,125 @@ test('option buttons are 32x32 and 2 px apart; the Atom bar fits at 960', async 
     await app.close();
   }
 });
+
+async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
+  // Name field: x 12, 32 high, floor(clamp(240, 0.26 W, 360)) wide, vertically centred.
+  const field = await box(page.getByTestId('namefield'));
+  near(field.x, 12);
+  near(field.height, 32);
+  near(field.width, Math.floor(Math.min(360, Math.max(240, 0.26 * w))));
+  near(field.y, 8);
+  const icon = await box(page.getByTestId('namefield').locator('.icon'));
+  near(icon.x - field.x, 8);
+  near(icon.y - field.y, 6);
+  near(icon.width, 20);
+  // Divider 1x24 with 12 px either side; the options bar starts 12 px after it.
+  const divider = await box(page.getByTestId('topbar').locator('.divider-v'));
+  near(divider.width, 1);
+  near(divider.height, 24);
+  near(divider.x - (field.x + field.width), 12);
+  const options = await box(page.getByTestId('options'));
+  near(options.x - (divider.x + divider.width), 12);
+  // Undo / Redo: 32x32, 4 apart, 12 px from the right edge.
+  const undo = await box(page.getByTestId('undo'));
+  const redo = await box(page.getByTestId('redo'));
+  for (const b of [undo, redo]) {
+    near(b.width, 32);
+    near(b.height, 32);
+    near(b.y, 8);
+  }
+  near(redo.x - (undo.x + undo.width), 4);
+  near(w - (redo.x + redo.width), 12);
+  await expect(page.getByTestId('undo')).toHaveAttribute('aria-disabled', 'true');
+
+  // Status bar controls: 24 high, readout 48 wide, preset segments 64x20, 2 px apart.
+  const ids = ['zoom-out', 'zoom-reset', 'zoom-in', 'zoom-fit'] as const;
+  const zoom: Box[] = [];
+  for (const id of ids) zoom.push(await box(page.getByTestId(id)));
+  for (const b of zoom) near(b.height, 24);
+  near((zoom[1] as Box).width, 48);
+  for (let i = 1; i < zoom.length; i++) {
+    const a = zoom[i - 1] as Box;
+    near((zoom[i] as Box).x - (a.x + a.width), 2);
+  }
+  const fit = zoom[3] as Box;
+  near(w - (fit.x + fit.width), 12);
+  const slides = await box(page.getByTestId('preset-slides'));
+  const handout = await box(page.getByTestId('preset-handout'));
+  for (const b of [slides, handout]) {
+    near(b.width, 64);
+    near(b.height, 20);
+  }
+  near(handout.x - (slides.x + slides.width), 0);
+  const group = await box(page.getByRole('group', { name: 'Style' }));
+  near(group.height, 24);
+  near(group.width, 132);
+  near((zoom[0] as Box).x - (group.x + group.width), 16);
+  await expect(page.getByTestId('preset-slides')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('zoom-reset')).toHaveText('150%');
+  // The formula slot is not rendered with an empty document, and is hidden below 1000 px.
+  await expect(page.getByTestId('formula')).toHaveCount(0);
+
+  // The hint fills the rest of the status bar, 12 px in from the left.
+  const hint = await box(page.getByRole('status'));
+  near(hint.x, 12);
+
+  // Every control is at least 24 px (SC6); the preset segments sit inside a 24 px outline.
+  const small = await page.locator('.editor button').evaluateAll((els) =>
+    els
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return { id: el.getAttribute('data-testid') ?? '', w: r.width, h: r.height };
+      })
+      .filter((b) => (b.w < 24 || b.h < 24) && !b.id.startsWith('preset-')),
+  );
+  expect(small).toEqual([]);
+}
+
+for (const size of [
+  [1280, 800],
+  [960, 640],
+] as const satisfies readonly Size[]) {
+  test(`top bar and status bar boxes at ${size[0]}x${size[1]}`, async () => {
+    const { app, page } = await openApp({ size: [...size] });
+    try {
+      await checkTopAndStatus(page, [...size]);
+    } finally {
+      await app.close();
+    }
+  });
+
+  test(`empty state is centred 16 px above the canvas centre at ${size[0]}x${size[1]}`, async () => {
+    const { app, page } = await openApp({ size: [...size] });
+    try {
+      const canvas = await box(page.getByTestId('canvas'));
+      const art = await box(page.locator('.empty-art'));
+      const text = await box(page.locator('.empty-text'));
+      const chips = await box(page.locator('.empty-try'));
+      near(art.width, 96);
+      near(art.height, 96);
+      near(text.y - (art.y + art.height), 16);
+      near(chips.y - (text.y + text.height), 12);
+      const top = art.y;
+      const bottom = chips.y + chips.height;
+      near((top + bottom) / 2, canvas.y + canvas.height / 2 - 16, 1);
+      near(art.x + art.width / 2, canvas.x + canvas.width / 2);
+      const chipBoxes = await page.locator('.chip').evaluateAll((els) =>
+        els.map((el) => {
+          const r = el.getBoundingClientRect();
+          return { x: r.x, w: r.width, h: r.height };
+        }),
+      );
+      expect(chipBoxes).toHaveLength(3);
+      for (const c of chipBoxes) near(c.h, 28);
+      near(
+        (chipBoxes[1] as { x: number }).x -
+          ((chipBoxes[0] as { x: number; w: number }).x +
+            (chipBoxes[0] as { x: number; w: number }).w),
+        8,
+      );
+    } finally {
+      await app.close();
+    }
+  });
+}

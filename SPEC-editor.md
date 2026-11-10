@@ -318,7 +318,7 @@ Curly: `crosshair`; Erase: 20×20 `data:` SVG of the `erase` path, hotspot 4,18,
 ### Empty state
 
 Shown when the document has no atoms and no objects (screen 01); removed on the first item.
-Centred in the canvas, 32 px above centre, `pointer-events` only on the chips:
+Centred in the canvas, the block (art to chips) centred 16 px above the canvas centre (the mock-up pads the bottom by 32 px), `pointer-events` only on the chips:
 
 1. The benzene outline (`ring-benzene` geometry) at 96 px, stroke width 1 in the 24 grid,
    `--empty-art`, `aria-hidden`.

@@ -79,6 +79,14 @@
   --icon-lg: 24px;
   --accent-bar-w: 3px;
   --kekule-btn-w: 109px;
+  --chip-h: 28px;
+  --namefield-min: 240px;
+  --namefield-max: 360px;
+  --zoom-readout-w: 48px;
+  --preset-seg-w: 64px;
+  --preset-seg-h: 20px;
+  --radius-xs: 3px;
+  --empty-art-size: 96px;
 }
 
 @media (prefers-reduced-motion: reduce) {
