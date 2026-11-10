@@ -252,6 +252,13 @@ describe('satellites of bonded atoms', () => {
     expect(lay({ atom: { charge: 1 }, bonds: [90, 270], vertex: true }).slots).toEqual(['E']);
   });
 
+  it('the charge of a labelled atom with a bond up-right is a sign at NW, clear of the bond', () => {
+    const l = lay({ atom: { element: 'O', charge: -1 }, bonds: [330] });
+    expect(l.label!.text).toBe('O');
+    expect(l.slots).toEqual(['NW']);
+    expect(l.sats!.svg).toContain('−');
+  });
+
   it('a bond blocks a slot only when strictly closer than 45 degrees', () => {
     // Cardinal bonds on all four sides leave the four diagonals, each exactly 45 degrees away.
     const four = lay({ atom: { element: 'Cl', lonePairs: 4 }, bonds: [0, 90, 180, 270] });

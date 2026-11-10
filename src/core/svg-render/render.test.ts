@@ -1113,3 +1113,28 @@ describe('render: text, caption, callout and curved arrows', () => {
     });
   });
 });
+
+describe('render: nitro group', () => {
+  it('draws the bond from N+ to a lower-left O- (the charge does not swallow it)', () => {
+    const m = molecule(
+      [
+        { x: 0, y: 0, element: 'N', charge: 1 },
+        { x: -0.866, y: 0.5, element: 'O', charge: -1 },
+        { x: 0.866, y: 0.5, element: 'O' },
+        { x: 0, y: -1, element: 'O' },
+      ],
+      [
+        [0, 1],
+        [0, 2, { order: 2 }],
+        [0, 3, { order: 2 }],
+      ],
+    );
+    const scene = render(m.doc);
+    expect(scene.notices).toEqual([]);
+    const bond = part(scene, `bond:${m.bonds[0]}`);
+    const [line] = pathLines(bond.svg);
+    const [a, b] = line!.pts as [Point, Point];
+    // Between two labels the visible part of a 40 pt bond is about 6 pt (before: 0).
+    expect(norm(b.x - a.x, b.y - a.y)).toBeGreaterThan(4);
+  });
+});

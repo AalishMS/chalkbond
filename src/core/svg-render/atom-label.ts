@@ -61,6 +61,11 @@ export interface AtomLabel {
   readonly hPart: { readonly left: boolean; readonly right: boolean };
   /** Cap-height box of the formal-charge superscript, `null` without one. */
   readonly chargeBox: Rect | null;
+  /**
+   * The formal charge is not in the text: a bond leaves within 45 degrees of NE, where the
+   * superscript would stand, so `layoutSatellites` places the sign as a satellite instead.
+   */
+  readonly chargeSatellite: boolean;
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
@@ -175,8 +180,19 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
   const n =
     !hasLabel && Number.isFinite(input.implicitH) ? Math.max(0, Math.floor(input.implicitH)) : 0;
   const hBefore = bonded ? sx > SIDE_DEAD_ZONE : bareHydrogenFirst(atom.element, n);
+  const northEast = { x: Math.SQRT1_2, y: -Math.SQRT1_2 };
+  const chargeSatellite =
+    atom.charge !== 0 &&
+    dirs.some(
+      (u) =>
+        Math.atan2(
+          Math.abs(u.x * northEast.y - u.y * northEast.x),
+          u.x * northEast.x + u.y * northEast.y,
+        ) <
+        Math.PI / 4 - 1e-9,
+    );
   const chargeRuns: TextRun[] =
-    atom.charge === 0
+    atom.charge === 0 || chargeSatellite
       ? []
       : [
           {
@@ -275,6 +291,7 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
       right: obstacles.some((o) => o.x + o.w / 2 > centre),
     },
     chargeBox: chargeSeg ? capBox(chargeSeg, chargeAt) : null,
+    chargeSatellite,
     textBox: {
       x: originX,
       y: baseline - measure.ascent,

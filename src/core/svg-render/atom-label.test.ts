@@ -269,6 +269,23 @@ describe('isotopes, hydrogen isotopes and charge', () => {
     expect(text({ element: 'O', charge: 0 }, LEFT, 0)).toBe('O');
   });
 
+  it('moves the charge off the label when a bond leaves within 45 degrees of NE', () => {
+    // A bond up-right would run through a superscript at the upper right (nitro O-).
+    const up30: Point = { x: Math.cos(Math.PI / 6), y: -0.5 };
+    const l = build({ element: 'O', charge: -1 }, [up30], 0);
+    expect(l.text).toBe('O');
+    expect(l.chargeBox).toBeNull();
+    expect(l.chargeSatellite).toBe(true);
+    // Not for a horizontal, a vertical or a downward bond, nor on the other side.
+    for (const v of [RIGHT, UP, LEFT, [{ x: 1, y: 1 }]]) {
+      const k = build({ element: 'O', charge: -1 }, v, 0);
+      expect(k.chargeSatellite).toBe(false);
+      expect(k.text).toBe(`O${MINUS}`);
+    }
+    // No charge, nothing to move.
+    expect(build({ element: 'O' }, [up30], 0).chargeSatellite).toBe(false);
+  });
+
   it('puts the charge after a reversed label too', () => {
     expect(text({ label: 'NO2', charge: 1 }, RIGHT)).toBe('O2N+');
   });

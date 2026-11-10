@@ -79,6 +79,8 @@ const DIAGONALS: readonly Slot[] = ['NE', 'NW', 'SE', 'SW'];
 const TEXT_ORDER: readonly Slot[] = ['N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W'];
 /** Tie-break order of a skeleton vertex's formal charge. */
 const CHARGE_ORDER: readonly Slot[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+/** The charge of a labelled atom whose superscript position (NE) is taken by a bond. */
+const LABEL_CHARGE_ORDER: readonly Slot[] = ['NW', 'N', 'W', 'NE', 'E', 'SW', 'S', 'SE'];
 
 export interface SatelliteInput {
   readonly atom: Atom;
@@ -178,7 +180,7 @@ export function layoutSatellites(
   style: ResolvedStyle,
 ): SatelliteLayout | null {
   const { atom, position, label } = input;
-  const list = satelliteList(atom, label === null);
+  const list = satelliteList(atom, label === null || label.chargeSatellite);
   if (list.length === 0) return null;
 
   const fill = atom.color ?? INK;
@@ -211,6 +213,7 @@ export function layoutSatellites(
 
   /** A vertex's formal charge: the slot farthest from every bond, ties in `CHARGE_ORDER`. */
   const chargePreference = (): Slot[] => {
+    if (label) return [...LABEL_CHARGE_ORDER];
     const far = (s: Slot): number => Math.min(nearestBond(s), Math.PI);
     return [...CHARGE_ORDER].sort((a, b) => far(b) - far(a));
   };
