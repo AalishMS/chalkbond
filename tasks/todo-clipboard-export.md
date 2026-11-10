@@ -72,9 +72,9 @@ start and at its release (exactly two); opening and committing the label editor 
 edit with no gesture emits none; `controller-commands.test.ts` still agrees for every command.
 
 **Acceptance criteria:**
-- [ ] `SPEC-editor.md` edited first; R-row added
-- [ ] Tests above pass; no other controller test changed
-- [ ] `npm run test:e2e` editor suite green
+- [x] `SPEC-editor.md` edited first; R-row added
+- [x] Tests above pass; no other controller test changed
+- [x] `npm run test:e2e` editor suite green
 
 **Verification:** `npm test -- src/renderer/editor/state`, `npm run check`. No visible change.
 

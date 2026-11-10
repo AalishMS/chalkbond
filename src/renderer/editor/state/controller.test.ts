@@ -212,3 +212,52 @@ describe('host seam types', () => {
     expect(options.shortcuts).toBe('canvas-only');
   });
 });
+
+describe('host notices and busy', () => {
+  it('uses the editor notice slot for both kinds', () => {
+    const c = make();
+    const seen = events(c);
+    for (const kind of ['info', 'error'] as const) {
+      c.notify(kind, 'host message');
+      expect(c.store.getState().notice).toMatchObject({ kind, text: 'host message' });
+    }
+    expect(seen).toEqual(['notice', 'notice']);
+    expect(c.store.getState().noticeSeq).toBe(2);
+  });
+
+  it('emits exactly at gesture start and release', () => {
+    const c = make();
+    const seen = events(c);
+    for (const type of ['down', 'move', 'up'] as const) {
+      c.store.dispatch({
+        type: 'pointer',
+        event: {
+          type,
+          p: { x: type === 'down' ? 0 : 1, y: 0 },
+          screen: { x: type === 'down' ? 100 : 180, y: 100 },
+          button: 0,
+          mods: { shift: false, alt: false, ctrl: false },
+        },
+      });
+      expect(seen.filter((e) => e === 'busy')).toHaveLength(type === 'up' ? 2 : 1);
+    }
+  });
+
+  it('tracks label and text open/close but no ordinary document edit', () => {
+    const c = make();
+    const seen = events(c);
+    addBondCommit(c);
+    expect(seen).not.toContain('busy');
+    c.store.dispatch({ type: 'open-label', atom: atomId(1) });
+    expect(seen.filter((e) => e === 'busy')).toHaveLength(1);
+    c.store.dispatch({ type: 'edit-commit' });
+    expect(seen.filter((e) => e === 'busy')).toHaveLength(2);
+    c.store.dispatch({
+      type: 'open-text',
+      target: { kind: 'new', fresh: { at: { x: 3, y: 3 }, align: 'left' } },
+    });
+    expect(seen.filter((e) => e === 'busy')).toHaveLength(3);
+    c.store.dispatch({ type: 'escape' });
+    expect(seen.filter((e) => e === 'busy')).toHaveLength(4);
+  });
+});

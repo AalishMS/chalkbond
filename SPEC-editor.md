@@ -144,6 +144,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R42 | `--border-control` is `#79818c` (was `#7a828e`, 2.96 : 1 on `--pressed-bg`): 3.64 on `--chrome-bg`, 3.94 on `--canvas-bg`, 3.30 on `--hover-bg`, 3.00 on `--pressed-bg`. The contrast table now lists hover and pressed; the test asserts all four | A control border must reach 3 : 1 on every background the control can have, including while pressed. The darkest step that does it keeps the field and chip borders from looking heavier | 2026-11-10 |
 | R43 | The UI font stack keeps Segoe UI first, then Arial and Liberation Sans before system-ui | Linux without Segoe UI used wider DejaVu Sans, breaking the 109 px Kekulé toggle and shifting its neighbours; the Arial-compatible fallback preserves the approved control boxes without bundling fonts. The Kekulé toggle has fixed 109 px width, 4 px left and right padding and 4 px icon gap, retaining 32 px height and 2 px neighbour gaps | 2026-11-10 |
 | R44 | Host actions slot after Redo (clipboard-export O1): optional `actions?: React.ReactNode`, last top-bar child in `topbar-actions`, with `has-actions` only when supplied; host supplies `--namefield-compact` | Keeps host controls after history in layout and tab order; preserves the editor without a host | 2026-11-10 |
+| R45 | Host notices and a busy event (clipboard-export): notify dispatches notice-show; busy fires exactly when idle = canRun({type: 'set-preset'}) changes | Host feedback uses the same hint, expiry and announcement slot | 2026-11-10 |
 
 ---
 
@@ -666,6 +667,7 @@ interface EditorController {
   canRun(cmd: EditorCommand): boolean;
   undoLabel(): string | undefined;   // for menu text "Undo Add bond"
   redoLabel(): string | undefined;
+  notify(kind: 'info' | 'error', text: string): void; // host notice in the hint slot (Notices and errors)
   subscribe(listener: (e: EditorEvent) => void): () => void;
 }
 type EditorCommand =
@@ -678,7 +680,7 @@ type EditorCommand =
 type HostHit = { kind: 'atom'; id: AtomId } | { kind: 'bond'; id: BondId }
   | { kind: 'object'; id: ObjectId };
 type EditorEvent =
-  | { type: 'doc' | 'selection' | 'dirty' | 'history' | 'notice' }
+  | { type: 'doc' | 'selection' | 'dirty' | 'history' | 'notice' | 'busy' } // idle state changed; idle = canRun({type: 'set-preset'})
   | { type: 'context-menu'; target: HostHit | null; screen: Point };   // CM1
 ```
 

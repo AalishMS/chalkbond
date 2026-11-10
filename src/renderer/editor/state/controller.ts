@@ -54,7 +54,7 @@ export type HostHit =
   { kind: 'atom'; id: AtomId } | { kind: 'bond'; id: BondId } | { kind: 'object'; id: ObjectId };
 
 export type EditorEvent =
-  | { type: 'doc' | 'selection' | 'dirty' | 'history' | 'notice' }
+  | { type: 'doc' | 'selection' | 'dirty' | 'history' | 'notice' | 'busy' }
   | { type: 'context-menu'; target: HostHit | null; screen: Point };
 
 export interface EditorOptions {
@@ -81,6 +81,7 @@ export interface EditorController {
   markSaved(): void;
   /** The document differs from the last loaded or saved one, ignoring `meta.modified`. */
   isDirty(): boolean;
+  notify(kind: 'info' | 'error', text: string): void;
   run(cmd: EditorCommand): void;
   canRun(cmd: EditorCommand): boolean;
   /** For menu text such as "Undo Add bond". */
@@ -144,6 +145,7 @@ interface Snapshot {
   dirty: boolean;
   history: string;
   notice: EditorState['notice'];
+  idle: boolean;
 }
 
 const snapshot = (s: EditorState, dirty: boolean): Snapshot => ({
@@ -157,6 +159,7 @@ const snapshot = (s: EditorState, dirty: boolean): Snapshot => ({
     redoLabel(s.history),
   ].join('|'),
   notice: s.notice,
+  idle: s.gesture === null && s.editing === null,
 });
 
 export function createEditorController(options: EditorOptions): EditorController {
@@ -188,6 +191,7 @@ export function createEditorController(options: EditorOptions): EditorController
     if (after.dirty !== prev.dirty) emit({ type: 'dirty' });
     if (after.history !== prev.history) emit({ type: 'history' });
     if (after.notice !== prev.notice) emit({ type: 'notice' });
+    if (after.idle !== prev.idle) emit({ type: 'busy' });
   });
 
   const canRun = (cmd: EditorCommand): boolean => {
@@ -248,6 +252,7 @@ export function createEditorController(options: EditorOptions): EditorController
     load: (d) => store.dispatch({ type: 'load', doc: d }),
     markSaved: () => store.dispatch({ type: 'mark-saved' }),
     isDirty: () => isDirty(store.getState()),
+    notify: (kind, text) => store.dispatch({ type: 'notice-show', kind, text }),
     run(cmd) {
       if (!canRun(cmd)) return;
       switch (cmd) {
