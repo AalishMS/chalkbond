@@ -98,11 +98,11 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 ### Phase 4: goldens and hardening
 - [x] S11: ≥ 30 golden scenes, variant-coverage scan, `npm run golden:sheet`, visual review of the sheet
 - [x] S12: property suite and tooling tests
-- [ ] S13: perf budgets, e2e font calibration, Windows checklist entry, coverage
+- [x] S13: perf budgets, e2e font calibration, Windows checklist entry, coverage
 
 ### Checkpoint K — module complete
-- [ ] Module complete: every success criterion in `SPEC-svg-render.md` met, coverage ≥ 90 % on `src/core/svg-render`
-- [ ] `npm run check` green; `npm run test:e2e` green
+- [x] Module complete: every success criterion in `SPEC-svg-render.md` met, coverage ≥ 90 % on `src/core/svg-render`
+- [x] `npm run check` green; `npm run test:e2e` green
 - [ ] Commit + push
 
 ## Success Criteria Coverage

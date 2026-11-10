@@ -53,7 +53,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/core/**/*.ts', 'src/renderer/**/*.{ts,tsx}'],
-      exclude: ['**/*.test.{ts,tsx}', '**/__fixtures__/**', '**/index.ts'],
+      // font-metrics.ts is the generated advance-width table (proved by tests/tooling).
+      exclude: ['**/*.test.{ts,tsx}', '**/__fixtures__/**', '**/index.ts', '**/font-metrics.ts'],
       reporter: ['text', 'html'],
     },
   },

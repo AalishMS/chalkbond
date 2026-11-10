@@ -382,11 +382,11 @@ PowerPoint and Word 2021, check labels, bond ends, circles; run `npm run test:e2
 test.
 
 **Acceptance criteria:**
-- [ ] Perf budgets met on Windows (SC11)
-- [ ] Calibration e2e passes against real Arial (SC13)
-- [ ] `npm test -- --coverage`: `src/core/svg-render` ≥ 90 % lines, generated table and goldens excluded (SC1)
-- [ ] No DOM, Node or Electron import in the module: lint and `tsconfig.core.json` pass (SC12)
-- [ ] Checklist entry added (unticked until the owner pastes into Office)
+- [x] Perf budgets met on Windows (SC11): slide scheme 0.99 ms (< 8), 500 atoms + 20 objects 11.4 ms (< 40)
+- [x] Calibration e2e passes against real Arial (SC13): max width error 0.667 %, no glyph outside its box
+- [x] `npm test -- --coverage`: `src/core/svg-render` ≥ 90 % lines, generated table and goldens excluded (SC1)
+- [x] No DOM, Node or Electron import in the module: lint and `tsconfig.core.json` pass (SC12)
+- [x] Checklist entry added (unticked until the owner pastes into Office)
 
 **Verification:** `npm test -- --coverage && npm run test:e2e`
 
@@ -397,6 +397,6 @@ test.
 **Scope:** S
 
 ### ✅ Checkpoint K — module complete
-- [ ] Module complete: every success criterion in `SPEC-svg-render.md` met, coverage ≥ 90 % on `src/core/svg-render`
-- [ ] `npm run check` green; `npm run test:e2e` green
+- [x] Module complete: every success criterion in `SPEC-svg-render.md` met, coverage ≥ 90 % on `src/core/svg-render`
+- [x] `npm run check` green; `npm run test:e2e` green
 - [ ] Commit + push
