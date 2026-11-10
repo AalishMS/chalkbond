@@ -7,7 +7,8 @@ export function isEmptyDoc(doc: Doc): boolean {
 }
 
 /**
- * R30: the empty state shows for an empty document with no gesture running and no preview (a
+ * R30: while the document is empty no tool shows a hover ghost; the empty state stays until a
+ * gesture starts. It shows for an empty document with no gesture running and no preview (a
  * ghost, hover ghosts included): nothing the user is drawing may overlap its block.
  */
 export function emptyStateVisible(

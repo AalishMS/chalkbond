@@ -276,17 +276,25 @@ test('Bond tool: Wedge sets the narrow end at the atom nearer the click; a secon
   }
 });
 
-test('Bond tool: hovering shows the ghost of the click, at 0.45; leaving the canvas removes it', async () => {
+test('Bond tool: on an empty document nothing ghosts and the empty state stays; after one bond the ghost shows, at 0.45, and leaving removes it', async () => {
   const { app, page } = await openApp();
   try {
     expect(await ghosts(page)).toEqual([]);
+    // R30: pointer moves over an empty document leave the empty state and its chips alone.
     await page.mouse.move(START.x, START.y);
-    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
-    // Over empty canvas the ghost is the two-atom bond a click adds, first atom under the pointer.
-    expect((await ghosts(page)).some((k) => k.startsWith('bond:'))).toBe(true);
-    expect(atomIds(await readDocument(page))).toHaveLength(0);
+    await page.mouse.move(START.x + 40, START.y - 40, { steps: 4 });
+    expect(await ghosts(page)).toEqual([]);
+    await expect(page.getByTestId('empty-state')).toBeVisible();
+    await expect(page.locator('.chip')).toHaveCount(3);
+    // A press draws the first bond at the click point; the empty state goes.
     await page.mouse.click(START.x, START.y);
+    await expect(page.getByTestId('empty-state')).toHaveCount(0);
+    // With an item drawn, the ghost of the click shows over blank canvas.
+    await page.mouse.move(START.x + 400, START.y - 200);
+    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
+    expect((await ghosts(page)).some((k) => k.startsWith('bond:'))).toBe(true);
     const doc = await readDocument(page);
+    expect(atomIds(doc)).toHaveLength(2);
     // On the first atom: the hover circle and the ghost of the next bond.
     await page.mouse.move(START.x + 2, START.y + 1);
     await expect(page.getByTestId('overlay-hover').locator('circle')).toHaveCount(1);
@@ -435,13 +443,17 @@ test('Ring tool: the five templates in order; one Benzene click is C6H6; a ghost
       'opt-cyclobutane',
       'opt-cyclopropane',
     ]);
+    // R30: no ghost on an empty document.
     await page.mouse.move(START.x, START.y);
-    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
-    expect((await ghosts(page)).some((k) => k.startsWith('ring:'))).toBe(true);
+    expect(await ghosts(page)).toEqual([]);
     await page.mouse.click(START.x, START.y);
     await expect(formulaText(page)).toHaveText('C6H6 · 78.11 g/mol');
     const doc = await readDocument(page);
     expect(Object.values(doc.bonds).every((b) => b.order === 1.5)).toBe(true);
+    // With a ring drawn, a ghost follows the pointer over blank canvas.
+    await page.mouse.move(START.x + 500, START.y - 250);
+    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
+    expect((await ghosts(page)).some((k) => k.startsWith('ring:'))).toBe(true);
     await page.keyboard.press('Control+z');
     expect(atomIds(await readDocument(page))).toHaveLength(0);
   } finally {

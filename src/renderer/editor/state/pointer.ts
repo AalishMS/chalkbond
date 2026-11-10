@@ -5,6 +5,7 @@ import { handleHit } from '../model/handles';
 import { hoverFilter, hitTest } from '../model/hit-test';
 import { toolFor } from '../tools';
 import { isVariantTool } from './catalog';
+import { isEmptyDoc } from './empty-doc';
 import { hoverAt, sameHit } from './hover';
 import type { ToolContext } from '../tools/tool';
 import type { EditorState, Hit } from './editor-state';
@@ -50,7 +51,11 @@ export function hoverMove(state: EditorState, ev: MoveEvent, ctx: ReducerContext
   const tool = toolFor(state.tool);
   const keep = state.preview !== null && state.preview.hovering !== true;
   const ghost =
-    keep || tool?.hover === undefined || state.spaceHeld || state.editing !== null
+    keep ||
+    tool?.hover === undefined ||
+    state.spaceHeld ||
+    state.editing !== null ||
+    isEmptyDoc(current(state.history))
       ? null
       : tool.hover(ev, toolContext(state, ctx, hover));
   const preview = keep ? state.preview : ghost;
