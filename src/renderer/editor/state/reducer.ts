@@ -44,7 +44,13 @@ import {
 } from './commands';
 import { differs } from './dirty';
 import { showNotice } from './notice';
-import { cleanUp, expandLabels, showWarning, toggleKekule } from './structure-commands';
+import {
+  cleanUp,
+  expandLabels,
+  showWarning,
+  tidyReaction,
+  toggleKekule,
+} from './structure-commands';
 import {
   cancelEditing,
   commitEditing,
@@ -123,6 +129,8 @@ export type EditorAction =
   | { type: 'clean-up' }
   /** C3: Show Kekulé or Show circle, whichever the scope offers. */
   | { type: 'toggle-kekule' }
+  /** TR1-TR6: Tidy reaction on the scope (the selection, else everything near the arrows). */
+  | { type: 'tidy' }
   /** C2: Expand the abbreviations in the selection. */
   | { type: 'expand' }
   /** C6: select the next warning and reveal it. */
@@ -333,6 +341,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return cleanUp(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'toggle-kekule':
       return toggleKekule(state, ctx.derive, (s, a) => commit(s, a, ctx));
+    case 'tidy':
+      return tidyReaction(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'expand':
       return expandLabels(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'show-warning':

@@ -7,6 +7,7 @@ import {
   insert,
   type AtomId,
   type Doc,
+  type ObjectId as ObjectIdT,
 } from '@core/doc-model';
 import { render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
@@ -230,10 +231,10 @@ describe('hit filters (HV1)', () => {
     expect(at(hit(withArrow, v, onAtom, f))).toBe(a);
   });
 
-  it('Text sees texts only', () => {
+  it('Text sees texts and condition slots only (HV1, T1)', () => {
     const f = hoverFilter('text');
     expect(hit(withArrow, v, onAtom, f)).toBeNull();
-    expect(hit(withArrow, v, onArrow, f)).toBeNull();
+    expect(hit(withArrow, v, onArrow, f)).toMatchObject({ kind: 'slot' });
     const [withText, text] = addObject(withArrow, {
       type: 'text',
       at: { x: 8, y: 3 },
@@ -303,5 +304,55 @@ describe('H4 marquee', () => {
     expect(sel.objects.has(plus)).toBe(false);
     const part = marqueeSelection(d7, scene, { x: -1, y: -1, w: 3.5, h: 2.2 });
     expect(part.objects.size).toBe(0);
+  });
+});
+
+describe('condition slots (T1)', () => {
+  const arrowDoc = (): { doc: Doc; arrow: ObjectIdT } => {
+    const [doc, arrow] = addObject(empty(), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 0 },
+      to: { x: 4, y: 0 },
+    });
+    return { doc, arrow };
+  };
+  const slotAt = (doc: Doc, v: Viewport, p: Point): Hit | null =>
+    hitTest(doc, render(doc), v, screenOf(v, p), hoverFilter('text'));
+
+  it('shows the slot above for a pointer above the shaft, below for one below', () => {
+    const { doc, arrow } = arrowDoc();
+    for (const zoom of ZOOMS) {
+      const v = viewport(zoom);
+      expect(slotAt(doc, v, { x: 2, y: -0.8 })).toEqual({ kind: 'slot', arrow, slot: 'above' });
+      expect(slotAt(doc, v, { x: 2, y: 0.8 })).toEqual({ kind: 'slot', arrow, slot: 'below' });
+    }
+  });
+
+  it('only within 1.0 BLU of the shaft and between its ends', () => {
+    const { doc } = arrowDoc();
+    const v = viewport(1.5);
+    expect(slotAt(doc, v, { x: 2, y: -1.2 })).toBeNull();
+    expect(slotAt(doc, v, { x: -0.5, y: -0.3 })).toBeNull();
+    expect(slotAt(doc, v, { x: 4.5, y: -0.3 })).toBeNull();
+  });
+
+  it('only the Text tool sees slots; a text in the way is hit first', () => {
+    const { doc } = arrowDoc();
+    const v = viewport(1.5);
+    const p = screenOf(v, { x: 2, y: -0.8 });
+    expect(hitTest(doc, render(doc), v, p, HIT_ALL)).toBeNull();
+    expect(hitTest(doc, render(doc), v, p, ARROWS_ONLY)).toBeNull();
+    const [withText, text] = addObject(doc, {
+      type: 'text',
+      at: { x: 2, y: -0.8 },
+      runs: [{ text: 'heat' }],
+      align: 'center',
+    });
+    expect(hitTest(withText, render(withText), v, p, hoverFilter('text'))).toEqual({
+      kind: 'object',
+      id: text,
+      type: 'text',
+    });
   });
 });

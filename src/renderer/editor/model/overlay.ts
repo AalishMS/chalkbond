@@ -11,6 +11,7 @@ import {
 import type { Perception } from '@core/chem-core';
 import type { Scene } from '@core/svg-render';
 import type { GestureState, Hit, Preview, ToolId } from '../state/editor-state';
+import { NOMINAL_RUNS, placeCondition } from './conditions';
 import { curveControl } from './hit-test';
 import { FRAME_GROW, frameRect, screenRect, selectionInk } from './frame';
 import { growRect, type Point, type Rect } from './geometry';
@@ -36,6 +37,11 @@ export const SELECT_CIRCLE_R = 12;
 export const SELECT_BAND = 12;
 export const SELECT_ATOM_GROW = 3;
 export const SELECT_OBJECT_GROW = 4;
+
+/** T1: the condition slot's box is 2 BLU wide, one cap height plus this many px tall. */
+export const SLOT_BOX_BLU = 2;
+export const SLOT_PAD_PX = 8;
+export const SLOT_RADIUS = 4;
 
 export type OverlayShape =
   | { readonly kind: 'circle'; readonly c: Point; readonly r: number }
@@ -65,6 +71,7 @@ export interface OverlayGroup {
     | 'marquee'
     | 'guide'
     | 'handle'
+    | 'slot'
     | 'count'
     | 'warning'
     | 'warning-bond';
@@ -163,6 +170,31 @@ function hoverShape(hit: Hit, doc: Doc, scene: Scene, v: Viewport): OverlayShape
   }
 }
 
+/**
+ * T1: the dashed rounded rectangle where a condition text would go: 2 BLU wide, cap height + 8 px
+ * tall, centred on the ink of a one-line text placed by T3.
+ */
+function slotShape(
+  hit: Extract<Hit, { kind: 'slot' }>,
+  doc: Doc,
+  scene: Scene,
+  v: Viewport,
+): OverlayShape | null {
+  const arrow = doc.objects[hit.arrow];
+  if (arrow?.type !== 'arrow') return null;
+  const place = placeCondition(doc, arrow, hit.slot, NOMINAL_RUNS);
+  if (place === null) return null;
+  const k = v.zoom * PX_PER_PT;
+  const c = ptToScreen(v, { x: place.ink.x + place.ink.w / 2, y: place.ink.y + place.ink.h / 2 });
+  const w = SLOT_BOX_BLU * scene.style.bondLength * k;
+  const h = scene.style.capHeight * k + SLOT_PAD_PX;
+  return {
+    kind: 'box',
+    rect: { x: c.x - w / 2, y: c.y - h / 2, w, h },
+    radius: SLOT_RADIUS,
+  };
+}
+
 /** The hover highlight group. */
 export function overlayGroups(
   hover: Hit | null,
@@ -171,6 +203,10 @@ export function overlayGroups(
   viewport: Viewport,
 ): OverlayGroup[] {
   if (hover === null) return [];
+  if (hover.kind === 'slot') {
+    const slot = slotShape(hover, doc, scene, viewport);
+    return slot === null ? [] : [{ kind: 'slot', shapes: [slot] }];
+  }
   const shape = hoverShape(hover, doc, scene, viewport);
   if (shape === null) return [];
   // A label keeps its letters legible under a lighter box (R27).

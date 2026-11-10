@@ -44,7 +44,11 @@ describe('the structure commands of the host and the shortcuts (C1, C3)', () => 
     expect(c.canRun('toggle-kekulé')).toBe(false);
   });
 
-  it('tidy-reaction still waits for E28', () => {
-    expect(make('benzene').canRun('tidy-reaction')).toBe(false);
+  it('tidy-reaction runs when idle; without an arrow it says so and records nothing (TR1)', () => {
+    const c = make('benzene');
+    expect(c.canRun('tidy-reaction')).toBe(true);
+    c.run('tidy-reaction');
+    expect(c.store.getState().notice?.text).toContain('Nothing to tidy');
+    expect(c.isDirty()).toBe(false);
   });
 });

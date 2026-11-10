@@ -7,6 +7,7 @@ import type { Derive } from '../model/derive';
 import { selectionInk } from '../model/frame';
 import { selectionScope } from '../model/scope';
 import { expandSelection, isEmptySelection } from '../model/selection';
+import { applyTidy, planTidy } from '../model/tidy';
 import { reveal } from '../model/viewport';
 import { nextWarning } from '../model/warnings';
 import type { EditorState } from './editor-state';
@@ -88,6 +89,33 @@ export function expandLabels(state: EditorState, derive: Derive, commit: Run): E
     label: 'Expand label',
     recipe: (d) => targets.reduce((acc, id) => expandLabel(acc, id), d),
   });
+}
+
+/** TR1: the notice when there is no arrow in scope. */
+export const TIDY_NOTHING = 'Nothing to tidy: draw an arrow between the molecules first.';
+
+/**
+ * TR1-TR6: lay the scope out as a reaction line, one "Tidy reaction" commit, then V5 brings the
+ * drawing into view. Without an arrow in scope it only says so. Nothing to change: no step.
+ */
+export function tidyReaction(state: EditorState, derive: Derive, commit: Run): EditorState {
+  if (!idle(state)) return state;
+  const doc = current(state.history);
+  const plan = planTidy(doc, state.selection);
+  if (plan === null) return showNotice(state, 'info', TIDY_NOTHING);
+  const done = commit(state, {
+    type: 'commit',
+    label: 'Tidy reaction',
+    recipe: (d) => applyTidy(d, plan),
+  });
+  if (done.history === state.history) return done;
+  const { scene } = derive.committed(current(done.history));
+  const size = done.viewport.size;
+  if (scene.bounds === null || size.w === 0 || size.h === 0) return done;
+  return {
+    ...done,
+    viewport: reveal(done.viewport, scene.bounds, scene.style.bondLength),
+  };
 }
 
 /**

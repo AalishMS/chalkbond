@@ -412,6 +412,14 @@
   shape-rendering: crispEdges;
 }
 
+/* The Text tool's condition slot (T1): a dashed rounded box where the text would go. */
+.overlay-slot rect {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
 /* Snapping guides: 1 px dashed lines across the canvas. */
 .overlay-guide line {
   stroke: var(--accent);

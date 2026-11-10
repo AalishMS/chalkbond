@@ -17,6 +17,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import compounds from '../../../../resources/compounds/compounds.json';
 import type { CanvasEvent } from '../model/canvas-event';
+import { conditionAt } from '../model/conditions';
 import { selectionCentre } from '../model/frame';
 import type { Point } from '../model/geometry';
 import { selectionHandles } from '../model/handles';
@@ -294,7 +295,7 @@ describe('arrow end handles (S6)', () => {
     expect(after.to.y).toBeCloseTo(1, 6);
   });
 
-  it('attached texts are re-placed in the same commit, keeping their offset', () => {
+  it('attached texts are re-placed by T3 in the same commit', () => {
     const { doc, arrow, text } = arrowDoc();
     let s = ready(doc, only(arrow));
     s = run(s, ev(s, 'down', handleAt(s, 'arrow-from')));
@@ -304,9 +305,12 @@ describe('arrow end handles (S6)', () => {
     const arrowAfter = docOf(s).objects[arrow];
     const textAfter = docOf(s).objects[text];
     if (arrowAfter?.type !== 'arrow' || textAfter?.type !== 'text') throw new Error('shape');
-    // The midpoint moved from (2, 0) to (2, 1): the text moves with it.
-    expect(textAfter.at.x).toBeCloseTo(2, 6);
-    expect(textAfter.at.y).toBeCloseTo(-0.6 + 1, 6);
+    // T3 on the arrow as it now is: from (0, 2) to (4, 0), the text on its left normal.
+    const want = conditionAt(docOf(s), text);
+    expect(textAfter.at.x).toBeCloseTo(want?.x ?? NaN, 9);
+    expect(textAfter.at.y).toBeCloseTo(want?.y ?? NaN, 9);
+    // It moved off the old place, towards the arrow's new left side (up and to the right).
+    expect(textAfter.at.y).toBeLessThan(1 - 0.2);
     expect(s.history.past).toHaveLength(1);
   });
 });
@@ -376,5 +380,36 @@ describe('curved-arrow handles (S6)', () => {
     const below = docOf(s2).objects[curve];
     if (below?.type !== 'curved-arrow') throw new Error('shape');
     expect(below.bend).toBeCloseTo(-0.5, 9);
+  });
+});
+
+describe('rotating an arrow places its conditions by T3 (S5)', () => {
+  it('the text stays centred on the turned arrow, on its left side, in the same commit', () => {
+    const [d1, arrow] = addObject(drawn(), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 0 },
+      to: { x: 4, y: 0 },
+    });
+    const [doc, text] = addObject(d1, {
+      type: 'text',
+      at: { x: 2, y: -0.6 },
+      runs: [{ text: 'heat' }],
+      align: 'center',
+      attachedTo: { arrow, slot: 'above' },
+    });
+    let s = ready(doc, { atoms: new Set(), bonds: new Set(), objects: new Set([arrow]) });
+    const handle = handleAt(s, 'rotate');
+    const centre = centreOnScreen(s);
+    const target = rotated(handle, centre, 90);
+    s = run(s, ev(s, 'down', handle));
+    s = run(s, ev(s, 'move', target));
+    s = run(s, ev(s, 'up', target));
+    expect(undoLabel(s.history)).toBe('Rotate');
+    const after = docOf(s);
+    const want = conditionAt(after, text);
+    const got = (after.objects[text] as { at: Point }).at;
+    expect(got.x).toBeCloseTo(want?.x ?? NaN, 9);
+    expect(got.y).toBeCloseTo(want?.y ?? NaN, 9);
   });
 });

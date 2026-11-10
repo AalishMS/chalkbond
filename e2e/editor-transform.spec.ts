@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { fragments, type Doc } from '../src/core/doc-model';
+import { render, type ItemKey } from '../src/core/svg-render';
 import { canvasPoint, goldenDoc, insertName, loadDocument, openApp, readDocument } from './harness';
 
 type Pt = { x: number; y: number };
@@ -126,7 +127,7 @@ test('Flip horizontal mirrors acetic acid in one undo step; disabled without a s
   }
 });
 
-test('a selected arrow has end handles; dragging one snaps to 15 degrees and keeps its texts', async () => {
+test('a selected arrow has end handles; dragging one snaps to 15 degrees and keeps its texts placed by T3', async () => {
   const { app, page } = await openApp();
   try {
     const doc = goldenDoc('reaction-conditions');
@@ -156,16 +157,29 @@ test('a selected arrow has end handles; dragging one snaps to 15 degrees and kee
     const angle =
       (Math.atan2(moved.to.y - moved.from.y, moved.to.x - moved.from.x) * 180) / Math.PI;
     expect(Math.abs(angle - 45)).toBeLessThan(0.5);
-    // The texts attached to it moved with its midpoint.
+    // T3: the texts attached to it are placed again: centred on its midpoint along the shaft, on
+    // its left side (above) or the other (below), 0.2 bondLength clear of the arrow's ink.
+    const scene = render(after);
+    const dir = { x: moved.to.x - moved.from.x, y: moved.to.y - moved.from.y };
+    const len = Math.hypot(dir.x, dir.y);
+    const u = { x: dir.x / len, y: dir.y / len };
+    const n = { x: u.y, y: -u.x };
+    const mid = {
+      x: ((moved.from.x + moved.to.x) / 2) * 40,
+      y: ((moved.from.y + moved.to.y) / 2) * 40,
+    };
+    let seen = 0;
     for (const o of Object.values(doc.objects)) {
       if (o.type !== 'text' || o.attachedTo?.arrow !== arrow.id) continue;
-      const t = after.objects[o.id];
-      if (t?.type !== 'text') throw new Error('no text');
-      const dx = (moved.from.x + moved.to.x) / 2 - (arrow.from.x + arrow.to.x) / 2;
-      const dy = (moved.from.y + moved.to.y) / 2 - (arrow.from.y + arrow.to.y) / 2;
-      expect(Math.abs(t.at.x - (o.at.x + dx))).toBeLessThan(1e-9);
-      expect(Math.abs(t.at.y - (o.at.y + dy))).toBeLessThan(1e-9);
+      const ink = scene.extents[`obj:${o.id}` as ItemKey];
+      if (ink === undefined) throw new Error('no ink');
+      const c = { x: ink.x + ink.w / 2 - mid.x, y: ink.y + ink.h / 2 - mid.y };
+      expect(Math.abs(c.x * u.x + c.y * u.y)).toBeLessThan(0.01);
+      const side = c.x * n.x + c.y * n.y;
+      expect(o.attachedTo.slot === 'above' ? side > 0 : side < 0).toBe(true);
+      seen += 1;
     }
+    expect(seen).toBeGreaterThan(0);
     await page.keyboard.press('Control+z');
     expect(await readDocument(page)).toEqual(doc);
   } finally {

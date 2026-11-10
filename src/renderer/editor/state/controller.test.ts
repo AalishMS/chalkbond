@@ -76,7 +76,7 @@ describe('controller API', () => {
 
   it('commands that are not implemented yet cannot run and do nothing', () => {
     const c = make();
-    const later: EditorCommand[] = ['cut', 'copy', 'paste', 'delete', 'clean-up', 'tidy-reaction'];
+    const later: EditorCommand[] = ['cut', 'copy', 'paste', 'delete', 'clean-up'];
     later.push({ type: 'set-preset', preset: 'journal' });
     for (const cmd of later) {
       expect(c.canRun(cmd)).toBe(false);

@@ -11,6 +11,7 @@ import {
   type TextRun,
 } from '@core/doc-model';
 import { finishText } from './chem-text';
+import { placeCondition } from './conditions';
 import type { Point } from './geometry';
 import { fromStored, fromText, textOf, type TextEditState } from './text-edit';
 
@@ -75,12 +76,18 @@ export function textCommit(
   if (target.kind === 'new') {
     if (empty) return null;
     const fresh = target.fresh;
+    // T3: an attached text is centred on its arrow by what it says, not where it was clicked.
+    const arrow = fresh.attachedTo === undefined ? undefined : doc.objects[fresh.attachedTo.arrow];
+    const at =
+      fresh.attachedTo !== undefined && arrow?.type === 'arrow'
+        ? (placeCondition(doc, arrow, fresh.attachedTo.slot, runs)?.at ?? fresh.at)
+        : fresh.at;
     return {
       label: 'Add text',
       recipe: (d) =>
         addObject(d, {
           type: 'text',
-          at: fresh.at,
+          at,
           runs,
           align: fresh.align,
           ...(fresh.attachedTo === undefined ? {} : { attachedTo: fresh.attachedTo }),
@@ -97,5 +104,14 @@ export function textCommit(
     };
   }
   if (JSON.stringify(runs) === JSON.stringify(stored.runs)) return null;
-  return { label: 'Edit text', recipe: (d) => updateObject(d, id, { runs }) };
+  // T3: a condition text is placed again by its new width.
+  const arrow = stored.attachedTo === undefined ? undefined : doc.objects[stored.attachedTo.arrow];
+  const at =
+    stored.attachedTo !== undefined && arrow?.type === 'arrow'
+      ? placeCondition(doc, arrow, stored.attachedTo.slot, runs)?.at
+      : undefined;
+  return {
+    label: 'Edit text',
+    recipe: (d) => updateObject(d, id, at === undefined ? { runs } : { runs, at }),
+  };
 }

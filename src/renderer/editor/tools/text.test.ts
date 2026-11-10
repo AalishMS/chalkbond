@@ -64,3 +64,53 @@ describe('Text tool (T1)', () => {
     expect(textTool.step(down.gesture, { type: 'cancel' }, context(r, null)).gesture).toBeNull();
   });
 });
+
+describe('Text tool condition slots (T1)', () => {
+  const arrowDoc = () => {
+    const [doc, arrow] = addObject(emptyDoc(NOW), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 0 },
+      to: { x: 4, y: 0 },
+    });
+    return { doc, arrow };
+  };
+
+  it('a click on the slot opens a new centred text attached to the arrow, placed above it', () => {
+    const { doc, arrow } = arrowDoc();
+    const r = rig(textTool, doc);
+    const p = press(2, -0.7);
+    const hit = { kind: 'slot', arrow, slot: 'above' } as const;
+    const down = textTool.step(null, at(p, 'down'), context(r, hit));
+    const up = textTool.step(down.gesture, at(p, 'up'), context(r, null));
+    if (up.edit?.kind !== 'new') throw new Error('not new');
+    expect(up.edit.fresh.align).toBe('center');
+    expect(up.edit.fresh.attachedTo).toEqual({ arrow, slot: 'above' });
+    expect(up.edit.fresh.at.x).toBeCloseTo(2, 6);
+    expect(up.edit.fresh.at.y).toBeLessThan(0);
+  });
+
+  it('a click on a slot that already holds a text edits that text', () => {
+    const { doc, arrow } = arrowDoc();
+    const [withText, text] = addObject(doc, {
+      type: 'text',
+      at: { x: 2, y: -0.7 },
+      runs: [{ text: 'heat' }],
+      align: 'center',
+      attachedTo: { arrow, slot: 'above' },
+    });
+    const r = rig(textTool, withText);
+    const hit = { kind: 'slot', arrow, slot: 'above' } as const;
+    const down = textTool.step(null, at(press(1, -0.5), 'down'), context(r, hit));
+    const up = textTool.step(down.gesture, at(press(1, -0.5), 'up'), context(r, null));
+    expect(up.edit).toEqual({ kind: 'existing', object: text });
+    // The other slot is still free.
+    const below = textTool.step(
+      null,
+      at(press(1, 0.5), 'down'),
+      context(r, { ...hit, slot: 'below' }),
+    );
+    const upBelow = textTool.step(below.gesture, at(press(1, 0.5), 'up'), context(r, null));
+    expect(upBelow.edit?.kind).toBe('new');
+  });
+});

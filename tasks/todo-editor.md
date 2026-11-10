@@ -850,8 +850,8 @@ BLU of the baseline, gaps 0.6 / 0.4 BLU, the text attached above; property: tidy
 (fast-check over jittered layouts); no arrow → notice, no step.
 
 **Acceptance criteria:**
-- [ ] TR1–TR6 and T3 covered by named tests; idempotence property passes
-- [ ] One "Tidy reaction" undo step; V5 applied (unit on viewport)
+- [x] TR1–TR6 and T3 covered by named tests; idempotence property passes
+- [x] One "Tidy reaction" undo step; V5 applied (unit on viewport)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E28` → `E28/condition-slot.png` (scripted: insert ethanol, then acetic acid, draw an arrow between them, Text tool, hover above the arrow), `E28/before-tidy.png`, `E28/after-tidy.png` (scripted: Select, Tidy reaction; compare `08-reaction.png` layout)
 

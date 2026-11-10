@@ -82,6 +82,46 @@ describe('textCommit', () => {
     expect(t?.align).toBe('center');
   });
 
+  it('a new condition text is centred on its arrow by its content (T3)', () => {
+    const [withArrow, arrow] = addObject(emptyDoc(NOW), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 0 },
+      to: { x: 4, y: 0 },
+    });
+    const target: TextTarget = {
+      kind: 'new',
+      fresh: { at: { x: 0.3, y: -3 }, align: 'center', attachedTo: { arrow, slot: 'above' } },
+    };
+    const c = textCommit(withArrow, target, typed('heat'), plain);
+    const [t] = texts(c?.recipe(withArrow) ?? withArrow);
+    expect(t?.at.x).toBeCloseTo(2, 6);
+    expect(t?.at.y).toBeLessThan(0);
+    expect(t?.at.y).toBeGreaterThan(-1.5);
+  });
+
+  it('editing a condition text places it again for its new width', () => {
+    const [withArrow, arrow] = addObject(emptyDoc(NOW), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 0 },
+      to: { x: 4, y: 0 },
+    });
+    const [doc, id] = addObject(withArrow, {
+      type: 'text',
+      at: { x: 2, y: -0.7 },
+      runs: [{ text: 'a' }],
+      align: 'center',
+      attachedTo: { arrow, slot: 'above' },
+    });
+    const target: TextTarget = { kind: 'existing', object: id };
+    const edit = insertText(fromStored([{ text: 'a' }]), ' much longer line');
+    const c = textCommit(doc, target, edit, plain);
+    const [t] = texts(c?.recipe(doc) ?? doc);
+    expect(t?.at.x).toBeCloseTo(2, 6);
+    expect(t?.runs.map((r) => r.text).join('')).toBe('a much longer line');
+  });
+
   it('empty or blank new text: no step', () => {
     const doc = emptyDoc(NOW);
     expect(textCommit(doc, fresh, fromText(''), plain)).toBeNull();

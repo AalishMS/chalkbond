@@ -25,9 +25,10 @@ import {
   type Point,
   type Rect,
 } from './geometry';
-import { bluToScreen, ptToScreen, type Viewport } from './viewport';
+import { sideOf } from './conditions';
+import { bluToScreen, ptToScreen, screenToBlu, type Viewport } from './viewport';
 
-/** What the pointer is over. Handles and slots arrive with the tasks that draw them. */
+/** What the pointer is over. */
 export type Hit =
   | { readonly kind: 'atom'; readonly id: AtomId }
   | { readonly kind: 'bond'; readonly id: BondId }
@@ -48,6 +49,9 @@ export const LABEL_GROW = 4;
 export const LINE_PX = 6;
 /** H1: px the `extents` of text, plus, bracket, shape and callout are grown by. */
 export const BOX_GROW = 4;
+/** T1: how far from an arrow's shaft (BLU) the Text tool shows its condition slot. */
+export const SLOT_REACH_BLU = 1.0;
+
 /** H3: px, or `MERGE_BLU` if larger in screen px. */
 export const MERGE_PX = 12;
 export const MERGE_BLU = 0.3;
@@ -193,6 +197,33 @@ function objectHit(doc: Doc, scene: Scene, v: Viewport, p: Point, filter: HitFil
 }
 
 /**
+ * T1: the condition slot of the arrow nearest to `p` within `SLOT_REACH_BLU` of its shaft and
+ * between its ends, on the side `p` is on; null when there is none. The nearest arrow wins, a tie
+ * goes to the lower id.
+ */
+export function slotHit(doc: Doc, scene: Scene, v: Viewport, p: Point): Hit | null {
+  const bl = scene.style.bondLength;
+  let best: Candidate<{ id: ObjectId; slot: 'above' | 'below' }> | null = null;
+  for (const obj of Object.values(doc.objects)) {
+    if (obj.type !== 'arrow') continue;
+    const a = bluToScreen(v, obj.from, bl);
+    const b = bluToScreen(v, obj.to, bl);
+    const shaft = sub(b, a);
+    const len2 = shaft.x * shaft.x + shaft.y * shaft.y;
+    if (len2 === 0) continue;
+    const t = ((p.x - a.x) * shaft.x + (p.y - a.y) * shaft.y) / len2;
+    if (t < 0 || t > 1) continue;
+    const d = distToSegment(p, a, b);
+    const reach =
+      SLOT_REACH_BLU *
+      distance(bluToScreen(v, { x: 0, y: 0 }, bl), bluToScreen(v, { x: 1, y: 0 }, bl));
+    if (d > reach) continue;
+    best = keepBetter(best, { id: obj.id, slot: sideOf(obj, screenToBlu(v, p, bl)) }, d);
+  }
+  return best === null ? null : { kind: 'slot', arrow: best.value.id, slot: best.value.slot };
+}
+
+/**
  * H1 and H2: the item under screen point `p` (canvas px), or null. Atoms beat bonds beat
  * objects; within a class the nearest wins, a tie goes to the lower id. `filter` limits the
  * kinds (HV1). Handles of the selection, first in H2, arrive with E17.
@@ -231,7 +262,10 @@ export function hitTest(
     }
     if (best) return { kind: 'bond', id: best.value.id };
   }
-  return objectHit(doc, scene, viewport, p, filter);
+  const object = objectHit(doc, scene, viewport, p, filter);
+  // The Text tool also sees the condition slots of arrows (T1), after the texts.
+  if (object === null && filter.objects === 'text') return slotHit(doc, scene, viewport, p);
+  return object;
 }
 
 /** What the pointer over `p` would highlight with `tool` active (HV1). */

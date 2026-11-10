@@ -7,12 +7,12 @@ import {
   transformItems,
   updateObject,
   type Anchor,
-  type ArrowObject,
   type Doc,
   type ObjectId,
   type ObjectPatch,
+  type Selection,
 } from '@core/doc-model';
-import { conditionPosition } from '../model/conditions';
+import { placeConditions } from '../model/conditions';
 import type { CanvasEvent } from '../model/canvas-event';
 import { selectionCentre } from '../model/frame';
 import { distance, snapAngle, type Point } from '../model/geometry';
@@ -104,23 +104,12 @@ function turn(g: Rotate, p: Point, free: boolean): number {
 }
 
 /**
- * `doc` with object `id` changed by `patch`. A straight arrow's condition texts keep their place
- * relative to it (`conditionPosition`), in the same change.
+ * `doc` with object `id` changed by `patch`. A straight arrow's condition texts are placed again
+ * by T3 (`placeConditions`) in the same change.
  */
 export function adjustArrow(doc: Doc, id: ObjectId, patch: ObjectPatch): Doc {
-  const was = doc.objects[id];
-  // Inside `transact` the document is a draft: copy the old ends before the update changes them.
-  const before: ArrowObject | null =
-    was?.type === 'arrow' ? { ...was, from: { ...was.from }, to: { ...was.to } } : null;
-  let next = updateObject(doc, id, patch);
-  const after = next.objects[id];
-  if (before === null || after?.type !== 'arrow') return next;
-  for (const obj of Object.values(next.objects)) {
-    if (obj.type === 'text' && obj.attachedTo?.arrow === id) {
-      next = updateObject(next, obj.id, { at: conditionPosition(obj, before, after) });
-    }
-  }
-  return next;
+  const next = updateObject(doc, id, patch);
+  return next.objects[id]?.type === 'arrow' ? placeConditions(next, new Set([id])) : next;
 }
 
 /** The anchor for a curved-arrow end dropped at `ev`: an atom, a bond at its middle, or a point. */
@@ -163,6 +152,11 @@ function curvePatch(g: CurveHandle, ev: PointerEv, ctx: ToolContext): ObjectPatc
   return g.handle === 'curve-from' ? { from: anchorAt(ev, ctx) } : { to: anchorAt(ev, ctx) };
 }
 
+/** The straight arrows of `sel`: their condition texts are placed again after a turn. */
+function selectedArrows(doc: Doc, sel: Selection): Set<ObjectId> {
+  return new Set([...sel.objects].filter((id) => doc.objects[id]?.type === 'arrow'));
+}
+
 /** Moves and releases of a handle gesture. */
 export function stepHandle(g: HandleGesture, ev: PointerEv, ctx: ToolContext): ToolStep {
   const preview = (doc: Doc): { doc: Doc; added: ReadonlySet<string> } => ({
@@ -172,7 +166,11 @@ export function stepHandle(g: HandleGesture, ev: PointerEv, ctx: ToolContext): T
   if (g.kind === 'select-rotate') {
     const angle = turn(g, ev.p, ev.mods.shift);
     const next: Rotate = { ...g, angle };
-    const apply = (doc: Doc): Doc => transformItems(doc, ctx.selection, rotation(angle, g.centre));
+    const apply = (doc: Doc): Doc =>
+      placeConditions(
+        transformItems(doc, ctx.selection, rotation(angle, g.centre)),
+        selectedArrows(doc, ctx.selection),
+      );
     if (ev.type === 'up') {
       if (angle === 0) return { gesture: null, preview: null };
       return { gesture: null, preview: null, commit: { label: 'Rotate', recipe: apply } };

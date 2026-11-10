@@ -214,6 +214,9 @@ export function createEditorController(options: EditorOptions): EditorController
         return canPaste(s);
       case 'select-all':
         return s.editing === null;
+      case 'tidy-reaction':
+        // With no arrow in scope the command says so (TR1), so it runs whenever the editor is idle.
+        return s.gesture === null && s.editing === null;
       case 'clean-up':
       case 'toggle-kekulé': {
         if (s.gesture !== null || s.editing !== null) return false;
@@ -287,6 +290,9 @@ export function createEditorController(options: EditorOptions): EditorController
           break;
         case 'toggle-kekulé':
           store.dispatch({ type: 'toggle-kekule' });
+          break;
+        case 'tidy-reaction':
+          store.dispatch({ type: 'tidy' });
           break;
         default:
           if (typeof cmd === 'object' && cmd.type === 'insert-text') {

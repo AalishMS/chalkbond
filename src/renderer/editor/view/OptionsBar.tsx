@@ -122,6 +122,7 @@ function SelectionBar({
         state={a.tidy}
         roving={roving}
         shortcut="Ctrl+Shift+T"
+        onPress={() => dispatch({ type: 'tidy' })}
       />
       <Separator />
       <FlipButton

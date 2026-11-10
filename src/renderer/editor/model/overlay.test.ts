@@ -196,3 +196,41 @@ describe('chain count badge (R31)', () => {
     expect(t.y).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe('condition slot (T1)', () => {
+  const arrow = (): { doc: Doc; id: ObjectId } => {
+    const [doc, id] = addObject(emptyDoc(NOW), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 0 },
+      to: { x: 4, y: 0 },
+    });
+    return { doc, id };
+  };
+
+  it('is a dashed rounded box 2 BLU wide above (or below) the shaft, in its own group', () => {
+    const { doc, id } = arrow();
+    const scene = render(doc);
+    const k = v.zoom * (4 / 3);
+    const above = overlayGroups({ kind: 'slot', arrow: id, slot: 'above' }, doc, scene, v);
+    expect(above.map((g) => g.kind)).toEqual(['slot']);
+    const shape = above[0]?.shapes[0];
+    if (shape?.kind !== 'box') throw new Error('not a box');
+    expect(shape.rect.w).toBeCloseTo(2 * BL * k, 6);
+    expect(shape.rect.h).toBeCloseTo(scene.style.capHeight * k + 8, 6);
+    const shaft = bluToScreen(v, { x: 2, y: 0 }, BL);
+    expect(shape.rect.x + shape.rect.w / 2).toBeCloseTo(shaft.x, 3);
+    expect(shape.rect.y + shape.rect.h).toBeLessThan(shaft.y);
+    const below = overlayGroups({ kind: 'slot', arrow: id, slot: 'below' }, doc, scene, v);
+    const lower = below[0]?.shapes[0];
+    if (lower?.kind !== 'box') throw new Error('not a box');
+    expect(lower.rect.y).toBeGreaterThan(shaft.y);
+  });
+
+  it('nothing for an arrow that is gone', () => {
+    const { doc } = arrow();
+    expect(
+      overlayGroups({ kind: 'slot', arrow: 'o99' as ObjectId, slot: 'above' }, doc, render(doc), v),
+    ).toEqual([]);
+  });
+});
