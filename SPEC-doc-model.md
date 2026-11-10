@@ -184,6 +184,9 @@ bounds(doc, sel?): Rect | null             // geometric hull (BLU) of atom posit
                                            // targets; no label/stroke extents (svg-render adds)
 IDENTITY, applyAffine, translation(dx,dy), rotation(rad, center?), scaling(sx, sy?, center?)
 
+// style
+setStyle(doc, patch: { preset?: StylePreset; overrides?: Partial<StyleSettings> }): Doc   // preset ∈ {'slides','journal'}; overrides replaces the whole object, validated like the schema; DocError('invalid-value') otherwise. No schema change.
+
 // derived structure
 fragments(doc): AtomId[][]                     // connected components, deterministic order
 neighbors(doc, atomId): AtomId[]                // sorted by id number

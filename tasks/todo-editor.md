@@ -33,9 +33,9 @@ an unknown key each throw `invalid-value` and leave the doc unchanged; the resul
 `checkInvariants` and `serialize`/`parse` round-trips.
 
 **Acceptance criteria:**
-- [ ] `SPEC-doc-model.md` lists `setStyle` under `// style` (committed in this task, before the code)
-- [ ] `setStyle` exported from `@core/doc-model`; draft-aware; no schema or `schemaVersion` change
-- [ ] All tests above pass; doc-model coverage stays ≥ 95 % lines
+- [x] `SPEC-doc-model.md` lists `setStyle` under `// style` (committed in this task, before the code)
+- [x] `setStyle` exported from `@core/doc-model`; draft-aware; no schema or `schemaVersion` change
+- [x] All tests above pass; doc-model coverage stays ≥ 95 % lines
 
 **Verification:** `npm test -- src/core/doc-model` then `npm run check`
 

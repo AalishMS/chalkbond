@@ -7,6 +7,7 @@ export { addAtom, updateAtom, neighbors, type AtomInit, type AtomPatch } from '.
 export { addBond, updateBond, findBond, type BondInit, type BondPatch } from './bonds';
 export { addObject, updateObject, type ObjectInit, type ObjectPatch } from './objects';
 export { paintLayers } from './z-order';
+export { setStyle, type StylePatch } from './style';
 export { deleteItems } from './delete';
 export { mergeAtoms } from './merge';
 export { resolveAnchor } from './anchors';

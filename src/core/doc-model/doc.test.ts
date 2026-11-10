@@ -120,6 +120,7 @@ describe('public entry (index.ts)', () => {
         'rotation',
         'scaling',
         'serialize',
+        'setStyle',
         'transact',
         'transformItems',
         'translation',
