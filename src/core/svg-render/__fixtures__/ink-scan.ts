@@ -1,16 +1,15 @@
 // Test helper: an independent ink box computed from the SVG markup alone (SPEC-svg-render.md
 // "Testing"). It shares no layout code with the renderer: path vertices, curves sampled at 64
 // steps, polygon / circle / rect / ellipse geometry, stroke half-widths, and `<text>` boxes from
-// the advance table (width = advances x font size, height = cap height above the baseline, plus
-// the descent when the text has a descending glyph).
+// the advance table (width = advances x font size, height = the font's full ascent above the
+// baseline and full descent below it, whatever the glyphs).
 import type { Rect } from '../../doc-model';
 import { ADVANCE_BOLD, ADVANCE_REGULAR } from '../font-metrics';
 import { checkXml, type XmlElement } from './xml-check';
 
 const CURVE_STEPS = 64;
-const CAP_HEIGHT_EM = 0.716;
+const ASCENT_EM = 0.905;
 const DESCENT_EM = 0.212;
-const DESCENDING = new Set('gjpqyQ,;()[]{}|');
 const FALLBACK_ADVANCE = 556;
 
 type Pt = [number, number];
@@ -102,16 +101,14 @@ function textBox(el: XmlElement): Box {
   const y = num(el, 'y');
   const table = el.attrs['font-weight'] === 'bold' ? ADVANCE_BOLD : ADVANCE_REGULAR;
   let units = 0;
-  let descends = false;
   for (const ch of el.text) {
     units += table[ch.codePointAt(0) ?? 0] ?? FALLBACK_ADVANCE;
-    if (DESCENDING.has(ch)) descends = true;
   }
   return {
     minX: x,
     maxX: x + (units * size) / 1000,
-    minY: y - CAP_HEIGHT_EM * size,
-    maxY: y + (descends ? DESCENT_EM * size : 0),
+    minY: y - ASCENT_EM * size,
+    maxY: y + DESCENT_EM * size,
   };
 }
 

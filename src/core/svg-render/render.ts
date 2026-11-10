@@ -137,17 +137,25 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
     const atom = doc.atoms[id];
     const position = pos.get(id);
     if (!atom || !position) continue;
-    const label = labels.get(id);
+    let label = labels.get(id);
     const sats = layoutSatellites(
-      {
-        atom,
-        position,
-        directions: vectorsFrom(id),
-        labelBox: label ? label.textBox : null,
-        glyphBox: label ? label.symbolBox : null,
-      },
+      { atom, position, directions: vectorsFrom(id), label: label ?? null },
       style,
     );
+    if (sats && sats.chargeShift > 0 && label) {
+      // A lone pair or radical dot between the symbol and the charge pushes the charge out.
+      label = buildAtomLabel(
+        {
+          atom,
+          implicitH: perception?.atoms[id]?.implicitH ?? 0,
+          neighbors: vectorsFrom(id),
+          position,
+          chargeShift: sats.chargeShift,
+        },
+        style,
+      );
+      labels.set(id, label);
+    }
     if (sats && atomInScope(id)) glyphNotices.push(...sats.notices);
     if (!label && !sats) continue;
     atomParts.set(id, {
@@ -156,9 +164,7 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
         .filter((x): x is string => x !== undefined && x !== '')
         .join('\n'),
       ink:
-        label && sats
-          ? rectUnion(label.textBox, sats.ink)
-          : ((label?.textBox ?? sats?.ink) as Rect),
+        label && sats ? rectUnion(label.inkBox, sats.ink) : ((label?.inkBox ?? sats?.ink) as Rect),
     });
   }
   const objectContext: ObjectContext = {

@@ -377,15 +377,14 @@ describe('render: satellites', () => {
     expect(keys(scene)).not.toContain(`atom:${carbanion.atoms[1]}`);
   });
 
-  it('the carbanion deals the sign into the largest gap (above) and the pair into the next (between the bonds)', () => {
+  it('the carbanion puts the pair farthest from the bonds (above) and the sign in the next free slot', () => {
     const svg = part(render(carbanion.doc), carbKey).svg;
     expect(textOf(svg)).toBe('−');
     const ys = [...svg.matchAll(/<circle cx="[^"]+" cy="([^"]+)"/g)].map((m) => Number(m[1]));
     expect(ys).toHaveLength(2);
-    // Bonds go down-left and down-right; the pair sits below the atom, the sign above it.
-    for (const y of ys) expect(y).toBeGreaterThan(0);
-    const signY = Number(/<text x="[^"]+" y="([^"]+)"/.exec(svg)![1]);
-    expect(signY).toBeLessThan(0);
+    // Bonds go down-left and down-right: the pair is the farthest cardinal from them, N, above
+    // the atom; the sign is not on top of it.
+    for (const y of ys) expect(y).toBeLessThan(0);
   });
 
   it('a labelled atom keeps the label and adds its satellites after it', () => {

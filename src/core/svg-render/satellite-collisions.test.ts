@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Atom, AtomId, Doc, Point, Rect } from '../doc-model';
-import { buildAtomLabel } from './atom-label';
-import { layoutSatellites } from './satellites';
+import { layoutAtom } from './__fixtures__/atom-satellites';
+import type { AtomLabel } from './atom-label';
+import type { Slot } from './satellites';
 import { resolveStyle } from './style';
 
 // SPEC-svg-render.md "Satellites": the satellites of one atom never overlap each other, the
@@ -23,6 +24,23 @@ const mk = (over: Partial<Atom>): Atom => ({
   radical: 0,
   ...over,
 });
+
+const glyphBoxes = (label: AtomLabel): Rect[] => [
+  label.symbolBox,
+  ...label.obstacles,
+  ...(label.chargeBox ? [label.chargeBox] : []),
+];
+
+const SLOT_DIRECTION: Record<Slot, Point> = {
+  N: { x: 0, y: -1 },
+  S: { x: 0, y: 1 },
+  E: { x: 1, y: 0 },
+  W: { x: -1, y: 0 },
+  NE: { x: Math.SQRT1_2, y: -Math.SQRT1_2 },
+  NW: { x: -Math.SQRT1_2, y: -Math.SQRT1_2 },
+  SE: { x: Math.SQRT1_2, y: Math.SQRT1_2 },
+  SW: { x: -Math.SQRT1_2, y: Math.SQRT1_2 },
+};
 
 const overlaps = (a: Rect, b: Rect): boolean =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -66,42 +84,53 @@ function run(c: Case) {
     const u = unit(d);
     return { x: u.x * BOND, y: u.y * BOND };
   });
-  const label = c.vertex
-    ? null
-    : buildAtomLabel(
-        { atom, implicitH: c.implicitH ?? 0, neighbors: directions, position: POS },
-        style,
-      );
-  const sats = layoutSatellites(
-    {
-      atom,
-      position: POS,
-      directions,
-      labelBox: label ? label.textBox : null,
-      glyphBox: label ? label.symbolBox : null,
-    },
-    style,
-  );
+  const { label, sats } = layoutAtom(atom, POS, directions, style, {
+    implicitH: c.implicitH ?? 0,
+    vertex: c.vertex ?? false,
+  });
   return { atom, directions, label, sats };
 }
 
 function assertCollisionFree(c: Case): void {
   const { directions, label, sats } = run(c);
   expect(sats).not.toBeNull();
-  const boxes = sats!.boxes;
-  for (let i = 0; i < boxes.length; i++) {
-    for (let j = i + 1; j < boxes.length; j++) {
-      expect(overlaps(boxes[i]!, boxes[j]!), `satellites ${i} and ${j} overlap`).toBe(false);
+  // Dot by dot (a diagonal pair's one box covers the corner it hangs off, its dots do not).
+  const rects = sats!.rects;
+  for (let i = 0; i < rects.length; i++) {
+    for (let j = i + 1; j < rects.length; j++) {
+      for (const a of rects[i]!) {
+        for (const b of rects[j]!) {
+          expect(overlaps(a, b), `satellites ${i} and ${j} overlap`).toBe(false);
+        }
+      }
     }
-    if (label) {
-      expect(overlaps(boxes[i]!, label.textBox), `satellite ${i} overlaps the label`).toBe(false);
+    // Glyph by glyph: the label's bounding box is not a rectangle's worth of ink (the sign sits
+    // up beside the H, a subscript hangs below it, and the O's own top and bottom are free).
+    for (const glyph of label ? glyphBoxes(label) : []) {
+      for (const a of rects[i]!) {
+        expect(overlaps(a, glyph), `satellite ${i} overlaps the label`).toBe(false);
+      }
     }
+    const isDots = rects[i]!.every((a) => Math.abs(a.w - 2 * style.dotRadius) < 1e-9);
     for (const d of directions) {
-      const end = { x: POS.x + d.x, y: POS.y + d.y };
-      expect(
-        segmentHits(POS, end, boxes[i]!, style.lineWidth / 2),
-        `satellite ${i} sits on a bond`,
-      ).toBe(false);
+      if (isDots) {
+        const end = { x: POS.x + d.x, y: POS.y + d.y };
+        for (const a of rects[i]!) {
+          expect(
+            segmentHits(POS, end, a, style.lineWidth / 2),
+            `satellite ${i} sits on a bond`,
+          ).toBe(false);
+        }
+      } else {
+        // A sign or number is a cap-height box, much taller than its ink, so a wide-angle bond
+        // may graze the box; it is kept off the bond by the 45 degree rule instead.
+        const slot = SLOT_DIRECTION[sats!.placements[i]!.slot];
+        const bond = unit((Math.atan2(d.y, d.x) * 180) / Math.PI);
+        const angle = Math.acos(Math.max(-1, Math.min(1, slot.x * bond.x + slot.y * bond.y)));
+        expect(angle, `text satellite ${i} is within 45 degrees of a bond`).toBeGreaterThan(
+          Math.PI / 4 - 1e-6,
+        );
+      }
     }
   }
 }

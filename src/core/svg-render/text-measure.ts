@@ -9,6 +9,8 @@ import type { ResolvedStyle } from './style';
 export const FALLBACK_ADVANCE = 556;
 /** Arial's descent, em. Applies only to runs containing a descending glyph. */
 export const DESCENT_EM = 0.212;
+/** Arial's ascent, em: the top of the box that is safe for every glyph (Greek, accents). */
+export const ASCENT_EM = 0.905;
 const DESCENDING = new Set('gjpqyQ,;()[]{}|');
 
 export interface UnmeasuredGlyphNotice {
@@ -38,6 +40,13 @@ export interface MeasuredLine {
   ascent: number;
   /** Box bottom below this line's baseline, pt (>= 0). */
   descent: number;
+  /**
+   * Ink box top above this line's baseline, pt: the font's full ascent for every run (shifted by
+   * its script), so no glyph, `δ` and its overshoot included, can poke out of it.
+   */
+  inkAscent: number;
+  /** Ink box bottom below this line's baseline, pt: the font's full descent for every run. */
+  inkDescent: number;
   /** This line's baseline below the first line's baseline, pt. */
   baseline: number;
   segments: MeasuredSegment[];
@@ -50,6 +59,10 @@ export interface TextMeasure {
   ascent: number;
   /** Last line's bottom below the first baseline, pt. */
   descent: number;
+  /** First line's `inkAscent`. */
+  inkAscent: number;
+  /** Last line's `inkDescent` below the first baseline. */
+  inkDescent: number;
   lines: MeasuredLine[];
   notices: UnmeasuredGlyphNotice[];
 }
@@ -82,6 +95,8 @@ export function measureRuns(
     width: 0,
     ascent: 0,
     descent: 0,
+    inkAscent: 0,
+    inkDescent: 0,
     baseline: index * lineHeight,
     segments: [],
   });
@@ -122,11 +137,16 @@ export function measureRuns(
       line.width += width;
       line.ascent = Math.max(line.ascent, cap * (size / fontSize) - dy);
       line.descent = Math.max(line.descent, dy + (descends ? DESCENT_EM * size : 0));
+      line.inkAscent = Math.max(line.inkAscent, ASCENT_EM * size - dy);
+      line.inkDescent = Math.max(line.inkDescent, DESCENT_EM * size + dy);
     });
   }
 
   for (const line of lines) {
-    if (line.segments.length === 0) line.ascent = cap;
+    if (line.segments.length === 0) {
+      line.ascent = cap;
+      line.inkAscent = cap;
+    }
   }
   const first = lines[0] ?? line;
   const chars = [...missing]
@@ -137,6 +157,8 @@ export function measureRuns(
     width: lines.reduce((max, l) => Math.max(max, l.width), 0),
     ascent: first.ascent,
     descent: line.baseline + line.descent,
+    inkAscent: first.inkAscent,
+    inkDescent: line.baseline + line.inkDescent,
     lines,
     notices: chars === '' ? [] : [{ code: 'unmeasured-glyph', chars }],
   };

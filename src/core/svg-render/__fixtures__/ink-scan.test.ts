@@ -56,15 +56,16 @@ describe('inkScan', () => {
     near(box.y + box.h, 30 + 1, 6); // peak of this cubic is 0.75 * 40
   });
 
-  it('text: width from the advance table, cap height above the baseline', () => {
-    // W is 944/1000 em: 94.4 wide at 100 pt, cap height 71.6.
+  it('text: width from the advance table, the font ascent above the baseline', () => {
+    // W is 944/1000 em: 94.4 wide at 100 pt; the box is the font's 0.905 em ascent and 0.212 em
+    // descent, whatever the glyph.
     const box = inkScan(
       '<text x="10" y="200" font-family="Arial" font-size="100" fill="#000000">W</text>',
     )!;
     near(box.x, 10);
     near(box.w, 94.4);
-    near(box.y, 200 - 71.6);
-    near(box.h, 71.6);
+    near(box.y, 200 - 90.5);
+    near(box.h, 90.5 + 21.2);
   });
 
   it('text: a descending glyph extends the box below the baseline; bold uses the bold table', () => {

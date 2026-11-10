@@ -72,10 +72,9 @@ describe('resolveStyle: derived values (L = 40, fs = 28)', () => {
     ['subShift', 0.2 * fs],
     ['supShift', 0.4 * fs],
     ['satelliteScale', 0.7],
-    ['satelliteGap', 0.12 * fs],
-    ['vertexGap', 0.3 * fs],
-    ['dotRadius', 0.08 * fs],
-    ['pairSeparation', 0.16 * fs],
+    ['satelliteGap', 0.1 * fs],
+    ['dotRadius', 0.05 * fs],
+    ['pairSeparation', 0.24 * fs],
     ['capHeight', 0.716 * fs],
     ['lineHeight', 1.2 * fs],
   ] as const)('%s', (key, expected) => {

@@ -97,7 +97,7 @@ the goldens and is reviewed visually:
 | `bracketSerif`, `roundBulge`, `curlyDepth` | `0.2·L`, `0.12·L`, `0.2·L` |
 | `captionGap`, `calloutPad`, `cornerGap` | `0.5·L`, `0.2·fs`, `0.15·fs` |
 | `subScale`, `subShift` (down), `supShift` (up) | `0.7`, `0.2·fs`, `0.4·fs` (fs of the parent run) |
-| `satelliteScale`, `satelliteGap`, `vertexGap`, `dotRadius`, `pairSeparation` | `0.7`, `0.12·fs`, `0.3·fs`, `0.08·fs`, `0.16·fs` |
+| `satelliteScale` (sign and number text), `satelliteGap` (box to nearest satellite ink), `dotRadius`, `pairSeparation` (centre to centre of a lone pair's dots) | `0.7`, `0.10·fs`, `0.05·fs`, `0.24·fs` |
 | `capHeight`, `lineHeight` (multi-line text) | `0.716·fs`, `1.2·fs` |
 
 The default colour of anything without a `color` is the constant `INK = '#000000'`.
@@ -250,27 +250,56 @@ letter, no H. Charge, radical, lone pairs, partial charge and `number` never for
 | Colour | `atom.color ?? INK` for all of the atom's text and satellites |
 | Display table | `src/core/svg-render/label-display.ts`: for every key of chem-core's `ABBREVIATIONS`, its reversed text and attachment glyph, or none for symmetric ones. Reversed: `OMe`↔`MeO`, `OEt`↔`EtO`, `OPh`↔`PhO`, `OAc`↔`AcO`, `CO2H`↔`HO2C`, `COOH`↔`HOOC`, `CO2Me`↔`MeO2C`, `CO2Et`↔`EtO2C`, `CHO`↔`OHC`, `COCl`↔`ClOC`, `CONH2`↔`H2NOC`, `CN`↔`NC`, `NO2`↔`O2N`, `SO3H`↔`HO3S`. None: `Me Et Pr iPr Bu tBu Ph Bn Ac`. A test fails if `ABBREVIATIONS` gains a key with no entry |
 
-**Satellites** (charge sign on a vertex, lone pairs, radical dots, partial charge, atom number)
-go into the angular **gaps between bond directions** (all bonds of the atom in the whole
-document). Order of assignment: charge, lone pairs (`lonePairs` of them), radical dots
-(`radical` of them: 1 or 2), `partialCharge`, `number`. Gaps are sorted by size (descending,
-ties by smaller start angle), satellites are dealt round-robin, and the `k` satellites of one gap
-sit at fractions `(j+1)/(k+1)` of it (one bond: the gap is the full turn, so one satellite is
-opposite the bond). An atom with no bond has the slots up, down, left, right (screen angles 270°,
-90°, 180°, 0°). Point at distance `d`: from the atom centre to the edge of the label's full text
-box along the direction (a vertex: `vertexGap`) plus `satelliteGap`. A lone pair is two dots
-`pairSeparation` apart, perpendicular to the direction; a radical dot is one dot; charge,
-`partialCharge` and `number` are text at `satelliteScale·fs` whose box is tangent to the point
-at `d`.
+**Satellites** (lone pairs, radical dots, the charge sign of a skeleton vertex, partial charge,
+atom number) sit in one of eight **slots** round a reference box.
 
-**Collision rule.** The satellites of one atom never overlap each other, the label's text box or
-a bond leaving the atom. Lone pairs and radical dots are measured from the **element symbol's
-glyph box** (the anchor box; for a typed label with no reversed form, just the symbol inside it,
-so `HO` puts them round the `O`), so the H or count part of the label is an obstacle, not a
-place to sit. In assignment order each satellite takes its dealt angle if its ink box is free,
-else the next free slot (15° steps, alternating either side of the dealt angle), and only when
-the whole turn is blocked does it move outward one ring (`2·satelliteGap`) and try again; the
-result depends only on the input, so it is deterministic.
+*Reference box.* The element symbol's glyph box: left and right are the symbol's advance extent,
+top is the cap height (also for two-letter symbols such as `Cl`; the x-height is irrelevant),
+bottom is the baseline. It is not the font's ascent/descent line box. For a typed label with no
+reversed form it is just the symbol inside the label (`HO` puts everything round the `O`). For an
+unlabelled skeleton vertex the box is the point.
+
+*Slots.* Four cardinal slots N, E, S, W, then four diagonal slots NE, NW, SE, SW (screen
+directions; N is up). A cardinal slot's centre is the middle of that box edge, pushed out so that
+the satellite's nearest ink edge is `satelliteGap` from the box. A diagonal slot hangs off the
+box corner with the same gap, measured along the diagonal. A lone pair is two dots
+`pairSeparation` apart (radius `dotRadius`) along the box edge: horizontal for N and S, vertical
+for E and W, along the diagonal's tangent for a diagonal. A radical is one dot. Charge, partial
+charge and number are text at `satelliteScale·fs`, placed by their cap-height box (baseline on
+its bottom edge).
+
+*Blocked slots.* A slot is blocked if (a) a bond leaves the atom within 45° of the slot's
+direction (strictly less than 45°: a diagonal next to a cardinal bond is not blocked), or (b)
+the label's hydrogen or count part lies on that side (E when it is right of the symbol, W when
+left). The formal-charge sign is not an H part.
+
+*Order of assignment:* lone pairs, then radical dots, then the charge sign of a skeleton vertex,
+then `partialCharge`, then `number`. The formal charge of a labelled atom stays in the label
+text (superscript at the upper right) except as the next rule says.
+
+*Preference order.*
+- Lone pairs and radical dots, with bonds: the cardinals sorted by angular distance from the
+  nearest bond, farthest first, ties N, S, E, W; then NE, NW, SE, SW.
+- Lone pairs and radical dots, no bonds: N, S, the cardinal opposite the H part, the remaining
+  cardinal, then the diagonals (a bare skeleton vertex: N, S, E, W).
+- Text (partial charge, vertex charge, number): N, NE, NW, S, SE, SW, E, W.
+
+Each satellite takes the first slot in its list that is not blocked, not already taken and whose
+ink does not touch another glyph of the label (H part, subscript, charge sign), the charge sign,
+a bond leaving the atom (lone pairs and dots only) or an earlier satellite.
+
+*Formal charge beside an E dot.* If a lone pair or radical dot takes the E slot and the label has
+a charge superscript, the superscript moves right so that it starts `satelliteGap` beyond the dots
+(`HO:⁻`: the dots stand between the `O` and the minus). `layoutSatellites` reports the shift and
+the label is rebuilt with it; no later satellite may touch the moved sign.
+
+*Crowding.* If every slot is blocked, taken or in the way, the first preference slot that is not
+blocked is used, pushed outward by one slot depth plus the gap per ring until nothing is in the
+way. Everything depends only on the input, so it is deterministic.
+
+Examples (all with no or one bond): `OH⁻` three pairs N, S, W; `HO⁻` N, S, E with the sign beyond
+the E pair; `H₂O` N, S; `NH₃` N; `H–Cl` with the bond west: Cl pairs E, N, S and `δ−` NE, the
+hydrogen's `δ+` N; a methyl radical on a vertex with two bonds: the dot opposite them.
 
 ### Bonds
 
@@ -346,8 +375,13 @@ must be known without a browser and be identical on every machine.
   U+2022, U+2026, U+2190–2195 (arrows), U+2212 (minus). Text is iterated by code point.
 - **Fallback:** any other code point has width `0.556 em` (Arial's digit width) and adds an
   `unmeasured-glyph` notice. No kerning.
-- **Vertical:** cap height 0.716 em and descent 0.212 em (Arial's); the descent applies only to
-  runs containing a descending glyph (`g j p q y Q , ; ( ) [ ] { } |`). Ascent = cap height;
+- **Vertical:** two boxes. The *layout* box (`ascent`, `descent`) uses cap height 0.716 em and
+  descent 0.212 em (Arial's); the descent applies only to runs containing a descending glyph
+  (`g j p q y Q , ; ( ) [ ] { } |`). The *ink* box (`inkAscent`, `inkDescent`, used for every
+  extent) is safe for every glyph: each run, sub/superscripts and Greek included, is boxed at
+  the font's full ascent 0.905 em above and full descent 0.212 em below its own baseline, so
+  glyphs taller than the caps (`δ`, accents) or overshooting the baseline (round letters, `δ`)
+  cannot be clipped by the viewBox;
   sub/superscript shifts extend the box.
 - **Generator:** `scripts/build-font-metrics.mjs <regular.ttf> <bold.ttf>` — Node, no
   dependencies, ~60 lines: reads `head.unitsPerEm`, `hhea.numberOfHMetrics`, `hmtx` and the
@@ -375,8 +409,10 @@ Windows that is real Arial.
 half its stroke width (round caps included), plus: label text boxes (all glyph runs, with
 sub/superscripts, not just the anchor box), arrowheads, exact Bézier extrema for curves and
 curved arrows (not control points), wedge polygons, circles, satellites, caption/callout/
-bracket/text boxes (measured width × ascent/descent). `bounds` = union of `extents`; `padding`
-is added only in `toSvg`. An atom with no ink (a bare skeleton vertex) has no extents entry; its
+bracket/text boxes (measured width × the ink box: full font ascent/descent per run). `bounds` =
+union of `extents`; `padding` is added only in `toSvg`. Extents therefore **contain all ink as
+the browser renders it** and are exact for every non-text primitive; around text they are loose
+by at most 0.19 em above the cap height and 0.21 em below the baseline. An atom with no ink (a bare skeleton vertex) has no extents entry; its
 position still contributes via its bonds.
 
 ## Determinism
@@ -475,7 +511,8 @@ The editor owns the canvas; this module supplies the following and nothing more.
   asserts every `BondOrder`, `BondStereo`, `DoublePlacement`, `ArrowKind`, curved-arrow `head`,
   bracket `shape`, shape `shape`, text `align`, run `script` value and every object type occurs.
 - **Unit:** every public function; `fmt`; each row of every rule table; ring finder (benzene,
-  naphthalene, cubane, spiro, bicyclic, a 10-ring gets no circle); satellite placement; double-bond
+  naphthalene, cubane, spiro, bicyclic, a 10-ring gets no circle); satellite slots (identities and geometry, every case of the "Satellites" examples; no dot
+  touches a dot or a glyph; extents contain every satellite as `ink-scan` boxes it); double-bond
   side decision table; clipping against boxes from all 8 directions; text measurement (known
   widths, fallback notice, descent rule); `resolveStyle` with every kind of bad override;
   escaping of `<`, `&`, `"`, `]]>`, control characters, lone surrogates, emoji; the allow-lists.
@@ -484,7 +521,7 @@ The editor owns the canvas; this module supplies the following and nothing more.
   characters) that also returns elements and attributes for allow-list checks; and
   `__fixtures__/ink-scan.ts`, an independent ink-box computation from the markup (path vertices,
   curves sampled at 64 steps, polygon/circle/rect/ellipse geometry, stroke half-widths, `<text>`
-  boxes from the font table).
+  boxes from the font table: full ascent and descent).
 - **Properties (fast-check, reusing doc-model's `arbitraries.ts` command generator):**
   1. `render` never throws on any doc reachable by doc-model ops; output passes `xml-check` and
      uses only allow-listed elements and attributes;
@@ -524,8 +561,10 @@ The editor owns the canvas; this module supplies the following and nothing more.
    that rule set and the V8 argument in "Facts relied on"; tests run on the Windows dev machine.
 4. Same input → same bytes: determinism property passes at 1,000 runs (explicit test timeout).
 5. For every golden scene, `bounds` equals the ink box computed independently by `ink-scan` within
-   0.01 pt (so it contains all drawn ink and is tight: a transparent export with `padding: 0`
-   has no margin, `SPEC.md` success criterion 4); property 5 holds.
+   0.01 pt (so it contains all drawn ink, with `ink-scan` boxing text exactly as the renderer
+   does; non-text ink is tight, text is within 0.19 em above / 0.21 em below the glyphs: a
+   transparent export with `padding: 0` has no visible margin beyond that, `SPEC.md` success
+   criterion 4); property 5 holds.
 6. Circled rings and Kekulé rules: a ring of all-1.5 bonds gets one circle (naphthalene: 2); a
    1.5 bond outside a circled ring is a solid plus dashed line; Kekulé rings get inside-ring
    double bonds with the shortening rule.

@@ -10,6 +10,8 @@ export interface PlacedRuns {
   readonly svg: string;
   /** The text box: width x (ascent + descent), top = baseline - ascent. */
   readonly box: Rect;
+  /** The ink box: width x the font's full ascent and descent (see `MeasuredLine.inkAscent`). */
+  readonly ink: Rect;
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
@@ -46,6 +48,12 @@ export function placeRuns(
   return {
     svg,
     box: { x: origin.x, y: origin.y - m.ascent, w: m.width, h: m.ascent + m.descent },
+    ink: {
+      x: origin.x,
+      y: origin.y - m.inkAscent,
+      w: m.width,
+      h: m.inkAscent + m.inkDescent,
+    },
     notices: m.notices,
   };
 }

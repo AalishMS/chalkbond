@@ -11,7 +11,10 @@ import { measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
 
 export type TextAlign = 'left' | 'center' | 'right';
 
-/** Size of a measured block: widest line, first line's ascent, last line's bottom below the first baseline. */
+/**
+ * Size of a measured block: widest line, first line's ink ascent (the font's full ascent), last
+ * line's ink bottom below the first baseline.
+ */
 export interface TextSize {
   readonly width: number;
   readonly ascent: number;
@@ -38,7 +41,7 @@ export function layoutText(
   const present = runs.filter((r) => r.text !== '');
   if (present.length === 0) return null;
   const m = measureRuns(present, style);
-  const anchor = place({ width: m.width, ascent: m.ascent, descent: m.descent });
+  const anchor = place({ width: m.width, ascent: m.inkAscent, descent: m.inkDescent });
 
   // Segments come out in run order, line by line: one colour per non-empty piece of each run.
   const colors = present.flatMap((run) =>
@@ -72,13 +75,13 @@ export function layoutText(
         ),
       );
     }
-    spans.push({ x: x0, y: anchor.y - m.ascent, w: line.width, h: 0 });
+    spans.push({ x: x0, y: anchor.y - m.inkAscent, w: line.width, h: 0 });
     if (line.segments.length > 0) {
       lineInk.push({
         x: x0,
-        y: baseline - line.ascent,
+        y: baseline - line.inkAscent,
         w: line.width,
-        h: line.ascent + line.descent,
+        h: line.inkAscent + line.inkDescent,
       });
     }
   }
@@ -90,9 +93,9 @@ export function layoutText(
     ink,
     box: rectUnion(ink, {
       x: across.x,
-      y: anchor.y - m.ascent,
+      y: anchor.y - m.inkAscent,
       w: across.w,
-      h: m.ascent + m.descent,
+      h: m.inkAscent + m.inkDescent,
     }),
     notices: m.notices,
   };

@@ -57,8 +57,9 @@ describe('layoutTextAt: vertical placement', () => {
   it('the first line cap-height box is centred on at.y', () => {
     const out = layoutTextAt([{ text: 'H' }], style, 'left', at)!;
     near(els(out.svg)[0]!.y, 50 + 71.6 / 2);
-    near(out.ink.y, 50 - 71.6 / 2);
-    near(out.ink.h, 71.6);
+    // The ink box is the font's full ascent (0.905 em) and descent (0.212 em) round that baseline.
+    near(out.ink.y, 50 + 71.6 / 2 - 90.5);
+    near(out.ink.h, 90.5 + 21.2);
   });
 });
 
@@ -92,7 +93,7 @@ describe('layoutTextAt: runs', () => {
     )!;
     const plus = els(out.svg)[3]!;
     near(plus.y, 50 + 35.8 - 40);
-    near(out.ink.y, 50 + 35.8 - 40 - 0.7 * 71.6);
+    near(out.ink.y, 50 + 35.8 - 40 - 0.905 * 70);
   });
 
   it.each([
@@ -186,8 +187,8 @@ describe('layoutTextAt: several lines', () => {
 
   it('the first line stays centred on at.y; the block extends below', () => {
     const out = layoutTextAt([{ text: 'H\nH' }], style, 'left', at)!;
-    near(out.ink.y, 50 - 35.8);
-    near(out.ink.y + out.ink.h, 50 + 35.8 + 120);
+    near(out.ink.y, 50 + 35.8 - 90.5);
+    near(out.ink.y + out.ink.h, 50 + 35.8 + 120 + 21.2);
   });
 
   it.each([
@@ -231,8 +232,8 @@ describe('layoutText: caller-chosen anchor', () => {
       return { x: 7, y: 11 };
     })!;
     near(seen!.width, adv('Wg'));
-    near(seen!.ascent, 71.6);
-    near(seen!.descent, 120 + 0); // second line has no descender
+    near(seen!.ascent, 90.5); // the font's full ascent, not the cap height
+    near(seen!.descent, 120 + 21.2); // and its full descent below the last baseline
     near(els(out.svg)[0]!.x, 7);
     near(els(out.svg)[0]!.y, 11);
   });
@@ -241,8 +242,8 @@ describe('layoutText: caller-chosen anchor', () => {
     const out = layoutText([{ text: 'H\nHg' }], style, 'center', () => ({ x: 0, y: 0 }))!;
     near(out.box.x, -adv('Hg') / 2);
     near(out.box.w, adv('Hg'));
-    near(out.box.y, -71.6);
-    near(out.box.h, 71.6 + 120 + 21.2);
+    near(out.box.y, -90.5);
+    near(out.box.h, 90.5 + 120 + 21.2);
   });
 });
 

@@ -156,6 +156,34 @@ describe('measureRuns: lines', () => {
   });
 });
 
+describe('measureRuns: ink box (safe for every glyph)', () => {
+  it('is the font ascent 0.905 em and descent 0.212 em whatever the glyphs', () => {
+    for (const text of ['W', 'δ−', 'x', 'g', '.']) {
+      const m = measureRuns([{ text }], style);
+      near(m.inkAscent, 90.5);
+      near(m.inkDescent, 21.2);
+      near(m.lines[0]!.inkAscent, 90.5);
+    }
+  });
+
+  it('sub and superscripts use their own scaled font box, shifted with the run', () => {
+    const m = measureRuns(
+      [{ text: 'H' }, { text: '2', script: 'sub' }, { text: '+', script: 'sup' }],
+      style,
+    );
+    // Sup: 0.905 * 70 above its baseline, which is 40 above the line's.
+    near(m.inkAscent, 0.905 * 70 + 40);
+    // Sub: 0.212 * 70 below its baseline, which is 20 below the line's.
+    near(m.inkDescent, 0.212 * 70 + 20);
+  });
+
+  it('measures the last line down from the first baseline, and keeps the cap box for no text', () => {
+    near(measureRuns([{ text: 'a\nb' }], style).inkDescent, 120 + 21.2);
+    const blank = measureRuns([{ text: '\n' }], style);
+    near(blank.lines[0]!.inkAscent, 71.6);
+  });
+});
+
 describe('measureRuns: unmeasured glyphs', () => {
   it('uses 0.556 em and reports one deduplicated notice sorted by code point', () => {
     const m = measureRuns([{ text: 'কঅক' }, { text: 'ক', bold: true }], style);

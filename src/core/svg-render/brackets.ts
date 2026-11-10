@@ -125,7 +125,7 @@ export function layoutBracket(
     }
     if (placed) {
       svg.push(placed.svg);
-      ink = rectUnion(ink, placed.box);
+      ink = rectUnion(ink, placed.ink);
       notices.push(...placed.notices);
     }
   }

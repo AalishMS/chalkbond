@@ -1,103 +1,80 @@
-// Satellites (SPEC-svg-render.md "Atoms and labels", Satellites): the charge sign of a skeleton
-// vertex, lone pairs, radical dots, partial charge and atom number, placed in the angular gaps
-// between the atom's bond directions (every bond of the whole document).
+// Satellites (SPEC-svg-render.md "Atoms and labels", Satellites): lone pairs, radical dots, the
+// charge sign of a skeleton vertex, partial charge and atom number, each in one of eight slots
+// round the element symbol's glyph box.
 //
-// Assignment order: charge, lone pairs, radical dots, partial charge, number. Gaps are sorted by
-// size (descending, ties by smaller start angle), satellites are dealt round-robin, and the `k`
-// satellites of one gap sit at fractions (j+1)/(k+1) of it. A bare atom has the slots up, down,
-// left, right. Angles are screen angles in radians (y down: 90 degrees points down).
+// Slots: the four cardinals N, E, S, W (centred on a box edge) and the four diagonals NE, NW, SE,
+// SW (off a box corner). A satellite's nearest ink edge is `satelliteGap` from the box. A lone
+// pair is two dots along the box edge (the diagonal's tangent for a diagonal slot). Screen
+// coordinates: y points down, so N is up.
 import type { Atom, Point, Rect } from '../doc-model';
-import {
-  growRect,
-  normalize,
-  rayExitBox,
-  rectCenter,
-  rectContains,
-  rectUnion,
-  segmentBoxInterval,
-  unionAll,
-} from './geom';
+import type { AtomLabel } from './atom-label';
+import { growRect, normalize, segmentBoxInterval, unionAll } from './geom';
 import { el, svgText } from './svg-write';
 import { INK, type ResolvedStyle } from './style';
-import { measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import { ASCENT_EM, DESCENT_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
 
-const TAU = 2 * Math.PI;
-/** Gap sizes (and angles) closer than this are equal. */
-const EPS = 1e-6;
 const MINUS = '−';
-/** Spread between satellites that share a bare-atom slot (more than four satellites). */
-const SLOT_SPREAD = Math.PI / 6;
-/** Bare atom slots in dealing order: up, down, left, right. */
-const BARE_SLOTS = [1.5 * Math.PI, 0.5 * Math.PI, Math.PI, 0] as const;
+const S2 = Math.SQRT1_2;
+/** A bond blocks the slots strictly closer than this (exactly 45 degrees does not block). */
+const BLOCK_ANGLE = Math.PI / 4 - 1e-9;
+/** Most rings a satellite is pushed outward before it gives up and keeps the last position. */
+const MAX_RINGS = 40;
+const BISECTIONS = 60;
 
-/** Candidate directions tried per ring when a satellite's dealt slot is taken. */
-const SLOTS = 24;
-const SLOT_STEP = TAU / SLOTS;
-/** How many rings outward a satellite may move before it gives up and keeps its dealt slot. */
-const MAX_RINGS = 8;
+export type Slot = 'N' | 'E' | 'S' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 
-const overlapsRect = (a: Rect, b: Rect): boolean =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
-export interface Gap {
-  /** Start angle, radians in [0, 2π). */
-  readonly start: number;
-  /** Angular size, radians (2π for the single gap of one bond). */
-  readonly size: number;
+interface SlotGeometry {
+  /** The point of the box the slot hangs off: an edge midpoint or a corner. */
+  readonly anchor: (box: Rect) => Point;
+  /** Outward unit direction (screen). */
+  readonly out: Point;
+  /** Unit direction along the box edge (a pair's axis). */
+  readonly tangent: Point;
 }
 
-const wrap = (a: number): number => ((a % TAU) + TAU) % TAU;
+const SLOTS: Readonly<Record<Slot, SlotGeometry>> = {
+  N: {
+    anchor: (b) => ({ x: b.x + b.w / 2, y: b.y }),
+    out: { x: 0, y: -1 },
+    tangent: { x: 1, y: 0 },
+  },
+  S: {
+    anchor: (b) => ({ x: b.x + b.w / 2, y: b.y + b.h }),
+    out: { x: 0, y: 1 },
+    tangent: { x: 1, y: 0 },
+  },
+  E: {
+    anchor: (b) => ({ x: b.x + b.w, y: b.y + b.h / 2 }),
+    out: { x: 1, y: 0 },
+    tangent: { x: 0, y: 1 },
+  },
+  W: {
+    anchor: (b) => ({ x: b.x, y: b.y + b.h / 2 }),
+    out: { x: -1, y: 0 },
+    tangent: { x: 0, y: 1 },
+  },
+  NE: {
+    anchor: (b) => ({ x: b.x + b.w, y: b.y }),
+    out: { x: S2, y: -S2 },
+    tangent: { x: S2, y: S2 },
+  },
+  NW: { anchor: (b) => ({ x: b.x, y: b.y }), out: { x: -S2, y: -S2 }, tangent: { x: S2, y: -S2 } },
+  SE: {
+    anchor: (b) => ({ x: b.x + b.w, y: b.y + b.h }),
+    out: { x: S2, y: S2 },
+    tangent: { x: S2, y: -S2 },
+  },
+  SW: {
+    anchor: (b) => ({ x: b.x, y: b.y + b.h }),
+    out: { x: -S2, y: S2 },
+    tangent: { x: S2, y: S2 },
+  },
+};
 
-/** The gaps between bond directions, largest first (ties by the smaller start angle). */
-export function bondGaps(directions: readonly Point[]): Gap[] {
-  const angles = directions
-    .flatMap((v) => normalize(v) ?? [])
-    .map((u) => wrap(Math.atan2(u.y, u.x)))
-    .sort((a, b) => a - b);
-  const distinct: number[] = [];
-  for (const a of angles) {
-    const last = distinct[distinct.length - 1];
-    if (last === undefined || a - last > EPS) distinct.push(a);
-  }
-  // An angle just below 2π and one at 0 are the same direction.
-  const first = distinct[0];
-  const end = distinct[distinct.length - 1];
-  if (distinct.length > 1 && first !== undefined && end !== undefined && first + TAU - end <= EPS) {
-    distinct.pop();
-  }
-  const gaps: Gap[] = distinct.map((start, i) => {
-    const next = distinct[i + 1];
-    return { start, size: (next ?? (distinct[0] as number) + TAU) - start };
-  });
-  return gaps.sort((a, b) =>
-    Math.abs(a.size - b.size) > EPS ? b.size - a.size : a.start - b.start,
-  );
-}
-
-/** The direction angle of each of `count` satellites, in assignment order. */
-export function satelliteAngles(count: number, directions: readonly Point[]): number[] {
-  const gaps = bondGaps(directions);
-  const slots = gaps.length;
-  if (slots === 0) {
-    const per = BARE_SLOTS.map((_, s) => Math.floor((count - s + 3) / 4));
-    const seen = [0, 0, 0, 0];
-    return Array.from({ length: count }, (_, i) => {
-      const s = i % 4;
-      const j = seen[s] as number;
-      seen[s] = j + 1;
-      return (BARE_SLOTS[s] as number) + (j - ((per[s] as number) - 1) / 2) * SLOT_SPREAD;
-    });
-  }
-  const per = new Array<number>(slots).fill(0);
-  for (let i = 0; i < count; i++) per[i % slots] = (per[i % slots] as number) + 1;
-  const seen = new Array<number>(slots).fill(0);
-  return Array.from({ length: count }, (_, i) => {
-    const g = gaps[i % slots] as Gap;
-    const j = seen[i % slots] as number;
-    seen[i % slots] = j + 1;
-    return g.start + (g.size * (j + 1)) / ((per[i % slots] as number) + 1);
-  });
-}
+const CARDINALS: readonly Slot[] = ['N', 'S', 'E', 'W'];
+const DIAGONALS: readonly Slot[] = ['NE', 'NW', 'SE', 'SW'];
+/** Partial charge, formal charge of a vertex and atom number. */
+const TEXT_ORDER: readonly Slot[] = ['N', 'NE', 'NW', 'S', 'SE', 'SW', 'E', 'W'];
 
 export interface SatelliteInput {
   readonly atom: Atom;
@@ -105,22 +82,39 @@ export interface SatelliteInput {
   readonly position: Point;
   /** Vectors to every neighbour in the whole document (any length). */
   readonly directions: readonly Point[];
-  /** The label's full text box, or `null` for a skeleton vertex. */
-  readonly labelBox: Rect | null;
-  /**
-   * The element symbol's own glyph box (`AtomLabel.symbolBox`): lone pairs and radical dots sit
-   * round it. Defaults to `labelBox`.
-   */
-  readonly glyphBox?: Rect | null;
+  /** The atom's label, or `null` for a skeleton vertex (whose reference box is the point). */
+  readonly label: AtomLabel | null;
+}
+
+export interface SatellitePlacement {
+  readonly slot: Slot;
+  /** Slot depths the satellite was pushed outward (0 unless all eight slots were unusable). */
+  readonly ring: number;
 }
 
 export interface SatelliteLayout {
-  /** Dots and `<text>` elements in assignment order, separated by `
-`. */
+  /** Dots and `<text>` elements in assignment order, separated by a line feed. */
   readonly svg: string;
+  /** The ink box of all satellites (text in the font's full ascent/descent box). */
   readonly ink: Rect;
-  /** The ink box of each satellite in assignment order (a lone pair is one box round both dots). */
+  /**
+   * The visual box of each satellite in assignment order: a lone pair is one box round both dots,
+   * text is the cap-height box.
+   */
   readonly boxes: readonly Rect[];
+  /**
+   * The rects that actually carry each satellite's ink, in assignment order: one per dot (the
+   * box of a diagonal pair covers the corner it hangs off, its dots do not), the cap-height box
+   * of a text.
+   */
+  readonly rects: readonly (readonly Rect[])[];
+  /** Where each satellite sits, in assignment order. */
+  readonly placements: readonly SatellitePlacement[];
+  /**
+   * Pt the label's formal-charge superscript must move right because a lone pair or radical dot
+   * took the E slot (0 otherwise); rebuild the label with it (`AtomLabelInput.chargeShift`).
+   */
+  readonly chargeShift: number;
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
@@ -129,14 +123,15 @@ type Satellite =
   | { readonly kind: 'dot' }
   | { readonly kind: 'text'; readonly text: string };
 
+/** Order of assignment: lone pairs, radical dots, vertex charge, partial charge, number. */
 function satelliteList(atom: Atom, vertex: boolean): Satellite[] {
   const out: Satellite[] = [];
+  for (let i = 0; i < (atom.lonePairs ?? 0); i++) out.push({ kind: 'pair' });
+  for (let i = 0; i < atom.radical; i++) out.push({ kind: 'dot' });
   if (vertex && atom.charge !== 0) {
     const magnitude = Math.abs(atom.charge) > 1 ? String(Math.abs(atom.charge)) : '';
     out.push({ kind: 'text', text: `${magnitude}${atom.charge > 0 ? '+' : MINUS}` });
   }
-  for (let i = 0; i < (atom.lonePairs ?? 0); i++) out.push({ kind: 'pair' });
-  for (let i = 0; i < atom.radical; i++) out.push({ kind: 'dot' });
   if (atom.partialCharge !== undefined) {
     out.push({ kind: 'text', text: atom.partialCharge.replace('-', MINUS) });
   }
@@ -146,10 +141,26 @@ function satelliteList(atom: Atom, vertex: boolean): Satellite[] {
   return out;
 }
 
-/** One satellite put down at an angle and distance: its markup and ink box. */
+/** Unsigned angle between two unit vectors, radians in [0, π]. */
+const angleBetween = (a: Point, b: Point): number =>
+  Math.atan2(Math.abs(a.x * b.y - a.y * b.x), a.x * b.x + a.y * b.y);
+
+const overlapsRect = (a: Rect, b: Rect): boolean =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+const pointBoxDistance = (p: Point, b: Rect): number => {
+  const dx = Math.max(b.x - p.x, 0, p.x - (b.x + b.w));
+  const dy = Math.max(b.y - p.y, 0, p.y - (b.y + b.h));
+  return Math.sqrt(dx * dx + dy * dy);
+};
+
+/** One satellite put down in a slot: its markup and boxes. */
 interface Placed {
   readonly parts: string[];
+  /** The rects that must stay clear (each dot; the text's cap-height box). */
+  readonly rects: Rect[];
   readonly box: Rect;
+  readonly ink: Rect;
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
@@ -158,56 +169,103 @@ export function layoutSatellites(
   input: SatelliteInput,
   style: ResolvedStyle,
 ): SatelliteLayout | null {
-  const { atom, position, labelBox } = input;
-  const list = satelliteList(atom, labelBox === null);
+  const { atom, position, label } = input;
+  const list = satelliteList(atom, label === null);
   if (list.length === 0) return null;
-  const angles = satelliteAngles(list.length, input.directions);
-  const fill = atom.color ?? INK;
-  const size = style.satelliteScale * style.fontSize;
-  const glyphBox = input.glyphBox === undefined ? labelBox : input.glyphBox;
 
-  const dotAt = (c: Point): { svg: string; box: Rect } => {
-    const r = style.dotRadius;
-    return {
-      svg: el('circle', { cx: c.x, cy: c.y, r, fill, stroke: 'none' }),
-      box: { x: c.x - r, y: c.y - r, w: 2 * r, h: 2 * r },
-    };
+  const fill = atom.color ?? INK;
+  const gap = style.satelliteGap;
+  const r = style.dotRadius;
+  const textSize = style.satelliteScale * style.fontSize;
+  const textCap = style.capHeight * style.satelliteScale;
+  /** The reference box: the symbol's glyph box, or the point for a skeleton vertex. */
+  const ref: Rect = label ? label.symbolBox : { x: position.x, y: position.y, w: 0, h: 0 };
+  const bonds = input.directions.flatMap((d) => normalize(d) ?? []);
+  const hPart = label?.hPart ?? { left: false, right: false };
+
+  // --- slot rules ------------------------------------------------------------------------------
+  const nearestBond = (slot: Slot): number =>
+    bonds.reduce((m, b) => Math.min(m, angleBetween(SLOTS[slot].out, b)), Infinity);
+  const blocked = (slot: Slot): boolean =>
+    nearestBond(slot) < BLOCK_ANGLE ||
+    (slot === 'E' && hPart.right) ||
+    (slot === 'W' && hPart.left);
+
+  /** Lone pairs and radical dots: away from the bonds, else N, S, opposite the H part, rest. */
+  const dotPreference = (): Slot[] => {
+    if (bonds.length > 0) {
+      const far = [...CARDINALS].sort((a, b) => nearestBond(b) - nearestBond(a));
+      return [...far, ...DIAGONALS];
+    }
+    const third: Slot[] = hPart.right ? ['W', 'E'] : hPart.left ? ['E', 'W'] : ['E', 'W'];
+    return ['N', 'S', ...third, ...DIAGONALS];
   };
 
-  /** Satellite `sat` at `angle`, `extra` further out than its home distance. */
-  const place = (sat: Satellite, angle: number, extra: number): Placed => {
-    const u: Point = { x: Math.cos(angle), y: Math.sin(angle) };
-    // Dots and pairs hug the element symbol; text goes round the whole label.
-    const round = sat.kind === 'text' ? labelBox : glyphBox;
-    const origin =
-      round && rectContains(round, position) ? position : round ? rectCenter(round) : position;
-    const edge = round ? rayExitBox(origin, u, round) : null;
-    const d = (edge ?? style.vertexGap) + style.satelliteGap + extra;
-    const point: Point = { x: origin.x + u.x * d, y: origin.y + u.y * d };
+  // --- shapes ----------------------------------------------------------------------------------
+  const dotRect = (c: Point): Rect => ({ x: c.x - r, y: c.y - r, w: 2 * r, h: 2 * r });
+  const dotSvg = (c: Point): string => el('circle', { cx: c.x, cy: c.y, r, fill, stroke: 'none' });
 
-    if (sat.kind === 'dot') {
-      const one = dotAt(point);
-      return { parts: [one.svg], box: one.box, notices: [] };
+  /** Distance from the anchor along the slot at which the dots are `gap` from the box. */
+  const dotDistance = (slot: Slot, pair: boolean): number => {
+    const g = SLOTS[slot];
+    if (slot.length === 1) return gap + r;
+    const a = g.anchor(ref);
+    const centres = (d: number): Point[] => {
+      const p = { x: a.x + g.out.x * d, y: a.y + g.out.y * d };
+      const h = pair ? style.pairSeparation / 2 : 0;
+      return [
+        { x: p.x - g.tangent.x * h, y: p.y - g.tangent.y * h },
+        { x: p.x + g.tangent.x * h, y: p.y + g.tangent.y * h },
+      ];
+    };
+    let lo = 0;
+    let hi = 10 * (gap + style.pairSeparation + 2 * r);
+    for (let i = 0; i < BISECTIONS; i++) {
+      const mid = (lo + hi) / 2;
+      const clear = Math.min(...centres(mid).map((c) => pointBoxDistance(c, ref))) - r;
+      if (clear >= gap) hi = mid;
+      else lo = mid;
     }
-    if (sat.kind === 'pair') {
-      const n: Point = { x: -u.y, y: u.x };
-      const h = style.pairSeparation / 2;
-      const a = dotAt({ x: point.x - n.x * h, y: point.y - n.y * h });
-      const b = dotAt({ x: point.x + n.x * h, y: point.y + n.y * h });
-      return { parts: [a.svg, b.svg], box: rectUnion(a.box, b.box), notices: [] };
+    return hi;
+  };
+
+  /** Satellite `sat` in `slot`, `ring` slot depths further out than its home. */
+  const place = (sat: Satellite, slot: Slot, ring: number): Placed => {
+    const g = SLOTS[slot];
+    const a = g.anchor(ref);
+    if (sat.kind !== 'text') {
+      const pair = sat.kind === 'pair';
+      const depth = 2 * r;
+      const d = dotDistance(slot, pair) + ring * (depth + gap);
+      const p = { x: a.x + g.out.x * d, y: a.y + g.out.y * d };
+      const h = pair ? style.pairSeparation / 2 : 0;
+      const centres = pair
+        ? [
+            { x: p.x - g.tangent.x * h, y: p.y - g.tangent.y * h },
+            { x: p.x + g.tangent.x * h, y: p.y + g.tangent.y * h },
+          ]
+        : [p];
+      const rects = centres.map(dotRect);
+      const box = unionAll(rects) as Rect;
+      return { parts: centres.map(dotSvg), rects, box, ink: box, notices: [] };
     }
-    const m = measureRuns([{ text: sat.text }], style, size);
+    const m = measureRuns([{ text: sat.text }], style, textSize);
     const w = m.width;
-    const h = m.ascent + m.descent;
-    // The box is tangent to the point: its centre is one half-extent further along `u`.
-    const t = rayExitBox({ x: 0, y: 0 }, u, { x: -w / 2, y: -h / 2, w, h }) ?? 0;
-    const centre: Point = { x: point.x + u.x * t, y: point.y + u.y * t };
-    const box: Rect = { x: centre.x - w / 2, y: centre.y - h / 2, w, h };
+    const depth = Math.abs(g.out.x) * w + Math.abs(g.out.y) * textCap;
+    const d = gap + ring * (depth + gap);
+    const p = { x: a.x + g.out.x * d, y: a.y + g.out.y * d };
+    // The text box's nearest corner (or edge midpoint) is the point; it extends away from the atom.
+    const sx = Math.sign(g.out.x);
+    const sy = Math.sign(g.out.y);
+    const cx = p.x + (sx * w) / 2;
+    const cy = p.y + (sy * textCap) / 2;
+    const box: Rect = { x: cx - w / 2, y: cy - textCap / 2, w, h: textCap };
+    const baseline = box.y + textCap;
     const parts = (m.lines[0]?.segments ?? []).map((seg) =>
       svgText(
         {
           x: box.x + seg.x,
-          y: box.y + m.ascent + seg.dy,
+          y: baseline + seg.dy,
           'font-family': style.fontFamily,
           'font-size': seg.fontSize,
           fill,
@@ -216,47 +274,96 @@ export function layoutSatellites(
         seg.text,
       ),
     );
-    return { parts, box, notices: m.notices };
+    const ink: Rect = {
+      x: box.x,
+      y: baseline - ASCENT_EM * textSize,
+      w,
+      h: (ASCENT_EM + DESCENT_EM) * textSize,
+    };
+    return { parts, rects: [box], box, ink, notices: m.notices };
   };
 
-  // Obstacles: the label's ink, every bond leaving the atom (a thickened segment) and the
-  // satellites already placed. A satellite takes its dealt angle if that is free, else the next
-  // free slot (15 degree steps, alternating either side), and only when the whole turn is blocked
-  // does it move outward one ring and try again.
-  const bondHalf = style.lineWidth / 2 + style.dotRadius;
-  const bonds = input.directions.map((d): [Point, Point] => [
+  // --- obstacles -------------------------------------------------------------------------------
+  // Beyond the slot rules, a satellite never sits on the label's other glyphs, the charge sign,
+  // a bond leaving the atom or a satellite already placed.
+  const bondHalf = style.lineWidth / 2 + r;
+  const bondSegments = input.directions.map((d): [Point, Point] => [
     position,
     { x: position.x + d.x, y: position.y + d.y },
   ]);
-  const placedBoxes: Rect[] = [];
-  const free = (box: Rect): boolean =>
-    !(labelBox && overlapsRect(box, labelBox)) &&
-    !bonds.some(([a, b]) => segmentBoxInterval(a, b, growRect(box, bondHalf)) !== null) &&
-    !placedBoxes.some((other) => overlapsRect(box, growRect(other, style.dotRadius)));
+  const placedRects: Rect[] = [];
+  let charge: Rect | null = label?.chargeBox ?? null;
+  let chargeShift = 0;
 
-  const choose = (sat: Satellite, preferred: number): Placed => {
-    for (let ring = 0; ring <= MAX_RINGS; ring++) {
-      for (let k = 0; k < SLOTS; k++) {
-        const step = Math.ceil(k / 2) * (k % 2 === 1 ? 1 : -1);
-        const placed = place(sat, preferred + step * SLOT_STEP, ring * style.satelliteGap * 2);
-        if (free(placed.box)) return placed;
-      }
-    }
-    return place(sat, preferred, 0);
-  };
+  /**
+   * Is `placed` clear of everything? The charge sign is ignored for an E dot (it will move).
+   * Bonds are checked for dots only: text is kept off them by the 45 degree rule (a sign's
+   * cap-height box is much taller than its ink, so a wide-angle bond may graze the box).
+   */
+  const clear = (placed: Placed, slot: Slot, movesCharge: boolean): boolean =>
+    placed.rects.every(
+      (rect) =>
+        !(label?.obstacles ?? []).some((o) => overlapsRect(rect, growRect(o, r))) &&
+        !(charge && !(movesCharge && slot === 'E') && overlapsRect(rect, growRect(charge, r))) &&
+        !(
+          movesCharge &&
+          bondSegments.some(([p, q]) => segmentBoxInterval(p, q, growRect(rect, bondHalf)) !== null)
+        ) &&
+        !placedRects.some((other) => overlapsRect(rect, growRect(other, r))),
+    );
 
+  const taken = new Set<Slot>();
   const parts: string[] = [];
   const boxes: Rect[] = [];
+  const rects: Rect[][] = [];
+  const inks: Rect[] = [];
+  const placements: SatellitePlacement[] = [];
   const notices: UnmeasuredGlyphNotice[] = [];
-  list.forEach((sat, i) => {
-    const placed = choose(sat, angles[i] as number);
-    placedBoxes.push(placed.box);
+
+  for (const sat of list) {
+    const preference = sat.kind === 'text' ? TEXT_ORDER : dotPreference();
+    const movesCharge = sat.kind !== 'text';
+    let chosen: { slot: Slot; ring: number; placed: Placed } | null = null;
+    for (const slot of preference) {
+      if (blocked(slot) || taken.has(slot)) continue;
+      const placed = place(sat, slot, 0);
+      if (clear(placed, slot, movesCharge)) {
+        chosen = { slot, ring: 0, placed };
+        break;
+      }
+    }
+    if (!chosen) {
+      // Every slot is blocked, taken or crowded: the first usable preference, one slot depth
+      // further out per ring until nothing is in the way.
+      const slot = preference.find((s) => !blocked(s)) ?? (preference[0] as Slot);
+      for (let ring = 1; ring <= MAX_RINGS; ring++) {
+        const placed = place(sat, slot, ring);
+        chosen = { slot, ring, placed };
+        if (clear(placed, slot, movesCharge)) break;
+      }
+    }
+    const { slot, ring, placed } = chosen as { slot: Slot; ring: number; placed: Placed };
+    taken.add(slot);
+    placedRects.push(...placed.rects);
     parts.push(...placed.parts);
     boxes.push(placed.box);
+    rects.push(placed.rects);
+    inks.push(placed.ink);
+    placements.push({ slot, ring });
     notices.push(...placed.notices);
-  });
 
-  const ink = unionAll(boxes);
+    // A dot between the symbol and the charge pushes the charge out: it starts `gap` beyond it.
+    if (movesCharge && slot === 'E' && label?.chargeBox) {
+      const start = placed.box.x + placed.box.w + gap;
+      if (start > label.chargeBox.x + chargeShift) {
+        chargeShift = start - label.chargeBox.x;
+        charge = { ...label.chargeBox, x: label.chargeBox.x + chargeShift };
+      }
+    }
+  }
+
+  const ink = unionAll(inks);
   if (!ink) return null;
-  return { svg: parts.join('\n'), ink, boxes, notices };
+  const svg = parts.join('\n');
+  return { svg, ink, boxes, rects, placements, chargeShift, notices };
 }

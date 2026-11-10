@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Atom, AtomId, Doc, Point, TextRun } from '../doc-model';
+import type { Atom, AtomId, Doc, Point, Rect, TextRun } from '../doc-model';
 import { bondClipBox, buildAtomLabel, isLabelled, type AtomLabel } from './atom-label';
 import { ADVANCE_REGULAR } from './font-metrics';
 import { resolveStyle } from './style';
@@ -336,6 +336,56 @@ describe('geometry of the label', () => {
     expect(l.notices).toEqual([{ code: 'unmeasured-glyph', chars: 'কখ' }]);
     expect(l.text).toBe('Phকখ');
     expect(build({ element: 'O' }, LEFT, 1).notices).toEqual([]);
+  });
+});
+
+describe('label geometry for satellites', () => {
+  it('inkBox is the font ascent/descent box of every run; textBox keeps the cap-height layout', () => {
+    const label = build({ element: 'O', charge: -1 }, [], 1);
+    expect(label.text).toBe('OH−');
+    near(label.inkBox.w, label.textBox.w);
+    // The superscript is the highest run: 0.905 * 70 above its own baseline, 40 above the line's.
+    near(label.inkBox.y, POS.y + CAP / 2 - 40 - 0.905 * 70);
+    near(label.inkBox.y + label.inkBox.h, POS.y + CAP / 2 + 0.212 * 100);
+    expect(label.inkBox.y).toBeLessThan(label.textBox.y + 1e-9);
+  });
+
+  it('hPart tells which side of the symbol carries the H part or tail; a charge is not one', () => {
+    expect(build({ element: 'O', charge: -1 }, [], 1).hPart).toEqual({ left: false, right: true });
+    expect(build({ element: 'O', label: 'HO' }, []).hPart).toEqual({ left: true, right: false });
+    expect(build({ element: 'O', label: 'OH' }, []).hPart).toEqual({ left: false, right: true });
+    expect(build({ element: 'Cl', charge: -1 }, []).hPart).toEqual({ left: false, right: false });
+    expect(build({ element: 'O' }, [], 2).hPart).toEqual({ left: true, right: false }); // H2O
+  });
+
+  it('obstacles are the other glyphs, cut away from the symbol (typed HO leaves just the H)', () => {
+    const label = build({ element: 'O', label: 'HO' }, []);
+    expect(label.obstacles).toHaveLength(1);
+    const [h] = label.obstacles as [Rect];
+    near(h.x + h.w, label.symbolBox.x);
+    near(h.w, adv('H'));
+    near(h.h, CAP);
+    expect(build({ element: 'Cl' }, []).obstacles).toEqual([]);
+  });
+
+  it('chargeBox is the superscript sign; chargeShift moves it and widens the text box', () => {
+    const plain = build({ element: 'O', label: 'HO', charge: -1 }, []);
+    const moved = buildAtomLabel(
+      {
+        atom: mk({ element: 'O', label: 'HO', charge: -1 }),
+        implicitH: 0,
+        neighbors: [],
+        position: POS,
+        chargeShift: 30,
+      },
+      style,
+    );
+    near(moved.chargeBox!.x - plain.chargeBox!.x, 30);
+    near(moved.textBox.w - plain.textBox.w, 30);
+    near(moved.inkBox.w - plain.inkBox.w, 30);
+    // Only the sign moves: the symbol stays centred on the atom.
+    expect(moved.symbolBox).toEqual(plain.symbolBox);
+    expect(build({ element: 'O' }, []).chargeBox).toBeNull();
   });
 });
 

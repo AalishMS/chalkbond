@@ -3,12 +3,12 @@
 // text boxes, the positioned `<text>` markup and the box bonds are clipped against.
 // Chemistry stays in chem-core: the H count comes in as `AtomInfo.implicitH`.
 import type { Atom, Point, Rect, TextRun } from '../doc-model';
-import { growRect, normalize, rectUnion } from './geom';
+import { growRect, normalize, rectUnion, unionAll } from './geom';
 import { labelDisplay } from './label-display';
 import { svgText } from './svg-write';
 import type { ResolvedStyle } from './style';
 import { INK } from './style';
-import { measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import { ASCENT_EM, DESCENT_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
 
 /** Neighbours within this much of straight up/down (|sx| <= 0.1) leave the order unchanged. */
 const SIDE_DEAD_ZONE = 0.1;
@@ -22,6 +22,11 @@ export interface AtomLabelInput {
   readonly neighbors: readonly Point[];
   /** The atom's position, pt. Must be finite (the caller skips an atom otherwise). */
   readonly position: Point;
+  /**
+   * Pt the formal-charge superscript is moved to the right (a lone pair or radical dot sits
+   * between the symbol and the charge). Default 0.
+   */
+  readonly chargeShift?: number;
 }
 
 export interface AtomLabel {
@@ -41,6 +46,21 @@ export interface AtomLabel {
    * holds the element symbol (`HO` for oxygen: just the `O`).
    */
   readonly symbolBox: Rect;
+  /**
+   * The ink box: every glyph run in the font's full ascent/descent box (see
+   * `MeasuredLine.inkAscent`), so nothing the browser draws, `δ` overshoot included, leaves it.
+   * This is what extents use.
+   */
+  readonly inkBox: Rect;
+  /**
+   * Cap-height boxes of the label's glyphs other than the symbol and the formal charge (the H or
+   * count part, isotope, `R1`-style tails): where a satellite must not sit.
+   */
+  readonly obstacles: readonly Rect[];
+  /** Which sides of the symbol carry such text (satellite slots there are blocked). */
+  readonly hPart: { readonly left: boolean; readonly right: boolean };
+  /** Cap-height box of the formal-charge superscript, `null` without one. */
+  readonly chargeBox: Rect | null;
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
@@ -181,11 +201,17 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
   const baseline = position.y + style.capHeight / 2;
   const fill = atom.color ?? INK;
 
+  const shift = input.chargeShift ?? 0;
+  const chargeAt = chargeRuns.length > 0 ? runs.length - 1 : -1;
+  /** Left edge of a segment, the charge moved by `chargeShift`. */
+  const segX = (seg: (typeof segments)[number], i: number): number =>
+    originX + seg.x + (i === chargeAt ? shift : 0);
+
   const svg = segments
-    .map((seg) =>
+    .map((seg, i) =>
       svgText(
         {
-          x: originX + seg.x,
+          x: segX(seg, i),
           y: baseline + seg.dy,
           'font-family': style.fontFamily,
           'font-size': seg.fontSize,
@@ -205,16 +231,54 @@ export function buildAtomLabel(input: AtomLabelInput, style: ResolvedStyle): Ato
     w: anchorEnd - anchorStart,
     h: style.capHeight,
   };
+  const symbolBox = typedSymbolBox(anchor, anchorBox, atom.element, typedLabel, style);
+
+  // Cap-height box of each segment; the part of one that overlaps the symbol (a typed `HO`) is
+  // cut away, leaving what lies beside it.
+  const capBox = (seg: (typeof segments)[number], i: number): Rect => {
+    const h = style.capHeight * (seg.fontSize / style.fontSize);
+    return { x: segX(seg, i), y: baseline + seg.dy - h, w: seg.width, h };
+  };
+  const obstacles: Rect[] = [];
+  segments.forEach((seg, i) => {
+    if (i === chargeAt) return;
+    const b = capBox(seg, i);
+    const overlapsSymbol = b.x < symbolBox.x + symbolBox.w && symbolBox.x < b.x + b.w;
+    if (!overlapsSymbol || b.y + b.h <= symbolBox.y || symbolBox.y + symbolBox.h <= b.y) {
+      obstacles.push(b);
+      return;
+    }
+    if (b.x < symbolBox.x) obstacles.push({ ...b, w: symbolBox.x - b.x });
+    const right = symbolBox.x + symbolBox.w;
+    if (b.x + b.w > right) obstacles.push({ ...b, x: right, w: b.x + b.w - right });
+  });
+  const centre = symbolBox.x + symbolBox.w / 2;
+  const inkBox = unionAll(
+    segments.map((seg, i) => ({
+      x: segX(seg, i),
+      y: baseline + seg.dy - ASCENT_EM * seg.fontSize,
+      w: seg.width,
+      h: (ASCENT_EM + DESCENT_EM) * seg.fontSize,
+    })),
+  ) as Rect;
+  const chargeSeg = segments[chargeAt];
   return {
     runs,
     text: runs.map((r) => r.text).join(''),
     svg,
     anchorBox,
-    symbolBox: typedSymbolBox(anchor, anchorBox, atom.element, typedLabel, style),
+    symbolBox,
+    inkBox,
+    obstacles,
+    hPart: {
+      left: obstacles.some((o) => o.x + o.w / 2 < centre),
+      right: obstacles.some((o) => o.x + o.w / 2 > centre),
+    },
+    chargeBox: chargeSeg ? capBox(chargeSeg, chargeAt) : null,
     textBox: {
       x: originX,
       y: baseline - measure.ascent,
-      w: measure.width,
+      w: measure.width + shift,
       h: measure.ascent + measure.descent,
     },
     notices: measure.notices,

@@ -302,7 +302,7 @@ offset, bond anchor, fishhook barb side; an unresolvable anchor gives `skipped-i
 
 ### ✅ Checkpoint J — every item type renders
 - [x] `npm run check` green
-- [x] Commit (push left to the user)
+- [ ] Commit + push
 
 ---
 

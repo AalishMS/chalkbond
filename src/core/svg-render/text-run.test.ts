@@ -83,13 +83,15 @@ describe('placeRuns', () => {
     ).toBe('a b');
   });
 
-  it('the box equals an independent scan of the markup', () => {
+  it('the ink box equals an independent scan of the markup and contains the text box', () => {
     const out = placeRuns([{ text: 'Hg' }, { text: '2', script: 'sub' }], style, { x: 3, y: 9 })!;
     const scan = inkScan(out.svg)!;
-    near(out.box.x, scan.x);
-    near(out.box.y, scan.y);
-    near(out.box.w, scan.w);
-    near(out.box.h, scan.h);
+    near(out.ink.x, scan.x);
+    near(out.ink.y, scan.y);
+    near(out.ink.w, scan.w);
+    near(out.ink.h, scan.h);
+    expect(out.box.y).toBeGreaterThanOrEqual(out.ink.y - 1e-9);
+    expect(out.box.y + out.box.h).toBeLessThanOrEqual(out.ink.y + out.ink.h + 1e-9);
   });
 
   it('reports unmeasured glyphs', () => {

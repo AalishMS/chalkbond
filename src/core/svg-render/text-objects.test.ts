@@ -48,7 +48,7 @@ describe('layoutCaption', () => {
     const [t] = textElements(out.svg);
     near(out.ink.x + out.ink.w / 2, 140);
     near(out.ink.y, 50 + 20);
-    near(t!.y, 50 + 20 + style.capHeight);
+    near(t!.y, 50 + 20 + 0.905 * style.fontSize);
   });
 
   it('a superscript first pushes the baseline down so the top edge stays put', () => {
@@ -88,9 +88,9 @@ describe('layoutCallout', () => {
     const out = layoutCallout(runs, at, { point: P(400, 100), clip: null }, style)!;
     const [t] = text(out);
     near(t!.x, 100 - adv('nucleophile') / 2);
-    // The text box (cap height above the baseline, descender below) is centred vertically.
-    const top = t!.y - style.capHeight;
-    const bottom = t!.y + 0.212 * 28; // 'p' descends
+    // The text box (the font's full ascent above the baseline, full descent below) is centred.
+    const top = t!.y - 0.905 * 28;
+    const bottom = t!.y + 0.212 * 28;
     near((top + bottom) / 2, 100);
   });
 
@@ -109,7 +109,7 @@ describe('layoutCallout', () => {
     const [leader] = pathPoints(out.svg) as [Point[]];
     const [t] = text(out);
     near(leader![0]!.x, t!.x + adv('nucleophile') + 5.6);
-    near(leader![0]!.y, 100 + (t!.y + 0.212 * 28 - (t!.y - style.capHeight)) / 2 + 5.6);
+    near(leader![0]!.y, 100 + (t!.y + 0.212 * 28 - (t!.y - 0.905 * 28)) / 2 + 5.6);
   });
 
   it('a leader is clipped out of the anchor atom label box', () => {
