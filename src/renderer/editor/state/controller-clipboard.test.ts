@@ -1,4 +1,4 @@
-import { extract, type Doc, type Selection, type SubDoc } from '@core/doc-model';
+import { addObject, extract, type Doc, type Selection, type SubDoc } from '@core/doc-model';
 import { describe, expect, it, vi } from 'vitest';
 import { selectionHandles } from '../model/handles';
 import { bluToScreen } from '../model/viewport';
@@ -126,17 +126,26 @@ describe('context menu (CM1)', () => {
     return seen;
   };
 
-  it('over an atom the event carries the atom and the screen point; the selection is untouched', () => {
+  it('over an unselected atom selects the fragment and Select before the event', () => {
     const c = make();
     const seen = eventsOf(c);
     const doc = c.getDoc();
     const atom = Object.values(doc.atoms)[1];
     if (!atom) throw new Error('no atom');
     const screen = bluToScreen(c.store.getState().viewport, atom, BL);
-    const selection = c.getSelection();
+    c.store.dispatch({ type: 'select-tool', tool: 'bond' });
+    c.subscribe((e) => {
+      if (e.type === 'context-menu') {
+        expect(c.getSelection().atoms.size).toBe(3);
+        expect(c.getSelection().bonds.size).toBe(2);
+        expect(c.store.getState().tool).toBe('select');
+      }
+    });
     c.contextMenuAt(screen);
-    expect(seen).toEqual([{ type: 'context-menu', target: { kind: 'atom', id: atom.id }, screen }]);
-    expect(c.getSelection()).toBe(selection);
+    expect(seen.filter((e) => e.type === 'context-menu')).toEqual([
+      { type: 'context-menu', target: { kind: 'atom', id: atom.id }, screen },
+    ]);
+    expect(c.getSelection().atoms.size).toBe(3);
     expect(c.getDoc()).toBe(doc);
   });
 
@@ -152,13 +161,40 @@ describe('context menu (CM1)', () => {
     const v = c.store.getState().viewport;
     const screen = bluToScreen(v, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, BL);
     c.contextMenuAt(screen);
-    expect(seen[0]).toMatchObject({ type: 'context-menu', target: { kind: 'bond', id: bond.id } });
+    expect(seen.at(-1)).toMatchObject({
+      type: 'context-menu',
+      target: { kind: 'bond', id: bond.id },
+    });
+    expect(c.getSelection().atoms.size).toBe(3);
+    const selected = c.getSelection();
+    c.contextMenuAt(screen);
+    expect(c.getSelection()).toBe(selected);
+  });
+
+  it('an unselected object selects itself and activates Select before the event', () => {
+    const base = make().getDoc();
+    const [doc, id] = addObject(base, { type: 'plus', at: { x: 3, y: 0 } });
+    const c = make({ doc });
+    c.store.dispatch({ type: 'select-tool', tool: 'bond' });
+    c.subscribe((e) => {
+      if (e.type === 'context-menu') {
+        expect(c.getSelection().objects).toEqual(new Set([id]));
+        expect(c.getSelection().atoms.size).toBe(0);
+        expect(c.store.getState().tool).toBe('select');
+      }
+    });
+    c.contextMenuAt(bluToScreen(c.store.getState().viewport, { x: 3, y: 0 }, BL));
+    expect(c.getSelection().objects).toEqual(new Set([id]));
   });
 
   it('on empty canvas the target is null', () => {
     const c = make();
     const seen = eventsOf(c);
+    c.run('select-all');
+    const selected = c.getSelection();
+    seen.length = 0;
     c.contextMenuAt({ x: 40, y: 650 });
+    expect(c.getSelection()).toBe(selected);
     expect(seen).toEqual([{ type: 'context-menu', target: null, screen: { x: 40, y: 650 } }]);
   });
 

@@ -95,7 +95,7 @@ resolutions of the draft's open questions and of problems found in review.
 | 9 | Select options bar: Clean up, Show Kekulé / Show circle (icon + label, `min-width` of the longer label so the bar never jumps), Tidy reaction, divider, Flip horizontal, Flip vertical. "Number" is cut (rule C4 removed). "Expand" is rendered only when the selection contains an abbreviation | Screens 03 / 03b; compound numbers can be typed as text | 2026-11-10 |
 | 10 | Text and label editing is WYSIWYG, no markup ever shown: real sub/superscripts while editing; x₂ / x² toggle sub/sup on the selection; B / I toggle the object; auto-formatting (formula subscripts, `->` to →, trailing charge) applied on commit to characters the user did not format explicitly; `^` / `_` typed shortcuts honoured on commit; re-opening shows the text formatted. Implementation: a `contenteditable` element that is a projection of a pure editing model (rule T2) | Teachers know Word, not markup; the model-first design keeps every rule pure and testable | 2026-11-10 |
 | 11 | Name suggestions are ordered closest match first ("ethanl" offers ethanol first). Fixed in chem-core (required change 2) | The intended word must be the first chip | 2026-11-10 |
-| 12 | No right-click menu drawn by the editor. The editor emits a `context-menu` event (hit target + screen position) on its host seam so app-shell can show a native menu (Cut, Copy, Paste, Duplicate, Delete) later; the scaffold ignores it | Native menus look right on Windows and belong to app-shell | 2026-11-10 |
+| 12 | No right-click menu drawn by the editor. The editor emits a `context-menu` event (hit target + screen position) on its host seam; app-shell shows a native menu (Cut, Copy, Paste, Duplicate, Delete) | Native menus look right on Windows and belong to app-shell | 2026-11-10 |
 | 13 | Empty-state sentence: "Type a compound name above, or click anywhere to start drawing." | Bond is active at launch, so any click draws | 2026-11-10 |
 | 14 | Hover highlight alpha 0.45 (`--overlay-hover`), status hint 13 px (`--type-hint`). Status-bar and dropdown formulas use real `<sub>` digits at ≥ 10 px, not Unicode subscript characters | Unicode subscripts rendered at about 7 px | 2026-11-10 |
 | 15 | Accepted draft defaults: bonds snap to 30°, arrows to 15°; reaction text like `A + B -> C` accepted in the name field; name-inserted structures placed automatically to the right of the drawing; minimum window 960×640; no jsdom (pure node unit tests plus Playwright e2e); switching preset keeps on-screen size; the orphan-carbon rule on erase; hover keys act on the hovered atom/bond before tool keys (L sets Cl, B sets Br on a hovered atom) | Draft open questions 2–5, 8, 9, 11, 13, 14 | 2026-11-10 |
@@ -145,6 +145,8 @@ resolutions of the draft's open questions and of problems found in review.
 | R43 | The UI font stack keeps Segoe UI first, then Arial and Liberation Sans before system-ui | Linux without Segoe UI used wider DejaVu Sans, breaking the 109 px Kekulé toggle and shifting its neighbours; the Arial-compatible fallback preserves the approved control boxes without bundling fonts. The Kekulé toggle has fixed 109 px width, 4 px left and right padding and 4 px icon gap, retaining 32 px height and 2 px neighbour gaps | 2026-11-10 |
 | R44 | Host actions slot after Redo (clipboard-export O1): optional `actions?: React.ReactNode`, last top-bar child in `topbar-actions`, with `has-actions` only when supplied; host supplies `--namefield-compact` | Keeps host controls after history in layout and tab order; preserves the editor without a host | 2026-11-10 |
 | R45 | Host notices and a busy event (clipboard-export): notify dispatches notice-show; busy fires exactly when idle = canRun({type: 'set-preset'}) changes | Host feedback uses the same hint, expiry and announcement slot | 2026-11-10 |
+| R46 | Right-click on an unselected item selects it first (app-shell CM1): whole fragment for an atom/bond, object itself, tool Select before emitting; selected hits and empty canvas retain selection | Native menu acts on the item clicked | 2026-11-10 |
+| R47 | Host-callable name-field focus: canRun unless a label/text editor is open; run increments a focus request counter observed by the view; Ctrl+F uses the same path | Host and view share focus behavior | 2026-11-10 |
 
 ---
 
@@ -684,8 +686,9 @@ type EditorEvent =
   | { type: 'context-menu'; target: HostHit | null; screen: Point };   // CM1
 ```
 
-- `focus-name-field` is carried out by the view, which owns the DOM focus: on the controller its
-  `canRun` is false and `run` does nothing. Every other command's `canRun` and `run` agree: with
+- `focus-name-field` asks the view to focus the name field: `canRun` is true when no label or text
+  editor is open; `run` records a focus request counter and the view moves DOM focus. Ctrl+F uses
+  the same run path. Every command's `canRun` and `run` agree: with
   `canRun` false `run` changes nothing, with it true `run` has its documented effect
   (`state/controller-commands.test.ts`).
 - `clipboard-export` renders with svg-render from `getDoc()` and `getSelection()` (or the
@@ -1113,9 +1116,11 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
 ### Context menu
 
 - **CM1** A `contextmenu` event on the canvas is default-prevented; if a gesture is active it is
-  cancelled and nothing else happens; otherwise the controller emits `{ type: 'context-menu',
+  cancelled and nothing else happens; otherwise, if the H1/H2 hit (atoms, bonds, objects) is not
+  selected, selection becomes what a Select click makes (Decision 6) and the tool becomes Select
+  before the event. Selected hits and empty canvas keep the selection. The controller emits `{ type: 'context-menu',
   target, screen }` with the H1/H2 hit at that point (atoms, bonds, objects only; handles and
-  slots → null). The selection is not changed. The scaffold ignores the event.
+  slots → null). App-shell shows a native menu.
 
 ### Preset
 

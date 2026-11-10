@@ -147,9 +147,9 @@ idle, false with the label editor open; `run` bumps the counter only when `canRu
 `e2e/editor-name.spec.ts`: Ctrl+F on the canvas still focuses the field.
 
 **Acceptance criteria:**
-- [ ] `SPEC-editor.md` edited first; R-rows added
-- [ ] Tests above pass; editor coverage ≥ 70 %; editor e2e green
-- [ ] Shot exists
+- [x] `SPEC-editor.md` edited first; R-rows added
+- [x] Tests above pass; editor coverage ≥ 70 %; editor e2e green
+- [x] Shot exists
 
 **Verification:** `npm test -- src/renderer/editor`, `npm run check`, `npm run test:e2e`,
 `npm run shots -- A4` → `A4/right-click-select.png` (scripted: ethanol inserted, Esc to clear the

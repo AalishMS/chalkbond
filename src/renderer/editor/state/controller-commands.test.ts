@@ -108,6 +108,13 @@ interface CommandCase {
 
 const COMMAND_CASES: readonly CommandCase[] = [
   {
+    name: 'focus-name-field',
+    cmd: 'focus-name-field',
+    blocked: () => withEditorOpen(ethane()),
+    ready: sized,
+    effect: (c) => expect(c.store.getState().focusRequest).toBe(1),
+  },
+  {
     name: 'undo',
     cmd: 'undo',
     blocked: sized,
@@ -307,8 +314,6 @@ describe('every host command has a canRun and a run that agree', () => {
     const named = new Set(
       COMMAND_CASES.map((x) => (typeof x.cmd === 'string' ? x.cmd : x.cmd.type)),
     );
-    // `focus-name-field` is the one command the view carries out (it owns the DOM focus).
-    named.add('focus-name-field');
     expect([...named].sort()).toEqual([...HOST_COMMANDS].sort());
   });
 
@@ -332,12 +337,28 @@ describe('every host command has a canRun and a run that agree', () => {
     });
   }
 
-  it('focus-name-field is the view’s: the controller cannot run it and changes nothing', () => {
+  it('focus-name-field records repeated requests only while no editor is open', () => {
     const c = ethane();
+    expect(c.canRun('focus-name-field')).toBe(true);
+    c.run('focus-name-field');
+    c.run('focus-name-field');
+    expect(c.store.getState().focusRequest).toBe(2);
+    withEditorOpen(c);
     expect(c.canRun('focus-name-field')).toBe(false);
     const before = c.store.getState();
     c.run('focus-name-field');
     expect(c.store.getState()).toBe(before);
+    c.store.dispatch({ type: 'edit-cancel' });
+    c.store.dispatch({
+      type: 'open-text',
+      target: {
+        kind: 'new',
+        fresh: { at: { x: 3, y: 3 }, align: 'left' },
+      },
+    });
+    expect(c.canRun('focus-name-field')).toBe(false);
+    c.run('focus-name-field');
+    expect(c.store.getState().focusRequest).toBe(2);
   });
 
   it('set-preset to the preset the document has can run and records nothing (PR1)', () => {

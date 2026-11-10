@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { insertName, openApp } from './harness';
+import { canvasPoint, insertName, openApp, readDocument, readSelection } from './harness';
 
 interface Box {
   x: number;
@@ -276,6 +276,46 @@ test('a molecule inserted while zoomed in and panned away frames the drawing (V7
     await expectInView(page);
     await expectCentred(page);
     await expect(page.getByTestId('zoom-reset')).toHaveText('150%');
+  } finally {
+    await app.close();
+  }
+});
+
+test('host-direct focus requests move focus to the actual name input repeatedly', async () => {
+  const { app, page } = await openApp();
+  try {
+    for (let i = 0; i < 2; i++) {
+      await page.getByTestId('canvas').focus();
+      await page.evaluate(() =>
+        (
+          window as Window & { __chalkbondTest?: { run(cmd: 'focus-name-field'): void } }
+        ).__chalkbondTest?.run('focus-name-field'),
+      );
+      await expect(field(page)).toBeFocused();
+    }
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+f');
+    await expect(field(page)).toBeFocused();
+  } finally {
+    await app.close();
+  }
+});
+
+test('right-click selects the whole ethanol fragment and activates Select', async () => {
+  const { app, page } = await openApp();
+  try {
+    await insertName(page, 'ethanol');
+    await page.keyboard.press('Escape');
+    await page.getByTestId('tool-bond').click();
+    const doc = await readDocument(page);
+    const atom = Object.values(doc.atoms)[0];
+    if (!atom) throw new Error('no atom');
+    const point = await canvasPoint(page, atom);
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+    const selection = await readSelection(page);
+    expect(selection.atoms).toHaveLength(3);
+    expect(selection.bonds).toHaveLength(2);
+    await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');
   } finally {
     await app.close();
   }

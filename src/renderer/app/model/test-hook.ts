@@ -1,5 +1,5 @@
 import type { Doc } from '@core/doc-model';
-import type { EditorController, EditorEvent } from '../../editor';
+import type { EditorCommand, EditorController, EditorEvent } from '../../editor';
 
 /** A host notice as the test hook reports it (filled in as notices appear). */
 export interface HeardNotice {
@@ -15,6 +15,7 @@ export interface HeardNotice {
 export interface TestHook {
   /** Puts a document into the editor as an Untitled document, as the host's `load` does. */
   load(doc: Doc): void;
+  run(cmd: EditorCommand): void;
   getDoc(): Doc;
   getSelection(): { atoms: string[]; bonds: string[]; objects: string[] };
   /** Editor events heard since the hook was created or the last `clearEvents`. */
@@ -31,7 +32,10 @@ export interface DisposableTestHook extends TestHook {
   dispose(): void;
 }
 
-type HookedController = Pick<EditorController, 'load' | 'getDoc' | 'getSelection' | 'subscribe'>;
+type HookedController = Pick<
+  EditorController,
+  'load' | 'getDoc' | 'getSelection' | 'subscribe' | 'run'
+>;
 
 export function createTestHook(controller: HookedController): DisposableTestHook {
   let heard: EditorEvent[] = [];
@@ -42,6 +46,7 @@ export function createTestHook(controller: HookedController): DisposableTestHook
     load: (doc) => {
       controller.load(doc);
     },
+    run: (cmd) => controller.run(cmd),
     getDoc: () => controller.getDoc(),
     getSelection: () => {
       const selection = controller.getSelection();

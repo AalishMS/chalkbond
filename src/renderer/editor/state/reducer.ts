@@ -94,6 +94,7 @@ export interface ReducerContext {
 }
 
 export type EditorAction =
+  | { type: 'focus-request' }
   | { type: 'select-tool'; tool: ToolId }
   | { type: 'select-variant'; tool: VariantTool; variant: string }
   | {
@@ -374,6 +375,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
     case 'undo':
     case 'redo':
       return stepHistory(state, action.type, ctx);
+    case 'focus-request':
+      return { ...state, focusRequest: state.focusRequest + 1 };
     case 'notice-show':
       return showNotice(state, action.kind, action.text);
     case 'notice-expired':

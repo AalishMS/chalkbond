@@ -133,6 +133,8 @@ export interface EditorState {
   viewport: Viewport;
   editing: Editing | null;
   nameField: NameField;
+  /** Host/view name-field focus request sequence. */
+  focusRequest: number;
   notice: Notice | null;
   /** Source of the next notice id. */
   noticeSeq: number;
@@ -165,6 +167,7 @@ export function initialState(doc: Doc, clock: () => string): EditorState {
     nameField: { text: '', open: false, highlighted: 0, error: null },
     notice: null,
     noticeSeq: 0,
+    focusRequest: 0,
     clipboard: null,
     clipboardSource: null,
     spaceHeld: false,

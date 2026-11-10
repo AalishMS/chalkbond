@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { canRedo, canUndo, current } from '@core/doc-model';
 import { statusFormula } from '../model/formula';
 import { selectionScope } from '../model/scope';
@@ -49,7 +49,12 @@ interface EditorProps {
  * inline once: an external sprite does not load from file:// in Chromium.
  */
 export function Editor({ controller, actions }: EditorProps): React.JSX.Element {
+  const root = useRef<HTMLDivElement>(null);
   const state = useEditorState(controller.store);
+  useEffect(() => {
+    if (state.focusRequest === 0) return;
+    root.current?.querySelector<HTMLInputElement>('[data-testid="namefield-input"]')?.focus();
+  }, [state.focusRequest]);
   const doc = current(state.history);
   const { dispatch } = controller.store;
   const [nameFocused, setNameFocused] = useState(false);
@@ -96,10 +101,6 @@ export function Editor({ controller, actions }: EditorProps): React.JSX.Element 
       return;
     }
     e.preventDefault();
-    if (command === 'focus-name-field') {
-      e.currentTarget.querySelector<HTMLInputElement>('[data-testid="namefield-input"]')?.focus();
-      return;
-    }
     controller.run(command);
     refresh();
   };
@@ -120,6 +121,7 @@ export function Editor({ controller, actions }: EditorProps): React.JSX.Element 
   );
   return (
     <div
+      ref={root}
       className="editor"
       onKeyDown={onKeyDown}
       onFocus={(e) => setNameFocused(isNameField(e.target))}

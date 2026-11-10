@@ -21,6 +21,7 @@ import { screenToBlu, stepZoom } from '../model/viewport';
 import { initialState, type EditorState } from './editor-state';
 import { handleHit } from '../model/handles';
 import { HIT_ALL, hitTest } from '../model/hit-test';
+import { clickSelection, selectionHolds } from '../model/selection';
 import { selectionScope } from '../model/scope';
 import { canCopy, canDelete, canPaste } from './commands';
 import { isDirty, type ReducerContext } from './reducer';
@@ -102,7 +103,8 @@ export interface EditorController {
   /**
    * The view reports a `contextmenu` on the canvas at `screen` (canvas px). A gesture in progress
    * is cancelled and nothing else happens; otherwise a `context-menu` event goes to the
-   * subscribers with the item there (CM1). The selection never changes.
+   * subscribers with the item there (CM1). An unselected item is selected as by a Select click
+   * and activates Select before the event; selected hits and empty canvas retain selection.
    */
   contextMenuAt(screen: Point): void;
   /** Which Ctrl shortcuts the editor handles itself. */
@@ -216,6 +218,7 @@ export function createEditorController(options: EditorOptions): EditorController
         return canCopy(s);
       case 'paste':
         return canPaste(s);
+      case 'focus-name-field':
       case 'select-all':
         return s.editing === null;
       case 'tidy-reaction':
@@ -256,6 +259,9 @@ export function createEditorController(options: EditorOptions): EditorController
     run(cmd) {
       if (!canRun(cmd)) return;
       switch (cmd) {
+        case 'focus-name-field':
+          store.dispatch({ type: 'focus-request' });
+          break;
         case 'undo':
         case 'redo':
           store.dispatch({ type: cmd });
@@ -347,7 +353,20 @@ export function createEditorController(options: EditorOptions): EditorController
         store.dispatch({ type: 'escape' });
         return;
       }
-      emit({ type: 'context-menu', target: hostHitAt(state, derive, screen), screen });
+      const target = hostHitAt(state, derive, screen);
+      const doc = current(state.history);
+      const hit =
+        target?.kind === 'object'
+          ? ({ ...target, type: doc.objects[target.id]?.type ?? 'text' } as const)
+          : target;
+      if (hit !== null && !selectionHolds(state.selection, hit)) {
+        store.dispatch({
+          type: 'set-selection',
+          selection: clickSelection(doc, state.selection, hit, { shift: false, alt: false }),
+        });
+        store.dispatch({ type: 'select-tool', tool: 'select' });
+      }
+      emit({ type: 'context-menu', target, screen });
     },
     shortcuts: options.shortcuts ?? 'all',
     derive,

@@ -200,6 +200,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 
 | Date | Decision |
 |---|---|
+| 2026-11-10 | C2/A4 editor host seam: shared notices, busy transitions, right-click selection before menu, and host-callable name-field focus (SPEC-editor R45–R47). TH2 gains run(cmd) to verify host-direct commands. |
 | 2026-11-09 | Development/build environment: user's Windows machine (no Wine/cross-build). |
 | 2026-11-09 | Unsigned installer accepted — personal use. |
 | 2026-11-09 | Reference Office: Office 2021. |

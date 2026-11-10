@@ -575,7 +575,7 @@ const controller = createEditorController({
   (load the page with `query: { testHooks: '1' }`, define `globalThis.__chalkbondTestMain`) and
   `--chalkbond-user-data=<dir>` (`app.setPath('userData', dir)` before the single-instance lock).
 - **TH2** With `testHooks=1` in `location.search`, `App.tsx` defines `window.__chalkbondTest = {
-  load(doc): void /* as an Untitled document */, getDoc(): Doc, getSelection(): { atoms: string[];
+  load(doc): void /* as an Untitled document */, run(cmd: EditorCommand): void /* host-direct seam tests */, getDoc(): Doc, getSelection(): { atoms: string[];
   bonds: string[]; objects: string[] }, events(): EditorEvent[], clearEvents(): void, notices():
   { kind: string; text: string }[], commands(): string[] }` (editor events, host notices and the
   `main:event` commands received, collected since start or the last clear). Without the query

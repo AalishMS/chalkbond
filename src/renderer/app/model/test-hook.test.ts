@@ -24,6 +24,12 @@ describe('createTestHook', () => {
     expect(hook.getDoc()).toEqual(doc);
   });
 
+  it('forwards host commands to the controller', () => {
+    const { controller, hook } = make();
+    hook.run('focus-name-field');
+    expect(controller.store.getState().focusRequest).toBe(1);
+  });
+
   it('reports the selection as arrays of ids', () => {
     const { controller, hook } = make();
     expect(hook.getSelection()).toEqual({ atoms: [], bonds: [], objects: [] });
