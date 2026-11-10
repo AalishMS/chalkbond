@@ -10,6 +10,15 @@ const key = (k: string, over: Partial<KeyInfo> = {}): KeyInfo => ({
   ...over,
 });
 
+describe('K1 focus-name-field', () => {
+  it('Ctrl+F focuses the name field, with Ctrl alone', () => {
+    expect(globalCommand(key('f'), 'all')).toBe('focus-name-field');
+    expect(globalCommand(key('F', { shiftKey: true }), 'all')).toBeNull();
+    expect(globalCommand(key('f', { ctrlKey: false }), 'all')).toBeNull();
+    expect(globalCommand(key('f'), 'canvas-only')).toBeNull();
+  });
+});
+
 describe('K1 undo and redo keys', () => {
   it('Ctrl+Z undoes; Ctrl+Y and Ctrl+Shift+Z redo', () => {
     expect(globalCommand(key('z'), 'all')).toBe('undo');

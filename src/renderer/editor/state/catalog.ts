@@ -133,6 +133,10 @@ export function railFace(state: EditorState, tool: ToolDef): RailFace {
 }
 
 /** Status-bar hint per tool (SPEC-editor.md "Status-bar hints"). */
+/** The status-bar hint while the name field has focus (SPEC-editor.md "Status-bar hints"). */
+export const NAME_FIELD_HINT =
+  'Enter inserts. Write a reaction like: ethanol + acetic acid -> ethyl acetate';
+
 export const HINTS: Readonly<Record<ToolId, string>> = {
   select: 'Click a molecule to select it. Drag to move. Drag on empty space to select an area.',
   erase: 'Click or drag over anything to erase it.',

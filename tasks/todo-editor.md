@@ -411,13 +411,13 @@ first, prefix bold) and "ethanoic" (`ethanoic acid — acetic acid`); not-found 
 with chips ethanol, ethane, acetaldehyde. e2e `e2e/editor-name.spec.ts`: type "ethanol" + Enter →
 parts `atom:*`/`bond:*` mounted, formula "C2H6O · 46.07 g/mol", field empty and focused, Undo
 enabled; Ctrl+Z → empty state again; "ethanl" + Enter → not-found row and chips in that order;
-click "ethanol" chip → inserted; "eth" shows 8 rows, ↓↓ Enter inserts the second (ethene).
+click "ethanol" chip → inserted; "eth" shows 8 rows with the first highlighted, ↓ Enter inserts the second (ethene).
 
 **Acceptance criteria:**
-- [ ] Ethanol inserts centred at 150 % (C–C bond 80 px on screen ±1, from part boxes) and is selected
-- [ ] Inserting benzene then acetic acid places acetic acid to the right (its box left edge 1.0 BLU = 80 px right of benzene's ink box ±1 px)
-- [ ] Not-found row and chips exactly as screen 07; dropdown rows as screen 06 (row height 36, `min-width` 320)
-- [ ] A molecule inserted off-screen triggers V5 (e2e: zoom to 400 %, pan away, insert; the readout and transform show the reveal)
+- [x] Ethanol inserts centred at 150 % (C–C bond 80 px on screen ±1, from part boxes) and is selected
+- [x] Inserting benzene then acetic acid places acetic acid to the right (its box left edge 1.0 BLU = 80 px right of benzene's ink box ±1 px)
+- [x] Not-found row and chips exactly as screen 07; dropdown rows as screen 06 (row height 36, `min-width` 320)
+- [x] A molecule inserted off-screen triggers V5 (e2e: zoom to 400 %, pan away, insert; the readout and transform show the reveal)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E13` → `E13/dropdown-eth.png` (scripted: type "eth"; compare `06-name-dropdown.png`), `E13/notfound-ethanl.png` (scripted: type "ethanl" + Enter; compare `07-name-nomatch.png`), `E13/ethanol-inserted.png` (scripted: insert ethanol; formula visible), `E13/three-inserted.png` (scripted: insert ethanol, benzene, acetic acid in a row)
 
@@ -428,7 +428,7 @@ click "ethanol" chip → inserted; "eth" shows 8 rows, ↓↓ Enter inserts the 
 **Scope:** M
 
 ### Checkpoint N — documents appear on the canvas
-- [ ] `npm run check` green; typing "ethanol" + Enter draws ethanol at 150 % with "C2H6O · 46.07 g/mol"
+- [x] `npm run check` green; typing "ethanol" + Enter draws ethanol at 150 % with "C2H6O · 46.07 g/mol"
 - [ ] Commit + push
 
 ---

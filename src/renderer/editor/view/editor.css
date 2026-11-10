@@ -350,6 +350,115 @@
   color: var(--text);
 }
 
+.namefield.is-notfound {
+  border-color: var(--warning);
+}
+
+.namefield.is-notfound:focus-within {
+  box-shadow: inset 0 0 0 1px var(--warning);
+}
+
+/* ---- Name-field dropdown and not-found panel ---- */
+
+.dropdown {
+  position: absolute;
+  z-index: 5;
+  left: var(--space-4);
+  top: var(--dropdown-top);
+  width: round(down, clamp(var(--namefield-min), 26vw, var(--namefield-max)), 1px);
+  min-width: var(--dropdown-min-w);
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-md);
+  background: var(--canvas-bg);
+  box-shadow: var(--shadow-1);
+}
+
+.dropdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: var(--dropdown-row-h);
+  padding: 0 var(--space-4);
+}
+
+.dropdown-row:hover {
+  background: var(--hover-bg);
+}
+
+.dropdown-row[aria-selected='true'] {
+  background: var(--active-bg);
+}
+
+.dropdown-name {
+  font: var(--type-md);
+  white-space: nowrap;
+}
+
+.dropdown-name b {
+  font-weight: 600;
+}
+
+.dropdown-alias {
+  color: var(--text-muted);
+}
+
+.dropdown-formula {
+  color: var(--text-muted);
+  font: var(--type-sm);
+  white-space: nowrap;
+}
+
+/* Real sub/superscripts at 10 px; line-height 0 keeps the row height (Decision 14). */
+.dropdown-formula sub,
+.dropdown-formula sup,
+.formula sub,
+.formula sup {
+  position: relative;
+  font-size: var(--sub-size);
+  line-height: 0;
+  vertical-align: baseline;
+}
+
+.dropdown-formula sub,
+.formula sub {
+  top: var(--sub-drop);
+}
+
+.dropdown-formula sup,
+.formula sup {
+  top: calc(-1 * var(--sub-drop));
+}
+
+.notfound {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: 0 var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--warning-bg);
+  font: var(--type-md);
+}
+
+.notfound .icon {
+  margin-top: 1px;
+  color: var(--warning);
+}
+
+.suggest {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+.suggest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
 .divider-v {
   flex: none;
   width: 1px;

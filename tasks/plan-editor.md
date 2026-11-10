@@ -86,10 +86,10 @@ Everything else is sequential: each phase builds on the previous one.
 - [x] E10: Viewport, geometry, derive and patch models (pure)
 - [x] E11: Store, reducer core, controller and host seam
 - [x] E12: Canvas mounting, pan and zoom
-- [ ] E13: Name field: suggestions, insert, not found, reveal, formula
+- [x] E13: Name field: suggestions, insert, not found, reveal, formula
 
 ### Checkpoint N — documents appear on the canvas
-- [ ] `npm run check` green; typing "ethanol" + Enter draws ethanol at 150 % with "C2H6O · 46.07 g/mol"
+- [x] `npm run check` green; typing "ethanol" + Enter draws ethanol at 150 % with "C2H6O · 46.07 g/mol"
 - [ ] Commit + push
 
 ### Phase 3: select, erase, clipboard

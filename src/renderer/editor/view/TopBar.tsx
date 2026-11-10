@@ -1,3 +1,4 @@
+import type { SuggestionRow } from '../model/suggestions';
 import type { EditorState } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
 import type { SelectionScope } from '../state/selection-actions';
@@ -12,6 +13,8 @@ interface TopBarProps {
   scope: SelectionScope;
   canUndo: boolean;
   canRedo: boolean;
+  /** Dropdown rows for the name field (empty while it is closed). */
+  rows: readonly SuggestionRow[];
   dispatch: (action: EditorAction) => void;
 }
 
@@ -44,11 +47,12 @@ export function TopBar({
   scope,
   canUndo,
   canRedo,
+  rows,
   dispatch,
 }: TopBarProps): React.JSX.Element {
   return (
     <header className="topbar" data-testid="topbar">
-      <NameField />
+      <NameField field={state.nameField} rows={rows} dispatch={dispatch} />
       <div className="divider-v" role="separator" />
       <OptionsBar state={state} scope={scope} dispatch={dispatch} />
       <div className="history">

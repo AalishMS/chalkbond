@@ -88,6 +88,8 @@ export interface EditorController {
   readonly derive: Derive;
   /** The editor's own state, for the view and for tools. */
   readonly store: Store;
+  /** The name index (N5), built once per controller from the dictionary. */
+  readonly names: NameIndex;
 }
 
 let defaultNames: NameIndex | undefined;
@@ -165,6 +167,7 @@ export function createEditorController(options: EditorOptions): EditorController
       case 'zoom-reset':
         return true;
       default:
+        if (typeof cmd === 'object' && cmd.type === 'insert-text') return true;
         // Later tasks (clipboard, selection actions, name field) turn these on.
         return false;
     }
@@ -194,6 +197,9 @@ export function createEditorController(options: EditorOptions): EditorController
           store.dispatch({ type: cmd });
           break;
         default:
+          if (typeof cmd === 'object' && cmd.type === 'insert-text') {
+            store.dispatch({ type: 'insert-text', text: cmd.text });
+          }
           break;
       }
     },
@@ -209,5 +215,6 @@ export function createEditorController(options: EditorOptions): EditorController
     shortcuts: options.shortcuts ?? 'all',
     derive,
     store,
+    names: ctx.names,
   };
 }

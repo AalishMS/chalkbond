@@ -67,7 +67,14 @@ describe('controls carry their tooltip content', () => {
 
   it('Undo and Redo: name and key, below the top bar', () => {
     const html = renderToStaticMarkup(
-      <TopBar state={initialState()} scope={EMPTY_SCOPE} canUndo={false} canRedo dispatch={noop} />,
+      <TopBar
+        state={initialState()}
+        scope={EMPTY_SCOPE}
+        canUndo={false}
+        canRedo
+        rows={[]}
+        dispatch={noop}
+      />,
     );
     expect(html).toContain('data-tip="Undo" data-tip-key="Ctrl+Z"');
     expect(html).toContain('data-tip-help="Nothing to undo."');

@@ -110,6 +110,9 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
           ref={layer}
           data-layer="content"
           transform={`matrix(${k} 0 0 ${k} ${viewport.pan.x} ${viewport.pan.y})`}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </svg>
       <Overlay size={viewport.size} />

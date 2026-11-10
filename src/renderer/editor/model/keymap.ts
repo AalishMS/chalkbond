@@ -19,6 +19,7 @@ export function globalCommand(e: KeyInfo, shortcuts: 'all' | 'canvas-only'): Edi
   const key = e.key.toLowerCase();
   if (key === 'z') return e.shiftKey ? 'redo' : 'undo';
   if (key === 'y' && !e.shiftKey) return 'redo';
+  if (key === 'f' && !e.shiftKey) return 'focus-name-field';
   // Ctrl+= and Ctrl++ (Ctrl+Shift+=) zoom in; the shifted forms need no layout knowledge.
   if (key === '=' || key === '+') return 'zoom-in';
   if (key === '-' || key === '_') return 'zoom-out';

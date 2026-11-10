@@ -77,12 +77,36 @@ describe('controller API', () => {
   it('commands that are not implemented yet cannot run and do nothing', () => {
     const c = make();
     const later: EditorCommand[] = ['cut', 'copy', 'paste', 'delete', 'clean-up', 'tidy-reaction'];
-    later.push({ type: 'set-preset', preset: 'journal' }, { type: 'insert-text', text: 'x' });
+    later.push({ type: 'set-preset', preset: 'journal' });
     for (const cmd of later) {
       expect(c.canRun(cmd)).toBe(false);
       c.run(cmd);
     }
     expect(c.isDirty()).toBe(false);
+  });
+
+  it('insert-text inserts a structure as the name field does (N4)', () => {
+    const c = make();
+    const seen = events(c);
+    expect(c.canRun({ type: 'insert-text', text: 'ethanol' })).toBe(true);
+    c.run({ type: 'insert-text', text: 'ethanol' });
+    expect(Object.keys(c.getDoc().atoms)).toHaveLength(3);
+    expect(c.undoLabel()).toBe('Insert ethanol');
+    expect(c.getSelection().atoms.size).toBe(3);
+    expect(seen).toEqual(['doc', 'selection', 'dirty', 'history', 'notice']);
+    c.run('undo');
+    expect(Object.keys(c.getDoc().atoms)).toHaveLength(0);
+  });
+
+  it('insert-text of an unknown name changes nothing in the document', () => {
+    const c = make();
+    c.run({ type: 'insert-text', text: 'ethanl' });
+    expect(c.isDirty()).toBe(false);
+    expect(c.store.getState().nameField.error?.suggestions[0]).toBe('ethanol');
+  });
+
+  it('exposes the name index it uses', () => {
+    expect(make().names.lookup('ethanol')?.name).toBe('ethanol');
   });
 
   it('builds the default name index once and uses the supplied one', () => {

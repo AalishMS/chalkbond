@@ -90,3 +90,33 @@ export async function loadDocument(page: Page, doc: Doc): Promise<void> {
     throw new Error('no controller in the React tree');
   }, doc);
 }
+
+/** Types `text` into the name field and presses Enter (the field keeps focus after an insert). */
+export async function insertName(page: Page, text: string): Promise<void> {
+  const input = page.getByTestId('namefield-input');
+  await input.click();
+  await input.fill(text);
+  await page.keyboard.press('Enter');
+}
+
+/**
+ * Where a document point (BLU) is on the page, in client px: the canvas origin plus the content
+ * layer's `matrix(k 0 0 k x y)` applied to the point in pt (`bondLength` pt per BLU, 40 for the
+ * Slides preset).
+ */
+export async function canvasPoint(
+  page: Page,
+  blu: { x: number; y: number },
+  bondLength = 40,
+): Promise<{ x: number; y: number }> {
+  const attr = await page.locator('[data-layer="content"]').getAttribute('transform');
+  const m = /^matrix\(([^ ]+) 0 0 ([^ ]+) ([^ ]+) ([^)]+)\)$/.exec(attr ?? '');
+  if (!m) throw new Error(`unexpected content transform ${attr}`);
+  const canvas = await page.getByTestId('canvas').boundingBox();
+  if (!canvas) throw new Error('canvas has no box');
+  const k = Number(m[1]);
+  return {
+    x: canvas.x + Number(m[3]) + blu.x * bondLength * k,
+    y: canvas.y + Number(m[4]) + blu.y * bondLength * k,
+  };
+}

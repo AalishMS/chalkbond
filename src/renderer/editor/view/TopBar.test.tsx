@@ -11,6 +11,7 @@ const render = (canUndo: boolean, canRedo: boolean): string =>
       scope={EMPTY_SCOPE}
       canUndo={canUndo}
       canRedo={canRedo}
+      rows={[]}
       dispatch={() => undefined}
     />,
   );

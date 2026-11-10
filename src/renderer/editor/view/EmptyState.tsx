@@ -1,7 +1,16 @@
+import type { EditorAction } from '../state/reducer';
+
 const CHIPS = ['ethanol', 'benzene', 'ethanol + acetic acid -> ethyl acetate + water'];
 
-/** Shown in the canvas while the document is empty. Chips are no-ops until E13. */
-export function EmptyState(): React.JSX.Element {
+interface EmptyStateProps {
+  dispatch: (action: EditorAction) => void;
+}
+
+/**
+ * Shown in the canvas while the document is empty. A chip runs its text through the name field
+ * (N4) and hands the focus to the canvas, since the chip is about to leave the page.
+ */
+export function EmptyState({ dispatch }: EmptyStateProps): React.JSX.Element {
   return (
     <div className="empty" data-testid="empty-state">
       <svg className="empty-art" viewBox="0 0 24 24" aria-hidden="true">
@@ -12,7 +21,16 @@ export function EmptyState(): React.JSX.Element {
       <div className="empty-try">
         <span>Try:</span>
         {CHIPS.map((text) => (
-          <button key={text} type="button" className="chip">
+          <button
+            key={text}
+            type="button"
+            className="chip"
+            onClick={(e) => {
+              const canvas = e.currentTarget.closest<HTMLElement>('.canvas');
+              dispatch({ type: 'insert-text', text });
+              canvas?.focus();
+            }}
+          >
             {text}
           </button>
         ))}

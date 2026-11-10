@@ -1,9 +1,12 @@
+import type { Formula } from '@core/chem-core';
 import type { StylePreset } from '@core/doc-model';
+import { formulaRuns } from '../model/formula';
 import { stepZoom, zoomPercent } from '../model/viewport';
-import { HINTS } from '../state/catalog';
+import { HINTS, NAME_FIELD_HINT } from '../state/catalog';
 import type { Notice, ToolId } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
 import { STATUS_TIPS, type TipContent } from '../state/tips';
+import { FormulaText } from './FormulaText';
 import { Icon } from './Icon';
 import { pressKeepsFocus } from './press';
 import { tipProps } from './Tooltip';
@@ -14,11 +17,13 @@ export const HINT_ID = 'editor-hint';
 interface StatusBarProps {
   tool: ToolId;
   preset: StylePreset;
-  /** Formula and mass text; the slot is not rendered when empty. */
-  formula?: string;
+  /** The selection's or the single fragment's formula (C5); no slot when null. */
+  formula?: Formula | null;
   /** The viewport zoom (1 = 100 %), shown in the readout. */
   zoom: number;
   dispatch: (action: EditorAction) => void;
+  /** The name field has focus: its hint replaces the tool's. */
+  nameFieldFocused?: boolean;
   /** Replaces the hint while set (X1 and the other notices). */
   notice?: Notice | null;
 }
@@ -55,7 +60,8 @@ export function StatusBar({
   preset,
   zoom,
   dispatch,
-  formula = '',
+  formula = null,
+  nameFieldFocused = false,
   notice = null,
 }: StatusBarProps): React.JSX.Element {
   return (
@@ -67,7 +73,11 @@ export function StatusBar({
         aria-live="polite"
       >
         {notice === null ? (
-          HINTS[tool]
+          nameFieldFocused ? (
+            NAME_FIELD_HINT
+          ) : (
+            HINTS[tool]
+          )
         ) : (
           <>
             <Icon name="warning" size={16} />
@@ -75,9 +85,10 @@ export function StatusBar({
           </>
         )}
       </div>
-      {formula !== '' && (
+      {formula !== null && (
         <div className="formula" data-testid="formula">
-          {formula}
+          <FormulaText runs={formulaRuns(formula.hill, formula.charge)} />
+          {formula.mw === null ? '' : ` · ${formula.mw.toFixed(2)} g/mol`}
         </div>
       )}
       <div className="segmented" role="group" aria-label="Style" onMouseDown={pressKeepsFocus}>

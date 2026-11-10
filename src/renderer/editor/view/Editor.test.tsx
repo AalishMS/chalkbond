@@ -30,6 +30,33 @@ describe('Icon', () => {
   });
 });
 
+describe('Editor name field and status formula', () => {
+  const make = () => createEditorController({ clock: () => '2026-01-01T00:00:00.000Z' });
+  const render = (c: ReturnType<typeof make>): string =>
+    renderToStaticMarkup(<Editor controller={c} />);
+
+  it('shows no formula and the empty state while the document is empty', () => {
+    const html = render(make());
+    expect(html).not.toContain('data-testid="formula"');
+    expect(html).toContain('data-testid="empty-state"');
+  });
+
+  it('after inserting ethanol: formula and mass, no empty state, "Inserted ethanol" announced', () => {
+    const c = make();
+    c.run({ type: 'insert-text', text: 'ethanol' });
+    const html = render(c);
+    expect(html).toContain('data-testid="formula">C<sub>2</sub>H<sub>6</sub>O · 46.07 g/mol<');
+    expect(html).not.toContain('data-testid="empty-state"');
+    expect(html).toContain('Inserted ethanol');
+  });
+
+  it('shows the dropdown while typing a name', () => {
+    const c = make();
+    c.store.dispatch({ type: 'name-text', text: 'eth' });
+    expect(render(c)).toContain('role="listbox"');
+  });
+});
+
 describe('Editor history buttons', () => {
   const render = (c: ReturnType<typeof createEditorController>): string =>
     renderToStaticMarkup(<Editor controller={c} />);

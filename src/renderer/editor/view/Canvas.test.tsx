@@ -25,6 +25,10 @@ describe('Canvas markup', () => {
     expect(html).toContain('aria-hidden="true"');
   });
 
+  it('gives the content layer the export wrapper presentation (a circle has no fill of its own)', () => {
+    expect(html).toContain('fill="none" stroke-linecap="round" stroke-linejoin="round"');
+  });
+
   it('puts children (the empty state) above the layers', () => {
     const withChild = renderToStaticMarkup(
       <Canvas controller={controller()}>

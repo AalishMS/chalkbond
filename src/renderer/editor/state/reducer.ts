@@ -22,6 +22,7 @@ import {
   zoomAbout,
   type Viewport,
 } from '../model/viewport';
+import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
 import { differs } from './dirty';
 import {
@@ -34,6 +35,14 @@ import {
   type ToolId,
   type VariantTool,
 } from './editor-state';
+import {
+  insertText,
+  nameClear,
+  nameDismiss,
+  nameEnter,
+  nameHighlight,
+  nameText,
+} from './name-field';
 
 /** What the reducer needs besides state and action (SPEC-editor.md "State model"). */
 export interface ReducerContext {
@@ -51,9 +60,18 @@ export type EditorAction =
       label: string;
       recipe: (doc: Doc) => Doc;
       coalesceKey?: string;
-      /** The selection after the commit; default: the old one minus ids the commit removed. */
-      selection?: Selection;
+      /**
+       * The selection after the commit; `'inserted'` selects what the commit added (ids issued
+       * by it). Default: the old one minus ids the commit removed.
+       */
+      selection?: Selection | 'inserted';
     }
+  | { type: 'name-text'; text: string }
+  | { type: 'name-highlight'; dir: 1 | -1 }
+  | { type: 'name-dismiss' }
+  | { type: 'name-clear' }
+  | { type: 'name-enter' }
+  | { type: 'insert-text'; text: string }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'notice-show'; kind: 'info' | 'error'; text: string }
@@ -129,7 +147,12 @@ function commit(
   const opts = action.coalesceKey === undefined ? {} : { coalesceKey: action.coalesceKey };
   try {
     const history = transact(state.history, action.label, action.recipe, opts);
-    const selection = action.selection ?? pruneSelection(state.selection, current(history));
+    const next = current(history);
+    const before = docOf(state);
+    const selection =
+      action.selection === 'inserted'
+        ? insertedSelection(before.nextId, next)
+        : (action.selection ?? pruneSelection(state.selection, next));
     return { ...state, history, selection, gesture: null, preview: null, notice: null };
   } catch (error) {
     if (!(error instanceof ChemError)) ctx.logError(error);
@@ -215,6 +238,18 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
     }
     case 'commit':
       return commit(state, action, ctx);
+    case 'name-text':
+      return nameText(state, action.text, ctx);
+    case 'name-highlight':
+      return nameHighlight(state, action.dir, ctx);
+    case 'name-dismiss':
+      return nameDismiss(state);
+    case 'name-clear':
+      return nameClear(state);
+    case 'name-enter':
+      return nameEnter(state, ctx, (s, a) => commit(s, a, ctx));
+    case 'insert-text':
+      return insertText(state, action.text, ctx, (s, a) => commit(s, a, ctx));
     case 'undo':
     case 'redo':
       return stepHistory(state, action.type);

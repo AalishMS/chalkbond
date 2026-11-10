@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { canRedo, canUndo, current } from '@core/doc-model';
+import { statusFormula } from '../model/formula';
 import { globalCommand } from '../model/keymap';
+import { suggestionRows } from '../model/suggestions';
 import type { EditorController } from '../state/controller';
 import { isEmptyDoc } from '../state/empty-doc';
 import { EMPTY_SCOPE } from '../state/selection-actions';
@@ -27,6 +29,9 @@ function isTextTarget(target: EventTarget | null): boolean {
   );
 }
 
+const isNameField = (target: EventTarget): boolean =>
+  target instanceof HTMLElement && target.dataset['testid'] === 'namefield-input';
+
 interface EditorProps {
   controller: EditorController;
 }
@@ -39,6 +44,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
   const state = useEditorState(controller.store);
   const doc = current(state.history);
   const { dispatch } = controller.store;
+  const [nameFocused, setNameFocused] = useState(false);
   const noticeId = state.notice?.id;
   useEffect(() => {
     if (noticeId === undefined) return;
@@ -50,26 +56,43 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
     const command = globalCommand(e, controller.shortcuts);
     if (command === null) return;
     e.preventDefault();
+    if (command === 'focus-name-field') {
+      e.currentTarget.querySelector<HTMLInputElement>('[data-testid="namefield-input"]')?.focus();
+      return;
+    }
     controller.run(command);
   };
   const idle = state.editing === null;
+  const field = state.nameField;
+  const rows = field.open ? suggestionRows(controller.names, field.text) : [];
+  const formula = statusFormula(doc, controller.derive.committed(doc).perception, state.selection);
   return (
-    <div className="editor" onKeyDown={onKeyDown}>
+    <div
+      className="editor"
+      onKeyDown={onKeyDown}
+      onFocus={(e) => setNameFocused(isNameField(e.target))}
+      onBlur={() => setNameFocused(false)}
+    >
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <TopBar
         state={state}
         scope={EMPTY_SCOPE}
         canUndo={idle && canUndo(state.history)}
         canRedo={idle && canRedo(state.history)}
+        rows={rows}
         dispatch={dispatch}
       />
       <ToolRail state={state} dispatch={dispatch} />
-      <Canvas controller={controller}>{isEmptyDoc(doc) && <EmptyState />}</Canvas>
+      <Canvas controller={controller}>
+        {isEmptyDoc(doc) && <EmptyState dispatch={dispatch} />}
+      </Canvas>
       <StatusBar
         tool={state.tool}
         preset={doc.style.preset}
         zoom={state.viewport.zoom}
         dispatch={dispatch}
+        formula={formula}
+        nameFieldFocused={nameFocused}
         notice={state.notice}
       />
       <TooltipHost />

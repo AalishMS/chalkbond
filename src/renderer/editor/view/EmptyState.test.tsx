@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { EmptyState } from './EmptyState';
 
 describe('EmptyState markup', () => {
-  const html = renderToStaticMarkup(<EmptyState />);
+  const html = renderToStaticMarkup(<EmptyState dispatch={() => undefined} />);
 
   it('shows the Decision 13 sentence', () => {
     expect(html).toContain('Type a compound name above, or click anywhere to start drawing.');

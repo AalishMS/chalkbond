@@ -1,3 +1,4 @@
+import type { Formula } from '@core/chem-core';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { HINTS } from '../state/catalog';
@@ -6,7 +7,11 @@ import { StatusBar } from './StatusBar';
 
 const noop = (): undefined => undefined;
 
-const render = (tool: ToolId, preset: 'slides' | 'journal' = 'slides', formula = ''): string =>
+const render = (
+  tool: ToolId,
+  preset: 'slides' | 'journal' = 'slides',
+  formula: Formula | null = null,
+): string =>
   renderToStaticMarkup(
     <StatusBar tool={tool} preset={preset} formula={formula} zoom={1.5} dispatch={noop} />,
   );
@@ -61,7 +66,29 @@ describe('StatusBar markup', () => {
   });
 
   it('renders the formula slot when there is a formula', () => {
-    expect(render('bond', 'slides', 'C2H6O')).toContain('data-testid="formula">C2H6O<');
+    const ethanol: Formula = {
+      counts: { C: 2, H: 6, O: 1 },
+      charge: 0,
+      hill: 'C2H6O',
+      text: 'C2H6O',
+      mw: 46.069,
+      exactMass: 46.04,
+    };
+    expect(render('bond', 'slides', ethanol)).toContain(
+      'data-testid="formula">C<sub>2</sub>H<sub>6</sub>O · 46.07 g/mol<',
+    );
+  });
+});
+
+describe('StatusBar name-field hint', () => {
+  it('replaces the tool hint while the name field has focus, but not a notice', () => {
+    const html = renderToStaticMarkup(
+      <StatusBar tool="bond" preset="slides" zoom={1.5} dispatch={noop} nameFieldFocused />,
+    );
+    expect(html).toContain(
+      'Enter inserts. Write a reaction like: ethanol + acetic acid -&gt; ethyl acetate',
+    );
+    expect(html).not.toContain(HINTS.bond);
   });
 });
 

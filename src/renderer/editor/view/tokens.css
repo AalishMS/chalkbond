@@ -89,6 +89,11 @@
   --empty-art-size: 96px;
   --tooltip-max-w: 240px;
   --kbd-size: 18px;
+  --dropdown-top: 44px;
+  --dropdown-min-w: 320px;
+  --dropdown-row-h: 36px;
+  --sub-size: 10px;
+  --sub-drop: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {

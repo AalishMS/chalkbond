@@ -60,7 +60,7 @@ test('a mouse press on a rail button moves focus from the name field to the canv
   const { app, page } = await openApp();
   try {
     await page.getByLabel('Compound name').focus();
-    expect(await focused(page)).toBe('input');
+    expect(await focused(page)).toBe('namefield-input');
     await page.getByTestId('tool-chain').click();
     expect(await focused(page)).toBe('canvas');
   } finally {
@@ -89,7 +89,7 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
     // Wrap-around: name field, the options bar (one stop: the selected option), Undo, Redo,
     // the rail (one stop: the active tool), the canvas.
     expect(await tab(page, 6)).toEqual([
-      'input',
+      'namefield-input',
       'opt-single',
       'undo',
       'redo',
@@ -104,7 +104,13 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
 test('Shift+Tab walks the same order backwards', async () => {
   const { app, page } = await openApp();
   try {
-    expect(await tab(page, 5, true)).toEqual(['tool-bond', 'redo', 'undo', 'opt-single', 'input']);
+    expect(await tab(page, 5, true)).toEqual([
+      'tool-bond',
+      'redo',
+      'undo',
+      'opt-single',
+      'namefield-input',
+    ]);
   } finally {
     await app.close();
   }
@@ -209,7 +215,7 @@ test('canvas: keyboard focus shows the 2 px inset ring, a mouse click does not',
     expect(await ring()).toContain('2px');
     // Focus moved to the canvas by the mouse: no ring.
     await page.getByLabel('Compound name').click();
-    expect(await focused(page)).toBe('input');
+    expect(await focused(page)).toBe('namefield-input');
     await page.mouse.click(700, 500);
     expect(await focused(page)).toBe('canvas');
     expect(await ring()).toBe('none');
