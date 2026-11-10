@@ -94,6 +94,8 @@ export function useCanvasInput(
     );
     const cancelGesture = (): void => {
       moves.cancel();
+      hover.cancel();
+      dispatch({ type: 'set-hover', hover: null });
       gesture = null;
       if (store.getState().gesture !== null) {
         dispatch({ type: 'pointer', event: { type: 'cancel' } });
@@ -126,12 +128,19 @@ export function useCanvasInput(
       }
     };
     const onPointerMove = (e: PointerEvent): void => {
-      controller.setPointer(canvasPx(e));
+      if (gesture === e.pointerId && e.button === 2 && (e.buttons & 2) !== 0) {
+        cancelGesture();
+        menuSpent = true;
+        controller.setPointer(null);
+        return;
+      }
+      controller.setPointer(e.buttons === 0 ? canvasPx(e) : null);
       if (gesture === e.pointerId) {
         moves.push(toEvent('move', e));
         return;
       }
       if (drag === null) {
+        if (e.buttons !== 0) return;
         const ev = toEvent('move', e);
         if (ev.type === 'move') hover.push({ ...ev, type: 'move' });
         return;

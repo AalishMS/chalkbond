@@ -1,6 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { AtomId, BondId, Doc } from '../src/core/doc-model';
-import { canvasPoint, goldenDoc, loadDocument, openApp, readDocument } from './harness';
+import {
+  canvasPoint,
+  goldenDoc,
+  heardEvents,
+  listenEvents,
+  loadDocument,
+  openApp,
+  readDocument,
+} from './harness';
 
 type Pt = { x: number; y: number };
 
@@ -207,6 +215,57 @@ test('Bond tool: Esc and a right-click both cancel a drag and leave nothing behi
     await expect.poll(() => ghosts(page)).toEqual([]);
     await page.mouse.up();
     expect(await readDocument(page)).toEqual(doc);
+  } finally {
+    await app.close();
+  }
+});
+
+test('right chord cancels across frames and held-button moves cannot restore ghosts', async () => {
+  const { app, page } = await openApp();
+  try {
+    const doc = await firstBond(page);
+    await listenEvents(page);
+    await page.mouse.move(500, 500);
+    await page.mouse.down();
+    await page.mouse.move(600, 500);
+    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
+    const canvas = page.getByTestId('canvas');
+    const frame = () =>
+      page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          }),
+      );
+    // Chorded button transitions are pointermove, including right release with primary held.
+    await canvas.dispatchEvent('pointermove', {
+      pointerId: 1,
+      button: 2,
+      buttons: 3,
+      clientX: 600,
+      clientY: 500,
+    });
+    await frame();
+    expect(await ghosts(page)).toEqual([]);
+    await canvas.dispatchEvent('contextmenu', { button: 2, buttons: 3 });
+    await canvas.dispatchEvent('pointermove', {
+      pointerId: 1,
+      button: 2,
+      buttons: 1,
+      clientX: 600,
+      clientY: 500,
+    });
+    await frame();
+    expect(await ghosts(page)).toEqual([]);
+    await page.mouse.up();
+    await frame();
+    expect(await ghosts(page)).toEqual([]);
+    expect(await readDocument(page)).toEqual(doc);
+    const events = await heardEvents(page);
+    expect(events.filter((e) => e.type === 'context-menu')).toEqual([]);
+    expect(events.filter((e) => e.type === 'busy')).toHaveLength(2);
+    await page.mouse.move(610, 510);
+    await expect.poll(() => ghosts(page).then((g) => g.length)).toBeGreaterThan(0);
   } finally {
     await app.close();
   }

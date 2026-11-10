@@ -589,7 +589,11 @@ interface ToolStep<G> {
 
 - Every tool is idle → (down, button 0) pressed → (move beyond 4 px) dragging → (up) commit, or
   (up within 4 px) click. `cancel` (Esc, right button down, pointer capture lost, window blur)
-  returns to idle with no commit and clears the preview.
+  returns to idle with no commit and clears the preview. Chorded right-down may arrive as
+  `pointermove` (`button: 2`, `buttons: 3`): it cancels once and consumes its context menu.
+  Cancellation clears queued drag and hover feedback. Button-held moves (including chorded
+  right-up with `buttons: 1`) cannot hover; only a subsequent unpressed hover movement restores
+  normal HV ghosts.
 - **Previews never touch history**: the tool runs the same recipe on the committed doc outside
   `transact` (plain ops on a frozen doc). Because ids come from `nextId`, preview ids equal the ids
   the commit will issue, so `added` (keys not in the committed scene) marks the ghost parts.
@@ -1287,3 +1291,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
   `openchemlib` or deep core paths; open a modal dialog for a routine message; use network, fonts
   or icons from outside the repo; edit `tokens.css` or `icons.svg` in `src/` without changing the
   mock-up files first; use ChemDraw's names, icons or assets.
+
+Corrective implementation note (2026-11-10): right-chord cancellation previously listened only
+for pointerdown, missing Chromium's chorded pointermove; its right-up then queued hover while
+the primary button was held. The view detects that transition and gates hover on buttons=0.
