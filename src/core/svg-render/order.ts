@@ -22,3 +22,12 @@ export function compareIds(a: string, b: string): number {
 export function sortedIds<K extends string>(record: Readonly<Record<K, unknown>>): K[] {
   return (Object.keys(record) as K[]).sort(compareIds);
 }
+
+/**
+ * Compile-time exhaustiveness for a `switch` over a union: the `default` branch passes the
+ * leftover value here, so a new variant fails `typecheck`. At run time (a hand-edited file with
+ * an unknown variant) it does nothing and the caller falls back to its plain case.
+ */
+export function exhaustive(_value: never): void {
+  // Intentionally empty.
+}

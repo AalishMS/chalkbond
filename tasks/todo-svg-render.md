@@ -172,9 +172,9 @@ is solid plus dashed; partly Kekulé ring has no circle; circle colour (shared v
 colours); wedge/hash clipped at `OH`; bond end positions at `CO2H`/`OMe`/`NO2` labels.
 
 **Acceptance criteria:**
-- [ ] Circled rings: all-1.5 ring gets one circle, naphthalene 2; 1.5 elsewhere is solid plus dashed; Kekulé rings get inside-ring double bonds (SC6)
-- [ ] No bond line crosses its label's text; bond ends match the label rules (SC7)
-- [ ] Every `BondOrder`, `BondStereo`, `DoublePlacement` value has a rule and a test (SC2)
+- [x] Circled rings: all-1.5 ring gets one circle, naphthalene 2; 1.5 elsewhere is solid plus dashed; Kekulé rings get inside-ring double bonds (SC6)
+- [x] No bond line crosses its label's text; bond ends match the label rules (SC7)
+- [x] Every `BondOrder`, `BondStereo`, `DoublePlacement` value has a rule and a test (SC2)
 
 **Verification:** `npm test -- src/core/svg-render`
 
