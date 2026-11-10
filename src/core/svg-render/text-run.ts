@@ -1,9 +1,10 @@
 // Single-line text runs placed at an absolute origin (left edge, baseline). The corner text of a
 // bracket uses this; S10's text layout builds multi-line text on the same measurement.
 import type { Point, Rect, TextRun } from '../doc-model';
+import { unionAll } from './geom';
 import { svgText } from './svg-write';
 import { INK, type ResolvedStyle } from './style';
-import { measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import { OVERHANG_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
 
 export interface PlacedRuns {
   /** One `<text>` element per run, separated by `\n`. */
@@ -48,12 +49,14 @@ export function placeRuns(
   return {
     svg,
     box: { x: origin.x, y: origin.y - m.ascent, w: m.width, h: m.ascent + m.descent },
-    ink: {
-      x: origin.x,
-      y: origin.y - m.inkAscent,
-      w: m.width,
-      h: m.inkAscent + m.inkDescent,
-    },
+    ink: unionAll(
+      (m.lines[0]?.segments ?? []).map((seg) => ({
+        x: origin.x + seg.x - OVERHANG_EM * seg.fontSize,
+        y: origin.y - m.inkAscent,
+        w: seg.width + 2 * OVERHANG_EM * seg.fontSize,
+        h: m.inkAscent + m.inkDescent,
+      })),
+    ) as Rect,
     notices: m.notices,
   };
 }

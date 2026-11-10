@@ -11,7 +11,13 @@ import type { AtomLabel } from './atom-label';
 import { growRect, normalize, segmentBoxInterval, unionAll } from './geom';
 import { el, svgText } from './svg-write';
 import { INK, type ResolvedStyle } from './style';
-import { ASCENT_EM, DESCENT_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import {
+  ASCENT_EM,
+  DESCENT_EM,
+  OVERHANG_EM,
+  measureRuns,
+  type UnmeasuredGlyphNotice,
+} from './text-measure';
 
 const MINUS = '−';
 const S2 = Math.SQRT1_2;
@@ -292,9 +298,9 @@ export function layoutSatellites(
       ),
     );
     const ink: Rect = {
-      x: box.x,
+      x: box.x - OVERHANG_EM * textSize,
       y: baseline - ASCENT_EM * textSize,
-      w,
+      w: w + 2 * OVERHANG_EM * textSize,
       h: (ASCENT_EM + DESCENT_EM) * textSize,
     };
     return { parts, rects: [box], box, ink, notices: m.notices };

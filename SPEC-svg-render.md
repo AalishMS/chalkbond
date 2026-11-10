@@ -383,10 +383,12 @@ must be known without a browser and be identical on every machine.
   descent 0.212 em (Arial's); the descent applies only to runs containing a descending glyph
   (`g j p q y Q , ; ( ) [ ] { } |`). The *ink* box (`inkAscent`, `inkDescent`, used for every
   extent) is safe for every glyph: each run, sub/superscripts and Greek included, is boxed at
-  the font's full ascent 0.905 em above and full descent 0.212 em below its own baseline, so
-  glyphs taller than the caps (`δ`, accents) or overshooting the baseline (round letters, `δ`)
-  cannot be clipped by the viewBox;
-  sub/superscript shifts extend the box.
+  the font's full ascent 0.905 em (bold: 0.925 em, Arial Bold's accented capitals rise above the
+  ascent line) above and full descent 0.212 em below its own baseline, and grown 0.05 em left and
+  right (side-bearing overhang: `j` reaches 0.047 em left of its origin, `f` 0.042 em beyond its
+  advance), so glyphs taller than the caps (`δ`, accents) or overshooting the baseline (round
+  letters, `δ`) cannot be clipped by the viewBox; sub/superscript shifts extend the box. The
+  calibration e2e rasterises the corpus and proves every inked pixel lies inside this box.
 - **Generator:** `scripts/build-font-metrics.mjs <regular.ttf> <bold.ttf>` — Node, no
   dependencies, ~60 lines: reads `head.unitsPerEm`, `hhea.numberOfHMetrics`, `hmtx` and the
   `cmap` (format 4) from the two files given on the command line. It never touches the network
@@ -405,7 +407,10 @@ absolutely, so a width error in one run cannot shift another (worst case: a slig
 
 A calibration test in `e2e/` creates SVG `<text>` elements for a fixed corpus in the Electron
 window and compares `getComputedTextLength()` with the table (≤ 1 %, 20 px at font-size 100); on
-Windows that is real Arial.
+Windows that is real Arial. It also rasterises the corpus and checks that no inked pixel leaves
+the computed ink box. The table has no kerning; Chromium kerns, which accounts for the largest
+measured difference (0.67 %, `Δ α β …`). U+00AD (soft hyphen) is measured as width 0 because
+browsers draw it with no advance.
 
 ## Extents (bounds including labels and strokes)
 
@@ -413,10 +418,10 @@ Windows that is real Arial.
 half its stroke width (round caps included), plus: label text boxes (all glyph runs, with
 sub/superscripts, not just the anchor box), arrowheads, exact Bézier extrema for curves and
 curved arrows (not control points), wedge polygons, circles, satellites, caption/callout/
-bracket/text boxes (measured width × the ink box: full font ascent/descent per run). `bounds` =
+bracket/text boxes (measured width plus 0.05 em overhang each side × the ink box: full font ascent/descent per run). `bounds` =
 union of `extents`; `padding` is added only in `toSvg`. Extents therefore **contain all ink as
 the browser renders it** and are exact for every non-text primitive; around text they are loose
-by at most 0.19 em above the cap height and 0.21 em below the baseline. An atom with no ink (a bare skeleton vertex) has no extents entry; its
+by at most 0.19 em (0.21 bold) above the cap height, 0.21 em below the baseline and 0.05 em at each side. An atom with no ink (a bare skeleton vertex) has no extents entry; its
 position still contributes via its bonds.
 
 ## Determinism

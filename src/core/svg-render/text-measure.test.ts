@@ -14,6 +14,10 @@ describe('advanceWidth', () => {
   it('looks up regular, bold and fallback widths (1/1000 em)', () => {
     expect(advanceWidth('W'.codePointAt(0)!, false)).toEqual({ width: 944, measured: true });
     expect(advanceWidth('i'.codePointAt(0)!, true)).toEqual({ width: 278, measured: true });
+    // A soft hyphen is invisible in running text: Chromium draws it with no advance at all
+    // (found by the font calibration e2e), although Arial's table lists 333.
+    expect(advanceWidth(0xad, false)).toEqual({ width: 0, measured: true });
+    expect(advanceWidth(0xad, true)).toEqual({ width: 0, measured: true });
     expect(advanceWidth(0x995, false)).toEqual({ width: 556, measured: false });
     expect(FALLBACK_ADVANCE).toBe(556);
   });
@@ -164,6 +168,15 @@ describe('measureRuns: ink box (safe for every glyph)', () => {
       near(m.inkDescent, 21.2);
       near(m.lines[0]!.inkAscent, 90.5);
     }
+  });
+
+  it('bold runs are boxed up to 0.925 em: Arial Bold accented capitals rise above the ascent line', () => {
+    const m = measureRuns([{ text: 'À', bold: true }], style);
+    near(m.inkAscent, 92.5);
+    near(m.inkDescent, 21.2);
+    // A regular run beside it keeps the box of the tallest run.
+    near(measureRuns([{ text: 'a' }, { text: 'À', bold: true }], style).inkAscent, 92.5);
+    near(measureRuns([{ text: 'À', bold: true, script: 'sup' }], style).inkAscent, 0.925 * 70 + 40);
   });
 
   it('sub and superscripts use their own scaled font box, shifted with the run', () => {

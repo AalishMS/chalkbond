@@ -8,7 +8,13 @@ import { labelDisplay } from './label-display';
 import { svgText } from './svg-write';
 import type { ResolvedStyle } from './style';
 import { INK } from './style';
-import { ASCENT_EM, DESCENT_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import {
+  DESCENT_EM,
+  inkAscentEm,
+  OVERHANG_EM,
+  measureRuns,
+  type UnmeasuredGlyphNotice,
+} from './text-measure';
 
 /** Neighbours within this much of straight up/down (|sx| <= 0.1) leave the order unchanged. */
 const SIDE_DEAD_ZONE = 0.1;
@@ -284,10 +290,10 @@ function buildLabel(
   const centre = symbolBox.x + symbolBox.w / 2;
   const inkBox = unionAll(
     segments.map((seg, i) => ({
-      x: segX(seg, i),
-      y: baseline + seg.dy - ASCENT_EM * seg.fontSize,
-      w: seg.width,
-      h: (ASCENT_EM + DESCENT_EM) * seg.fontSize,
+      x: segX(seg, i) - OVERHANG_EM * seg.fontSize,
+      y: baseline + seg.dy - inkAscentEm(seg.bold) * seg.fontSize,
+      w: seg.width + 2 * OVERHANG_EM * seg.fontSize,
+      h: (inkAscentEm(seg.bold) + DESCENT_EM) * seg.fontSize,
     })),
   ) as Rect;
   const chargeSeg = segments[chargeAt];

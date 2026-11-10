@@ -9,7 +9,9 @@ import { checkXml, type XmlElement } from './xml-check';
 
 const CURVE_STEPS = 64;
 const ASCENT_EM = 0.905;
+const ASCENT_BOLD_EM = 0.925;
 const DESCENT_EM = 0.212;
+const OVERHANG_EM = 0.05;
 const FALLBACK_ADVANCE = 556;
 
 type Pt = [number, number];
@@ -105,9 +107,9 @@ function textBox(el: XmlElement): Box {
     units += table[ch.codePointAt(0) ?? 0] ?? FALLBACK_ADVANCE;
   }
   return {
-    minX: x,
-    maxX: x + (units * size) / 1000,
-    minY: y - ASCENT_EM * size,
+    minX: x - OVERHANG_EM * size,
+    maxX: x + (units * size) / 1000 + OVERHANG_EM * size,
+    minY: y - (el.attrs['font-weight'] === 'bold' ? ASCENT_BOLD_EM : ASCENT_EM) * size,
     maxY: y + DESCENT_EM * size,
   };
 }

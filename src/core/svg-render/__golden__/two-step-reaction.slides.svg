@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="568.28pt" height="133.616pt" viewBox="0 0 568.28 133.616">
+<svg xmlns="http://www.w3.org/2000/svg" width="569.48pt" height="134.096pt" viewBox="0 0 569.48 134.096">
 <g transform="translate(1 73.128)" fill="none" stroke-linecap="round" stroke-linejoin="round">
 <path d="M0 0L34.64 -20" stroke="#000000" stroke-width="2"/>
 <path d="M34.64 -20L46.88 -12.933" stroke="#000000" stroke-width="2"/>
@@ -28,8 +28,8 @@
 <text x="369.752" y="27.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">3</text>
 <text x="379.093" y="22.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">O</text>
 <text x="397.765" y="12.992" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">+</text>
-<text x="36.968" y="55.4" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">1</text>
-<text x="255.316" y="41.72" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">2</text>
-<text x="516.968" y="55.4" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">3</text>
+<text x="37.568" y="55.88" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">1</text>
+<text x="255.916" y="42.2" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">2</text>
+<text x="517.568" y="55.88" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#000000" stroke="none" xml:space="preserve">3</text>
 </g>
 </svg>

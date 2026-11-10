@@ -62,8 +62,9 @@ describe('inkScan', () => {
     const box = inkScan(
       '<text x="10" y="200" font-family="Arial" font-size="100" fill="#000000">W</text>',
     )!;
-    near(box.x, 10);
-    near(box.w, 94.4);
+    // The box grows 0.05 em (5 pt here) on each side for glyphs that overhang their advance.
+    near(box.x, 10 - 5);
+    near(box.w, 94.4 + 10);
     near(box.y, 200 - 90.5);
     near(box.h, 90.5 + 21.2);
   });
@@ -73,12 +74,12 @@ describe('inkScan', () => {
       '<text x="0" y="100" font-size="100" font-weight="bold" fill="#000000">g</text>',
     )!;
     near(box.y + box.h, 100 + 21.2);
-    near(box.w, 61.1, 1); // Arial bold g = 611
+    near(box.w, 61.1 + 10, 1); // Arial bold g = 611, plus the overhang
   });
 
   it('text: an uncovered glyph uses the fallback width', () => {
     const box = inkScan('<text x="0" y="10" font-size="100" fill="#000000">日</text>')!;
-    near(box.w, 55.6);
+    near(box.w, 55.6 + 10);
   });
 
   it('unions every element and accepts a whole <svg>', () => {

@@ -48,7 +48,7 @@ describe('layoutCaption', () => {
     const [t] = textElements(out.svg);
     near(out.ink.x + out.ink.w / 2, 140);
     near(out.ink.y, 50 + 20);
-    near(t!.y, 50 + 20 + 0.905 * style.fontSize);
+    near(t!.y, 50 + 20 + 0.925 * style.fontSize);
   });
 
   it('a superscript first pushes the baseline down so the top edge stays put', () => {

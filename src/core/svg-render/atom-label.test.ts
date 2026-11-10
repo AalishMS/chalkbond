@@ -364,7 +364,9 @@ describe('label geometry for satellites', () => {
   it('inkBox is the font ascent/descent box of every run; textBox keeps the cap-height layout', () => {
     const label = build({ element: 'O', charge: -1 }, [], 1);
     expect(label.text).toBe('OH−');
-    near(label.inkBox.w, label.textBox.w);
+    // Side-bearing overhang: 0.05 em of the first run (O, 100) left and of the last (the sign, 70) right.
+    near(label.inkBox.w, label.textBox.w + 5 + 3.5);
+    near(label.inkBox.x, label.textBox.x - 5);
     // The superscript is the highest run: 0.905 * 70 above its own baseline, 40 above the line's.
     near(label.inkBox.y, POS.y + CAP / 2 - 40 - 0.905 * 70);
     near(label.inkBox.y + label.inkBox.h, POS.y + CAP / 2 + 0.212 * 100);

@@ -103,7 +103,10 @@ describe('layoutTextAt: runs', () => {
   ])('%s is measured without a notice', (_label, text) => {
     const out = layoutTextAt([{ text }], style, 'left', at)!;
     expect(out.notices).toEqual([]);
-    near(out.ink.w, adv(text));
+    // The ink box adds the 0.05 em side-bearing overhang on both sides (5 pt at 100 pt).
+    near(out.ink.w, adv(text) + 10);
+    near(out.ink.x, 100 - 5);
+    near(out.box.w, adv(text));
   });
 
   it('δ followed by a superscript plus keeps the glyph widths', () => {

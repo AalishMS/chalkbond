@@ -7,7 +7,7 @@ import type { Drawn } from './draw';
 import { rectUnion, unionAll } from './geom';
 import { svgText } from './svg-write';
 import { INK, type ResolvedStyle } from './style';
-import { measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
+import { OVERHANG_EM, measureRuns, type UnmeasuredGlyphNotice } from './text-measure';
 
 export type TextAlign = 'left' | 'center' | 'right';
 
@@ -22,7 +22,7 @@ export interface TextSize {
 }
 
 export interface PlacedText extends Drawn {
-  /** The block's text box: widest line x (first ascent + last descent); contains `ink`. */
+  /** The block's text box: widest line x (first ascent + last descent), without the side-bearing overhang that `ink` adds. */
   readonly box: Rect;
   readonly notices: UnmeasuredGlyphNotice[];
 }
@@ -53,6 +53,7 @@ export function layoutText(
 
   const svg: string[] = [];
   const lineInk: Rect[] = [];
+  const lineBox: Rect[] = [];
   const spans: Rect[] = [];
   let next = 0;
   for (const line of m.lines) {
@@ -77,21 +78,31 @@ export function layoutText(
     }
     spans.push({ x: x0, y: anchor.y - m.inkAscent, w: line.width, h: 0 });
     if (line.segments.length > 0) {
-      lineInk.push({
+      lineBox.push({
         x: x0,
         y: baseline - line.inkAscent,
         w: line.width,
         h: line.inkAscent + line.inkDescent,
       });
+      for (const seg of line.segments) {
+        const over = OVERHANG_EM * seg.fontSize;
+        lineInk.push({
+          x: x0 + seg.x - over,
+          y: baseline - line.inkAscent,
+          w: seg.width + 2 * over,
+          h: line.inkAscent + line.inkDescent,
+        });
+      }
     }
   }
   const ink = unionAll(lineInk);
-  if (!ink) return null; // only line breaks
+  const inner = unionAll(lineBox);
+  if (!ink || !inner) return null; // only line breaks
   const across = unionAll(spans) as Rect;
   return {
     svg: svg.join('\n'),
     ink,
-    box: rectUnion(ink, {
+    box: rectUnion(inner, {
       x: across.x,
       y: anchor.y - m.inkAscent,
       w: across.w,

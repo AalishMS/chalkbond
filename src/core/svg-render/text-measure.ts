@@ -11,6 +11,21 @@ export const FALLBACK_ADVANCE = 556;
 export const DESCENT_EM = 0.212;
 /** Arial's ascent, em: the top of the box that is safe for every glyph (Greek, accents). */
 export const ASCENT_EM = 0.905;
+/**
+ * Arial Bold's accented capitals (`À`, `Ý` ...) rise to 0.925 em, above the ascent line
+ * (found by `e2e/font-calibration.spec.ts`), so bold runs are boxed this high.
+ */
+export const ASCENT_BOLD_EM = 0.925;
+/** The ink-box ascent of a run, em. */
+export const inkAscentEm = (bold: boolean): number => (bold ? ASCENT_BOLD_EM : ASCENT_EM);
+/**
+ * Side-bearing overhang, em: ink boxes grow by this much on each side of a run, because glyphs
+ * such as `j` (left, 0.047 em) and `f` (right, 0.042 em bold) are drawn outside their advance
+ * box. Measured against real Arial by `e2e/font-calibration.spec.ts`.
+ */
+export const OVERHANG_EM = 0.05;
+/** Invisible in running text; the browser gives it no advance although the font has one. */
+const SOFT_HYPHEN = 0xad;
 const DESCENDING = new Set('gjpqyQ,;()[]{}|');
 
 export interface UnmeasuredGlyphNotice {
@@ -69,6 +84,7 @@ export interface TextMeasure {
 
 /** Advance of one code point in 1/1000 em, and whether the table covers it. */
 export function advanceWidth(cp: number, bold: boolean): { width: number; measured: boolean } {
+  if (cp === SOFT_HYPHEN) return { width: 0, measured: true };
   const width = (bold ? ADVANCE_BOLD : ADVANCE_REGULAR)[cp];
   return width === undefined
     ? { width: FALLBACK_ADVANCE, measured: false }
@@ -137,7 +153,7 @@ export function measureRuns(
       line.width += width;
       line.ascent = Math.max(line.ascent, cap * (size / fontSize) - dy);
       line.descent = Math.max(line.descent, dy + (descends ? DESCENT_EM * size : 0));
-      line.inkAscent = Math.max(line.inkAscent, ASCENT_EM * size - dy);
+      line.inkAscent = Math.max(line.inkAscent, inkAscentEm(bold) * size - dy);
       line.inkDescent = Math.max(line.inkDescent, DESCENT_EM * size + dy);
     });
   }
