@@ -19,6 +19,7 @@ import { createDerive, type Derive } from '../model/derive';
 import type { Point } from '../model/geometry';
 import { stepZoom } from '../model/viewport';
 import { initialState, type EditorState } from './editor-state';
+import { canDelete } from './commands';
 import { isDirty, type ReducerContext } from './reducer';
 import { createStore, type Store } from './store';
 
@@ -166,6 +167,10 @@ export function createEditorController(options: EditorOptions): EditorController
       case 'zoom-fit':
       case 'zoom-reset':
         return true;
+      case 'delete':
+        return canDelete(s);
+      case 'select-all':
+        return s.editing === null;
       default:
         if (typeof cmd === 'object' && cmd.type === 'insert-text') return true;
         // Later tasks (clipboard, selection actions, name field) turn these on.
@@ -195,6 +200,12 @@ export function createEditorController(options: EditorOptions): EditorController
         case 'zoom-fit':
         case 'zoom-reset':
           store.dispatch({ type: cmd });
+          break;
+        case 'delete':
+          store.dispatch({ type: 'delete' });
+          break;
+        case 'select-all':
+          store.dispatch({ type: 'select-all' });
           break;
         default:
           if (typeof cmd === 'object' && cmd.type === 'insert-text') {

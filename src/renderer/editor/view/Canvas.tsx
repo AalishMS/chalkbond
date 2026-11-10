@@ -3,7 +3,7 @@ import type { ItemKey } from '@core/svg-render';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { cursorFor } from '../model/cursor';
 import { mountParts, type PartHost } from '../model/mount';
-import { overlayGroups } from '../model/overlay';
+import { canvasOverlay } from '../model/overlay';
 import type { Mounted } from '../model/patch';
 import { PX_PER_PT } from '../model/viewport';
 import type { EditorController } from '../state/controller';
@@ -126,7 +126,18 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
           strokeLinejoin="round"
         />
       </svg>
-      <Overlay size={viewport.size} groups={overlayGroups(state.hover, doc, scene, viewport)} />
+      <Overlay
+        size={viewport.size}
+        groups={canvasOverlay({
+          hover: state.hover,
+          selection: state.selection,
+          gesture: state.gesture,
+          preview: state.preview,
+          doc,
+          scene,
+          viewport,
+        })}
+      />
       {children}
     </main>
   );

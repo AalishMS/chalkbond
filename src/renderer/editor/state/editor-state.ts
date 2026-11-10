@@ -8,6 +8,7 @@ import {
   type Selection,
 } from '@core/doc-model';
 import { resolveStyle } from '@core/svg-render';
+import type { Point } from '../model/geometry';
 import type { Hit } from '../model/hit-test';
 import { initialViewport, type Viewport } from '../model/viewport';
 
@@ -44,6 +45,20 @@ export type { Hit } from '../model/hit-test';
  */
 export interface GestureState {
   readonly kind: string;
+  /** What the overlay draws for this gesture: a marquee, snapping guides. */
+  readonly overlay?: GestureOverlay;
+}
+
+/** A snapping guide: a line across the canvas through `pt` (pt, document coordinates). */
+export interface Guide {
+  readonly axis: 'x' | 'y';
+  readonly pt: number;
+}
+
+export interface GestureOverlay {
+  /** Opposite corners of the marquee, BLU. */
+  readonly marquee?: { readonly from: Point; readonly to: Point };
+  readonly guides?: readonly Guide[];
 }
 
 /** A ghost document for the gesture in progress; never enters history. */

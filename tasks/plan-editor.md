@@ -94,7 +94,7 @@ Everything else is sequential: each phase builds on the previous one.
 
 ### Phase 3: select, erase, clipboard
 - [x] E14: Hit-testing, hover overlay, cursors
-- [ ] E15: Select clicks, marquee, selection overlay, delete and orphan rule
+- [x] E15: Select clicks, marquee, selection overlay, delete and orphan rule
 - [ ] E16: Move, snapping, fast path, join atoms, nudges
 - [ ] E17: Rotate, flip, arrow and curved-arrow handles
 - [ ] E18: Erase tool, in-app clipboard, context-menu event

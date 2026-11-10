@@ -16,6 +16,10 @@ function Shape({ shape }: { shape: OverlayShape }): React.JSX.Element {
           : `M${n(from.x)} ${n(from.y)}Q${n(control.x)} ${n(control.y)} ${n(to.x)} ${n(to.y)}`;
       return <path className="overlay-band" d={d} strokeWidth={shape.width} />;
     }
+    case 'line':
+      return (
+        <line x1={n(shape.from.x)} y1={n(shape.from.y)} x2={n(shape.to.x)} y2={n(shape.to.y)} />
+      );
     case 'box':
       return (
         <rect

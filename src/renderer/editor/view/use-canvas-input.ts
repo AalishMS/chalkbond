@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react';
 import { current } from '@core/doc-model';
-import { canvasEvent } from '../model/canvas-event';
+import { canvasEvent, type CanvasEvent } from '../model/canvas-event';
 import { createCoalescer } from '../model/coalesce';
 import type { Derive } from '../model/derive';
 import type { Point } from '../model/geometry';
@@ -16,8 +16,10 @@ const nextFrame = (run: () => void): (() => void) => {
 /**
  * Pan and zoom input on the canvas element (V1, V4): wheel and Shift+wheel pan, Ctrl+wheel and
  * touchpad pinch zoom about the pointer, Space+drag and middle-drag pan. Pointer-move deltas are
- * summed and delivered once per frame; the reducer clamps the pan. Pointer moves otherwise
- * update the hover (HV1): converted by `canvasEvent`, one hit-test per frame, latest move wins.
+ * summed and delivered once per frame; the reducer clamps the pan. Otherwise a primary press
+ * starts the active tool's gesture: the pointer is captured, moves are delivered once per frame
+ * (latest wins; the release delivers the last one first), and a lost capture, a window blur or a
+ * right press cancels it. Without a gesture, moves update the hover (HV1): one hit-test per frame.
  */
 export function useCanvasInput(
   canvas: RefObject<HTMLElement | null>,
@@ -55,7 +57,10 @@ export function useCanvasInput(
     const onKeyUp = (e: KeyboardEvent): void => {
       if (e.key === ' ') dispatch({ type: 'set-space', held: false });
     };
-    const onBlur = (): void => dispatch({ type: 'set-space', held: false });
+    const onBlur = (): void => {
+      dispatch({ type: 'set-space', held: false });
+      cancelGesture();
+    };
 
     // Drag: Space + primary button, or the middle button.
     const panDelta = createCoalescer<Point>(
@@ -69,26 +74,57 @@ export function useCanvasInput(
       (screen) => dispatch({ type: 'set-hover', hover: hoverAt(store.getState(), derive, screen) }),
     );
     let drag: { id: number; at: Point } | null = null;
+    /** The pointer that runs a tool gesture, while one does. */
+    let gesture: number | null = null;
+    const toEvent = (type: 'down' | 'move' | 'up', e: PointerEvent): CanvasEvent => {
+      const state = store.getState();
+      const rect = el.getBoundingClientRect();
+      const bondLength = derive.committed(current(state.history)).scene.style.bondLength;
+      return canvasEvent(type, e, { x: rect.left, y: rect.top }, state.viewport, bondLength);
+    };
+    const moves = createCoalescer<CanvasEvent>(
+      nextFrame,
+      (_pending, latest) => latest,
+      (event) => dispatch({ type: 'pointer', event }),
+    );
+    const cancelGesture = (): void => {
+      moves.cancel();
+      gesture = null;
+      if (store.getState().gesture !== null) {
+        dispatch({ type: 'pointer', event: { type: 'cancel' } });
+      }
+    };
     const onPointerDown = (e: PointerEvent): void => {
       const pans = e.button === 1 || (e.button === 0 && store.getState().spaceHeld);
-      if (!pans) return;
-      e.preventDefault();
-      el.setPointerCapture(e.pointerId);
-      drag = { id: e.pointerId, at: { x: e.clientX, y: e.clientY } };
-      el.dataset['pan'] = '';
+      if (pans) {
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+        drag = { id: e.pointerId, at: { x: e.clientX, y: e.clientY } };
+        el.dataset['pan'] = '';
+        return;
+      }
+      // Controls drawn over the canvas (the empty-state chips) keep their own clicks: capturing
+      // the pointer would redirect the click to the canvas.
+      if (e.target !== el) return;
+      if (e.button === 2 && gesture !== null) {
+        cancelGesture();
+        return;
+      }
+      if (e.button !== 0) return;
+      hover.cancel();
+      dispatch({ type: 'pointer', event: toEvent('down', e) });
+      if (store.getState().gesture !== null) {
+        el.setPointerCapture(e.pointerId);
+        gesture = e.pointerId;
+      }
     };
     const onPointerMove = (e: PointerEvent): void => {
+      if (gesture === e.pointerId) {
+        moves.push(toEvent('move', e));
+        return;
+      }
       if (drag === null) {
-        const state = store.getState();
-        const rect = el.getBoundingClientRect();
-        const bondLength = derive.committed(current(state.history)).scene.style.bondLength;
-        const ev = canvasEvent(
-          'move',
-          e,
-          { x: rect.left, y: rect.top },
-          state.viewport,
-          bondLength,
-        );
+        const ev = toEvent('move', e);
         if (ev.type === 'move') hover.push(ev.screen);
         return;
       }
@@ -97,10 +133,20 @@ export function useCanvasInput(
       drag.at = { x: e.clientX, y: e.clientY };
     };
     const endDrag = (e: PointerEvent): void => {
+      if (gesture === e.pointerId) {
+        moves.flush();
+        gesture = null;
+        dispatch({ type: 'pointer', event: toEvent('up', e) });
+        return;
+      }
       if (drag?.id !== e.pointerId) return;
       panDelta.flush();
       drag = null;
       delete el.dataset['pan'];
+    };
+    const onPointerCancel = (e: PointerEvent): void => {
+      if (gesture === e.pointerId) cancelGesture();
+      else endDrag(e);
     };
     // A middle press starts browser autoscroll unless the mouse-down is cancelled too.
     const onPointerLeave = (): void => {
@@ -118,12 +164,13 @@ export function useCanvasInput(
     el.addEventListener('pointerdown', onPointerDown);
     el.addEventListener('pointermove', onPointerMove);
     el.addEventListener('pointerup', endDrag);
-    el.addEventListener('pointercancel', endDrag);
+    el.addEventListener('pointercancel', onPointerCancel);
     el.addEventListener('pointerleave', onPointerLeave);
     el.addEventListener('mousedown', onMouseDown);
     return () => {
       panDelta.cancel();
       hover.cancel();
+      moves.cancel();
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('keydown', onKeyDown);
       el.removeEventListener('keyup', onKeyUp);
@@ -131,7 +178,7 @@ export function useCanvasInput(
       el.removeEventListener('pointerdown', onPointerDown);
       el.removeEventListener('pointermove', onPointerMove);
       el.removeEventListener('pointerup', endDrag);
-      el.removeEventListener('pointercancel', endDrag);
+      el.removeEventListener('pointercancel', onPointerCancel);
       el.removeEventListener('pointerleave', onPointerLeave);
       el.removeEventListener('mousedown', onMouseDown);
     };

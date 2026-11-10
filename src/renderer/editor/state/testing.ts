@@ -1,5 +1,16 @@
 import { createNameIndex } from '@core/chem-core';
-import { addAtom, addBond, emptyDoc, type AtomId, type BondId, type Doc } from '@core/doc-model';
+import { structureFromText } from '@core/chem-core';
+import {
+  addAtom,
+  addBond,
+  emptyDoc,
+  insert,
+  type AtomId,
+  type BondId,
+  type Doc,
+  type Selection,
+} from '@core/doc-model';
+import compounds from '../../../../resources/compounds/compounds.json';
 import { createDerive } from '../model/derive';
 import { initialState, type EditorState } from './editor-state';
 import { reduce, type EditorAction, type ReducerContext } from './reducer';
@@ -52,3 +63,30 @@ export const addEthane = (doc: Doc): Doc => {
 /** Ids as the editor sees them (branded strings). */
 export const atomId = (n: number): AtomId => `a${n}` as AtomId;
 export const bondId = (n: number): BondId => `b${n}` as BondId;
+
+const dictionary = createNameIndex(compounds);
+
+/** A document of named compounds from the dictionary, each inserted at its BLU position. */
+export function drawn(...parts: readonly { name: string; x: number; y: number }[]): Doc {
+  let doc = testDoc();
+  for (const part of parts) {
+    const result = structureFromText(part.name, dictionary);
+    if (!result.ok) throw new Error(`unknown compound ${part.name}`);
+    doc = insert(doc, result.value.sub, { x: part.x, y: part.y })[0];
+  }
+  return doc;
+}
+
+/** The ids of a whole fragment (atoms and the bonds between them), as a click would select. */
+export function wholeOf(doc: Doc, atoms: readonly AtomId[]): Selection {
+  const set = new Set(atoms);
+  return {
+    atoms: set,
+    bonds: new Set(
+      Object.values(doc.bonds)
+        .filter((b) => set.has(b.a1) && set.has(b.a2))
+        .map((b) => b.id),
+    ),
+    objects: new Set(),
+  };
+}

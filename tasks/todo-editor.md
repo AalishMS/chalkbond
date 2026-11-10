@@ -429,7 +429,7 @@ click "ethanol" chip → inserted; "eth" shows 8 rows with the first highlighted
 
 ### Checkpoint N — documents appear on the canvas
 - [x] `npm run check` green; typing "ethanol" + Enter draws ethanol at 150 % with "C2H6O · 46.07 g/mol"
-- [ ] Commit + push
+- [x] Commit + push
 
 ---
 
@@ -479,15 +479,15 @@ pair is kept; a bondless carbon a curved arrow refers to is kept. Delete is one 
 0 circles.
 
 **Acceptance criteria:**
-- [ ] Decision 6 click sequence passes in node and in e2e (`e2e/editor-select.spec.ts`: click a benzene atom → formula "C6H6 · 78.11 g/mol"; click again → overlay shows one circle)
-- [ ] E2 orphan rule as specified, including the anchor exception
-- [ ] Esc ladder steps in order (unit)
+- [x] Decision 6 click sequence passes in node and in e2e (`e2e/editor-select.spec.ts`: click a benzene atom → formula "C6H6 · 78.11 g/mol"; click again → overlay shows one circle)
+- [x] E2 orphan rule as specified, including the anchor exception
+- [x] Esc ladder steps in order (unit)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E15` → `E15/select-benzene.png` (scripted: insert benzene, Select, click a ring atom; compare `03-select.png`), `E15/select-narrowed.png` (scripted: click the same atom again), `E15/marquee.png` (scripted: drag a marquee half over ethanol, capture before release)
 
 **Dependencies:** E14
 
-**Files:** `src/renderer/editor/tools/{tool.ts,select.ts}`, `src/renderer/editor/model/{selection.ts,cleanup.ts,overlay.ts,commands.ts}` (+ tests), `src/renderer/editor/state/reducer.ts`, `src/renderer/editor/view/{Overlay.tsx,OptionsBar.tsx}`, `e2e/editor-select.spec.ts`, `e2e/shots/E15.shot.ts`
+**Files:** `src/renderer/editor/tools/{tool.ts,select.ts,index.ts}`, `src/renderer/editor/model/{selection.ts,cleanup.ts,overlay.ts,scope.ts}` (+ tests), `src/renderer/editor/state/{reducer.ts,pointer.ts,commands.ts}`, `src/renderer/editor/view/{Overlay.tsx,OptionsBar.tsx}`, `e2e/editor-select.spec.ts`, `e2e/shots/E15.shot.ts`
 
 **Scope:** M
 

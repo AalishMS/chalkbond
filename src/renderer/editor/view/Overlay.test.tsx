@@ -44,4 +44,20 @@ describe('Overlay markup', () => {
     expect(html).toContain('d="M1 2Q5 6 3 4"');
     expect(html).toContain('<rect x="1" y="2" width="30" height="40" rx="4"></rect>');
   });
+
+  it('draws a guide line, a square frame and a selection group per kind', () => {
+    const html = render([
+      { kind: 'selection', shapes: [{ kind: 'circle', c: { x: 1, y: 2 }, r: 12 }] },
+      {
+        kind: 'frame',
+        shapes: [{ kind: 'box', rect: { x: 0.5, y: 0.5, w: 10, h: 10 }, radius: 0 }],
+      },
+      { kind: 'guide', shapes: [{ kind: 'line', from: { x: 5, y: 0 }, to: { x: 5, y: 600 } }] },
+    ]);
+    expect(html).toContain('<g class="overlay-selection" data-testid="overlay-selection">');
+    expect(html).toContain('<g class="overlay-frame" data-testid="overlay-frame">');
+    expect(html).toContain('<rect x="0.5" y="0.5" width="10" height="10" rx="0"></rect>');
+    expect(html).toContain('<g class="overlay-guide" data-testid="overlay-guide">');
+    expect(html).toContain('<line x1="5" y1="0" x2="5" y2="600"></line>');
+  });
 });

@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { canRedo, canUndo, current } from '@core/doc-model';
 import { statusFormula } from '../model/formula';
-import { fieldCommand, globalCommand } from '../model/keymap';
+import { selectionScope } from '../model/scope';
+import { canvasKey, fieldCommand, globalCommand } from '../model/keymap';
 import { suggestionRows } from '../model/suggestions';
 import type { EditorController } from '../state/controller';
 import { isEmptyDoc } from '../state/empty-doc';
-import { EMPTY_SCOPE } from '../state/selection-actions';
 import { Canvas } from './Canvas';
 import { EmptyState } from './EmptyState';
 import sprite from './icons.svg?raw';
@@ -53,7 +53,14 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
   }, [noticeId, dispatch]);
   const onKeyDown = (e: React.KeyboardEvent): void => {
     // K1: a text input keeps its keys, except Undo / Redo in the empty name field (R23).
-    const command = isTextTarget(e.target)
+    const inText = isTextTarget(e.target);
+    const plain = inText ? null : canvasKey(e);
+    if (plain !== null) {
+      e.preventDefault();
+      dispatch(plain);
+      return;
+    }
+    const command = inText
       ? isNameField(e.target)
         ? fieldCommand(e, controller.shortcuts, state.nameField.text)
         : null
@@ -69,7 +76,12 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
   const idle = state.editing === null;
   const field = state.nameField;
   const rows = field.open ? suggestionRows(controller.names, field.text) : [];
-  const formula = statusFormula(doc, controller.derive.committed(doc).perception, state.selection);
+  const { perception } = controller.derive.committed(doc);
+  const formula = statusFormula(doc, perception, state.selection);
+  const scope = useMemo(
+    () => selectionScope(doc, perception, state.selection),
+    [doc, perception, state.selection],
+  );
   return (
     <div
       className="editor"
@@ -80,7 +92,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <TopBar
         state={state}
-        scope={EMPTY_SCOPE}
+        scope={scope}
         canUndo={idle && canUndo(state.history)}
         canRedo={idle && canRedo(state.history)}
         rows={rows}

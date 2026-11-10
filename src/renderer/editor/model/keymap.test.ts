@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fieldCommand, globalCommand, type KeyInfo } from './keymap';
+import { canvasKey, fieldCommand, globalCommand, type KeyInfo } from './keymap';
 
 const key = (k: string, over: Partial<KeyInfo> = {}): KeyInfo => ({
   key: k,
@@ -75,5 +75,28 @@ describe('K1 undo and redo in the name field (R23)', () => {
     expect(fieldCommand(key('f'), 'all', '')).toBeNull();
     expect(fieldCommand(key('='), 'all', '')).toBeNull();
     expect(fieldCommand(key('z'), 'canvas-only', '')).toBeNull();
+  });
+});
+
+describe('K1 select all and the plain keys', () => {
+  it('Ctrl+A selects all', () => {
+    expect(globalCommand(key('a'), 'all')).toBe('select-all');
+    expect(globalCommand(key('A', { shiftKey: true }), 'all')).toBeNull();
+    expect(globalCommand(key('a'), 'canvas-only')).toBeNull();
+  });
+
+  it('Delete and Backspace delete; Escape steps the ladder', () => {
+    const plain = (k: string, over: Partial<KeyInfo> = {}) => key(k, { ctrlKey: false, ...over });
+    expect(canvasKey(plain('Delete'))).toEqual({ type: 'delete' });
+    expect(canvasKey(plain('Backspace'))).toEqual({ type: 'delete' });
+    expect(canvasKey(plain('Escape'))).toEqual({ type: 'escape' });
+  });
+
+  it('they need no modifier, and are not left to the host with canvas-only shortcuts', () => {
+    const plain = (k: string, over: Partial<KeyInfo> = {}) => key(k, { ctrlKey: false, ...over });
+    expect(canvasKey(plain('Delete', { ctrlKey: true }))).toBeNull();
+    expect(canvasKey(plain('Delete', { altKey: true }))).toBeNull();
+    expect(canvasKey(plain('Escape', { metaKey: true }))).toBeNull();
+    expect(canvasKey(plain('x'))).toBeNull();
   });
 });

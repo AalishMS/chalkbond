@@ -1,0 +1,79 @@
+// Editor commands that act on the selection: delete (S8, K1), select all, the Esc ladder.
+import { current, type Selection } from '@core/doc-model';
+import { deleteWithOrphans } from '../model/cleanup';
+import { isEmptySelection, selectAll } from '../model/selection';
+import { EMPTY_SELECTION, type EditorState, type Hit } from './editor-state';
+import { nameDismiss } from './name-field';
+import type { EditorAction } from './reducer';
+
+type Commit = Extract<EditorAction, { type: 'commit' }>;
+
+/** The hovered item as a selection: what Delete acts on when nothing is selected. */
+function hoveredSelection(hit: Hit | null): Selection {
+  switch (hit?.kind) {
+    case 'atom':
+      return { atoms: new Set([hit.id]), bonds: new Set(), objects: new Set() };
+    case 'bond':
+      return { atoms: new Set(), bonds: new Set([hit.id]), objects: new Set() };
+    case 'object':
+      return { atoms: new Set(), bonds: new Set(), objects: new Set([hit.id]) };
+    default:
+      return EMPTY_SELECTION;
+  }
+}
+
+/** Whether Delete has something to act on: the selection, else the hovered item. */
+export function canDelete(state: EditorState): boolean {
+  if (state.gesture !== null || state.editing !== null) return false;
+  return !isEmptySelection(state.selection) || !isEmptySelection(hoveredSelection(state.hover));
+}
+
+/**
+ * S8 / K1: delete the selection with the orphan rule (E2), one "Delete" commit; with nothing
+ * selected, the hovered item ("Erase").
+ */
+export function deleteSelection(
+  state: EditorState,
+  commit: (state: EditorState, action: Commit) => EditorState,
+): EditorState {
+  if (!canDelete(state)) return state;
+  const hasSelection = !isEmptySelection(state.selection);
+  const target = hasSelection ? state.selection : hoveredSelection(state.hover);
+  const done = commit(state, {
+    type: 'commit',
+    label: hasSelection ? 'Delete' : 'Erase',
+    recipe: (doc) => deleteWithOrphans(doc, target),
+    selection: EMPTY_SELECTION,
+  });
+  return done.history === state.history ? done : { ...done, hover: null };
+}
+
+/** Ctrl+A: Select becomes the active tool and everything is selected. */
+export function selectEverything(state: EditorState): EditorState {
+  if (state.editing !== null) return state;
+  return {
+    ...state,
+    tool: 'select',
+    gesture: null,
+    preview: null,
+    hover: null,
+    selection: selectAll(current(state.history)),
+  };
+}
+
+/**
+ * K1 Esc: one step per press: cancel the gesture, close the editor or the name dropdown, clear
+ * the notice, clear the selection, switch to Select.
+ */
+export function escape(state: EditorState): EditorState {
+  if (state.gesture !== null || state.preview !== null) {
+    return { ...state, gesture: null, preview: null };
+  }
+  if (state.editing !== null) return { ...state, editing: null };
+  const field = state.nameField;
+  if (field.open || field.error !== null) return nameDismiss(state);
+  if (state.notice !== null) return { ...state, notice: null };
+  if (!isEmptySelection(state.selection)) return { ...state, selection: EMPTY_SELECTION };
+  if (state.tool !== 'select') return { ...state, tool: 'select', hover: null };
+  return state;
+}

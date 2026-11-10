@@ -10,6 +10,7 @@ import {
   type Doc,
   type Selection,
 } from '@core/doc-model';
+import type { CanvasEvent } from '../model/canvas-event';
 import type { Derive } from '../model/derive';
 import type { Point, Rect, Size } from '../model/geometry';
 import {
@@ -24,6 +25,7 @@ import {
 } from '../model/viewport';
 import { insertedSelection } from '../model/selection';
 import { OPTIONS, isVariantTool } from './catalog';
+import { deleteSelection, escape, selectEverything } from './commands';
 import { differs } from './dirty';
 import {
   EMPTY_SELECTION,
@@ -35,6 +37,7 @@ import {
   type ToolId,
   type VariantTool,
 } from './editor-state';
+import { pointer } from './pointer';
 import {
   insertText,
   nameClear,
@@ -72,6 +75,10 @@ export type EditorAction =
   | { type: 'name-clear' }
   | { type: 'name-enter' }
   | { type: 'insert-text'; text: string }
+  | { type: 'pointer'; event: CanvasEvent }
+  | { type: 'delete' }
+  | { type: 'select-all' }
+  | { type: 'escape' }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'notice-show'; kind: 'info' | 'error'; text: string }
@@ -245,6 +252,14 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
     }
     case 'commit':
       return commit(state, action, ctx);
+    case 'pointer':
+      return pointer(state, action.event, ctx, (s, a) => commit(s, a, ctx));
+    case 'delete':
+      return deleteSelection(state, (s, a) => commit(s, a, ctx));
+    case 'select-all':
+      return selectEverything(state);
+    case 'escape':
+      return escape(state);
     case 'name-text':
       return nameText(state, action.text, ctx);
     case 'name-highlight':

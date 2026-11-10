@@ -310,10 +310,47 @@
   fill: var(--accent);
 }
 
-.overlay-hover .overlay-band {
+/* Selection (screen 03): bands, circles and label boxes in one group at --overlay-selection. */
+.overlay-selection {
+  opacity: var(--overlay-selection);
+  fill: var(--accent);
+}
+
+/* A merge target while a single atom is dragged onto it. */
+.overlay-merge {
+  opacity: var(--overlay-merge);
+  fill: var(--accent);
+}
+
+.overlay-hover .overlay-band,
+.overlay-selection .overlay-band {
   fill: none;
   stroke: var(--accent);
   stroke-linecap: round;
+}
+
+/* The selection frame: 1 px dashed around the ink box grown 8 px. */
+.overlay-frame rect {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.overlay-marquee rect {
+  fill: var(--accent);
+  fill-opacity: var(--overlay-marquee);
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+
+/* Snapping guides: 1 px dashed lines across the canvas. */
+.overlay-guide line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: var(--guide-opacity);
+  shape-rendering: crispEdges;
 }
 
 /* Space held, or a middle-drag in progress (V4). */
