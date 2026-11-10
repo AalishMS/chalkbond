@@ -1221,34 +1221,46 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
    draws ethanol by gestures (Bond click on empty canvas, hover the end atom, `O`) and
    `[data-testid=formula]` reads "C2H6O · 46.07 g/mol"; a Ring click places benzene ("C6H6 ·
    78.11 g/mol"). Shots `E20/hover-key-O.png`, `E21/toluene.png`.
+   **Partly proven:** `e2e/editor-structures.spec.ts`, shots `E20/hover-key-O.png`, `E21/toluene.png`. The "no instructions" part is a human judgement: first-use pass on the Windows checklist (unticked).
 2. Toluene in ≤ 3 actions (Ring, click canvas, hover a ring atom + `1`) and the SC3 reaction
    ("ethanol + acetic acid -> ethyl acetate + water", H₂SO₄ above, Δ below) in ≤ 15 actions,
    aligned: `state/scenarios.test.ts` (exact, 0.01 BLU) and `e2e/editor-reaction.spec.ts`
    (action counter; part boxes aligned within 1 screen px).
+   **Proven:** `state/scenarios.test.ts`, `e2e/editor-reaction.spec.ts`.
 3. Every gesture in "Behaviour rules" has a tool-machine test, commits exactly one undo step, and
    undo restores the previous doc exactly (property 2).
+   **Proven:** tool-machine tests (`tools/*.test.ts`) and property 2 in `state/editor.prop.test.ts`.
 4. No reachable event sequence produces an invalid document or an uncaught exception (property 1,
    1,000 runs, explicit timeout).
+   **Proven:** property 1 in `state/editor.prop.test.ts` (1,000 runs).
 5. All ten tools, every option, every selection action and every K1 command are reachable by
    keyboard, every control shows a focus ring and has an accessible name:
    `e2e/editor-keyboard.spec.ts` (keyboard-only walkthrough inserting ethanol, selecting all,
    flipping, undoing).
+   **Proven:** `e2e/editor-a11y.spec.ts` (keyboard-only walkthrough, every tool and option by arrows and Enter, selection actions, Esc from the name dropdown and both editors, rings on every button, names against tooltips, `role` and `aria-*` wiring), `e2e/editor-keyboard.spec.ts` (tab order, roving stops), shots `E33/keyboard-walkthrough-*.png`, `E33/focus-*.png`. Not literally proven for every K1 row: Ctrl+Shift+L is asserted to run without changing a clean structure; its geometry is covered by reducer tests only.
 6. Contrast pairs pass (`tests/tooling/editor-tokens.test.ts`); lifted `tokens.css` and
    `icons.svg` equal the mock-up files; hit targets ≥ 24 px (`e2e/editor-layout.spec.ts` boxes).
+   **Proven:** `tests/tooling/editor-tokens.test.ts` (spec pairs plus every colour pair `editor.css` uses), `e2e/editor-a11y.spec.ts` (hit targets). One deviation, open for the owner: the two preset segments are 64 x 20 (mock-up, Control states) against 24 px in Accessibility; the test pins 64 x 20.
 7. The window matches the approved mock-ups: `e2e/editor-layout.spec.ts` measures the region and
    control boxes in "Layout" at 1280×800 and 960×640 (±1 px), and the named shots of every UI task
    exist for side-by-side review with `out/mockups/*.png`.
+   **Partly proven:** `e2e/editor-layout.spec.ts` boxes; side-by-side shot review is a human check on the Windows checklist (unticked).
 8. Valence warnings appear as overlays with their message on hover and never in exports: an
    overlay unit test for a doc with an `H20` label, an e2e hover over it showing chem-core's
    message `Unknown label "H20".` (shot `E24/warning-tooltip.png`), and a unit test that `renderSvg(doc)` of that doc
    contains no `#b42318`.
+   **Proven:** overlay unit test, `e2e/editor-warnings.spec.ts`, shot `E24/warning-tooltip.png`, svg-render no-`#b42318` test.
 9. Name insert: exact names insert, prefixes suggest, misspellings show "Did you mean" with the
    closest first ("ethanl" → ethanol), reaction text builds a tidy scheme (unit + e2e).
+   **Proven:** `state/reducer-name.test.ts`, `e2e/editor-name.spec.ts`, `e2e/editor-reactions.spec.ts`.
 10. Performance budgets met on Windows and node perf budgets pass.
+   **Partly proven:** `src/renderer/editor/perf.test.ts` (node) and `e2e/editor-perf.spec.ts` on the development machine (table in "Performance"). Not yet proven on the owner's laptop: Windows checklist (unticked).
 11. `npm run check` green; `src/renderer/editor` ≥ 70 % line coverage; the DOM-free lint block
     and boundary probes pass.
+   **Proven:** `npm run check` green; `npm test -- --coverage` reports `src/renderer/editor` at 85.5 % lines (model 99.4, state 99.5, tools 98.7, view 27.1) with a 70 % threshold enforced in `vitest.config.mts`; lint probes in `tests/tooling/`.
 12. The editor runs in the scaffold window with no app-shell code beyond the listed scaffold
     changes; `e2e/smoke.spec.ts` passes.
+   **Proven:** `e2e/smoke.spec.ts` and the whole e2e suite run in the scaffold window.
 
 ## Boundaries (module-specific)
 

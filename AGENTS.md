@@ -14,8 +14,8 @@ The product spec is `SPEC.md`; the module list is `CAPABILITY-MAP.md`. Module id
 | 1 | `doc-model` | none | done |
 | 2 | `chem-core` | doc-model | done |
 | 3 | `svg-render` | doc-model, chem-core | done; Windows Office checks in `docs/windows-checklist.md` still unticked |
-| 4 | `editor` | doc-model, chem-core, svg-render | next; no spec yet |
-| 5 | `clipboard-export` | doc-model, svg-render | not started |
+| 4 | `editor` | doc-model, chem-core, svg-render | done; "Editor" checks in `docs/windows-checklist.md` still unticked; the two preset segments are 64×20 (mock-up), under the 24 px target of the spec's Accessibility section |
+| 5 | `clipboard-export` | doc-model, svg-render | next; no spec yet |
 | 6 | `app-shell` | all | scaffold only (empty window) |
 
 ## Workflow
@@ -43,6 +43,11 @@ npm test                  # vitest run (all three projects)
 npm test -- --coverage    # coverage report; perf timings are skipped
 npm run test:e2e          # electron-vite build, then playwright test
 npm run golden:sheet      # out/golden-sheet.html; add -- --png out/sheet.png for PNGs
+npm run shots             # electron-vite build, then e2e/shots/*.shot.ts -> out/shots/<task>/<name>.png
+npm run shots -- E21      # (playwright args pass through; or: npx playwright test --project=shots e2e/shots/E21.shot.ts)
+node docs/mockups/editor/build.mjs --png out/mockups   # the approved mock-up PNGs to compare shots with
+npx vitest run --project perf                          # editor and core perf budgets alone
+npx playwright test --project=e2e e2e/editor-perf.spec.ts   # frame-time probe (needs a build)
 npm run build             # out/
 ```
 
@@ -116,6 +121,55 @@ Vitest projects (`vitest.config.mts`):
   in Electron's Chromium (real Arial on Windows). Fix box errors in the renderer, not the tolerance.
 - Valence warnings, selection and hit-testing are not drawn here; the editor overlays them.
 
+### editor
+
+- Spec `SPEC-editor.md` (Decisions table: rows 1-16 the orchestrator's, R1-R40 the reviewer's and
+  the fixes found while building). Read the Decisions before changing a behaviour; update the spec
+  first. Plan and todo: `tasks/plan-editor.md`, `tasks/todo-editor.md` (E1-E34).
+- `src/renderer/editor/{model,tools,state}` are pure: no DOM, no React, no `Date`, no timers (an
+  ESLint block plus a tooling probe; the clock is injected). `view/` is thin React; DOM-only
+  helpers (`text-dom.ts`, `use-canvas-input.ts`, `press.ts`) live there. Core is imported through
+  `@core/<module>` only; never `openchemlib`.
+- A tool is a state machine: `step(gesture, CanvasEvent, ToolContext) -> ToolStep` (idle, press,
+  drag past 4 px, release). A `ToolStep.commit` is `{label, recipe, select?, coalesceKey?}`; the
+  reducer runs the recipe in **one `transact`** = one undo step. Esc, right button, capture loss
+  and blur send `cancel`: no commit, no history entry.
+- Previews (ghosts, drag feedback) run the same recipe on the committed doc outside `transact`
+  (plain ops on a frozen doc). Ids come from `nextId`, so a preview's ids equal the commit's;
+  `added` keys mark ghost parts. Never put a preview in history.
+- Inside `transact` the doc is an Immer draft: use the draft-aware ops, never spread or clone
+  `doc.atoms`; a recipe that returns a fresh object breaks the fine-grained patches.
+- Empty-state and ghost rules (R30): the empty state shows only when the doc is empty, no gesture
+  runs and no preview exists, and while the doc is empty no tool draws a hover ghost. Hover rules
+  HV4/HV5 (R27, R32) are in the spec; the pure `emptyStateVisible` and `overlay.ts` decide them.
+- Text and label editing is model-first: `text-edit.ts` is a pure editing model (runs, caret,
+  local undo); the `contenteditable` is a projection re-rendered from it, IME reconciled on
+  `compositionend`. `finishText` formats on commit only characters the user did not format.
+- `docs/mockups/editor/{tokens.css,icons.svg}` are normative; `view/tokens.css` (after its leading
+  comment) and `view/icons.svg` must stay byte-identical copies (`tests/tooling/editor-tokens.test.ts`).
+  `editor.css` uses tokens only (no raw colour, no px other than 1 px). Contrast pairs and every
+  colour pair `editor.css` uses are checked there.
+- Shots: `e2e/shots/E<n>.shot.ts` write `out/shots/E<n>/<name>.png` at 1280x800 (`harness.shot`);
+  they are for looking at (compare with `out/mockups`); measurable checks are DOM boxes in
+  `e2e/editor-*.spec.ts`. Look at the PNGs after any visual change.
+- e2e seams (`e2e/harness.ts`): `openApp`, `insertName`, `canvasPoint`, `readDocument`,
+  `loadDocument`; `data-testid`s on every control; `data-key` on parts; `data-layer="content"`
+  carries the viewport transform. There is no test-only global: `readDocument` / `loadDocument`
+  reach the controller through React's fibers.
+- The accessibility facts are tested, not assumed: `e2e/editor-a11y.spec.ts` (keyboard walkthrough,
+  focus rings, names, hit targets, reduced motion) and `editor-keyboard.spec.ts` (tab order, K4).
+- Coverage: `vitest.config.mts` enforces 70 % lines for `src/renderer/editor/**` under
+  `--coverage`; timing assertions are skipped there (`CHALKBOND_COVERAGE`), including the
+  `ocl-facts` aspirin timing. Never exclude a file to reach the number.
+- Perf: budgets and measurements in `SPEC-editor.md` "Performance" and `docs/editor-perf.md`;
+  `src/renderer/editor/perf.test.ts` and `e2e/editor-perf.spec.ts`. A miss means a request for
+  svg-render's `createRenderer` (spec first), never a looser budget or timeout. Never raise a
+  timeout to get green: find what is slow.
+- Known caveats: the preset segments are 64x20 (mock-up and Control states) against 24 px in
+  Accessibility (`editor-a11y.spec.ts` pins 64x20; the owner decides); `--text-muted` on
+  `--active-hover-bg` is 4.60 : 1, `--border-control` on `--pressed-bg` 2.96 : 1 (transient; the spec
+  asks for bars and canvas only).
+
 ## Gotchas
 
 - Run `npm run check` on its own, in the foreground. Do not pipe it or chain it into the commit
@@ -125,26 +179,30 @@ Vitest projects (`vitest.config.mts`):
   test. Do not remove the property or lower `numRuns`.
 - ESLint-probe tooling tests are slow on a cold start. They run as the `tooling` project; leave
   them there.
-- `npm run test:e2e` builds first and launches Electron. `golden:sheet -- --png` needs
+- `npm run test:e2e` builds first and launches Electron (`--project=e2e` only; `shots` is its own project). `golden:sheet -- --png` needs
   Playwright's Chromium: run `npx playwright install chromium` if it is missing.
 - Put temporary files and logs in the OS temp directory, never in the repo root or the drive
   root. `out/`, `coverage/`, `test-results/` and `dist/` are git-ignored.
 - Keep the project green on Windows and Linux: no POSIX-only syntax in npm scripts and LF line
   endings (`.gitattributes`). `e2e/launch.ts` has a Linux branch.
 
-## Next: editor
+## Next: clipboard-export
 
-Write `SPEC-editor.md` first and get it approved. It is the largest module; split its work into
-tool groups. The existing specs hand it these items, which it must settle:
+Write `SPEC-clipboard-export.md` first and get it approved. The editor hands it (details in
+`SPEC-editor.md` "Seam to the host"):
 
-- Selection, hit-testing and marquee: svg-render supplies only per-item `extents`; finer
-  hit-testing (distance to a bond segment or arrow path) is the editor's.
-- Overlays: selection halos, handles, valence warnings (from `Perception.warnings`, placed with
-  `extents`), snapping guides, ghost previews, grid.
-- Whether to add a `setStyle` op to doc-model for Slides / Journal switching (additive, not a
-  schema change).
-- Whether to request svg-render's `createRenderer` (memoising renderer, cut for v1) after profiling.
-- Tidy reaction: positions of condition text (`attachedTo` is ignored by svg-render) and reaction
-  semantics. The Kekulé/circle toggle and Clean Structure call chem-core.
-- Text size: svg-render uses one `fontSize` for all text; a per-object size would be a schema bump.
-- Loading `resources/compounds/compounds.json` and passing it to `createNameIndex`.
+- `createEditorController(options)` (`src/renderer/editor/index.ts`) with `getDoc()`,
+  `getSelection()`, `run(cmd)` / `canRun(cmd)`, `subscribe`, `undoLabel` / `redoLabel`. Commands:
+  undo, redo, cut, copy, paste, duplicate, delete, select-all, zoom-*, clean-up, toggle-kekulé,
+  tidy-reaction, `{set-preset}`, `{paste-sub, sub}` (host read a Chalkbond fragment from the
+  clipboard), `{insert-text, text}` (host read a name, SMILES or Molfile).
+- `onCopy(sub, doc, selection)` fires on Ctrl+C / Ctrl+X with the selected `SubDoc`; the editor's
+  own clipboard is in-app only (CB1). The editor never builds export SVG: render with svg-render
+  from `getDoc()` / `getSelection()` or the payload.
+- A `context-menu` event `{target: HostHit | null, screen}` in canvas px; the editor draws no menu.
+- `focus-name-field` is view-only: on the controller `canRun` is false and `run` does nothing.
+  `shortcuts: 'canvas-only'` leaves the Ctrl rows (K1) to the host's menu.
+- `isDirty()`, `markSaved()`, `load(doc)` and the `dirty` event (app-shell owns save and open).
+- The e2e `loadDocument` / `readDocument` helpers reach the controller through React internals;
+  replace them with a proper test hook when app-shell owns the controller.
+- Open for later: the Windows "Editor" checklist (IME, Word paste, scaling) is still unticked.

@@ -18,9 +18,21 @@ Modules and their order are defined in `CAPABILITY-MAP.md`.
 | `doc-model` | Document data, edit transactions, undo/redo, file format | done |
 | `chem-core` | OpenChemLib wrapper: valence, formula, SMILES/Molfile, name dictionary | done |
 | `svg-render` | Document to SVG with style presets | done (Windows Office checklist not yet ticked) |
-| `editor` | Interactive canvas and drawing tools | not started (next) |
-| `clipboard-export` | Clipboard, PNG/SVG/PDF export | not started |
+| `editor` | Interactive canvas and drawing tools | done (Windows "Editor" checklist not yet ticked) |
+| `clipboard-export` | Clipboard, PNG/SVG/PDF export | not started (next) |
 | `app-shell` | Menus, dialogs, settings, installer | scaffold only |
+
+## The editor
+
+The window is the editor: a tool rail (Select, Erase, Bond, Chain, Ring, Atom, Arrow, Plus, Curly,
+Text), an options bar per tool, and a name field that turns a compound name ("ethanol") or a
+reaction ("ethanol + acetic acid -> ethyl acetate + water") into a drawing. It draws bonds,
+chains, rings and atom labels, selects, moves, rotates, flips, copies and pastes inside the app,
+adds reaction arrows, plus signs, curved electron-pushing arrows and conditions text (with Tidy
+reaction), warns about valence problems, shows the formula and molar mass, and undoes every
+gesture. Everything is reachable by keyboard. `npm run shots` builds the app and writes
+screenshots of every screen to `out/shots/<task>/`; the approved mock-ups to compare with come
+from `node docs/mockups/editor/build.mjs --png out/mockups`.
 
 ## Prerequisites
 
@@ -38,6 +50,7 @@ npm test                    # vitest run
 npm test -- --coverage      # with a coverage report (text + html in coverage/)
 npm run test:e2e            # electron-vite build, then Playwright against the built app
 npm run golden:sheet        # write out/golden-sheet.html from the committed goldens
+npm run shots               # build, then write editor screenshots to out/shots/<task>/
 npm run build               # electron-vite build -> out/
 npm run dist:win            # NSIS installer for Windows x64 -> dist/
 ```
@@ -62,7 +75,7 @@ src/core/doc-model/      document types, edits, history, serialization
 src/core/chem-core/      chemistry (the only code that imports openchemlib)
 src/core/svg-render/     SVG rendering; __golden__/ holds the reference SVGs
 src/main/  src/preload/  Electron main process and preload bridge
-src/renderer/            React UI (editor will live in src/renderer/editor)
+src/renderer/            React UI; the editor lives in src/renderer/editor
 resources/               compounds dictionary (JSON), icons
 scripts/                 dev-time generators and the golden contact sheet
 e2e/                     Playwright tests against the Electron app
@@ -75,5 +88,5 @@ docs/windows-checklist.md   manual checks on the Windows machine
 
 - `SPEC.md`: objective, stack, commands, code style, boundaries, decisions log.
 - `CAPABILITY-MAP.md`: module list, dependencies, build order.
-- `SPEC-doc-model.md`, `SPEC-chem-core.md`, `SPEC-svg-render.md`: one per finished module.
+- `SPEC-doc-model.md`, `SPEC-chem-core.md`, `SPEC-svg-render.md`, `SPEC-editor.md`: one per finished module.
 - `AGENTS.md`: working rules for coding agents (also useful for people). `CLAUDE.md` adds notes for Claude Code.

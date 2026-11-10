@@ -233,6 +233,18 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-10 | Editor text and label editing is WYSIWYG: a `contenteditable` projection of a pure editing model; auto-formatting (formula subscripts, `->`, charges, `^`/`_`) applied on commit to characters the user did not format. No right-click menu in the editor; it emits a `context-menu` event for app-shell's native menu. |
 | 2026-11-10 | Approved changes for the editor: doc-model `setStyle` op (additive, no schema bump); chem-core `NameIndex.closest` orders near spellings closest first ("ethanl" → ethanol); Zustand dropped from the stack (hand-written store on `useSyncExternalStore`); no jsdom — editor views are tested with `react-dom/server` markup in node plus Playwright e2e; scaffold window minimum 960×640 with no default application menu; ESLint renderer import-boundary and DOM-free rules. |
 | 2026-11-10 | Charge on a hydrogens-first label (`H3N–`, `HCl–`): when a bond crosses the trailing superscript, the sign is tried next as a leading superscript (`⁺H3N`, as textbooks write it) before the satellite slots, so it no longer floats above the hydrogens. Labels with only the element symbol and skeleton atoms are unchanged. |
+| 2026-11-10 | Editor (R21, R22): a name or scheme insert selects what it inserted, switches to Select, frames the whole drawing (zoom `min(current, fit)`) and leaves the name field focused and cleared. |
+| 2026-11-10 | Editor (R23): Ctrl+Z / Ctrl+Y act on the document while the name field is focused and empty; with text in it they are the field's own text undo. |
+| 2026-11-10 | Editor (R24): Shift is additive in Select: Shift+click on empty canvas keeps the selection, Shift+drag adds a marquee, Shift+click on an item toggles it. |
+| 2026-11-10 | Editor (R25): paste and duplicate land at the source + (1, 1) BLU and cascade; a cut's first paste lands in place. |
+| 2026-11-10 | Editor (R27, R32): a hovered labelled atom gets a light box around its label (no ghost); a hovered item that is already selected shows no hover highlight. |
+| 2026-11-10 | Editor (R31): the chain badge counts carbon atoms including the start atom (pentane reads 5). |
+| 2026-11-10 | Editor (R30): the empty-state block shows only while the document is empty and no gesture runs; no hover ghost is drawn while the document is empty. |
+| 2026-11-10 | Editor (R33, R37): default curved-arrow bend is `max(0.2 x chord, 0.45 BLU)`, and at least `0.9 - 0.5 x chord` BLU when an anchor is a labelled atom, so short curly arrows leave the bond and arrive pointing at the label. |
+| 2026-11-10 | Editor (R34): a trailing `+` / `-` after a digit run in typed text is a charge (`Fe2+`, `NH4+`, `SO42-`). |
+| 2026-11-10 | Editor (R38): the viewport follows the preset's bond length on switch, undo and redo (zoom x old / new bond length, drawing centre kept). |
+| 2026-11-10 | Editor (R39): a two-atom, one-bond structure from the name field is rotated so its bond is horizontal (H-H, O=O in `2 H2 + O2 -> 2 H2O`). |
+| 2026-11-10 | Editor complete (Checkpoint R): coverage 70 % lines enforced for `src/renderer/editor` in `vitest.config.mts`; the `ocl-facts` aspirin timing skips under `--coverage` like the perf budgets; accessibility is proved by `e2e/editor-a11y.spec.ts` and every colour pair `editor.css` uses by `tests/tooling/editor-tokens.test.ts`. |
 
 ## Open Questions
 

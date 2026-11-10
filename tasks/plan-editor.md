@@ -131,7 +131,7 @@ Everything else is sequential: each phase builds on the previous one.
 - [x] E31: Property suite and controller completeness
 - [x] E32: Performance measurement
 - [x] E33: Coverage and accessibility pass
-- [ ] E34: Windows checklist, AGENTS.md, success-criteria sweep
+- [x] E34: Windows checklist, AGENTS.md, success-criteria sweep
 
 ### Checkpoint R — module complete
 - [ ] Every success criterion in `SPEC-editor.md` met; `src/renderer/editor` ≥ 70 % lines
@@ -148,8 +148,8 @@ Each criterion of `SPEC-editor.md` is met by the tasks named; the last task list
 | 2 | Toluene ≤ 3 actions; SC3 reaction ≤ 15 actions, aligned | E20, E21 (toluene), E28, E29 (scenarios + e2e) |
 | 3 | Every gesture tested, one undo step, undo exact | every tool task, E31 (property 2) |
 | 4 | No invalid doc, no uncaught exception | E11 (X1), E31 (property 1) |
-| 5 | Keyboard reachability, focus rings, names | E9, E33 (`editor-keyboard.spec.ts`) |
-| 6 | Contrast, lifted files, hit targets | E6 (tooling test), E8 (boxes), E33 |
+| 5 | Keyboard reachability, focus rings, names | E9, E33 (`editor-keyboard.spec.ts`, `editor-a11y.spec.ts`) |
+| 6 | Contrast, lifted files, hit targets | E6 (tooling test), E8 (boxes), E33 (all colour pairs in `editor.css`, `editor-a11y.spec.ts`) |
 | 7 | Window matches the mock-ups | E6–E9 (layout e2e + shots), every UI task's shots |
 | 8 | Warnings overlay, never exported | E24 |
 | 9 | Name insert, suggestions, did-you-mean, reaction text | E2, E13, E29 |

@@ -26,7 +26,7 @@ doc-model ──► chem-core ──► svg-render ──► editor ────
 1. `doc-model`
 2. `chem-core`
 3. `svg-render`
-4. `editor` (largest module; its spec splits work into tool groups)
+4. `editor` (largest module; its spec splits work into tool groups): **done**; `clipboard-export` is next
 5. `clipboard-export`
 6. `app-shell` complete + Windows installer
 

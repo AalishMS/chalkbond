@@ -1010,9 +1010,9 @@ Sweep every SC of `SPEC-editor.md` and tick the plan's checkboxes.
 gate.
 
 **Acceptance criteria:**
-- [ ] Checklist section added, items unticked (the owner ticks them)
-- [ ] AGENTS.md status, notes and commands updated
-- [ ] Every SC in `SPEC-editor.md` mapped to a passing test or a checklist item in the plan's coverage table
+- [x] Checklist section added, items unticked (the owner ticks them)
+- [x] AGENTS.md status, notes and commands updated
+- [x] Every SC in `SPEC-editor.md` mapped to a passing test or a checklist item in the plan's coverage table
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots`
 
@@ -1023,6 +1023,6 @@ gate.
 **Scope:** S
 
 ### Checkpoint R — module complete
-- [ ] Every success criterion in `SPEC-editor.md` met; `src/renderer/editor` ≥ 70 % lines
-- [ ] `npm run check` green; `npm run test:e2e` green; `npm run shots` green
+- [ ] Every success criterion in `SPEC-editor.md` met; `src/renderer/editor` ≥ 70 % lines (coverage 85.5 % verified; SC 1, 7 and 10 are partly human checks on the Windows checklist, unticked; SC 6 has the open 64x20 preset-segment deviation)
+- [x] `npm run check` green; `npm run test:e2e` green; `npm run shots` green
 - [ ] Commit + push
