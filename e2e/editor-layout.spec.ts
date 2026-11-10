@@ -274,11 +274,13 @@ test('option buttons are 32x32 and 2 px apart; the Atom bar fits at 960', async 
 });
 
 async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
-  // Shell A15b: 204 px below 1100; otherwise the editor clamp. Height and position unchanged.
+  // Without host actions the original editor clamp and positions stay unchanged.
   const field = await box(page.getByTestId('namefield'));
   near(field.x, 12);
   near(field.height, 32);
-  near(field.width, w < 1100 ? 204 : Math.floor(Math.min(360, Math.max(240, 0.26 * w))));
+  await expect(page.getByTestId('topbar')).not.toHaveClass(/has-actions/);
+  await expect(page.getByTestId('topbar-actions')).toHaveCount(0);
+  near(field.width, Math.floor(Math.min(360, Math.max(240, 0.26 * w))));
   near(field.y, 8);
   const icon = await box(page.getByTestId('namefield').locator('.icon'));
   near(icon.x - field.x, 8);

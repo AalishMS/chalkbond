@@ -682,3 +682,21 @@ once and update the size row. Sweep both specs' success criteria into the plans'
 **Scope:** S
 
 ### Checkpoint Z — release (see the plan)
+
+## Corrective verification before C5/C6 (2026-11-10)
+
+Owned corrections only; no checkpoint status changed.
+
+- [x] Drag: profiled repeated status chemistry; deterministic regression red (91 calls versus
+  one), green after caching all three stable inputs. Targeted performance e2e 5/5. Details in
+  `docs/editor-perf.md`; no public API change.
+- [x] A6 no-actions layout: restored the original clamp assertion, ran red at 960 (204 actual,
+  249 expected), removed the unconditional `.app .namefield` media rule. Existing editor
+  `.topbar.has-actions` compact rule remains. Layout and keyboard e2e 24/24; A6 shots 2/2,
+  inspected at 1280 and 960: all ten tools and Text caption visible, existing positions retained.
+
+Isolated full `npm run test:e2e`: exit 0, 189/189; whole-fragment n=91, median 8.3 ms,
+p95 9.8 ms; bond preview p95 11.6 ms; partial selection p95 5.4 ms; commit p95 40.8 ms;
+cold start 419 ms. No concurrent check, coverage or performance process.
+Logs: `/tmp/chalkbond-checkpoint-fixes-1ApUoY/`; screenshots: `out/shots/A6/untitled.png`
+and `out/shots/A6/untitled-960.png`. Windows remains unverified.
