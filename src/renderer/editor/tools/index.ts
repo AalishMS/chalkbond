@@ -1,4 +1,5 @@
 import type { ToolId } from '../state/editor-state';
+import { bondTool } from './bond';
 import { eraseTool } from './erase';
 import { selectTool } from './select';
 import type { Tool } from './tool';
@@ -7,5 +8,6 @@ import type { Tool } from './tool';
 export function toolFor(id: ToolId): Tool | null {
   if (id === 'select') return selectTool;
   if (id === 'erase') return eraseTool;
+  if (id === 'bond') return bondTool;
   return null;
 }

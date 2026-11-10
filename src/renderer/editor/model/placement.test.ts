@@ -1,8 +1,17 @@
 import { createNameIndex, structureFromText } from '@core/chem-core';
-import { emptyDoc, insert, type Doc, type SubDoc } from '@core/doc-model';
+import {
+  addAtom,
+  addBond,
+  emptyDoc,
+  insert,
+  type AtomId,
+  type Doc,
+  type SubDoc,
+} from '@core/doc-model';
 import { render } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
-import { insertPosition, subInk } from './placement';
+import type { Point } from './geometry';
+import { insertPosition, sproutDirections, subInk } from './placement';
 
 const names = createNameIndex({
   format: 'chalkbond-compounds',
@@ -83,5 +92,127 @@ describe('P7 placement', () => {
     const ink = subInk(sub('ethanol'), empty().style, '2026-01-01T00:00:00.000Z');
     expect(ink).not.toBeNull();
     expect(ink?.w).toBeGreaterThan(1.5);
+  });
+});
+
+// P1: the default sprout direction and the next candidates.
+const deg = (v: Point): number => Math.round((Math.atan2(-v.y, v.x) * 180) / Math.PI);
+
+/** Atoms at the given BLU points, bonded in order along `pairs` (indices). */
+function graph(points: readonly Point[], pairs: readonly (readonly [number, number])[]) {
+  let doc = empty();
+  const ids: AtomId[] = [];
+  for (const p of points) {
+    const [d, id] = addAtom(doc, { element: 'C', ...p });
+    doc = d;
+    ids.push(id);
+  }
+  for (const [i, j] of pairs) doc = addBond(doc, ids[i] as AtomId, ids[j] as AtomId)[0];
+  return { doc, ids };
+}
+
+const C30 = Math.cos(Math.PI / 6);
+
+describe('P1 sproutDirections', () => {
+  it('n = 0: 30 degrees up and to the right', () => {
+    const { doc, ids } = graph([{ x: 2, y: 3 }], []);
+    const dirs = sproutDirections(doc, ids[0] as AtomId);
+    expect(dirs).toHaveLength(1);
+    expect(deg(dirs[0] as Point)).toBe(30);
+  });
+
+  it('n = 1, the neighbour has no other neighbours: the zig-zag (nearer horizontal), not the vertical', () => {
+    // A at the origin, B up-right of it: sprouting from B goes down-right (propane).
+    const { doc, ids } = graph(
+      [
+        { x: 0, y: 0 },
+        { x: C30, y: -0.5 },
+      ],
+      [[0, 1]],
+    );
+    const fromB = sproutDirections(doc, ids[1] as AtomId);
+    expect(deg(fromB[0] as Point)).toBe(-30);
+    expect(deg(fromB[1] as Point)).toBe(90);
+    // From A it goes up-left: a valley, still a zig-zag.
+    const fromA = sproutDirections(doc, ids[0] as AtomId);
+    expect(deg(fromA[0] as Point)).toBe(150);
+    expect(deg(fromA[1] as Point)).toBe(-90);
+  });
+
+  it('n = 1, the neighbour has other neighbours: the direction farther from them (zig-zag continues)', () => {
+    // Propane A-B-C zig-zag; sprouting from C goes up-right, never back down onto A's side.
+    const { doc, ids } = graph(
+      [
+        { x: 0, y: 0 },
+        { x: C30, y: -0.5 },
+        { x: 2 * C30, y: 0 },
+      ],
+      [
+        [0, 1],
+        [1, 2],
+      ],
+    );
+    const dirs = sproutDirections(doc, ids[2] as AtomId);
+    expect(deg(dirs[0] as Point)).toBe(30);
+    expect(deg(dirs[1] as Point)).toBe(-90);
+  });
+
+  it('n = 1, a vertical bond: both candidates are 30 degrees from horizontal; the more rightward wins', () => {
+    const { doc, ids } = graph(
+      [
+        { x: 0, y: 0 },
+        { x: 0, y: -1 },
+      ],
+      [[0, 1]],
+    );
+    // From the lower atom, up is taken: candidates are down-left and down-right.
+    const dirs = sproutDirections(doc, ids[0] as AtomId);
+    expect(deg(dirs[0] as Point)).toBe(-30);
+    expect(deg(dirs[1] as Point)).toBe(-150);
+  });
+
+  it('n >= 2: the bisector of the largest gap, then of the next largest', () => {
+    // A carbon with neighbours at 150 and 30 degrees (the middle of a zig-zag, pointing down).
+    const { doc, ids } = graph(
+      [
+        { x: 0, y: 0 },
+        { x: -C30, y: -0.5 },
+        { x: C30, y: -0.5 },
+      ],
+      [
+        [0, 1],
+        [0, 2],
+      ],
+    );
+    const dirs = sproutDirections(doc, ids[0] as AtomId);
+    expect(deg(dirs[0] as Point)).toBe(-90);
+    expect(dirs).toHaveLength(2);
+    expect(deg(dirs[1] as Point)).toBe(90);
+  });
+
+  it('n = 3 at 120 degrees: all gaps tie, the gap starting at the smallest angle wins', () => {
+    const { doc, ids } = graph(
+      [
+        { x: 0, y: 0 },
+        { x: 0, y: -1 },
+        { x: -C30, y: 0.5 },
+        { x: C30, y: 0.5 },
+      ],
+      [
+        [0, 1],
+        [0, 2],
+        [0, 3],
+      ],
+    );
+    // Neighbours at 90, 210 and 330 degrees (counter-clockwise from +x, y up): gaps start at 90,
+    // 210 and 330; the first begins at 90 and its bisector is 150.
+    const dirs = sproutDirections(doc, ids[0] as AtomId);
+    expect(deg(dirs[0] as Point)).toBe(150);
+  });
+
+  it('unit vectors', () => {
+    const { doc, ids } = graph([{ x: 0, y: 0 }], []);
+    const v = sproutDirections(doc, ids[0] as AtomId)[0] as Point;
+    expect(Math.hypot(v.x, v.y)).toBeCloseTo(1, 12);
   });
 });

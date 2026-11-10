@@ -1,10 +1,9 @@
 import { useEffect, type RefObject } from 'react';
 import { current } from '@core/doc-model';
-import { canvasEvent, type CanvasEvent } from '../model/canvas-event';
+import { canvasEvent, type CanvasEvent, type MoveEvent } from '../model/canvas-event';
 import { createCoalescer } from '../model/coalesce';
 import type { Point } from '../model/geometry';
 import type { EditorController } from '../state/controller';
-import { hoverAt } from '../state/hover';
 
 /** Runs `run` on the next animation frame; returns the cancel function. */
 const nextFrame = (run: () => void): (() => void) => {
@@ -72,10 +71,10 @@ export function useCanvasInput(
       (a, b) => ({ x: a.x + b.x, y: a.y + b.y }),
       (d) => dispatch({ type: 'pan-by', dx: d.x, dy: d.y }),
     );
-    const hover = createCoalescer<Point>(
+    const hover = createCoalescer<MoveEvent>(
       nextFrame,
       (_pending, latest) => latest,
-      (screen) => dispatch({ type: 'set-hover', hover: hoverAt(store.getState(), derive, screen) }),
+      (event) => dispatch({ type: 'hover-move', event }),
     );
     let drag: { id: number; at: Point } | null = null;
     /** A right press cancelled a gesture: the `contextmenu` that follows is part of that. */
@@ -134,7 +133,7 @@ export function useCanvasInput(
       }
       if (drag === null) {
         const ev = toEvent('move', e);
-        if (ev.type === 'move') hover.push(ev.screen);
+        if (ev.type === 'move') hover.push({ ...ev, type: 'move' });
         return;
       }
       if (drag.id !== e.pointerId) return;

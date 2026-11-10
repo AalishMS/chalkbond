@@ -27,6 +27,11 @@ export type CanvasEvent =
   | { readonly type: 'leave' }
   | { readonly type: 'cancel' };
 
+/** A pointer move: what hover reads (HV1, B6). */
+export type MoveEvent = Extract<CanvasEvent, { type: 'down' | 'move' | 'up' }> & {
+  readonly type: 'move';
+};
+
 /**
  * `origin` is the canvas's top-left in client px; `bondLength` is the style's, in pt.
  * Tolerances stay in screen px, so `screen` travels with `p`.

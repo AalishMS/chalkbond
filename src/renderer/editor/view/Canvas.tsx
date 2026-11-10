@@ -1,6 +1,6 @@
 import { current } from '@core/doc-model';
 import type { ItemKey } from '@core/svg-render';
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { cursorFor } from '../model/cursor';
 import { mountParts, type PartHost } from '../model/mount';
 import { canvasOverlay } from '../model/overlay';
@@ -46,11 +46,25 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
   const committed = current(state.history);
   const { preview } = state;
   // A preview that only translates parts shows the committed scene; any other preview shows its
-  // own document (SPEC-editor.md "Rendering" steps 3 and 4).
+  // own document (SPEC-editor.md "Rendering" steps 3 and 4). A hover ghost (B6) shows the committed
+  // scene plus only the parts it adds: hovering must not make a label jump to its laid-out-again
+  // form.
+  const hovering = preview?.hovering === true;
   const showPreview =
     preview !== null && preview.translate === undefined && preview.faded === undefined;
-  const doc = showPreview ? preview.doc : committed;
-  const { scene } = showPreview ? controller.derive.preview(doc) : controller.derive.committed(doc);
+  const drawsPreview = showPreview && !hovering;
+  const doc = drawsPreview ? preview.doc : committed;
+  const { scene } = drawsPreview
+    ? controller.derive.preview(doc)
+    : controller.derive.committed(doc);
+  const parts = useMemo(() => {
+    if (!showPreview || !hovering) return scene.parts;
+    const have = new Set<string>(scene.parts.map((p) => p.key));
+    const ghost = controller.derive
+      .preview(preview.doc)
+      .scene.parts.filter((p) => preview.added.has(p.key) && !have.has(p.key));
+    return [...scene.parts, ...ghost];
+  }, [scene, showPreview, hovering, preview, controller.derive]);
   const { dispatch } = controller.store;
 
   const ref = useRef<HTMLElement>(null);
@@ -62,8 +76,8 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
   useLayoutEffect(() => {
     const g = layer.current;
     if (!g) return;
-    mounted.current = mountParts(domHost(g), nodes.current, mounted.current, scene.parts);
-  }, [scene]);
+    mounted.current = mountParts(domHost(g), nodes.current, mounted.current, parts);
+  }, [parts]);
 
   // Drag fast path: the moving parts' `<g>` are translated by the preview, nothing re-renders.
   const translate = preview?.translate;
@@ -87,6 +101,18 @@ export function Canvas({ controller, children }: CanvasProps): React.JSX.Element
       for (const g of parts) g.style.removeProperty('opacity');
     };
   }, [faded, scene]);
+
+  // A ghost preview (B6): the parts it adds are drawn at `--ghost-opacity`. The cleanup matters:
+  // once the commit lands, the same `<g>` stays mounted as a real part.
+  const added = showPreview ? preview.added : undefined;
+  useLayoutEffect(() => {
+    if (added === undefined || added.size === 0) return;
+    const parts = [...added].flatMap((key) => nodes.current.get(key as ItemKey) ?? []);
+    for (const g of parts) g.style.opacity = 'var(--ghost-opacity)';
+    return () => {
+      for (const g of parts) g.style.removeProperty('opacity');
+    };
+  }, [added, parts]);
 
   // Focus at launch; the ring shows only when Tab brought focus here (K4).
   useEffect(() => {

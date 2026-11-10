@@ -68,6 +68,8 @@ export interface Preview {
   /** Item keys not in the committed scene: drawn at ghost opacity. */
   readonly added: ReadonlySet<string>;
   readonly mergeTarget?: AtomId;
+  /** The ghost of what a click would do (B6), shown while no gesture runs; Esc does not clear it. */
+  readonly hovering?: boolean;
   /** Erase: these parts stay in place and are drawn at `--erase-ghost-opacity`. */
   readonly faded?: readonly string[];
   /** Drag fast path: only these parts' `<g>` move, by (dx, dy) pt. */

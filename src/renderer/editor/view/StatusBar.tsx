@@ -24,6 +24,8 @@ interface StatusBarProps {
   dispatch: (action: EditorAction) => void;
   /** The item under the pointer: an atom or a bond changes the hint (K2). */
   hover?: Hit | null;
+  /** Kind of the running gesture, if any: a bond drag changes the hint. */
+  gesture?: string | null;
   /** The name field has focus: its hint replaces the tool's. */
   nameFieldFocused?: boolean;
   /** Replaces the hint while set (X1 and the other notices). */
@@ -65,6 +67,7 @@ export function StatusBar({
   formula = null,
   nameFieldFocused = false,
   hover = null,
+  gesture = null,
   notice = null,
 }: StatusBarProps): React.JSX.Element {
   return (
@@ -79,7 +82,7 @@ export function StatusBar({
           nameFieldFocused ? (
             NAME_FIELD_HINT
           ) : (
-            hintFor(tool, hover)
+            hintFor(tool, hover, gesture)
           )
         ) : (
           <>

@@ -114,6 +114,7 @@ export function Editor({ controller }: EditorProps): React.JSX.Element {
         formula={formula}
         nameFieldFocused={nameFocused}
         hover={state.hover}
+        gesture={state.gesture?.kind ?? null}
         notice={state.notice}
       />
       <TooltipHost />

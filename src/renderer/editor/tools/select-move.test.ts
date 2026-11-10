@@ -47,6 +47,7 @@ function send(r: Rig, ev: CanvasEvent): ToolStep {
     selection: r.selection,
     viewport,
     hit: ev.type === 'down' ? hitTest(r.doc, scene, viewport, ev.screen) : null,
+    variant: '',
   };
   const step = selectTool.step(r.gesture, ev, ctx);
   r.gesture = step.gesture;

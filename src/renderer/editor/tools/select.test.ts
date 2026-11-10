@@ -41,6 +41,7 @@ function send(r: Rig, ev: CanvasEvent): ToolStep {
     selection: r.selection,
     viewport,
     hit,
+    variant: '',
   };
   const step = selectTool.step(r.gesture, ev, ctx);
   r.gesture = step.gesture;

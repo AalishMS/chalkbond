@@ -18,3 +18,9 @@ export function hoverAt(state: EditorState, derive: Derive, screen: Point): Hit 
     state.tool === 'select' ? handleHit(doc, scene, state.viewport, state.selection, screen) : null;
   return handle ?? hoverHit(state.tool, doc, scene, state.viewport, screen);
 }
+
+/** Two hits name the same thing. */
+export function sameHit(a: Hit | null, b: Hit | null): boolean {
+  if (a === null || b === null) return a === b;
+  return JSON.stringify(a) === JSON.stringify(b);
+}

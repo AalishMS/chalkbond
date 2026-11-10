@@ -573,7 +573,7 @@ empty canvas, and nothing during a drag except the cancel.
 
 ### Checkpoint O — selection and transforms
 - [x] `npm run check` green; every Select/Erase gesture is one undo step (tool-machine tests)
-- [ ] Commit + push
+- [x] Commit + push (origin/main contains 76b7ead, checked with `git merge-base --is-ancestor`)
 
 ---
 
@@ -593,15 +593,15 @@ wedge click reverses and a curved arrow anchored at t 0.3 ends at t 0.7 on the n
 ids equal commit ids.
 
 **Acceptance criteria:**
-- [ ] B1–B6, P1 covered by named tests; one undo step per gesture
-- [ ] Ghost parts appear while hovering with Bond (e2e: a `[data-key]` with opacity 0.45 exists while hovering empty canvas)
-- [ ] Propane by gestures: click empty, click the right atom → 3-carbon zig-zag with formula "C3H8 · 44.10 g/mol" (e2e)
+- [x] B1–B6, P1 covered by named tests; one undo step per gesture
+- [x] Ghost parts appear while hovering with Bond (e2e: a `[data-key]` with opacity 0.45 exists while hovering empty canvas)
+- [x] Propane by gestures: click empty, click the right atom → 3-carbon zig-zag with formula "C3H8 · 44.10 g/mol" (e2e)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- E19` → `E19/bond-ghost.png` (scripted: hover empty canvas with Bond), `E19/zigzag.png` (scripted: click empty, click end atom twice → butane zig-zag; compare `02-drawing.png` geometry), `E19/wedge.png` (scripted: Wedge option, click a bond)
 
 **Dependencies:** E18
 
-**Files:** `src/renderer/editor/tools/bond.ts` (+ tests), `src/renderer/editor/model/{placement.ts,commands.ts}` (+ tests), `src/renderer/editor/view/Canvas.tsx`, `e2e/editor-structures.spec.ts`, `e2e/shots/E19.shot.ts`
+**Files:** `src/renderer/editor/tools/bond.ts` (+ tests), `src/renderer/editor/model/{placement.ts,bond-ops.ts}` (+ tests; the recipes live in `bond-ops.ts`), `src/renderer/editor/view/Canvas.tsx`, `e2e/editor-structures.spec.ts`, `e2e/shots/E19.shot.ts`
 
 **Scope:** M
 

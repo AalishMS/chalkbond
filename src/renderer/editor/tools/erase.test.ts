@@ -37,6 +37,7 @@ function send(r: Rig, ev: CanvasEvent): ToolStep {
     selection: EMPTY_SELECTION,
     viewport,
     hit: ev.type === 'down' ? hitTest(r.doc, scene, viewport, ev.screen) : null,
+    variant: '',
   };
   const step = eraseTool.step(r.gesture, ev, ctx);
   r.gesture = step.gesture;

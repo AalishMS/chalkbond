@@ -82,7 +82,7 @@ export function selectEverything(state: EditorState): EditorState {
  * the notice, clear the selection, switch to Select.
  */
 export function escape(state: EditorState): EditorState {
-  if (state.gesture !== null || state.preview !== null) {
+  if (state.gesture !== null || (state.preview !== null && state.preview.hovering !== true)) {
     return { ...state, gesture: null, preview: null };
   }
   if (state.editing !== null) return { ...state, editing: null };

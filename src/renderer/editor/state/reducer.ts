@@ -11,7 +11,7 @@ import {
   type Selection,
   type SubDoc,
 } from '@core/doc-model';
-import type { CanvasEvent } from '../model/canvas-event';
+import type { CanvasEvent, MoveEvent } from '../model/canvas-event';
 import type { Derive } from '../model/derive';
 import type { Point, Rect, Size } from '../model/geometry';
 import {
@@ -48,7 +48,8 @@ import {
   type ToolId,
   type VariantTool,
 } from './editor-state';
-import { pointer } from './pointer';
+import { sameHit } from './hover';
+import { hoverMove, pointer } from './pointer';
 import {
   insertText,
   nameClear,
@@ -87,6 +88,8 @@ export type EditorAction =
   | { type: 'name-enter' }
   | { type: 'insert-text'; text: string }
   | { type: 'pointer'; event: CanvasEvent }
+  /** The pointer moved with no gesture running: hover and the tool's ghost (HV1, B6). */
+  | { type: 'hover-move'; event: MoveEvent }
   | { type: 'delete' }
   | { type: 'nudge'; dx: number; dy: number }
   | { type: 'select-all' }
@@ -132,12 +135,6 @@ export function errorText(error: unknown): string {
     return error.message;
   }
   return "That edit isn't possible here.";
-}
-
-/** Two hits name the same thing. */
-function sameHit(a: Hit | null, b: Hit | null): boolean {
-  if (a === null || b === null) return a === b;
-  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 const docOf = (state: EditorState): Doc => current(state.history);
@@ -272,6 +269,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return commit(state, action, ctx);
     case 'pointer':
       return pointer(state, action.event, ctx, (s, a) => commit(s, a, ctx));
+    case 'hover-move':
+      return hoverMove(state, action.event, ctx);
     case 'delete':
       return deleteSelection(state, (s, a) => commit(s, a, ctx));
     case 'nudge':
@@ -326,8 +325,12 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return state.saved === docOf(state) ? state : { ...state, saved: docOf(state) };
     case 'set-selection':
       return { ...state, selection: action.selection };
-    case 'set-hover':
-      return sameHit(state.hover, action.hover) ? state : { ...state, hover: action.hover };
+    case 'set-hover': {
+      // The pointer left (or a test set it): a ghost that followed it goes too.
+      const ghost = state.preview?.hovering === true;
+      if (sameHit(state.hover, action.hover) && !ghost) return state;
+      return { ...state, hover: action.hover, preview: ghost ? null : state.preview };
+    }
     case 'set-gesture':
       return { ...state, gesture: action.gesture };
     case 'set-preview':

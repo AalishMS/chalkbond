@@ -143,11 +143,16 @@ export const HOVER_HINTS = {
   bond: 'Press 1, 2 or 3 for single, double, triple.',
 } as const;
 
+/** Gestures that aim a bond by dragging: while one runs the hint says how to leave the 30 degree steps. */
+const ANGLE_DRAGS: readonly string[] = ['bond-drag', 'chain-drag'];
+const ANGLE_HINT = 'Hold Shift for any angle.';
+
 /**
  * The status-bar hint for `tool` and the hovered item: hover keys work with every tool except
  * Erase and Text (K2), so only there does an atom or a bond change the hint.
  */
-export function hintFor(tool: ToolId, hover: Hit | null): string {
+export function hintFor(tool: ToolId, hover: Hit | null, gesture: string | null = null): string {
+  if (gesture !== null && ANGLE_DRAGS.includes(gesture)) return ANGLE_HINT;
   if (hover !== null && tool !== 'erase' && tool !== 'text') {
     if (hover.kind === 'atom') return HOVER_HINTS.atom;
     if (hover.kind === 'bond') return HOVER_HINTS.bond;

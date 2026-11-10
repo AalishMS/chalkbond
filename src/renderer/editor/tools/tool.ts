@@ -3,7 +3,7 @@
 import type { Perception } from '@core/chem-core';
 import type { Doc, Selection } from '@core/doc-model';
 import type { Scene } from '@core/svg-render';
-import type { CanvasEvent } from '../model/canvas-event';
+import type { CanvasEvent, MoveEvent } from '../model/canvas-event';
 import type { Viewport } from '../model/viewport';
 import type { GestureState, Hit, Preview, ToolId } from '../state/editor-state';
 
@@ -19,6 +19,8 @@ export interface ToolContext {
   readonly viewport: Viewport;
   /** What is under the pointer on a `down` event (handles first, once E17 adds them); else null. */
   readonly hit: Hit | null;
+  /** The option chosen in the options bar (a catalog option id); '' for tools without options. */
+  readonly variant: string;
 }
 
 /** One document change, committed once on release: one `transact`, one undo step. */
@@ -42,4 +44,9 @@ export interface ToolStep {
 export interface Tool {
   readonly id: ToolId;
   step(gesture: GestureState | null, ev: CanvasEvent, ctx: ToolContext): ToolStep;
+  /**
+   * With no gesture running, the ghost of what a click at the pointer would do (B6), or null.
+   * `ctx.hit` is what the pointer hovers. Tools without a hover ghost omit this.
+   */
+  hover?(ev: MoveEvent, ctx: ToolContext): Preview | null;
 }

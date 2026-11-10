@@ -112,6 +112,32 @@ describe('StatusBar hover hints (K2 hover keys)', () => {
   });
 });
 
+describe('StatusBar angle hint while a bond is dragged', () => {
+  const dragging = (gesture: string | null, extra = {}): string =>
+    renderToStaticMarkup(
+      <StatusBar
+        tool="bond"
+        preset="slides"
+        zoom={1.5}
+        dispatch={noop}
+        gesture={gesture}
+        {...extra}
+      />,
+    );
+
+  it('a bond drag says how to leave the 30 degree steps', () => {
+    expect(dragging('bond-drag')).toContain('>Hold Shift for any angle.</div>');
+    expect(dragging('bond-press')).toContain(HINTS.bond);
+    expect(dragging(null)).toContain(HINTS.bond);
+  });
+
+  it('a notice still wins', () => {
+    expect(
+      dragging('bond-drag', { notice: { id: 1, kind: 'info', text: 'Inserted ethanol' } }),
+    ).toContain('Inserted ethanol');
+  });
+});
+
 describe('StatusBar name-field hint', () => {
   it('replaces the tool hint while the name field has focus, but not a notice', () => {
     const html = renderToStaticMarkup(

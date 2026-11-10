@@ -125,6 +125,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R23 | Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z act on the document while the name field is focused and empty; with text in it they are the field's text undo | After typing a name and Enter the field is empty and focused, and undoing the insert is the natural next key | 2026-11-10 |
 | R24 | Shift is additive everywhere in Select: Shift+click on empty canvas keeps the selection (it no longer clears it); Shift+drag from empty canvas draws a marquee whose result is added to the selection; Shift+click on an item toggles it | One modifier, one meaning: a slipped Shift never throws a careful selection away | 2026-11-10 |
 | R25 | Ctrl+V and Ctrl+D place the copy at the source's position + (1.0, 1.0) BLU; further pastes cascade by another (1.0, 1.0); a cut's first paste lands in place; an explicit point (context menu) centres the copy there (rule CB1) | A paste at the pointer usually landed on the original, as if nothing had happened | 2026-11-10 |
+| R26 | P1 tie-break for a one-neighbour atom whose neighbour has no other neighbours: the candidate nearer horizontal, then more upward, then more rightward (draft: more upward first, which sprouted straight up from the end of a lone bond and drew a bent chain, not the propane zig-zag) | Propane by two clicks must be the textbook zig-zag (E19) | 2026-11-10 |
 
 ---
 
@@ -804,12 +805,20 @@ atom, so a wedge's narrow end is where the gesture started.
   the new one with `t' = 1 − t`.
 - **B6** A ghost preview shows the click result while hovering and the drag result while
   dragging.
+  Hovering an atom shows the sprouted bond; hovering empty canvas shows the two-atom bond of B1
+  with its first atom under the pointer; hovering a bond shows no ghost (its highlight is the
+  cue). A ghost that closes a ring (B3, B2) also shows the atom it joins with the merge circle.
+  Commit labels: "Add bond" for B1-B4, "Change bond" for B5. After a release the atom or bond under
+  the pointer is hovered again at once (a hover key or the next ghost need no pointer move). A
+  press on a bond released more than 4 px away changes nothing.
 
 ### Placement rules
 
 - **P1** **Default sprout direction** from atom X with neighbour unit vectors u₁…uₙ: n = 0: 30°
   up-right. n = 1: the two directions at ±120° from u₁; pick the one farther from the neighbour's
-  other neighbours (the zig-zag continues); tie → the more upward, then the more rightward. n ≥ 2:
+  other neighbours (the zig-zag continues); tie → the one nearer horizontal (a zig-zag has no
+  vertical bonds: from the up-right end of a lone bond the sprout goes down-right, propane), then
+  the more upward, then the more rightward. n ≥ 2:
   the bisector of the largest angular gap (ties: the gap starting at the smallest angle
   counter-clockwise from +x). "Next candidate" = the other ±120° direction, then the bisector of
   the second-largest gap.
