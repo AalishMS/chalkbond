@@ -107,12 +107,12 @@ describe('layoutCurvedArrow: heads', () => {
     near(dist(mid, head[0]!), 8.8, 2);
   });
 
-  it('fishhook: one barb only, on the side away from the bulge', () => {
-    const up = layoutCurvedArrow('fishhook', A, B, 0.3, style)!; // bulges up: barb below
-    const down = layoutCurvedArrow('fishhook', A, B, -0.3, style)!; // bulges down: barb above
+  it('fishhook: one barb only, on the convex side (the side the curve bulges toward)', () => {
+    const up = layoutCurvedArrow('fishhook', A, B, 0.3, style)!; // bulges up: barb above
+    const down = layoutCurvedArrow('fishhook', A, B, -0.3, style)!; // bulges down: barb below
     for (const [out, side] of [
-      [up, 1],
-      [down, -1],
+      [up, -1],
+      [down, 1],
     ] as const) {
       const [head] = polygonPoints(out.svg) as [Point[]];
       expect(head).toHaveLength(3);

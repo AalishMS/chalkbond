@@ -81,7 +81,7 @@ const finite = (pts: readonly Point[]): boolean =>
  * `bend x chordLength x n`, `n` the left normal of `from -> to` (a positive bend bulges to the
  * visual left; 0 is a straight line). The curve is cut out of the end boxes, the shaft stops at the
  * base of the head, and the head length is at most half the cut chord. A fishhook has only the
- * barb on the side away from the bulge (on the right of travel when the bend is 0). `null` when
+ * barb on the convex side, the side the curve bulges toward (on the right of travel when the bend is 0). `null` when
  * nothing is drawn: no chord, nothing left after the cut, or a non-finite result.
  */
 export function layoutCurvedArrow(
@@ -140,7 +140,7 @@ export function layoutCurvedArrow(
       : halfHead(
           tip,
           back,
-          scale(normal, bend < 0 ? style.arrowHeadHalfWidth : -style.arrowHeadHalfWidth),
+          scale(normal, bend > 0 ? style.arrowHeadHalfWidth : -style.arrowHeadHalfWidth),
         );
   if (!finite([...shaftPoints, ...headPoints])) return null;
 
