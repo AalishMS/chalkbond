@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
   addAtom,
+  addBond,
   addObject,
   bounds as docBounds,
   createHistory,
@@ -112,7 +113,7 @@ describe('property 2: determinism', () => {
           const first = renderSvg(doc).svg;
           expect(renderSvg(doc).svg).toBe(first);
           const parsed = parse(serialize(doc));
-          expect(parsed.ok).toBe(true);
+          expect(parsed).toMatchObject({ ok: true });
           if (parsed.ok) expect(renderSvg(parsed.value).svg).toBe(first);
           const flipped: Doc = {
             ...doc,
@@ -198,6 +199,44 @@ describe('property 5: bounds', () => {
   const near = (a: number, b: number, tol = TOL) =>
     expect(Math.abs(a - b)).toBeLessThanOrEqual(tol);
 
+  /**
+   * The pt image of doc-model's bounds of the keys that produced parts lies inside `bounds`
+   * (within TOL). Two kinds of key are left out because their geometry legitimately is not ink:
+   * - a callout whose anchor lies inside the padded text box draws no leader, so its anchor
+   *   (which doc-model's bounds count) need not be ink;
+   * - a hash bond draws its rungs at the centres of `count` equal slices, so its ink stops short
+   *   of the end atoms by up to half a rung spacing minus half the line width (0.002 pt for the
+   *   shortest bond, 6.012 pt, in the regression below; seed 901270341).
+   */
+  function expectContainsDrawn(doc: Doc, scene: Scene): void {
+    const b = scene.bounds;
+    if (!b) return;
+    const drawn = (prefix: string) =>
+      scene.parts.filter((x) => x.key.startsWith(prefix)).map((x) => x.key.slice(prefix.length));
+    const sel: Selection = {
+      atoms: new Set(drawn('atom:') as AtomId[]),
+      bonds: new Set((drawn('bond:') as BondId[]).filter((id) => doc.bonds[id]?.stereo !== 'hash')),
+      objects: new Set(
+        (drawn('obj:') as ObjectId[]).filter((id) => doc.objects[id]?.type !== 'callout'),
+      ),
+    };
+    const inner = docBounds(doc, sel);
+    if (!inner) return;
+    expect(b.x).toBeLessThanOrEqual(inner.x * L + TOL);
+    expect(b.y).toBeLessThanOrEqual(inner.y * L + TOL);
+    expect(b.x + b.w).toBeGreaterThanOrEqual((inner.x + inner.w) * L - TOL);
+    expect(b.y + b.h).toBeGreaterThanOrEqual((inner.y + inner.h) * L - TOL);
+  }
+
+  it('contains the drawn items for a short hash bond (shrunk counterexample)', () => {
+    // Narrow end at the origin atom, wide end at y = -0.1503 BLU (6.012 pt): below three rungs of
+    // spacing the first rung sits 1.002 pt from the end atom, its ink 0.002 pt short of it.
+    const [d1, from] = addAtom(emptyDoc(NOW), { x: 0, y: 0 });
+    const [d2, to] = addAtom(d1, { x: 0, y: -0.15030000000000007 });
+    const [doc] = addBond(d2, from, to, { stereo: 'hash' });
+    expectContainsDrawn(doc, render(doc));
+  });
+
   it('equals the union of extents and contains the drawn items', { timeout: TIMEOUT }, () => {
     fc.assert(
       fc.property(docOf, (doc) => {
@@ -209,27 +248,7 @@ describe('property 5: bounds', () => {
         }
         expect(union).not.toBeNull();
         for (const k of ['x', 'y', 'w', 'h'] as const) near(scene.bounds[k], union![k], 1e-9);
-        // The pt image of doc-model's bounds of the keys that produced parts.
-        const drawn = (prefix: string) =>
-          scene.parts
-            .filter((x) => x.key.startsWith(prefix))
-            .map((x) => x.key.slice(prefix.length));
-        const sel: Selection = {
-          atoms: new Set(drawn('atom:') as AtomId[]),
-          bonds: new Set(drawn('bond:') as BondId[]),
-          // A callout whose anchor lies inside the padded text box draws no leader, so its
-          // anchor (which doc-model's bounds count) need not be ink: callouts are left out.
-          objects: new Set(
-            (drawn('obj:') as ObjectId[]).filter((id) => doc.objects[id]?.type !== 'callout'),
-          ),
-        };
-        const inner = docBounds(doc, sel);
-        if (!inner) return;
-        const b = scene.bounds;
-        expect(b.x).toBeLessThanOrEqual(inner.x * L + TOL);
-        expect(b.y).toBeLessThanOrEqual(inner.y * L + TOL);
-        expect(b.x + b.w).toBeGreaterThanOrEqual((inner.x + inner.w) * L - TOL);
-        expect(b.y + b.h).toBeGreaterThanOrEqual((inner.y + inner.h) * L - TOL);
+        expectContainsDrawn(doc, scene);
       }),
       { numRuns: LIGHT_RUNS },
     );

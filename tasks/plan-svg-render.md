@@ -103,7 +103,7 @@ S9 and S10 can run in parallel (both need S8 and S4's geometry); everything else
 ### Checkpoint K — module complete
 - [x] Module complete: every success criterion in `SPEC-svg-render.md` met, coverage ≥ 90 % on `src/core/svg-render`
 - [x] `npm run check` green; `npm run test:e2e` green
-- [ ] Commit + push
+- [x] Commit + push
 
 ## Success Criteria Coverage
 

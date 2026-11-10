@@ -399,4 +399,4 @@ test.
 ### ✅ Checkpoint K — module complete
 - [x] Module complete: every success criterion in `SPEC-svg-render.md` met, coverage ≥ 90 % on `src/core/svg-render`
 - [x] `npm run check` green; `npm run test:e2e` green
-- [ ] Commit + push
+- [x] Commit + push
