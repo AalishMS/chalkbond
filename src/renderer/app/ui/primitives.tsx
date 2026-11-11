@@ -47,6 +47,7 @@ export interface RadioOption {
   value: string;
   title: string;
   description?: string;
+  testId?: string;
 }
 interface GroupProps {
   label: string;
@@ -72,6 +73,7 @@ export function RadioCard({
       role="radio"
       aria-checked={checked}
       tabIndex={tabIndex}
+      data-testid={option.testId}
       onClick={onSelect}
     >
       <span className="radio-dot" aria-hidden="true" />
@@ -115,6 +117,7 @@ function Group({
             role="radio"
             aria-checked={value === o.value}
             tabIndex={i === selected ? 0 : -1}
+            data-testid={o.testId}
             onClick={() => onChange(o.value)}
           >
             {o.title}
@@ -143,12 +146,14 @@ export function Checkbox({
   help,
   checked,
   disabled = false,
+  testId,
   onChange,
 }: {
   label: string;
   help?: string;
   checked: boolean;
   disabled?: boolean;
+  testId?: string;
   onChange(checked: boolean): void;
 }): React.JSX.Element {
   return (
@@ -156,6 +161,7 @@ export function Checkbox({
       type="button"
       role="checkbox"
       className="check"
+      data-testid={testId}
       aria-checked={checked}
       aria-disabled={disabled}
       onPointerDown={(e) => {
@@ -179,18 +185,37 @@ export function Checkbox({
     </button>
   );
 }
+/** The dialog's Enter: a plain Enter that does not end an IME composition. */
+export function isDialogEnter(e: {
+  key: string;
+  ctrlKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+  metaKey: boolean;
+  isComposing: boolean;
+}): boolean {
+  return (
+    e.key === 'Enter' && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && !e.isComposing
+  );
+}
 export function Dialog({
   title,
   testId = 'dialog',
   width = 400,
+  className = '',
   onCancel,
+  onEnter,
   children,
   footer,
 }: {
   title: string;
   testId?: string;
   width?: 400 | 560;
+  /** Added to the dialog box's classes. */
+  className?: string;
   onCancel(): void;
+  /** Enter anywhere in the dialog (the dialog's default button); the key is consumed. */
+  onEnter?(): void;
   children: ReactNode;
   footer?: ReactNode;
 }): React.JSX.Element {
@@ -224,6 +249,11 @@ export function Dialog({
           e.stopPropagation();
           onCancel();
         }
+        if (onEnter && isDialogEnter({ ...e, isComposing: e.nativeEvent.isComposing })) {
+          e.preventDefault();
+          e.stopPropagation();
+          onEnter();
+        }
         if (e.key === 'Tab') {
           const items = [
             ...(ref.current?.querySelectorAll<HTMLElement>(
@@ -252,7 +282,7 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={id}
-        className={`dialog dialog-${width === 400 ? 'sm' : 'md'}`}
+        className={`dialog dialog-${width === 400 ? 'sm' : 'md'}${className ? ` ${className}` : ''}`}
       >
         <h2 id={id} className="dialog-title">
           {title}

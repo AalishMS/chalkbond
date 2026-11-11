@@ -367,9 +367,9 @@ choices survive a relaunch with the same user-data folder (Poster + White backgr
 selected).
 
 **Acceptance criteria:**
-- [ ] Flow, markup and e2e tests pass; `model/` ≥ 90 % lines so far
-- [ ] No "dpi" text anywhere in the dialog (markup test)
-- [ ] Shots exist and match A08a–c
+- [x] Flow, markup and e2e tests pass; `model/` ≥ 90 % lines so far (`export-flow.test.ts`, `ExportDialog.test.tsx`, `keys.test.ts` Ctrl+E, `primitives.test.tsx`; `e2e/export-dialog.spec.ts` incl. the 960 × 640 short window; Linux only). C10 stops at the chosen file: nothing is written and no success notice is shown until C11 / C12
+- [x] No "dpi" text anywhere in the dialog (markup test)
+- [x] Shots exist and match A08a–c (`C10/export-png.png`, `export-svg.png`, `export-pdf.png` under outcome A, `export-png-960.png`; looked at beside `docs/mockups/shell` A08a–c)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- C10` →
 `C10/export-png.png` (A08a, scripted: scheme, Ctrl+E: PNG card selected with keyboard focus ring,

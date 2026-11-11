@@ -1,4 +1,5 @@
 import { createCopyFlow, type CopyFlow } from '../clipboard-export/model/copy-flow';
+import { createExportFlow } from '../clipboard-export/model/export-flow';
 import { rasterise } from '../clipboard-export/rasterise';
 import { emptyDoc, setStyle, type Doc } from '@core/doc-model';
 import { createEditorController } from '../editor';
@@ -90,10 +91,21 @@ export async function createWindowHost(main: ChalkbondApi) {
     },
     encodeUtf8: (text) => encoder.encode(text),
   });
+  // EX1, EX2: the Export dialog's choices and the Save dialog (C3). C10 stops at the chosen
+  // file: writing it (EX3–EX5) arrives with C11 / C12 as the flow's `chosen` port.
+  const exportFlow = createExportFlow({
+    main,
+    controller,
+    settings: () => ({ ...settings.export }),
+    remember: (choices) => remember({ export: choices }),
+    sessionName: () => (session.kind === 'untitled' ? null : session.name),
+    logError: (message) => main.logError(message),
+  });
   return {
     commands: [] as string[],
     controller,
     copyFlow,
+    exportFlow,
     fileFlows,
     session,
     publishSession,

@@ -186,7 +186,7 @@ nothing (the dialog handles its keys). Handled keys get `preventDefault()` and
 | Keys | Condition | Action |
 |---|---|---|
 | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S | idle (also in the name field) | F1 / F2 / F5 / F6 |
-| Ctrl+E | idle, drawing not empty | Export dialog |
+| Ctrl+E | idle, drawing not empty (also in the name field, as the File menu item) | Export dialog |
 | F1 | idle | Keyboard shortcuts dialog |
 | Ctrl+C | not a text target, selection empty, drawing not empty | CB-C1 whole drawing (empty drawing: N-C4) |
 | Ctrl+V | not a text target, idle | CB-P1 |

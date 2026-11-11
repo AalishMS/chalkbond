@@ -18,6 +18,7 @@ const canvas: HostKeyContext = {
   idle: true,
   modal: false,
   fileBusy: false,
+  empty: false,
 };
 
 describe('hostKey', () => {
@@ -106,5 +107,37 @@ describe('file keys (A8: F1 New, F2 Open, F5 Save, F6 Save as)', () => {
       expect(globalCommand(ctrl(key, { shiftKey }), 'all')).toBeNull();
       expect(canvasKey(ctrl(key, { shiftKey }))).toBeNull();
     }
+  });
+});
+
+describe('Ctrl+E (C10: the Export dialog)', () => {
+  it('opens the dialog when idle and the drawing is not empty, from the canvas or the name field', () => {
+    expect(hostKey(ctrl('e'), canvas)).toBe('export');
+    expect(hostKey(ctrl('E'), canvas)).toBe('export'); // Caps Lock
+    expect(hostKey(ctrl('e'), { ...canvas, selectionEmpty: false })).toBe('export');
+    expect(hostKey(ctrl('e'), { ...canvas, textTarget: true })).toBe('export');
+  });
+
+  it('does nothing on an empty drawing, while busy, or while a dialog is open', () => {
+    expect(hostKey(ctrl('e'), { ...canvas, empty: true })).toBeNull();
+    expect(hostKey(ctrl('e'), { ...canvas, idle: false })).toBeNull();
+    expect(hostKey(ctrl('e'), { ...canvas, modal: true })).toBeNull();
+  });
+
+  it('needs Ctrl alone', () => {
+    expect(hostKey(ctrl('e', { shiftKey: true }), canvas)).toBeNull();
+    expect(hostKey(ctrl('e', { altKey: true }), canvas)).toBeNull();
+    expect(hostKey(ctrl('e', { metaKey: true }), canvas)).toBeNull();
+    expect(hostKey(ctrl('e', { ctrlKey: false }), canvas)).toBeNull();
+  });
+
+  it('while a dialog is open no host key acts (K1)', () => {
+    for (const key of ['n', 'o', 's', 'e', 'c', 'v'])
+      expect(hostKey(ctrl(key), { ...canvas, modal: true })).toBeNull();
+  });
+
+  it('K2: the editor has no command for Ctrl+E', () => {
+    expect(globalCommand(ctrl('e'), 'all')).toBeNull();
+    expect(canvasKey(ctrl('e'))).toBeNull();
   });
 });

@@ -183,7 +183,7 @@ below the content top, centred horizontally, padding 24, `--shadow-dialog`, over
 | "Format" | label `--type-sm` 600, 16 px below the title; then a radio group (`role="radiogroup"`, `aria-label="Format"`), three radio cards (app-shell primitive), 4 px apart, one tab stop, ↑/↓ move and select, Home / End: **PNG picture** "For WhatsApp, websites and printing." · **SVG drawing** "Stays sharp at any size in PowerPoint and Word." · **PDF document** "For printing or sending as a document." Default: the remembered format (`export.format`), first run PNG. Test ids `export-format-png`, `-svg`, `-pdf` |
 | "Size" (PNG only) | label above (like "Format"), 16 px below the cards; segmented control (`role="radiogroup"`, `aria-label="Picture size"`), 32 high (`--control-h`), segments min-width 76, outline and dividers 1 px `--border-control`: **Screen** (150 dpi) · **Print** (300 dpi, default) · **Poster** (600 dpi); remembered (`export.pngDpi`). Test ids `export-size-screen`, `-print`, `-poster` |
 | Size line (PNG only) | 4 px below, `--type-xs`, `--text-muted`, live (`data-testid="export-size-line"`): Screen "For messages and websites. `W` × `H` pixels." · Print "Sharp on paper. `W` × `H` pixels." · Poster "For large prints. `W` × `H` pixels." with `W`, `H` from `pngPixelSize` grouped by `groupDigits` (A08a: "Sharp on paper. 2,984 × 362 pixels."). When reduced: "… `W` × `H` pixels (less sharp: the drawing is very large)." No "dpi" anywhere on screen |
-| White background (PNG only) | 12 px below; checkbox primitive (`data-testid="export-white"`), label "White background", help "Leave this off for slides with a coloured background."; unchecked = transparent (`SPEC.md` SC5); remembered (`export.pngWhite`) |
+| White background (PNG only) | 16 px below (`--space-5`, as `shell.css` `.export-white`); checkbox primitive (`data-testid="export-white"`), label "White background", help "Leave this off for slides with a coloured background."; unchecked = transparent (`SPEC.md` SC5); remembered (`export.pngWhite`) |
 | Reopen line | 16 px below the last control; 16 px `info` icon + `--type-xs` text (`data-testid="export-reopen"`). PNG, SVG (and PDF under PDF-A): "You can open this file in Chalkbond again to change the drawing." in `--text-muted`. PDF under PDF-B: "PDF files can't be opened in Chalkbond again. Keep the drawing as a .chalk file too." in `--text` |
 | Buttons | 24 px below, right-aligned, 8 px apart: **Cancel** (secondary) closes with no effect; **Save…** (primary, `data-testid="export-save"`) stores the choices (`settings:set`), closes the dialog and runs EX2. Enter anywhere = Save…; Esc and a click on the scrim = Cancel |
 | Focus | opens with focus on the selected format card (keyboard focus ring, A08a); focus returns to the element focused before (normally the canvas) |
@@ -191,6 +191,15 @@ below the content top, centred horizontally, padding 24, `--shadow-dialog`, over
 
 Switching format hides or shows the PNG block; the top edge stays put. The dialog never mentions
 selection: Export is the whole drawing.
+
+Short windows (approved 2026-11-11): at the minimum 960 × 640 content the top edge stays at
+`--dialog-top` (96) and `--dialog-bottom` (32) stays free below the box; when the PNG body needs
+more room it scrolls inside the shell (the body has a 4 px gutter so focus rings are not clipped)
+and the footer buttons stay visible. No token, control size or the top edge changes.
+
+The drawing's size (pt) for the size line is measured once per document with one unembedded
+`exportSvg(doc, null, { embed: false })` when the dialog opens (cached while the document is the
+same); a format, size or background change is `pngPixelSize` arithmetic only.
 
 ### Left out (deliberately)
 
@@ -318,7 +327,7 @@ check, size limits). Request limits are enforced by the schema.
 | C2 | `clipboard:read` / `clipboardRead` | `{}` | `ClipboardContents` | CB-R1 |
 | C3 | `file:choose-save` / `chooseSave` | `{ format: 'chalk' \| 'png' \| 'svg' \| 'pdf', suggestedName: string ≤ 255 }` | `FileRef \| null` | app-shell F8 |
 | C4 | `file:write` / `writeFile` | `{ ref: uuid, data: Uint8Array ≤ 64 MB }` | `{ ok: true } \| { ok: false, problem: WriteProblem }` | app-shell F9, SEC8 |
-| C5 | `pdf:print` / `printPdf` | `{ svg: string ≤ 20 MB starting "<svg"; widthPt, heightPt: finite, > 0, ≤ 14 400 }` | `{ ok: true, pdf: Uint8Array } \| { ok: false }` | PD1 |
+| C5 | `pdf:print` / `printPdf` | `{ svg: string ≤ 64 MiB of actual UTF-8 (C9; approved 2026-11-11, built by C12) starting "<svg"; widthPt, heightPt: finite, > 0, ≤ 14 400 }` | `{ ok: true, pdf: Uint8Array } \| { ok: false }` | PD1 |
 
 ### Rasterising (renderer, `rasterise.ts`)
 
@@ -440,8 +449,10 @@ check, size limits). Request limits are enforced by the schema.
 ### Export rules (renderer `export-flow.ts`)
 
 - **EX1** Export… opens the dialog with the remembered choices (app-shell `RendererSettings`).
-- **EX2** Save… → `settings:set { export }`, then C3 with `format` and `suggestedName =
-  exportFileName(session name, format)`; cancel in the native dialog → nothing, no notice.
+- **EX2** Save… → `settings:set { export }` (remembered even if the Save dialog is then cancelled),
+  the dialog closes, then C3 with `format` and `suggestedName = exportFileName(session name,
+  format)` (an Untitled session passes null); cancel in the native dialog → nothing, no notice.
+  Cancel, Esc and the scrim remember nothing. Ctrl+E is ignored from Save… until the export ends.
 - **EX3** PNG: `rasterise(exportSvg(doc, null), dpi, white)` → C4. SVG: UTF-8 bytes of
   `exportSvg(doc, null).svg`, no BOM → C4. PDF: `exportSvg(doc, null, { embed: false })` → C5,
   then PDF-A2 or PDF-B1 → C4.

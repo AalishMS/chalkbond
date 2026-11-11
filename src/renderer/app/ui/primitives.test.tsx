@@ -1,6 +1,15 @@
 import { renderToStaticMarkup as render } from 'react-dom/server';
 import { expect, it } from 'vitest';
-import { Button, Checkbox, Dialog, Icon, Kbd, RadioGroup, Segmented } from './primitives';
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  Icon,
+  isDialogEnter,
+  Kbd,
+  RadioGroup,
+  Segmented,
+} from './primitives';
 it('exposes named, focusable disabled controls', () => {
   const html = render(
     <Button disabled title="Nothing to save" data-testid="save">
@@ -55,4 +64,39 @@ it('suppresses disabled click and pointer handlers', () => {
   expect(calls).toBe(0);
   expect(prevented).toBe(2);
   expect(stopped).toBe(2);
+});
+it('C10: test ids on options and checkbox, a dialog class, and the Enter handler', () => {
+  const options = [
+    { value: 'a', title: 'A', testId: 'opt-a' },
+    { value: 'b', title: 'B', testId: 'opt-b' },
+  ];
+  for (const Component of [RadioGroup, Segmented]) {
+    const html = render(<Component label="L" value="a" options={options} onChange={() => {}} />);
+    expect(html).toContain('data-testid="opt-a"');
+    expect(html).toContain('data-testid="opt-b"');
+  }
+  expect(
+    render(<Checkbox label="W" checked={false} testId="white" onChange={() => undefined} />),
+  ).toContain('data-testid="white"');
+  expect(
+    render(
+      <Dialog title="T" className="export-dialog" onCancel={() => undefined}>
+        x
+      </Dialog>,
+    ),
+  ).toMatch(/class="dialog dialog-sm export-dialog"/);
+  const key = (k: string, mods: Partial<Parameters<typeof isDialogEnter>[0]> = {}) => ({
+    key: k,
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: false,
+    metaKey: false,
+    isComposing: false,
+    ...mods,
+  });
+  expect(isDialogEnter(key('Enter'))).toBe(true);
+  for (const mods of [{ ctrlKey: true }, { altKey: true }, { shiftKey: true }, { metaKey: true }])
+    expect(isDialogEnter(key('Enter', mods))).toBe(false);
+  expect(isDialogEnter(key('Enter', { isComposing: true }))).toBe(false);
+  expect(isDialogEnter(key(' '))).toBe(false);
 });

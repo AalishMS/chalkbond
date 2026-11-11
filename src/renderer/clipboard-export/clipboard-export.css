@@ -42,3 +42,46 @@
   padding: 0 var(--space-4);
   justify-content: center;
 }
+
+/* Export dialog (SPEC-clipboard-export.md "Export dialog"; mock-up docs/mockups/shell/shell.css). */
+.export-size {
+  margin-top: var(--space-5);
+}
+
+.size-note {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+.export-white {
+  margin-top: var(--space-5);
+}
+
+.reopen {
+  display: flex;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+.reopen.is-warning {
+  color: var(--text);
+}
+
+/*
+ * Short windows (960 × 640 content): the top stays at --dialog-top and --dialog-bottom stays free;
+ * the body scrolls inside the shell and the footer stays visible. The body keeps a 4 px gutter
+ * (padding, with the same negative margin) so focus rings (2 px at offset 2) are not clipped;
+ * every control stays where the mock-up puts it.
+ */
+.export-dialog .dialog-body {
+  margin: calc(var(--space-5) - var(--space-2)) calc(-1 * var(--space-2)) 0;
+  padding: var(--space-2);
+  overflow-y: auto;
+}
+
+.export-dialog .dialog-foot {
+  margin-top: calc(var(--space-6) - var(--space-2));
+}

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { CopyButton, type CopyDisabledReason } from '../clipboard-export/CopyButton';
+import { ExportDialog } from '../clipboard-export/ExportDialog';
+import { PDF_OUTCOME } from '../clipboard-export/model/export-flow';
 import type { CopyFlow } from '../clipboard-export/model/copy-flow';
 import { Editor, type EditorController } from '../editor';
 import { installHostKeys } from './host-keys';
@@ -10,31 +12,41 @@ import sprite from './shell-icons.svg?raw';
 import './shell-tokens.css';
 
 export function App({ host }: { host: WindowHost }): React.JSX.Element {
-  const { controller, copyFlow, fileFlows } = host;
+  const { controller, copyFlow, exportFlow, fileFlows } = host;
   useEffect(
     () =>
-      installHostKeys(controller, fileFlows, {
-        'copy-whole': () => {
-          void copyFlow.copy();
+      installHostKeys(
+        controller,
+        fileFlows,
+        {
+          'copy-whole': () => {
+            void copyFlow.copy();
+          },
+          paste: () => {
+            void copyFlow.paste();
+          },
+          new: () => {
+            void fileFlows.newDrawing();
+          },
+          open: () => {
+            void fileFlows.open();
+          },
+          save: () => {
+            void fileFlows.save();
+          },
+          'save-as': () => {
+            void fileFlows.saveAs();
+          },
+          export: () => {
+            exportFlow.open();
+          },
         },
-        paste: () => {
-          void copyFlow.paste();
-        },
-        new: () => {
-          void fileFlows.newDrawing();
-        },
-        open: () => {
-          void fileFlows.open();
-        },
-        save: () => {
-          void fileFlows.save();
-        },
-        'save-as': () => {
-          void fileFlows.saveAs();
-        },
-      }),
-    [controller, copyFlow, fileFlows],
+        // K1: while the Export dialog is open no host key acts.
+        () => exportFlow.state() !== null,
+      ),
+    [controller, copyFlow, exportFlow, fileFlows],
   );
+  const exportState = useSyncExternalStore(exportFlow.subscribe, exportFlow.state);
   useEffect(() => {
     const stopMain = window.chalkbond.onMainEvent((event) => {
       if (event.type === 'command') host.commands.push(event.command);
@@ -73,6 +85,17 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
     <div className="app" data-testid="canvas-area">
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <Editor controller={controller} actions={actions} />
+      {exportState && (
+        <ExportDialog
+          state={exportState}
+          pdfOutcome={PDF_OUTCOME}
+          onChoose={(change) => exportFlow.choose(change)}
+          onCancel={() => exportFlow.cancel()}
+          onSave={() => {
+            void exportFlow.save();
+          }}
+        />
+      )}
     </div>
   );
 }
