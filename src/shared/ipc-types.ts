@@ -5,6 +5,8 @@ export type MainEvent =
   | { type: 'close-requested' }
   | { type: 'flush-recovery' };
 export interface IpcRequestMap {
+  'clipboard:write': ClipboardWriteRequest;
+  'clipboard:read': Record<string, never>;
   'log:error': LogErrorRequest;
   'app:startup': Record<string, never>;
   'session:update': SessionUpdate;
@@ -22,4 +24,16 @@ export interface StartupResponse {
 export interface SessionUpdate {
   title: string;
   dirty: boolean;
+}
+
+export interface ClipboardWriteRequest {
+  png: Uint8Array;
+  svg: string;
+  drawing: string | null;
+}
+export interface ClipboardReadResponse {
+  drawing: string | null;
+  text: string | null;
+  textTooLong: boolean;
+  image: boolean;
 }

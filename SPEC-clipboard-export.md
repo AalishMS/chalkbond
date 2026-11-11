@@ -88,6 +88,7 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 
 | # | Decision | Reason | Date |
 |---|---|---|---|
+| C7 | C1 accepts drawing: null only when the editable payload exceeds MAX_FILE_BYTES; omit its clipboard entry and retain bitmap / SVG. Non-null remains strict printable ASCII beginning with {. | Approved IPC correction; E1 already requires oversized payload omission; no document schema change | 2026-11-11 |
 | O7 | Positive fractional effective DPI is allowed only when no positive integer meets both raster caps after ceil and min 1. Search integers through floor(upper), upper = min(requestedDpi, 720000/widthPt, 720000/heightPt); if none fits, bisect [0,min(1,upper)] for 64 iterations (stop at an unrepresentable midpoint), retaining the feasible lower endpoint. Never return zero DPI; reduced is true. Keep rounded pHYs even when it is zero. | Approved orchestrator resolution for enormous finite drawings; avoids width × height overflow | 2026-11-11 |
 | O1 | The **Copy** button sits at the right end of the top bar, after Undo/Redo (mock-ups A01, A02): a filled primary button with icon and label; after a copy it reads "Copied" with a check for 2 s; below 1100 px window width it shows the label "Copy" with no icon (never icon-only) and the name field narrows to 204 px (A15b) | The top-right corner is where Office and browsers put "send it on"; a word is self-explanatory, two overlapping sheets are not | 2026-11-10 |
 | O2 | Ctrl+C, the Copy button and Edit > Copy copy the selection, or the whole drawing when nothing is selected, writing the picture formats and the editable drawing in one clipboard write. PNG transparent, tight, 300 dpi; SVG written too. Paste reads the system clipboard and follows the editor's cascade rule when the content is the editor's own last copy. Plain text pastes as a name or SMILES through the name-insert path | One shortcut for PowerPoint, Word and Chalkbond; the teacher never chooses a format | 2026-11-10 |
@@ -308,7 +309,7 @@ check, size limits). Request limits are enforced by the schema.
 
 | Ch. | Channel / preload function | Request | Response | Main does |
 |---|---|---|---|---|
-| C1 | `clipboard:write` / `clipboardWrite` | `{ png: Uint8Array ≤ 64 MB, starts with the PNG signature; svg: string ≤ 20 MB, starts with "<svg"; drawing: string ≤ 20 MB, /^\{[\x20-\x7E]*$/ }` | `{ ok: boolean }` | CB-W1 |
+| C1 | `clipboard:write` / `clipboardWrite` | `{ png: Uint8Array ≤ 64 MB, starts with the PNG signature; svg: string ≤ 20 MB, starts with "<svg"; drawing: string | null (null only when the editable payload exceeds MAX_FILE_BYTES); non-null: ≤ 20 MB, /^\{[\x20-\x7E]*$/ }` | `{ ok: boolean }` | CB-W1 |
 | C2 | `clipboard:read` / `clipboardRead` | `{}` | `ClipboardContents` | CB-R1 |
 | C3 | `file:choose-save` / `chooseSave` | `{ format: 'chalk' \| 'png' \| 'svg' \| 'pdf', suggestedName: string ≤ 255 }` | `FileRef \| null` | app-shell F8 |
 | C4 | `file:write` / `writeFile` | `{ ref: uuid, data: Uint8Array ≤ 64 MB }` | `{ ok: true } \| { ok: false, problem: WriteProblem }` | app-shell F9, SEC8 |
@@ -374,7 +375,7 @@ check, size limits). Request limits are enforced by the schema.
 ### Clipboard rules (main `clipboard.ts`, renderer `copy-flow.ts`)
 
 - **CB-W1** Write (C1), after validation, one call `clipboard.write([new ClipboardItem(entries)])`
-  with the entries below. `formats.ts` holds the key actually used for each, chosen by probe C3
+  with the entries below (omit the drawing entry when C1 drawing is null). `formats.ts` holds the key actually used for each, chosen by probe C3
   and recorded in "Facts relied on"; no text format is ever written. A rejected write → `{ ok:
   false }` and a log line (app-shell LG1).
 

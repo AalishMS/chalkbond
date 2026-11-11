@@ -7,6 +7,8 @@ test('named bridge logs errors and denies windows and permissions', async () => 
   try {
     const page = await app.firstWindow();
     expect(await page.evaluate(() => Object.keys(window.chalkbond).sort())).toEqual([
+      'clipboardRead',
+      'clipboardWrite',
       'logError',
       'onMainEvent',
       'platform',

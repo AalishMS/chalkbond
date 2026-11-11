@@ -1,6 +1,14 @@
-import type { MainEvent, StartupResponse, SessionUpdate } from '../shared/ipc-types';
+import type {
+  ClipboardWriteRequest,
+  ClipboardReadResponse,
+  MainEvent,
+  StartupResponse,
+  SessionUpdate,
+} from '../shared/ipc-types';
 /** The API the preload script exposes on `window.chalkbond`. Grows as app-shell features land. */
 export interface ChalkbondApi {
+  clipboardWrite(value: ClipboardWriteRequest): Promise<{ ok: boolean }>;
+  clipboardRead(): Promise<ClipboardReadResponse>;
   startup(): Promise<StartupResponse>;
   updateSession(value: SessionUpdate): void;
   readonly platform: string;

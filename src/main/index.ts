@@ -1,5 +1,6 @@
+import { createClipboard } from './clipboard-export/clipboard';
 import { join } from 'node:path';
-import { app, BrowserWindow, Menu, screen } from 'electron';
+import { app, BrowserWindow, Menu, screen, clipboard, ClipboardItem } from 'electron';
 import { firstWindowBounds } from './model/window-bounds';
 import type { StartupResponse } from '../shared/ipc-types';
 import { testFlags } from './model/args';
@@ -7,7 +8,13 @@ import { testFlags } from './model/args';
 import { pathToFileURL } from 'node:url';
 import { CHANNELS } from '../shared/channels';
 import { createIpc } from './ipc';
-import { logErrorSchema, startupSchema, sessionUpdateSchema } from './ipc-schemas';
+import {
+  logErrorSchema,
+  startupSchema,
+  sessionUpdateSchema,
+  clipboardWriteSchema,
+  clipboardReadSchema,
+} from './ipc-schemas';
 import { createLogger } from './log';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
 
@@ -97,6 +104,11 @@ void app.whenReady().then(() => {
     appUrl,
     (message) => log('ipc', message),
   );
+  const clipboardPort = createClipboard(clipboard, ClipboardItem, (message) =>
+    log('clipboard', message),
+  );
+  ipc.handle(CHANNELS.clipboardWrite, clipboardWriteSchema, clipboardPort.write);
+  ipc.handle(CHANNELS.clipboardRead, clipboardReadSchema, clipboardPort.read);
   ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
   ipc.handle(CHANNELS.startup, startupSchema, (): StartupResponse => ({
     settings: {

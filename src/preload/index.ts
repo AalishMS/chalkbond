@@ -5,6 +5,8 @@ import type { ChalkbondApi } from './api';
 
 // Narrow, typed API only. Never expose ipcRenderer, fs or other Node/Electron objects.
 const api: ChalkbondApi = {
+  clipboardWrite: (value) => ipcRenderer.invoke(CHANNELS.clipboardWrite, value),
+  clipboardRead: () => ipcRenderer.invoke(CHANNELS.clipboardRead, {}),
   startup: () => ipcRenderer.invoke(CHANNELS.startup, {}),
   updateSession: (value) => ipcRenderer.send(CHANNELS.updateSession, value),
   platform: process.platform,

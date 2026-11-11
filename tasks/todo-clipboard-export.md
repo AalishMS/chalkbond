@@ -245,9 +245,9 @@ reads back the same bytes; P2b's PowerShell list shows the formats; `clipboardRe
 drawing and `image: true`.
 
 **Acceptance criteria:**
-- [ ] Handler unit tests pass; schemas reject every CS1 case
+- [x] Handler unit tests pass; schemas reject every CS1 case
 - [ ] `e2e/win/clipboard-ipc.spec.ts` green on Windows; the SEC4 request counter is 0 at the end
-- [ ] `window.chalkbond` exposes the two new functions and nothing else new (SEC5 list updated)
+- [ ] `window.chalkbond` exposes the two new functions and nothing else new (SEC5 list updated; bridge e2e pending)
 
 **Verification:** `npm test -- src/main`, `npm run build`, `npx playwright test e2e/win/clipboard-ipc.spec.ts`, `npm run check`. No visible change (rasterise is exercised by C8 and C11).
 
@@ -468,3 +468,5 @@ export" with the spec's "Windows checks", unticked. Sweep SC1–SC13 into the pl
 **Files:** `vitest.config.mts`, `e2e/win/clipboard-perf.spec.ts`, `docs/editor-perf.md`, `docs/windows-checklist.md`, `tasks/plan-clipboard-export.md`, `tasks/todo-clipboard-export.md`
 
 **Scope:** S
+
+C7 worker evidence (2026-11-11): unit red missing implementation, then 3 adapter/schema tests green; npm run check exit 0, 190 files / 3449 tests. Windows IPC spec written, UNRUN Linux. Exception to red-first: Windows probe cannot run here; rasteriser and bridge e2e verification pending C8. Logs /tmp/chalkbond-c7-c8-wX2cOQ/c7-red.log.

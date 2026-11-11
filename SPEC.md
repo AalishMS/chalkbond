@@ -257,6 +257,8 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-10 | Linux baseline: UI typography keeps Segoe UI first and falls back to installed Arial / Liberation Sans before system-ui, preserving the approved fixed control sizes (including the 109 px Kekulé toggle). Its fixed 109 px Kekulé toggle uses 4 px right padding so the longer fallback label fits without moving the icon or label. No bundled font or project dependency. |
 | 2026-11-10 | Linux font calibration: preserve Arial advances and logical layout; include bold Liberation Sans bars (`\|`, `¦`) with 0.225 em ink descent and fractions (`¼`, `¾`) with 0.075 em right overhang. Apply only to runs containing those glyphs; keep calibration tolerances and other extents unchanged. |
 
+| 2026-11-11 | C7 approved IPC correction: C1 drawing is nullable only above MAX_FILE_BYTES; omit editable entry while retaining picture formats. Non-null validation unchanged; no Doc schema change. |
+
 ## Open Questions
 
 None at project level.
