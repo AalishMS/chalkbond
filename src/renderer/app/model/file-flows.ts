@@ -1,4 +1,4 @@
-// File flows (SPEC-app-shell.md "Files" F1–F7, F13; CO4; R7, R14) over injected ports: DOM-free,
+// File flows (SPEC-app-shell.md "Files" F1–F7, F13; CO4; R7, R14; A6 pictures) over injected ports: DOM-free,
 // no timers. One in-progress flag; one pending request (an open ref or a close, latest wins).
 // Every session change publishes N1 itself, after the session changed.
 import {
@@ -9,6 +9,7 @@ import {
   type Doc,
   type ParseErrorCode,
 } from '@core/doc-model';
+import { extractDrawing, fileKindOf } from '@core/clipboard-export';
 import type { EditorController } from '../../editor';
 import type {
   FileProblem,
@@ -67,7 +68,7 @@ export interface FileFlows {
 type Pending = { kind: 'open'; ref: FileRef } | { kind: 'close' };
 
 /** doc-model `parse` codes → F14 (every other code is a damaged file). */
-function parseProblem(code: ParseErrorCode): FileProblem {
+export function parseProblem(code: ParseErrorCode): FileProblem {
   if (code === 'newer-version') return 'newer-version';
   if (code === 'too-large') return 'too-large';
   return 'damaged';
@@ -151,16 +152,17 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
     o.publish();
   }
 
-  /** The drawing text inside the file, or the F14 problem. */
+  /**
+   * The drawing text inside the file (clipboard-export E4: a `.chalk`, or the payload an exported
+   * PNG, SVG or PDF carries), or the F14 problem. An SVG is only scanned as a string (CS4).
+   */
   function drawingText(
     ref: FileRef,
     bytes: Uint8Array,
   ): { ok: true; text: string } | { ok: false; problem: FileProblem } {
-    if (ref.kind !== 'chalk') return { ok: false, problem: 'no-drawing' };
-    const text = o.decodeUtf8(bytes);
-    return text === null
-      ? { ok: false, problem: 'damaged' }
-      : { ok: true, text: text.replace(/^\ufeff/, '') };
+    const kind = fileKindOf(ref.name);
+    if (kind === null) return { ok: false, problem: 'unsupported' };
+    return extractDrawing(kind, bytes, o.decodeUtf8);
   }
 
   /** F3: read, validate, then F4; any failure shows F14 and changes nothing. */

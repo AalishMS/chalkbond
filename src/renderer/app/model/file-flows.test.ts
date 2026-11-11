@@ -1,14 +1,24 @@
 // F1–F7, F13 (SPEC-app-shell.md "Files"; CO4; R7, R14) over fakes: every prompt answer, the
 // in-progress flag with one pending request, session kinds and the published title.
 import { describe, expect, it, vi } from 'vitest';
-import { addAtom, emptyDoc, parse, serialize, setStyle, type Doc } from '@core/doc-model';
+import { exportSvg, withPictureChunks } from '@core/clipboard-export';
+import {
+  addAtom,
+  emptyDoc,
+  MAX_FILE_BYTES,
+  parse,
+  serialize,
+  setStyle,
+  type Doc,
+  type ParseErrorCode,
+} from '@core/doc-model';
 import type {
   FileProblem,
   FileRef,
   ReadFileResponse,
   WriteFileResponse,
 } from '../../../shared/ipc-types';
-import { createFileFlows, type FlowMain } from './file-flows';
+import { createFileFlows, parseProblem, type FlowMain } from './file-flows';
 import { createSession, sessionUpdate, type Session } from './session';
 
 const NOW = '2026-11-11T09:00:00.000Z';
@@ -547,5 +557,130 @@ describe('F13 close', () => {
     answer.resolve('discard');
     await running;
     expect(r.main.closeOk).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** A 1×1 transparent PNG from another program (no Chalkbond chunk). */
+const PIXEL = Uint8Array.from(
+  atob(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  ),
+  (c) => c.charCodeAt(0),
+);
+const pngOf = (doc: Doc): Uint8Array =>
+  withPictureChunks(PIXEL, { dpi: 300, payload: drawingPayloadOf(doc) });
+/** clipboard-export E1: the payload is the drawing's `serialize` as one ASCII JSON line. */
+const drawingPayloadOf = (doc: Doc): string => JSON.stringify(JSON.parse(serialize(doc)));
+const bytes = (b: Uint8Array): ReadFileResponse => ({ ok: true, bytes: b });
+
+describe('A9: F3 for exported pictures (clipboard-export E4) and the F14 mapping', () => {
+  it('a PNG with the drawing chunk opens as a picture session, not dirty', async () => {
+    const file = ref('toluene.png');
+    const doc = golden('toluene');
+    const r = rig({ open: file, files: { [file.id]: bytes(pngOf(doc)) } });
+    await r.flows.open();
+    expect(r.controller.getDoc()).toEqual(doc);
+    expect(r.session).toEqual({
+      name: 'toluene.png',
+      kind: 'picture',
+      ref: file,
+      forcedDirty: false,
+    });
+    expect(r.flows.dirty()).toBe(false);
+    expect(r.titles.at(-1)).toBe('toluene.png - Chalkbond');
+    expect(r.calls).toEqual(['chooseOpen', 'read toluene.png', 'sessionFile toluene.png']);
+  });
+
+  it('an exported SVG opens from its metadata; the SVG is only scanned', async () => {
+    const file = ref('toluene.svg');
+    const doc = golden('toluene');
+    const svg = exportSvg(doc, null).svg;
+    const r = rig({ files: { [file.id]: bytes(enc.encode(svg)) } });
+    await r.flows.openRef(file);
+    expect(serialize(r.controller.getDoc())).toBe(serialize(doc));
+    expect(r.session.kind).toBe('picture');
+  });
+
+  it("A6: a picture session's Save goes to Save as with <name>.chalk; the picture is never written", async () => {
+    const file = ref('toluene.png');
+    const out = ref('toluene.chalk');
+    const r = rig({ files: { [file.id]: bytes(pngOf(golden('toluene'))) }, save: [out] });
+    await r.flows.openRef(file);
+    r.controller.edit();
+    await r.flows.save();
+    expect(r.main.chooseSave).toHaveBeenCalledWith('chalk', 'toluene.chalk');
+    expect(r.main.writeFile.mock.calls.map(([w]) => w)).toEqual([out]);
+    expect(r.session).toEqual({
+      name: 'toluene.chalk',
+      kind: 'chalk',
+      ref: out,
+      forcedDirty: false,
+    });
+    expect(r.titles.at(-1)).toBe('toluene - Chalkbond');
+  });
+
+  it('every extractDrawing problem: the F14 box, no prompt, drawing and session unchanged', async () => {
+    const cases: [string, Uint8Array, FileProblem][] = [
+      ['photo.png', PIXEL, 'no-drawing'],
+      ['notpng.png', enc.encode('GIF89a'), 'damaged'],
+      ['plain.svg', enc.encode('<svg xmlns="http://www.w3.org/2000/svg"/>'), 'no-drawing'],
+      ['bad.svg', new Uint8Array([0x3c, 0xff, 0xfe]), 'damaged'],
+      ['print.pdf', enc.encode('%PDF-1.4\n%%EOF\n'), 'no-drawing'],
+      ['fake.pdf', enc.encode('hello'), 'damaged'],
+      ['huge.png', new Uint8Array(MAX_FILE_BYTES + 1), 'too-large'],
+    ];
+    for (const [name, data, problem] of cases) {
+      const file = ref(name);
+      const r = rig({ open: file, files: { [file.id]: bytes(data) } });
+      r.controller.edit();
+      const before = r.controller.getDoc();
+      await r.flows.open();
+      expect(r.calls).toEqual(['chooseOpen', `read ${name}`, `error ${problem} ${name}`]);
+      expect(r.controller.getDoc()).toBe(before);
+      expect(r.session).toEqual(createSession());
+    }
+  });
+
+  it('a picture whose embedded drawing is newer or damaged maps through parse', async () => {
+    const newer = serialize(golden('ethanol')).replace(
+      '"schemaVersion": 1',
+      '"schemaVersion": 999',
+    );
+    const cases: [Uint8Array, FileProblem][] = [
+      [
+        withPictureChunks(PIXEL, { dpi: 300, payload: JSON.stringify(JSON.parse(newer)) }),
+        'newer-version',
+      ],
+      [withPictureChunks(PIXEL, { dpi: 300, payload: '{"format":"chalkbond"' }), 'damaged'],
+    ];
+    for (const [data, problem] of cases) {
+      const file = ref('t.png');
+      const r = rig({ files: { [file.id]: bytes(data) } });
+      await r.flows.openRef(file);
+      expect(r.calls).toEqual(['read t.png', `error ${problem} t.png`]);
+      expect(r.controller.load).not.toHaveBeenCalled();
+    }
+  });
+
+  it('a ref whose name has no Open extension is unsupported (never read as a drawing)', async () => {
+    const file: FileRef = { ...ref('notes.chalk'), name: 'notes.docx' };
+    const r = rig({ files: { [file.id]: bytes(enc.encode('{}')) } });
+    await r.flows.openRef(file);
+    expect(r.calls).toEqual(['read notes.docx', 'error unsupported notes.docx']);
+  });
+
+  it('every parse code maps to an F14 problem (newer-version, too-large, else damaged)', () => {
+    const expected: Record<ParseErrorCode, FileProblem> = {
+      'too-large': 'too-large',
+      'invalid-json': 'damaged',
+      'not-chalkbond': 'damaged',
+      'newer-version': 'newer-version',
+      'unsupported-version': 'damaged',
+      'migration-failed': 'damaged',
+      schema: 'damaged',
+      invariants: 'damaged',
+    };
+    for (const [code, problem] of Object.entries(expected))
+      expect(parseProblem(code as ParseErrorCode)).toBe(problem);
   });
 });

@@ -316,8 +316,8 @@ stubbed box receives the A10 / F14 wording; the current drawing (`serialize`) an
 are unchanged.
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass (SC5 for PNG and SVG; SC6)
-- [ ] Shot exists
+- [x] Unit and e2e tests pass (SC5 for PNG and SVG, and PDF under PDF-A from the C4 fixture; SC6). The opened SVG with a remote `<image>` and a `<script>` keeps the SEC4 counter at 0 (CS4). Linux only
+- [x] Shot exists (`A9/opened-picture.png`: toluene, nothing selected, Copy enabled)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A9` →
 `A9/opened-picture.png` (toluene opened from the PNG at the default zoom; nothing selected; the
