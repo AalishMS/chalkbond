@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { CopyButton, type CopyDisabledReason } from '../clipboard-export/CopyButton';
 import { ExportDialog } from '../clipboard-export/ExportDialog';
+import { ShortcutsDialog } from './ShortcutsDialog';
 import { PDF_OUTCOME } from '../clipboard-export/model/export-flow';
 import type { CopyFlow } from '../clipboard-export/model/copy-flow';
 import { Editor, type EditorController } from '../editor';
@@ -38,6 +39,10 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
     [commands, controller, fileFlows, host],
   );
   const exportState = useSyncExternalStore(exportFlow.subscribe, exportFlow.state);
+  const shortcutsOpen = useSyncExternalStore(
+    host.shortcutsDialog.subscribe,
+    host.shortcutsDialog.open,
+  );
   useEffect(() => {
     const stopMain = window.chalkbond.onMainEvent((event) => {
       if (event.type === 'command') {
@@ -61,12 +66,14 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
       invalidate();
     });
     const stopExport = exportFlow.subscribe(invalidate);
+    const stopShortcuts = host.shortcutsDialog.subscribe(invalidate);
     document.addEventListener('focusin', invalidate);
     document.addEventListener('focusout', invalidate);
     return () => {
       stopController();
       stopStore();
       stopExport();
+      stopShortcuts();
       document.removeEventListener('focusin', invalidate);
       document.removeEventListener('focusout', invalidate);
       host.cancelMenu();
@@ -96,6 +103,7 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
     <div className="app" data-testid="canvas-area">
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <Editor controller={controller} actions={actions} />
+      {shortcutsOpen && <ShortcutsDialog onClose={host.shortcutsDialog.close} />}
       {exportState && (
         <ExportDialog
           state={exportState}

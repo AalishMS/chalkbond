@@ -3,7 +3,19 @@ import { createPdfPrinter } from './clipboard-export/pdf';
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { app, BrowserWindow, Menu, screen, clipboard, ClipboardItem, dialog } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  Menu,
+  screen,
+  clipboard,
+  ClipboardItem,
+  dialog,
+  nativeImage,
+  shell,
+} from 'electron';
+import packageJson from '../../package.json';
+import { createAbout } from './about';
 import { createDialogs } from './dialogs';
 import { createFiles } from './files';
 import { createFileRefs } from './model/file-refs';
@@ -126,12 +138,23 @@ void app.whenReady().then(async () => {
       mainWindow?.webContents.send(CHANNELS.mainEvent, { type: 'command', command }),
     text: (method) => mainWindow?.webContents[method](),
     exit: () => mainWindow?.close(),
-    // AB1 (A12).
-    about: () => undefined,
+    about: () => void about.show(),
     // Open recent (A15): the list is empty until then, so these items are never enabled.
     recent: () => undefined,
   });
   appMenu.apply(appMenu.state());
+  // AB1: the icon and the licence notices ship in resources/ (I1) or sit in build/ (dev).
+  const about = createAbout({
+    box: (options) =>
+      mainWindow ? dialog.showMessageBox(mainWindow, options) : dialog.showMessageBox(options),
+    // SEC11: the only shell.openPath call site; it opens nothing but the bundled notices.
+    openPath: (path) => shell.openPath(path),
+    image: (path) => nativeImage.createFromPath(path),
+    folder: app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'build'),
+    version: app.getVersion(),
+    author: packageJson.author,
+    log: (message) => log('about', message),
+  });
   // Settings (ST1, ST2, W2): read once before the window exists; written 500 ms after a change.
   const store = createSettingsStore({
     file: join(app.getPath('userData'), 'settings.json'),

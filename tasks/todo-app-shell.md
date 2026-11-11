@@ -430,8 +430,8 @@ text and buttons `['OK', 'Licences']`; answering 1 calls the stubbed `shell.open
 ending `THIRD-PARTY-NOTICES.txt`.
 
 **Acceptance criteria:**
-- [ ] Unit, markup and e2e tests pass
-- [ ] Shots exist and match A12
+- [x] Unit, markup and e2e tests pass (Linux; About asserted as data with stubbed `showMessageBox` / `shell.openPath`, its look stays on the Windows checklist)
+- [x] Shots exist and match A12 (`out/shots/A12/shortcuts.png`, `shortcuts-960.png`, `shortcuts-scrolled.png`, compared with the A12 mock-up PNG)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A12` →
 `A12/shortcuts.png` (A12, scripted: scheme, F1: dialog centred, title "Keyboard shortcuts", Tools

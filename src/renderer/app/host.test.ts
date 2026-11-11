@@ -138,3 +138,30 @@ describe('A11 host menu (N1 menu state, commands re-checked)', () => {
     expect(host.runCommand('view.zoom-fit')).toBe(true);
   });
 });
+
+describe('A12 one in-window dialog at a time (Export, Keyboard shortcuts)', () => {
+  it('the shortcuts dialog is modal; Export cannot open over it, nor it over Export', async () => {
+    const { main } = fakeMain(DEFAULTS);
+    const host = await createWindowHost(main, () => false);
+    host.loadUntitled(drawing('slides'));
+    const heard: boolean[] = [];
+    host.shortcutsDialog.subscribe(() => heard.push(host.shortcutsDialog.open()));
+    expect(host.runCommand('help.shortcuts')).toBe(true);
+    expect(host.shortcutsDialog.open()).toBe(true);
+    expect(host.modal()).toBe(true);
+    host.actions.exportDialog();
+    expect(host.exportFlow.state()).toBeNull();
+    expect(host.runCommand('file.export')).toBe(false);
+    host.actions.shortcuts(); // already open: nothing new
+    host.shortcutsDialog.close();
+    host.shortcutsDialog.close();
+    expect(heard).toEqual([true, false]);
+    expect(host.modal()).toBe(false);
+
+    host.actions.exportDialog();
+    expect(host.exportFlow.state()).not.toBeNull();
+    host.actions.shortcuts();
+    expect(host.shortcutsDialog.open()).toBe(false);
+    expect(host.runCommand('help.shortcuts')).toBe(false);
+  });
+});

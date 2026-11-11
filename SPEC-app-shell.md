@@ -339,7 +339,7 @@ interface Settings {
 Dialog shell, width `--dialog-w-md` (560), top `--dialog-top` (96), bottom at least
 `--dialog-bottom` (32) above the content bottom; the body scrolls with an always-visible thin
 scrollbar and ends on a rule above the footer. Title "Keyboard shortcuts". Sections in this order
-with `--type-sm` 600 headings, 16 px above each; rows 28 high with a 1 px `--border` rule; keys in
+with `--type-sm` 600 headings, 16 px above each; rows at least 28 high (they grow when alternatives wrap, e.g. C H N O S P F I, never clipped; DEVIATIONS) with a 1 px `--chrome-bg` rule (as `shell.css`); keys in
 a 136 px column as key chips (`kbd`, `--kbd-h` 20 high, min-width 20, padding 0 4, 1 px
 `--border-control` with a 2 px bottom edge, `--radius-xs`, `--type-xs`, `--chrome-bg`; a
 combination is one chip per key joined by a muted "+"; alternatives side by side), meaning on the

@@ -397,3 +397,58 @@ body,
 .seg-item:focus-visible {
   outline-offset: -2px;
 }
+
+/* ---- Keyboard shortcuts dialog (A12) ---- */
+
+/*
+ * The list scrolls inside the dialog; a rule above the footer and an always-visible thin
+ * scrollbar show that there is more below (the footer stays fixed).
+ */
+.shortcuts .dialog-body {
+  margin-right: calc(-1 * var(--space-5));
+  padding-right: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  overflow-y: scroll;
+}
+
+.shortcuts .dialog-body::-webkit-scrollbar {
+  width: var(--space-3);
+}
+
+.shortcuts .dialog-body::-webkit-scrollbar-thumb {
+  border: 2px solid var(--canvas-bg);
+  border-radius: var(--radius-sm);
+  background: var(--text-disabled);
+}
+
+.shortcuts .dialog-foot {
+  margin-top: var(--space-5);
+}
+
+.sc-section {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--text);
+  font: var(--type-sm);
+  font-weight: 600;
+}
+
+.sc-section:first-child {
+  margin-top: 0;
+}
+
+/* Rows are at least 28 high and grow when alternatives wrap (C H N O S P F I); never clipped. */
+.sc-row {
+  display: grid;
+  grid-template-columns: 136px 1fr;
+  align-items: center;
+  column-gap: var(--space-4);
+  min-height: 28px;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--chrome-bg);
+}
+
+.sc-meaning {
+  color: var(--text);
+  font: var(--type-sm);
+}

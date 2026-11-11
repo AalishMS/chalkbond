@@ -77,9 +77,16 @@ export async function createWindowHost(main: ChalkbondApi, textFocus = focusedTe
     notify: (kind: 'info' | 'error', text: string) => controller.notify(kind, text),
   };
   const session = createSession();
-  // M1: an in-window dialog is open (Export; the Keyboard shortcuts dialog, A12).
+  // M1: an in-window dialog is open (Export or Keyboard shortcuts); one at a time.
   let exportOpen = (): boolean => false;
-  const modal = (): boolean => exportOpen();
+  let shortcutsOpen = false;
+  const shortcutsListeners = new Set<() => void>();
+  const setShortcuts = (open: boolean): void => {
+    if (open === shortcutsOpen) return;
+    shortcutsOpen = open;
+    for (const listener of [...shortcutsListeners]) listener();
+  };
+  const modal = (): boolean => exportOpen() || shortcutsOpen;
   const menuState = () => deriveMenuState(controller, { textFocus: textFocus(), modal: modal() });
   let sent: SessionUpdate | undefined;
   /** N1 for the current session, document and menu; sent only when one of them changed. */
@@ -145,11 +152,14 @@ export async function createWindowHost(main: ChalkbondApi, textFocus = focusedTe
     open: () => void fileFlows.open(),
     save: () => void fileFlows.save(),
     saveAs: () => void fileFlows.saveAs(),
-    exportDialog: () => exportFlow.open(),
+    exportDialog: () => {
+      if (!modal()) exportFlow.open();
+    },
     copy: () => void copyFlow.copy(),
     paste: () => void copyFlow.paste(),
-    // The Keyboard shortcuts dialog arrives with A12; the command is recorded (TH2) until then.
-    shortcuts: () => undefined,
+    shortcuts: () => {
+      if (!modal()) setShortcuts(true);
+    },
     run: (cmd) => controller.run(cmd),
   };
   return {
@@ -165,6 +175,15 @@ export async function createWindowHost(main: ChalkbondApi, textFocus = focusedTe
     cancelMenu: scheduler.cancel,
     /** An in-window dialog is open: K1 and every menu item do nothing. */
     modal,
+    /** The Keyboard shortcuts dialog (A12): opened by `actions.shortcuts`, closed by itself. */
+    shortcutsDialog: {
+      open: (): boolean => shortcutsOpen,
+      close: (): void => setShortcuts(false),
+      subscribe(listener: () => void): () => void {
+        shortcutsListeners.add(listener);
+        return () => shortcutsListeners.delete(listener);
+      },
+    },
     actions,
     /** A `main:event` menu command, re-checked against the state now (R19). */
     runCommand: (command: string): boolean => runAppCommand(command, menuState(), actions),
