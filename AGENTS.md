@@ -14,9 +14,13 @@ The product spec is `SPEC.md`; the module list is `CAPABILITY-MAP.md`. Module id
 | 1 | `doc-model` | none | done |
 | 2 | `chem-core` | doc-model | done |
 | 3 | `svg-render` | doc-model, chem-core | done; Windows Office checks in `docs/windows-checklist.md` still unticked |
-| 4 | `editor` | doc-model, chem-core, svg-render | done; "Editor" checks in `docs/windows-checklist.md` still unticked; the two preset segments are 64×20 (mock-up), under the 24 px target of the spec's Accessibility section |
-| 5 | `clipboard-export` | doc-model, svg-render | next; no spec yet |
-| 6 | `app-shell` | all | scaffold only (empty window) |
+| 4 | `editor` | doc-model, chem-core, svg-render | done; "Editor" checks in `docs/windows-checklist.md` still unticked |
+| 5 | `clipboard-export` | doc-model, svg-render | implemented; Windows acceptance open (`docs/windows-checklist.md`) |
+| 6 | `app-shell` | all | implemented; Windows acceptance open (`docs/windows-checklist.md`) |
+
+Version 1.0.0 is prepared in `package.json`; the release is pending Checkpoint Z on a Windows
+machine (`docs/windows-checklist.md`). Everything was built and verified on Linux; no installer
+has been built or run on Windows.
 
 ## Workflow
 
@@ -50,7 +54,18 @@ node docs/mockups/editor/build.mjs --png out/mockups   # the approved mock-up PN
 npx vitest run --project perf                          # editor and core perf budgets alone
 npx playwright test --project=e2e e2e/editor-perf.spec.ts   # frame-time probe (needs a build)
 npm run build             # out/
+npm run icons             # regenerate build/icon.ico, build/chalk-file.ico, build/icon.png (deterministic)
+npm run notices           # regenerate build/THIRD-PARTY-NOTICES.txt from the runtime dependencies
+npm run dist:win          # electron-vite build, then the NSIS installer -> dist/Chalkbond-<version>-setup.exe (Windows; downloads the NSIS toolset once)
+npm run test:packaged     # smoke test of the unpacked packaged app (not in test:e2e, shots or check)
 ```
+
+Linux development check of packaging (not a release gate): `npx electron-vite build`, then
+`npx electron-builder --linux dir` run **from a terminal** (electron-builder writes
+`dist/builder-effective-config.yaml` only when its output is a terminal and `CI` is unset; without
+a terminal use `script -qec "npx electron-builder --linux dir" /dev/null`), then
+`npm run test:packaged` (it launches `dist/linux-unpacked`). On Windows the test launches
+`dist/win-unpacked/Chalkbond.exe` and uses the real `%APPDATA%\Chalkbond`.
 
 `npm run check` runs `typecheck` (four tsc projects: node, web, core, tooling), `eslint .`,
 `prettier --check .` and `vitest run`. It does not run e2e, coverage or `golden:sheet`.
@@ -80,7 +95,9 @@ Vitest projects (`vitest.config.mts`):
 - No network at runtime, no telemetry. New dependencies need approval; versions are pinned exactly.
 - Commits are conventional: `feat(module): S5 short subject`, `fix(module): ...`,
   `test(module): ...`, `docs: ...`. See `git log --oneline`. Do not push unless asked.
-- Coverage targets (specs): `core/*` at least 90 % lines (doc-model 95 %), `renderer/editor` 70 %.
+- Coverage targets (specs, enforced as thresholds in `vitest.config.mts`): `core/*` at least 90 % lines
+  (doc-model 95 %; `core/clipboard-export` 90 %), `renderer/editor` 70 %,
+  `renderer/clipboard-export/model`, `src/main/model` and `renderer/app/model` 90 %.
 
 ## Module notes
 
@@ -122,6 +139,9 @@ Vitest projects (`vitest.config.mts`):
 - `e2e/font-calibration.spec.ts` checks the table and text ink boxes against real text rendering
   in Electron's Chromium (real Arial on Windows). Fix box errors in the renderer, not the tolerance.
 - Valence warnings, selection and hit-testing are not drawn here; the editor overlays them.
+- Property 5 (`svg-render.prop.test.ts`) compares `bounds` with doc-model's hull of the drawn items;
+  keys whose geometry is not ink are left out of that oracle (callout anchor, hash bond, caption on
+  atoms without ink). Fix such a failure in the oracle only when the scene's ink is right.
 
 ### editor
 
@@ -173,10 +193,67 @@ Vitest projects (`vitest.config.mts`):
   `src/renderer/editor/perf.test.ts` and `e2e/editor-perf.spec.ts`. A miss means a request for
   svg-render's `createRenderer` (spec first), never a looser budget or timeout. Never raise a
   timeout to get green: find what is slow.
-- Known caveats: the preset segments are 64x20 (mock-up and Control states) against 24 px in
-  Accessibility (`editor-a11y.spec.ts` pins 64x20; the owner decides); `--text-muted` on
-  `--active-hover-bg` is 4.60 : 1, `--border-control` on `--pressed-bg` 2.96 : 1 (transient; the spec
-  asks for bars and canvas only).
+- Preset segments are 64x24 (editor R41), so every status-bar control meets the 24 px hit target;
+  `--border-control` is `#79818c`, 3 : 1 or better on rest, hover and pressed (R42). Both are
+  asserted in `editor-tokens.test.ts` and `editor-a11y.spec.ts`.
+- Host seam additions (R44-R49): the `actions` slot after Redo, `notify` and the `busy` event,
+  right-click on an unselected item selects it first, `focus-name-field` is host-callable
+  (`canRun` is true when no label or text editor is open; `run` records a focus request and the
+  view moves DOM focus; R47), IME blur defers the commit to `compositionend` (R48), and "Zoom to
+  100%" sets zoom 1 (R49, superseding R12).
+
+### clipboard-export
+
+- Spec `SPEC-clipboard-export.md`. Pure code in `src/core/clipboard-export` (payload, picture, PNG
+  `tEXt` and `pHYs` chunks, SVG metadata, PDF incremental update, paste decision, names); depends
+  on doc-model and svg-render only. Main code in `src/main/clipboard-export` (`clipboard.ts`,
+  `formats.ts`, `pdf.ts`); renderer in `src/renderer/clipboard-export` (Copy button, Export dialog,
+  `rasterise.ts`, pure flows in `model/`).
+- The drawing travels as one compact ASCII `.chalk` string (`drawingPayload`, X5) in every carrier:
+  clipboard entry, PNG `tEXt`, SVG `<metadata>`, PDF stream. It is read back only by `parse`.
+  The editable payload stays within `MAX_FILE_BYTES` (20 MiB); a picture carrier may be up to
+  `MAX_PICTURE_BYTES` (64 MiB) (C9).
+- `src/main/clipboard-export/formats.ts` names the clipboard keys (CB-W1). They are the preferred
+  keys and UNVERIFIED until the C3 probes (`e2e/win/clipboard-facts.spec.ts`, P1-P7, P2b) run on
+  Windows; `selectFormats` carries the named fallbacks. Never choose keys from Linux observations.
+  The PDF probes P8 and P9 (`e2e/pdf-facts.spec.ts`) run on Linux (outcome PDF-A).
+- Rasterising happens in the renderer (SVG, `<img>`, `<canvas>`, `toDataURL`, X10, C11); the PDF is
+  printed in main and embedded in the renderer (R2), so main imports no core (app-shell SEC9).
+  No new dependency (X11).
+- Ctrl+C / Ctrl+V / Ctrl+X in a text target are never handled here (R4); pasting the editor's own
+  last copy follows the generation rule (C8, CB-P1). `onCopy` bumps the generation synchronously.
+
+### app-shell
+
+- Spec `SPEC-app-shell.md` (Decisions O1-O9, A-rows, R1-R26); mock-ups `docs/mockups/shell/`
+  (`shell-tokens.css`, `shell-icons.svg` are normative; the lifted copies in `src/renderer/app/`
+  stay separate from the editor's, R12). Plan and todo: `tasks/plan-app-shell.md`,
+  `tasks/todo-app-shell.md` (A1-A20).
+- Folders: `src/main` (Electron main), `src/preload` (imports only `electron` and
+  `src/shared/channels`), `src/shared` (channel names, IPC types, the menu rules in `menu.ts`),
+  `src/renderer/app` (the host that owns the editor controller). `src/main/model` and
+  `src/renderer/app/model` are pure (no `electron`, no Node built-ins, no DOM, no timers; ESLint
+  and `tests/tooling/app-lint.test.ts`), unit-tested at 90 % lines. The renderer imports the editor
+  only through its `index.ts`.
+- Main imports no `src/core` module (SEC9). Every IPC channel goes through one `handle()` wrapper
+  that checks the sender frame, validates with Zod and logs (SEC5, SEC6, `src/main/ipc.ts`).
+- The renderer never holds a path: files are opaque refs (`FileRef`); a dropped file's path is read
+  inside the preload (R8, SEC14); native dialog texts come from main's message table.
+- Menus and native boxes are data: the pure menu model and message table are asserted in unit
+  tests, and e2e stubs `dialog` and `Menu.prototype.popup` and reads what Electron received. Menu
+  items never register accelerators and carry no `role` (M2, R1); the renderer owns all keys.
+- Test hook and flags (TH1, R9): `window.__chalkbondTest` exists only for an unpackaged build
+  started with `--chalkbond-test-hooks`; `--chalkbond-user-data=<dir>` isolates settings, recovery
+  and the single-instance lock; both are ignored when packaged. `e2e/launch.ts` passes them (and a
+  fresh temp folder) on every launch; `e2e/stub-dialogs.mjs` scripts native dialogs in order.
+  Windows-only specs live in `e2e/win/` (`testIgnore` on other platforms, R10); nothing is skipped.
+- Every e2e file from A3 on ends by asserting `__chalkbondTestMain.blockedRequests === 0` (SC10).
+- Settings, the recovery file and logs live in `%APPDATA%\Chalkbond`. Recovery is at most 10 s
+  behind (O5); at a Windows session end main asks for a best-effort flush only (R5, R24, R25).
+- Packaging: `electron-builder.yml` (spec I1: NSIS one-click, per user, unsigned, `publish: null`).
+  `build/icon.ico` and `build/chalk-file.ico` are generated by `npm run icons` without a new
+  dependency; `build/THIRD-PARTY-NOTICES.txt` by `npm run notices` (checked by
+  `tests/tooling/app-notices.test.ts`). Do not change them by hand.
 
 ## Gotchas
 
@@ -201,21 +278,32 @@ Vitest projects (`vitest.config.mts`):
 - Keep the project green on Windows and Linux: no POSIX-only syntax in npm scripts and LF line
   endings (`.gitattributes`). `e2e/launch.ts` has a Linux branch.
 
-## Next: clipboard-export
+- A coverage or test run that seems to hang with one busy worker is usually a failed property test
+  shrinking (fast-check). Wait, or rerun that file with the verbose reporter
+  (`npx vitest run --project unit <file> --reporter=verbose`); the failing seed is printed.
+- `npm run test:packaged` launches a packaged app, which ignores `-r`: the OS-mouse guard cannot be
+  loaded into it, so that test sends no pointer input and asserts nothing about hover. It needs a
+  prior `electron-builder` build (`dist/win-unpacked` or, on Linux, `dist/linux-unpacked`), and it
+  reads the version from `package.json`, so rebuild after a version change.
+- Windows session-end behaviour (R24, R25: no prompt, best-effort recovery flush, the close guard
+  after a cancelled shutdown) is proven on Linux only as guard logic with synthetic
+  `query-session-end` / `session-end` events. A real shutdown, a cancelled shutdown and IME are
+  Windows checklist items. Windows 11's Notepad does not ask before closing, so it is no test
+  subject for a cancelled shutdown.
 
-Write `SPEC-clipboard-export.md` first and get it approved. The editor hands it (details in
-`SPEC-editor.md` "Seam to the host"):
+## Maintenance
 
-- `createEditorController(options)` (`src/renderer/editor/index.ts`) with `getDoc()`,
-  `getSelection()`, `run(cmd)` / `canRun(cmd)`, `subscribe`, `undoLabel` / `redoLabel`. Commands:
-  undo, redo, cut, copy, paste, duplicate, delete, select-all, zoom-*, clean-up, toggle-kekulé,
-  tidy-reaction, `{set-preset}`, `{paste-sub, sub}` (host read a Chalkbond fragment from the
-  clipboard), `{insert-text, text}` (host read a name, SMILES or Molfile).
-- `onCopy(sub, doc, selection)` fires on Ctrl+C / Ctrl+X with the selected `SubDoc`; the editor's
-  own clipboard is in-app only (CB1). The editor never builds export SVG: render with svg-render
-  from `getDoc()` / `getSelection()` or the payload.
-- A `context-menu` event `{target: HostHit | null, screen}` in canvas px; the editor draws no menu.
-- `focus-name-field` is view-only: on the controller `canRun` is false and `run` does nothing.
-  `shortcuts: 'canvas-only'` leaves the Ctrl rows (K1) to the host's menu.
-- `isDirty()`, `markSaved()`, `load(doc)` and the `dirty` event (app-shell owns save and open).
-- Open for later: the Windows "Editor" checklist (IME, Word paste, scaling) is still unticked.
+All six modules are implemented and verified on Linux. What is open is Windows acceptance:
+`docs/windows-checklist.md` starts with "Checkpoint Z — release" (the ordered list of commands and
+human checks for the Windows machine) and holds the "Clipboard and export" and "App shell and
+installer" sections, all unticked. Version 1.0.0 is not declared released until they pass.
+
+- Windows gates still open: `npm run test:e2e` including `e2e/win/`, `npm run test:e2e:os-input`,
+  the C3 clipboard probes P1-P7 and P2b (`src/main/clipboard-export/formats.ts` still holds
+  UNVERIFIED preferred keys; never select keys from Linux observations), `npm run dist:win`,
+  `npm run test:packaged` on Windows, the installer and installed sizes in `SPEC-app-shell.md` I1
+  (unmeasured), Office, IME, shutdown and display scaling.
+- Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
+  the code and tests. Decisions of later dates supersede older text anywhere (including this file).
+- A bug found in a finished module: add a failing regression test first. A property-test failure
+  prints a seed: reproduce with it, fix the cause, and add the counterexample as a fixed test.

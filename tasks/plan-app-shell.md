@@ -124,6 +124,10 @@ viewed against their references; pushed. Logs: `/tmp/chalkbond-checkpoint-W.A0LJ
 stays open: native menus looked at by hand against A04–A07, the Windows gates (e2e/win, native
 frame, Arial, IME, Office, os-input, installer) are not run, and no Windows box is ticked.
 
+Checkpoint X, Linux run verified by the orchestrator (2026-11-11): at `4d3f739` (previous orchestrator) `npm run check` exit 0 (4013 tests), `npm run test:e2e` exit 0 (285), A15 shots viewed; then at `9056c4b` with the recovery corrections A14a/A14b (R24, R25): `npm run check` exit 0 (4026 tests), isolated `npm run test:e2e` exit 0 (288); pushed. Logs `/tmp/chalkbond-checkpoint-X2.bWX6G5/`. The checkpoint stays open: every Windows gate, including real shutdown, cancelled shutdown and IME.
+
+Checkpoint Y so far, Linux (2026-11-11): at `7d96ea0` `npm run check` exit 0 (4037 tests), `npm run test:e2e` exit 0 (296), A18 shots (2) viewed against A03 and A08a, Linux packaged smoke 6 passed against `dist/linux-unpacked`; at `30ac19c` `npm run check` exit 0 (4037), `npm test -- --coverage` exit 0 with the four new thresholds, `npm run test:e2e` exit 0 (297); pushed. Logs `/tmp/chalkbond-checkpoint-Y1.hpAOkL/`, `/tmp/chalkbond-checkpoint-Y2.Vg63HX/`. One of five repeated coverage runs failed svg-render property 5 (seed -1130545056), fixed in the commit `8a2f797` (the property's oracle counted the target point of a caption on atoms without ink). Checkpoint Z is not reached: `npm run dist:win`, the Windows `npm run test:packaged`, `e2e/win`, the C3 probes and all human checks are not run.
+
 ### Phase X: safety net and memory
 - [ ] A14: Recovery (RC1–RC6)
 - [ ] A14a: Session end and the close guard (R24)
@@ -149,22 +153,24 @@ frame, Arial, IME, Office, os-input, installer) are not run, and no Windows box 
 
 ## Success Criteria Coverage
 
-| SC | Criterion (short) | Tasks |
-|---|---|---|
-| 1 | `npm run check`; model folders ≥ 90 % | every task, A19 |
-| 2 | Menu model covers every row; clicked by id; no registered accelerator; K2 | A11 |
-| 3 | Save then open round trip | A8 |
-| 4 | Prompt on New, Open, second instance, close | A8, A15 |
-| 5 | Exported PNG / SVG (PDF under A) reopen; Save goes to Save as | A9, C11, C12 |
-| 6 | Newer and damaged files: wording, nothing changed | A9 |
-| 7 | Recovery after a kill | A14 |
-| 8 | Second launch opens in the first window | A15 |
-| 9 | Test hook only with the flag, unpackaged; no fiber code | A2, A17 |
-| 10 | No request leaves the app; permissions denied | A3 (counter checked by every e2e file from then on) |
-| 11 | Handlers reject bad payloads and other frames | A3, every channel task |
-| 12 | Content minimum 960×640; rail fits with the menu bar | A6, A11 |
-| 13 | Icons; installer builds; packaged app launches | A16, A17 |
-| 14 | Shots match mock-ups; Windows checks ticked | every UI task; A20 (checklist), human |
+Swept at A20 (2026-11-11, Linux). "Linux" = run and passing on the development machine; "Windows-unrun" = written, not run here; "human" = needs eyes, Office or a Windows machine, box in `docs/windows-checklist.md` section "App shell and installer" unticked.
+
+| SC | Criterion (short) | Tasks | Proof and status |
+|---|---|---|---|
+| 1 | `npm run check`; model folders ≥ 90 % | every task, A19 | `npm run check` and `npm test -- --coverage` with the thresholds in `vitest.config.mts` (`src/main/model` and `src/renderer/app/model` at 100 % lines at A19). Linux |
+| 2 | Menu model covers every row; clicked by id; no registered accelerator; K2 | A11 | `src/main/model/menu-model.test.ts`, `src/shared/menu.test.ts`, `src/renderer/app/model/keys.test.ts`, `e2e/app-menus.spec.ts`, `e2e/app-keys.spec.ts` (Linux). Native look of the menus: checklist (human) |
+| 3 | Save then open round trip | A8 | `e2e/app-files.spec.ts` (Linux) |
+| 4 | Prompt on New, Open, second instance, close | A8, A15 | `e2e/app-files.spec.ts`, `e2e/app-instance.spec.ts`, `src/renderer/app/model/file-flows.test.ts` with stubbed boxes (Linux). Real title-bar ×, Alt+F4, File > Exit: checklist (human) |
+| 5 | Exported PNG / SVG (PDF under A) reopen; Save goes to Save as | A9, C11, C12 | `e2e/app-open-pictures.spec.ts`, `e2e/export-png.spec.ts`, `e2e/export-svg.spec.ts`, `e2e/export-pdf.spec.ts` (Linux) |
+| 6 | Newer and damaged files: wording, nothing changed | A9 | `e2e/app-open-errors.spec.ts`, `src/main/model/messages.test.ts` (Linux) |
+| 7 | Recovery after a kill | A14 | `e2e/app-recovery.spec.ts` (Linux, process kill). Real power cut and Windows shutdown (R24, R25): checklist (human, Windows-unrun) |
+| 8 | Second launch opens in the first window | A15 | `e2e/app-instance.spec.ts` (Linux). Explorer double-click and the `.chalk` association: checklist (human) |
+| 9 | Test hook only with the flag, unpackaged; no fiber code | A2, A17 | `src/main/model/args.test.ts`, `src/renderer/app/model/test-hook.test.ts`, `e2e/app-test-hook.spec.ts`, packaged smoke `e2e/packaged/app.packaged.ts` (Linux against `dist/linux-unpacked`; the Windows run is Windows-unrun) |
+| 10 | No request leaves the app; permissions denied | A3 (counter checked by every e2e file from then on) | `e2e/app-security.spec.ts`, `tests/tooling/app-security.test.ts` (Linux) |
+| 11 | Handlers reject bad payloads and other frames | A3, every channel task | `src/main/ipc.test.ts`, `src/main/ipc-schemas.test.ts` (Linux) |
+| 12 | Content minimum 960×640; rail fits with the menu bar | A6, A11 | `e2e/app-window.spec.ts` (Linux). The Windows native frame: `e2e/win/app-window-memory.spec.ts` and the display-scaling checklist item (Windows-unrun, human) |
+| 13 | Icons; installer builds; packaged app launches | A16, A17 | `tests/tooling/app-icons.test.ts`, `tests/tooling/app-notices.test.ts` (Linux); `npm run test:packaged` against `dist/linux-unpacked` (Linux development check). `npm run dist:win` and the Windows packaged run: Windows-unrun |
+| 14 | Shots match mock-ups; Windows checks ticked | every UI task; A20 (checklist), human | Shots `e2e/shots/A4`, `A6`, `A8`–`A15`, `A18`, `C8`–`C12` compared by eye by the orchestrator at each checkpoint (Linux). The Windows checks are in the checklist section "App shell and installer", all unticked (human, Windows-unrun) |
 
 ## Screenshot review
 

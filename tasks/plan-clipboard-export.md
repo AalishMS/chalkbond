@@ -130,6 +130,10 @@ viewed against their references; pushed. Logs: `/tmp/chalkbond-checkpoint-W.A0LJ
 stays open: native menus looked at by hand against A04–A07, the Windows gates (e2e/win, native
 frame, Arial, IME, Office, os-input, installer) are not run, and no Windows box is ticked.
 
+Checkpoint X, Linux run verified by the orchestrator (2026-11-11): at `4d3f739` (previous orchestrator) `npm run check` exit 0 (4013 tests), `npm run test:e2e` exit 0 (285), A15 shots viewed; then at `9056c4b` with the recovery corrections A14a/A14b (R24, R25): `npm run check` exit 0 (4026 tests), isolated `npm run test:e2e` exit 0 (288); pushed. Logs `/tmp/chalkbond-checkpoint-X2.bWX6G5/`. The checkpoint stays open: every Windows gate, including real shutdown, cancelled shutdown and IME.
+
+Checkpoint Y so far, Linux (2026-11-11): at `7d96ea0` `npm run check` exit 0 (4037 tests), `npm run test:e2e` exit 0 (296), A18 shots (2) viewed against A03 and A08a, Linux packaged smoke 6 passed against `dist/linux-unpacked`; at `30ac19c` `npm run check` exit 0 (4037), `npm test -- --coverage` exit 0 with the four new thresholds, `npm run test:e2e` exit 0 (297); pushed. Logs `/tmp/chalkbond-checkpoint-Y1.hpAOkL/`, `/tmp/chalkbond-checkpoint-Y2.Vg63HX/`. One of five repeated coverage runs failed svg-render property 5 (seed -1130545056), fixed in the commit `8a2f797` (the property's oracle counted the target point of a caption on atoms without ink). Checkpoint Z is not reached: `npm run dist:win`, the Windows `npm run test:packaged`, `e2e/win`, the C3 probes and all human checks are not run.
+
 ### Phase Y: hardening (with app-shell A16–A20)
 - [ ] C13: Coverage thresholds, copy performance, "Clipboard and export" checklist section
 

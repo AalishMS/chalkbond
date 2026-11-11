@@ -23,12 +23,12 @@ doc-model ──► chem-core ──► svg-render ──► editor ────
 ## Build order
 
 0. `app-shell` **scaffold only** — empty window launches, test/lint/build tooling works.
-1. `doc-model`
-2. `chem-core`
-3. `svg-render`
-4. `editor` (largest module; its spec splits work into tool groups): **done**; `clipboard-export` is next
-5. `clipboard-export`
-6. `app-shell` complete + Windows installer
+1. `doc-model`: **done**
+2. `chem-core`: **done**
+3. `svg-render`: **done** (Windows Office checks unticked)
+4. `editor` (largest module; its spec splits work into tool groups): **done** (Windows "Editor" checks unticked)
+5. `clipboard-export`: **implemented**; Windows acceptance open (`docs/windows-checklist.md`)
+6. `app-shell` complete + Windows installer: **implemented**; version 1.0.0 prepared, Windows acceptance and the installer build open (`docs/windows-checklist.md`, Checkpoint Z)
 
 Each module runs Specify → Plan → Tasks → Implement, gated on review.
 Shared stack, commands, code style and boundaries live in `SPEC.md`.

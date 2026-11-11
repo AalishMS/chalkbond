@@ -673,7 +673,7 @@ and `icon.png`. A check of `dist/builder-effective-config.yaml`: `nsis.oneClick:
 `electronLanguages: [en-US]`.
 
 **Acceptance criteria:**
-- [ ] `npm run dist:win` succeeds on Windows; `dist/Chalkbond-0.1.0-setup.exe` (version bumped in A20) exists and is between 50 and 200 MB
+- [ ] `npm run dist:win` succeeds on Windows; `dist/Chalkbond-1.0.0-setup.exe` (version bumped in A20) exists and is between 50 and 200 MB
 - [ ] `npm run test:packaged` green; the effective-config check passes; sizes written in the spec
 - [ ] No install was needed for any of the above (installing is the checklist's job)
 - Linux results (development checks, not the Windows gates above; no Windows machine here):
@@ -756,9 +756,10 @@ once and update the size row. Sweep both specs' success criteria into the plans'
 **Tests first:** none (docs); the release checkpoint commands are the gate.
 
 **Acceptance criteria:**
-- [ ] Checklist sections present and unticked; every human-only SC of both specs appears in them
-- [ ] AGENTS.md, README.md, CAPABILITY-MAP.md, SPEC.md updated; version 1.0.0; `dist/Chalkbond-1.0.0-setup.exe` built
-- [ ] Both plans' SC tables point every criterion at a passing test, a shot or a checklist item
+- [x] Checklist sections present and unticked; every human-only SC of both specs appears in them
+- [x] AGENTS.md, README.md, CAPABILITY-MAP.md, SPEC.md updated; `package.json` and `package-lock.json` at version 1.0.0 (release pending the Windows checkpoint; Linux worker, 2026-11-11)
+- [ ] `dist/Chalkbond-1.0.0-setup.exe` built and its sizes written in the spec's I1 table (needs Windows, Checkpoint Z step 6 and 8; not run)
+- [x] Both plans' SC tables point every criterion at a passing test, a shot or a checklist item (windows-unrun and human items marked)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots`, `npm run dist:win`,
 `npm run test:packaged`

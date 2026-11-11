@@ -200,6 +200,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 
 | Date | Decision |
 |---|---|
+| 2026-11-11 | A20: version 1.0.0 prepared (`package.json`, `package-lock.json`); release pending the Windows checkpoint (Checkpoint Z, `docs/windows-checklist.md`). No Windows run of the installer, `e2e/win`, the C3 probes or the human checks has happened; the I1 installer and installed sizes are unmeasured. |
 | 2026-11-11 | app-shell A11 (R18, R19; editor R49 supersedes R12): "Zoom to 100%" from View, Ctrl+1 and the status-bar readout sets zoom 1 (100 %); new and loaded drawings still open at the V2 default (150 % Slides, 416.67 % Handout). Help > Keyboard shortcuts is enabled when idle, matching K1's F1. The M1 enabled rules live once in `src/shared/menu.ts`, re-checked by the renderer before a menu command runs. |
 | 2026-11-11 | clipboard-export O7: positive fractional DPI only when no positive integer fits raster caps; deterministic integer search then 64-step feasible-endpoint bisection; pHYs rounding unchanged. |
 | 2026-11-10 | C2/A4 editor host seam: shared notices, busy transitions, right-click selection before menu, and host-callable name-field focus (SPEC-editor R45–R47). TH2 gains run(cmd) to verify host-direct commands. |

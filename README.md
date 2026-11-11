@@ -19,8 +19,11 @@ Modules and their order are defined in `CAPABILITY-MAP.md`.
 | `chem-core` | OpenChemLib wrapper: valence, formula, SMILES/Molfile, name dictionary | done |
 | `svg-render` | Document to SVG with style presets | done (Windows Office checklist not yet ticked) |
 | `editor` | Interactive canvas and drawing tools | done (Windows "Editor" checklist not yet ticked) |
-| `clipboard-export` | Clipboard, PNG/SVG/PDF export | not started (next) |
-| `app-shell` | Menus, dialogs, settings, installer | scaffold only |
+| `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; Windows acceptance open |
+| `app-shell` | Menus, dialogs, settings, installer | implemented; Windows acceptance open |
+
+Version 1.0.0 is prepared. It is not released: the installer has not been built or run on Windows,
+and the checks in `docs/windows-checklist.md` (Checkpoint Z) are all open.
 
 ## The editor
 
@@ -33,6 +36,32 @@ reaction), warns about valence problems, shows the formula and molar mass, and u
 gesture. Everything is reachable by keyboard. `npm run shots` builds the app and writes
 screenshots of every screen to `out/shots/<task>/`; the approved mock-ups to compare with come
 from `node docs/mockups/editor/build.mjs --png out/mockups`.
+
+## Install (Windows 10/11 x64)
+
+These steps describe the installer once it has been built (`npm run dist:win`, below). They have
+not been tried on Windows yet.
+
+1. Copy `Chalkbond-1.0.0-setup.exe` to the computer. No network and no administrator rights are needed.
+2. Run it. The installer is unsigned, so Windows shows "Windows protected your PC": choose
+   **More info**, then **Run anyway**.
+3. Chalkbond installs for your user only and opens by itself. It adds Start-menu and desktop
+   shortcuts and associates `.chalk` files.
+4. To remove it, use Settings > Apps. Your drawings and `%APPDATA%\Chalkbond` (settings, recent
+   files, recovery) are kept.
+
+## First use
+
+- Type a name such as "ethanol" in the name field, or draw with the tool rail (Bond, Chain, Ring,
+  Atom and the others). Help > Keyboard shortcuts lists every key.
+- **Copy** (top right, or Ctrl+C) puts the selection, or the whole drawing when nothing is
+  selected, on the clipboard. Paste it into PowerPoint or Word with Ctrl+V: it arrives as a
+  transparent picture, and pasting it back into Chalkbond gives an editable drawing. The preset at
+  the bottom right (Slides or Handout) sets the size it takes in Office.
+- **Save** (Ctrl+S) writes a `.chalk` file; **Open** (Ctrl+O) reads one. **Export** (Ctrl+E) writes
+  PNG, SVG or PDF; an exported PNG or SVG (and PDF) can be opened again in Chalkbond and edited.
+- If the computer loses power, start Chalkbond again: a box offers to recover the drawing (it is
+  saved at most 10 seconds behind).
 
 ## Prerequisites
 
@@ -52,7 +81,10 @@ npm run test:e2e            # electron-vite build, then Playwright against the b
 npm run golden:sheet        # write out/golden-sheet.html from the committed goldens
 npm run shots               # build, then write editor screenshots to out/shots/<task>/
 npm run build               # electron-vite build -> out/
-npm run dist:win            # NSIS installer for Windows x64 -> dist/
+npm run dist:win            # NSIS installer for Windows x64 -> dist/Chalkbond-<version>-setup.exe
+npm run test:packaged       # smoke test of the unpacked packaged app (after dist:win)
+npm run icons               # regenerate the app and file icons in build/
+npm run notices             # regenerate build/THIRD-PARTY-NOTICES.txt
 ```
 
 Other commands: `npm run typecheck`, `npm run lint`, `npm run format`, `npm run format:check`,
@@ -67,6 +99,14 @@ node scripts/build-compounds.mjs                # rebuild resources/compounds/co
 ```
 
 If the screenshot step cannot find a browser, run `npx playwright install chromium`.
+
+## Building from source
+
+On Windows 10/11 x64 with Node.js and npm: `npm ci`, then `npm run dist:win`. The first build
+downloads the NSIS toolset once, so that machine needs network access that one time; the app
+itself never uses the network. The installer is `dist/Chalkbond-1.0.0-setup.exe`. Run
+`npm run test:packaged` afterwards to smoke-test `dist/win-unpacked`. The manual checks for a
+release are in `docs/windows-checklist.md`.
 
 ## Layout
 
@@ -88,5 +128,5 @@ docs/windows-checklist.md   manual checks on the Windows machine
 
 - `SPEC.md`: objective, stack, commands, code style, boundaries, decisions log.
 - `CAPABILITY-MAP.md`: module list, dependencies, build order.
-- `SPEC-doc-model.md`, `SPEC-chem-core.md`, `SPEC-svg-render.md`, `SPEC-editor.md`: one per finished module.
+- `SPEC-doc-model.md`, `SPEC-chem-core.md`, `SPEC-svg-render.md`, `SPEC-editor.md`, `SPEC-clipboard-export.md`, `SPEC-app-shell.md`: one per module.
 - `AGENTS.md`: working rules for coding agents (also useful for people). `CLAUDE.md` adds notes for Claude Code.

@@ -1,7 +1,29 @@
 # Windows verification checklist
 
+**Checkpoint Z (release) has not been run.** Nothing in this file has been run on Windows for
+version 1.0.0: every command in "Checkpoint Z" is unrun and every box in the sections "Clipboard
+and export" and "App shell and installer" is unticked. The release is not declared until they
+pass.
+
 Run on the Windows machine (PowerShell) at each checkpoint. Tick items in the commit that
 records the checkpoint.
+
+## Checkpoint Z — release
+
+Run on the Windows machine (PowerShell), in this order, from a clean clone. Record each result in
+the commit that ticks the boxes.
+
+1. `npm ci`
+2. `npm run check`
+3. `npm run test:e2e` (builds first; includes the Windows-only `e2e/win/` specs)
+4. `npm run test:e2e:os-input` (opt-in; moves the real mouse cursor, do not touch the mouse while it runs)
+5. The C3 clipboard probes P1-P7 and P2b: `e2e/win/clipboard-facts.spec.ts` (inside step 3, or alone with `npx playwright test e2e/win/clipboard-facts.spec.ts` after `npm run build`), as `tasks/todo-clipboard-export.md` C3 and `SPEC-clipboard-export.md` "Testing" describe them. Record the observed results in the spec's "Facts relied on" and in `src/main/clipboard-export/formats.ts` (its keys are still marked UNVERIFIED).
+6. `npm run dist:win` (needs network once for the NSIS download)
+7. `npm run test:packaged` (against `dist/win-unpacked`)
+8. Write the installer size and the installed size into `SPEC-app-shell.md`, packaging item I1 (both are unmeasured).
+9. The human sections below ("Clipboard and export" and "App shell and installer"), on Windows 10 and Windows 11.
+
+None of these steps has been run yet.
 
 ## Checkpoint A — scaffold and tooling
 
@@ -99,3 +121,25 @@ Human-only checks, with the installed app and Office 2021 (SC13: write down whic
 - [ ] Export SVG, Insert > Pictures in PowerPoint: identical to the paste.
 - [ ] Export PDF, open it in Edge and in Adobe Acrobat Reader: one page the size of the drawing, text selectable, no error or repair prompt; print it on A4: sharp. (Under PDF-A also: open it in Chalkbond, the drawing is editable.)
 - [ ] Open the exported PNG and SVG in Chalkbond (File > Open): editable and identical.
+
+## App shell and installer (app-shell, `SPEC-app-shell.md` "Windows checks")
+
+Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 10 and a clean Windows 11 account. Nothing here has been run.
+
+- [ ] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1).
+- [ ] On a clean Windows 10 and a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
+- [ ] Cold start of the installed app to a usable canvas is under 3 s on the teacher's laptop (`SPEC.md` SC1).
+- [ ] Save `test.chalk` on the desktop: Explorer shows the A16 file icon and type "Chalkbond drawing"; double-clicking opens it; double-clicking a second `.chalk` while Chalkbond has unsaved changes shows the save prompt, then opens it in the same window.
+- [ ] Menus look like A04–A06 and the context menus like A07 (sentence case, access keys underlined after Alt, shortcuts shown); Alt then F opens File, arrows and Enter work; every shown shortcut works from the canvas; Ctrl+C / Ctrl+V / Ctrl+Z inside the name field act on its text; right-click in the name field shows Cut / Copy / Paste / Select all.
+- [ ] Alt+click an atom with Select, release Alt, press B: the Bond tool is chosen and the menu bar is not focused (K3).
+- [ ] The save prompt (A09), open errors (A10), recovery box (A11) and About box (A14) look like their mock-ups; Narrator reads their text and buttons.
+- [ ] Ctrl+mouse wheel and touchpad pinch zoom the drawing, never the window.
+- [ ] Unsaved-changes prompt on title-bar ×, Alt+F4 and File > Exit: Save, Don't save and Cancel each do what they say.
+- [ ] Power cut: draw for a minute without saving, wait 15 s, end Chalkbond in Task Manager (or switch the laptop off), start Chalkbond: the recovery box appears and the drawing comes back. Shut Windows down with unsaved changes: at the next start the recovery box appears (RC5).
+- [ ] Cancelled shutdown: unsaved changes in Chalkbond and a program that asks before closing (for example Paint with an unsaved picture or Word with an unsaved document; Windows 11's Notepad does not ask: it restores its text and does not hold up a shutdown); choose Shut down; on the "apps are preventing shutdown" screen choose Cancel. Chalkbond is still open with the drawing, and closing it with × shows the save prompt (R24).
+- [ ] Shutdown right after an edit: change the drawing and shut Windows down at once; at the next start the recovery box appears and the drawing comes back, at most without changes from the last 2 s (10 s while drawing continuously). Write down whether the last change was there (R24).
+- [ ] Shutdown with a label typed but not confirmed: after the restart the recovered drawing contains the label. With an IME composition under way Chalkbond does not delay the shutdown and the drawing comes back without that label (R25).
+- [ ] Display scaling 100, 125, 150, 175 %: menu bar, dialogs, Copy button and icons are crisp, nothing is cut off at the 960×640 minimum; the window position is remembered across restarts, also after unplugging an external monitor (the window comes back on the laptop screen).
+- [ ] Uninstall from Settings > Apps: shortcuts and the `.chalk` association are gone, `%APPDATA%\Chalkbond` remains, drawings are untouched; reinstalling restores the recent list.
+- [ ] Narrator: menu bar, Copy button, dialogs and prompts are announced with their names.
+- [ ] About shows version 1.0.0 and the icon; **Licences** opens the notices in Notepad.
