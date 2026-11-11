@@ -188,12 +188,38 @@ test('W1: a first launch has a content area of exactly 1280 x 800 at the display
   // rounds the native frame to whole DIPs, so the frame measured at creation can be a DIP too wide.
   const { app } = await launchWith(userData);
   try {
-    const state = await app.evaluate(({ BrowserWindow }) => {
+    const state = await app.evaluate(({ BrowserWindow, screen }) => {
       const win = BrowserWindow.getAllWindows()[0];
-      return win && { content: win.getContentSize(), maximized: win.isMaximized() };
+      // The frame as createMainWindow measures it: a hidden window with the same size options.
+      const probe = new BrowserWindow({
+        useContentSize: true,
+        width: 1280,
+        height: 800,
+        show: false,
+      });
+      const [outerWidth = 0, outerHeight = 0] = probe.getSize();
+      const [contentWidth = 0, contentHeight = 0] = probe.getContentSize();
+      probe.destroy();
+      return (
+        win && {
+          content: win.getContentSize(),
+          maximized: win.isMaximized(),
+          frame: [outerWidth - contentWidth, outerHeight - contentHeight],
+          area: screen.getPrimaryDisplay().workArea,
+        }
+      );
     });
-    // A work area that cannot hold 1280 x 800 content is maximized instead (W1): nothing to size.
-    if (state?.maximized === false) expect(state.content).toEqual([1280, 800]);
+    expect(state).toBeDefined();
+    if (state === undefined || state === null) return;
+    if (!state.maximized) {
+      expect(state.content).toEqual([1280, 800]);
+    } else {
+      // Maximized only because the primary work area cannot hold the W1 window (W1).
+      const tooSmall =
+        state.area.width < 1280 + (state.frame[0] ?? 0) ||
+        state.area.height < 800 + (state.frame[1] ?? 0);
+      expect(tooSmall).toBe(true);
+    }
   } finally {
     await closeForReal(app);
   }
