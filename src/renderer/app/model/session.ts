@@ -40,7 +40,11 @@ export function saveAsName(session: Session): string {
   return `${stem}.chalk`;
 }
 
-export function sessionUpdate(session: Session, controllerDirty: boolean): SessionUpdate {
+/** N1's title and dirty (the host adds the menu state). */
+export function sessionUpdate(
+  session: Session,
+  controllerDirty: boolean,
+): Omit<SessionUpdate, 'menu'> {
   const dirty = session.forcedDirty || controllerDirty;
   return { title: windowTitle(session.name, dirty), dirty };
 }

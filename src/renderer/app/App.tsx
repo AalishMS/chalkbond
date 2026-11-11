@@ -13,55 +13,66 @@ import './shell-tokens.css';
 
 export function App({ host }: { host: WindowHost }): React.JSX.Element {
   const { controller, copyFlow, exportFlow, fileFlows } = host;
+  const commands = host.actions;
   useEffect(
     () =>
       installHostKeys(
         controller,
         fileFlows,
         {
-          'copy-whole': () => {
-            void copyFlow.copy();
-          },
-          paste: () => {
-            void copyFlow.paste();
-          },
-          new: () => {
-            void fileFlows.newDrawing();
-          },
-          open: () => {
-            void fileFlows.open();
-          },
-          save: () => {
-            void fileFlows.save();
-          },
-          'save-as': () => {
-            void fileFlows.saveAs();
-          },
-          export: () => {
-            exportFlow.open();
+          'copy-whole': commands.copy,
+          paste: commands.paste,
+          new: commands.newDrawing,
+          open: commands.open,
+          save: commands.save,
+          'save-as': commands.saveAs,
+          export: commands.exportDialog,
+          shortcuts: commands.shortcuts,
+          'focus-name': () => {
+            if (controller.canRun('focus-name-field')) controller.run('focus-name-field');
           },
         },
-        // K1: while the Export dialog is open no host key acts.
-        () => exportFlow.state() !== null,
+        // K1: while an in-window dialog is open no host key acts.
+        host.modal,
       ),
-    [controller, copyFlow, exportFlow, fileFlows],
+    [commands, controller, fileFlows, host],
   );
   const exportState = useSyncExternalStore(exportFlow.subscribe, exportFlow.state);
   useEffect(() => {
     const stopMain = window.chalkbond.onMainEvent((event) => {
-      if (event.type === 'command') host.commands.push(event.command);
-      else if (event.type === 'close-requested') void fileFlows.requestClose();
+      if (event.type === 'command') {
+        host.commands.push(event.command);
+        host.runCommand(event.command);
+      } else if (event.type === 'close-requested') void fileFlows.requestClose();
       else if (event.type === 'open') void fileFlows.openRef(event.ref);
     });
     host.publishSession();
+    // N1 (title, dirty, menu) follows the editor, focus and dialogs, at most once per frame.
+    const invalidate = host.invalidateMenu;
     const stopController = controller.subscribe((event) => {
-      if (event.type === 'doc' || event.type === 'dirty') host.publishSession();
+      if (event.type !== 'notice' && event.type !== 'context-menu') invalidate();
     });
+    // Zoom in / out enable at the ends of the range; the viewport sends no controller event.
+    let zoom = controller.store.getState().viewport.zoom;
+    const stopStore = controller.store.subscribe(() => {
+      const next = controller.store.getState().viewport.zoom;
+      if (next === zoom) return;
+      zoom = next;
+      invalidate();
+    });
+    const stopExport = exportFlow.subscribe(invalidate);
+    document.addEventListener('focusin', invalidate);
+    document.addEventListener('focusout', invalidate);
     return () => {
       stopController();
+      stopStore();
+      stopExport();
+      document.removeEventListener('focusin', invalidate);
+      document.removeEventListener('focusout', invalidate);
+      host.cancelMenu();
       stopMain();
     };
-  }, [controller, fileFlows, host]);
+  }, [controller, exportFlow, fileFlows, host]);
   // The e2e test hook (TH2): main loads the page with `?testHooks=1` only for an unpackaged build
   // started with `--chalkbond-test-hooks`. Without the query nothing is defined.
   useEffect(() => {

@@ -148,21 +148,23 @@ describe('V1 zoom steps', () => {
   });
 });
 
-describe('R12 reset and R13 fit', () => {
-  it('reset returns to the default zoom about the canvas centre', () => {
+describe('R49 zoom to 100 % and R13 fit', () => {
+  it('reset goes to 100 % (zoom 1) about the canvas centre, not the 150 % default', () => {
     let s = sized(addEthane(testDoc()));
     s = run(s, { type: 'zoom-wheel', deltaY: -300, anchor: { x: 100, y: 100 } });
     const fixed = screenToPt(view(s), centre(SIZE));
+    expect(view(s).zoom).not.toBe(1);
     s = run(s, { type: 'zoom-reset' });
-    expect(view(s).zoom).toBe(1.5);
+    expect(view(s).zoom).toBe(1);
     near(screenToPt(view(s), centre(SIZE)), fixed);
   });
 
-  it('reset on Handout returns to 416.67 %', () => {
+  it('reset on Handout also goes to 100 %; the Handout default stays 416.67 %', () => {
     const doc = setStyle(testDoc(), { preset: 'journal' });
     let s = sized(doc);
+    expect(view(s).zoom).toBeCloseTo(1.5 * (40 / 14.4), 9);
     s = run(s, { type: 'zoom-step', dir: -1 });
-    expect(view(run(s, { type: 'zoom-reset' })).zoom).toBeCloseTo(1.5 * (40 / 14.4), 9);
+    expect(view(run(s, { type: 'zoom-reset' })).zoom).toBe(1);
   });
 
   it('fit on an empty document keeps the default zoom and centres the origin', () => {

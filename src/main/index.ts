@@ -39,6 +39,7 @@ import {
   setSettingsSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
+import { createAppMenu } from './menu';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
 
 installWebContentsSecurity();
@@ -115,9 +116,22 @@ if (flags.hooks) {
 app.setAppUserModelId(APP_ID);
 
 void app.whenReady().then(async () => {
-  // No default menu: its accelerators (Ctrl+0, Ctrl+=) would zoom the page and steal editor keys.
-  Menu.setApplicationMenu(null);
   const log = createLogger(app.getPath('userData'));
+  // M1–M3 (O3): our menu replaces Electron's default, whose registered accelerators (Ctrl+0,
+  // Ctrl+=) would zoom the page and steal editor keys. Installed before the window exists, so W6
+  // measures the frame with the menu bar in it.
+  const appMenu = createAppMenu({
+    Menu,
+    command: (command) =>
+      mainWindow?.webContents.send(CHANNELS.mainEvent, { type: 'command', command }),
+    text: (method) => mainWindow?.webContents[method](),
+    exit: () => mainWindow?.close(),
+    // AB1 (A12).
+    about: () => undefined,
+    // Open recent (A15): the list is empty until then, so these items are never enabled.
+    recent: () => undefined,
+  });
+  appMenu.apply(appMenu.state());
   // Settings (ST1, ST2, W2): read once before the window exists; written 500 ms after a change.
   const store = createSettingsStore({
     file: join(app.getPath('userData'), 'settings.json'),
@@ -227,7 +241,8 @@ void app.whenReady().then(async () => {
   let closing: ReturnType<typeof guardClose> | undefined;
   ipc.on(CHANNELS.updateSession, sessionUpdateSchema, (value) => {
     if (session?.title !== value.title) mainWindow?.setTitle(value.title);
-    session = value;
+    session = { title: value.title, dirty: value.dirty };
+    appMenu.apply(value.menu);
     closing?.rendererReady();
   });
   // N2: the session file by ref (null after New). An unknown id is ignored and logged.

@@ -100,6 +100,13 @@ exit 0 (3728 tests), isolated `npm run test:e2e` exit 0 (225), A10 and C10 shots
 compared with A08a–c; pushed. The checkpoint stays open: full Windows acceptance (e2e/win, C3
 probes, C4 PDF confirmation, native frame, Arial, Office, os-input, installer) is not run.
 
+Checkpoint V (clipboard-export plan): Linux run, verified by the orchestrator at `8f08408` (2026-11-11): `npm run check`
+exit 0 (3797 tests), isolated `npm run test:e2e` exit 0 (241), the 2 export shots inspected and the
+exported white PNG looked at; pushed. Logs: `/tmp/chalkbond-checkpoint-V.EhbZ0d/`. The checkpoint
+stays open: the full Windows gates (e2e/win including the C11/C12 performance spec, C3 formats and
+clipboard probes, PDF with Arial, Office, native frame, window memory, IME, os-input, installer)
+are not run, and no Windows box is ticked.
+
 ### Phase W: menus and keys (after clipboard-export C10–C12)
 - [ ] A11: Native menus (M1–M3) and host keys (K1–K3)
 - [ ] A12: Keyboard shortcuts dialog (A12) and About (A14)

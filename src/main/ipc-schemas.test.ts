@@ -153,3 +153,46 @@ describe('A10 I8 settings:set', () => {
       bad(schemas.setSettingsSchema, v);
   });
 });
+
+describe('A11 N1 session update with the menu state', () => {
+  const menu = {
+    idle: true,
+    modal: false,
+    textFocus: false,
+    empty: false,
+    hasSelection: false,
+    canUndo: true,
+    canRedo: false,
+    undoLabel: 'Add bond',
+    redoLabel: null,
+    canCut: false,
+    canDuplicate: false,
+    canDelete: false,
+    canSelectAll: true,
+    canZoomIn: true,
+    canZoomOut: true,
+    preset: 'slides',
+  };
+  const update = { title: '*Untitled - Chalkbond', dirty: true, menu };
+
+  it('takes a title, dirty and every MenuState field', () => {
+    ok(schemas.sessionUpdateSchema, update);
+    ok(schemas.sessionUpdateSchema, { ...update, menu: { ...menu, preset: 'journal' } });
+  });
+
+  it('rejects a missing, extra or mistyped field', () => {
+    const { idle: _idle, ...noIdle } = menu;
+    for (const v of [
+      { title: 'x', dirty: false },
+      { ...update, extra: 1 },
+      { ...update, menu: noIdle },
+      { ...update, menu: { ...menu, extra: true } },
+      { ...update, menu: { ...menu, modal: 'no' } },
+      { ...update, menu: { ...menu, preset: 'poster' } },
+      { ...update, menu: { ...menu, undoLabel: 3 } },
+      { ...update, menu: { ...menu, undoLabel: 'x'.repeat(201) } },
+      { ...update, title: 'x'.repeat(301) },
+    ])
+      bad(schemas.sessionUpdateSchema, v);
+  });
+});

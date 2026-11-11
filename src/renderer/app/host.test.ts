@@ -85,3 +85,56 @@ describe('A10 host settings', () => {
     expect(host.settings().export).toEqual(choices);
   });
 });
+
+describe('A11 host menu (N1 menu state, commands re-checked)', () => {
+  it('N1 carries the menu state and is sent again only when title, dirty or menu changed', async () => {
+    const { main } = fakeMain(DEFAULTS);
+    const send = vi.mocked(main.updateSession);
+    let text = false;
+    const host = await createWindowHost(main, () => text);
+    host.publishSession();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.lastCall?.[0]).toMatchObject({
+      title: 'Untitled - Chalkbond',
+      dirty: false,
+      menu: { idle: true, empty: true, textFocus: false, modal: false, preset: 'slides' },
+    });
+    host.publishSession();
+    expect(send).toHaveBeenCalledTimes(1);
+    text = true;
+    host.publishSession();
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.lastCall?.[0].menu.textFocus).toBe(true);
+    host.loadUntitled(drawing('slides'));
+    expect(send.mock.lastCall?.[0].menu.empty).toBe(false);
+  });
+
+  it('runs a menu command only when the state now allows it', async () => {
+    const { main } = fakeMain(DEFAULTS);
+    let text = false;
+    const host = await createWindowHost(main, () => text);
+    expect(host.runCommand('file.export')).toBe(false); // an empty drawing has nothing to export
+    host.loadUntitled(drawing('slides'));
+    expect(host.runCommand('edit.select-all')).toBe(true);
+    expect(host.controller.getSelection().atoms.size).toBe(1);
+    expect(host.runCommand('view.zoom-reset')).toBe(true);
+    expect(host.runCommand('view.style-handout')).toBe(true);
+    expect(host.controller.getDoc().style.preset).toBe('journal');
+    text = true;
+    expect(host.runCommand('edit.delete')).toBe(false); // main acts on the text (M3)
+    expect(host.controller.getSelection().atoms.size).toBe(1);
+    expect(host.runCommand('file.exit')).toBe(false);
+  });
+
+  it('while the Export dialog is open no menu command runs (M1 modal)', async () => {
+    const { main } = fakeMain(DEFAULTS);
+    const host = await createWindowHost(main, () => false);
+    host.loadUntitled(drawing('slides'));
+    host.exportFlow.open();
+    expect(host.modal()).toBe(true);
+    expect(host.runCommand('edit.select-all')).toBe(false);
+    expect(host.runCommand('view.zoom-fit')).toBe(false);
+    host.exportFlow.cancel();
+    expect(host.runCommand('view.zoom-fit')).toBe(true);
+  });
+});

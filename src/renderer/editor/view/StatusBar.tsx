@@ -190,7 +190,7 @@ export function StatusBar({
         </ZoomButton>
         <ZoomButton
           id="zoom-reset"
-          label="Reset zoom (Ctrl+1)"
+          label="Zoom to 100% (Ctrl+1)"
           tip={STATUS_TIPS.zoomReset}
           className="btn-zoom"
           onPress={() => dispatch({ type: 'zoom-reset' })}

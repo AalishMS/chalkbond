@@ -105,6 +105,8 @@ draft's, kept or amended at review; R-rows are the reviewer's resolutions.
 | R15 | ST4: a settings read that fails (other than `ENOENT`, after 3 × 100 ms retries of `EBUSY` / `EPERM`) runs on in-memory defaults and never writes that file for the rest of the run | Unreadable preferences must never be overwritten by defaults; a busy file (scanner, sync) usually reads a moment later | 2026-11-11 |
 | R16 | ST5: the stored window takes int32 integers only (size > 0); anything else is W1 via the ST3 repair | A hand-edited or corrupted rectangle must never reach the native `Rectangle` conversion | 2026-11-11 |
 | R17 | F4a: New, Open and close (window close, double-click, drop) first finish an open label or text editor through its commit path, then decide dirty; again after a prompt-triggered Save | A teacher's last typed label must never be lost or saved stale because the native close came while the box was still open | 2026-11-11 |
+| R18 | View > "Zoom to &100%", Ctrl+1 and the status-bar readout run one command that sets the zoom to 100 % (editor R49, superseding editor R12's reset to the 150 % default); the default zoom of a new or loaded drawing stays 150 % Slides / 416.67 % Handout | The approved menu (A06) and shortcuts list (A12) say "Zoom to 100%"; the command must do what they say, from every place | 2026-11-11 |
+| R19 | Help > Keyboard shortcuts is enabled when idle (not "always"): the K1 rule already says F1 does nothing and the menu shows it disabled while a label or text editor is open. The M1 enabled rules live once in `src/shared/menu.ts` (`commandEnabled`), used by main's menu model and re-checked by the renderer before it runs a menu command; main ignores a click on an item built disabled | One table for the menu and the dispatcher; a stale menu frame never runs a command the current state forbids | 2026-11-11 |
 | R13 | Draft open questions resolved: Q1 visible (O3); Q2 remembered (O4); Q3 no (O9); Q4 recover (O5); Q5 one-click per user (O6); Q6 en-US (O9); Q7 → R4; Q8 1.0.0 (O6); Q9 yes (O9); Q10 8 (O4) | Recorded so no question stays open | 2026-11-10 |
 
 ---
@@ -165,7 +167,7 @@ false`; no item has a `role` (R1).
 | | — | | | | |
 | | &Slides style (radio) | `view.style-slides` | | idle | `run({type: 'set-preset', preset: 'slides'})`; checked when the preset is `slides` |
 | | &Handout style (radio) | `view.style-handout` | | idle | `… 'journal'`; checked when `journal` |
-| **&Help** | &Keyboard shortcuts | `help.shortcuts` | `F1` | always | Keyboard shortcuts dialog |
+| **&Help** | &Keyboard shortcuts | `help.shortcuts` | `F1` | idle (R19) | Keyboard shortcuts dialog |
 | | — | | | | |
 | | &About Chalkbond | `help.about` | | always | AB1, in main |
 
@@ -460,6 +462,7 @@ focused before.
 ```
 src/shared/channels.ts            channel names only (no imports): preload, main, renderer
 src/shared/ipc-types.ts           request/response types (type-only, inferred from the schemas)
+src/shared/menu.ts                MenuState, AppCommand ids and the M1 enabled rules (pure, no imports; R19)
 src/main/
   index.ts                        lifecycle, single instance, window, wiring
   ipc.ts                          handle(): sender check, Zod, dispatch, logging

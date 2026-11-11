@@ -18,7 +18,6 @@ import type { Derive } from '../model/derive';
 import type { Point, Rect, Size } from '../model/geometry';
 import {
   clampPan,
-  defaultZoom,
   fitViewport,
   initialViewport,
   stepViewport,
@@ -279,8 +278,10 @@ function viewportAction(
     case 'zoom-wheel':
       return withViewport(state, wheelZoom(v, action.deltaY, action.anchor));
     case 'zoom-reset': {
+      // R49 (supersedes R12): 100 % (zoom 1) whatever the preset; V2's default is for new and
+      // loaded documents only.
       const centre = { x: v.size.w / 2, y: v.size.h / 2 };
-      return withViewport(state, zoomAbout(v, defaultZoom(bond), centre));
+      return withViewport(state, zoomAbout(v, 1, centre));
     }
     case 'zoom-fit':
       return withViewport(state, fitViewport(bounds, v.size, bond));

@@ -116,6 +116,13 @@ probes, C4 PDF confirmation, native frame, Arial, Office, os-input, installer) i
 - [ ] `npm run check` green; `e2e/export-*.spec.ts` green; shots of C10 match A08a–c
 - [ ] Commit + push
 
+Linux run of Checkpoint V, verified by the orchestrator at `8f08408` (2026-11-11): `npm run check`
+exit 0 (3797 tests), isolated `npm run test:e2e` exit 0 (241), the 2 export shots inspected and the
+exported white PNG looked at; pushed. Logs: `/tmp/chalkbond-checkpoint-V.EhbZ0d/`. The checkpoint
+stays open: the full Windows gates (e2e/win including the C11/C12 performance spec, C3 formats and
+clipboard probes, PDF with Arial, Office, native frame, window memory, IME, os-input, installer)
+are not run, and no Windows box is ticked.
+
 ### Phase Y: hardening (with app-shell A16–A20)
 - [ ] C13: Coverage thresholds, copy performance, "Clipboard and export" checklist section
 

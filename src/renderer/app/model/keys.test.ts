@@ -1,8 +1,9 @@
-// K1 host keys (SPEC-app-shell.md "Keyboard (host keys)"): the rows built so far (C8: Ctrl+C,
-// C9: Ctrl+V, A8: Ctrl+N / O / S / Shift+S) and the K2 conflict check for them.
+// K1 host keys (SPEC-app-shell.md "Keyboard (host keys)"): the full table (C8: Ctrl+C, C9:
+// Ctrl+V, A8: Ctrl+N / O / S / Shift+S, C10: Ctrl+E, A11: F1, Ctrl+F), the K2 conflict check
+// against the editor's keymap and the K3 Alt rule.
 import { describe, expect, it } from 'vitest';
-import { canvasKey, globalCommand } from '../../editor/model/keymap';
-import { hostKey, type HostKeyContext, type KeyInput } from './keys';
+import { canvasKey, globalCommand, hoverKeys } from '../../editor/model/keymap';
+import { altGuard, hostKey, type HostKeyContext, type KeyInput } from './keys';
 
 const ctrl = (key: string, mods: Partial<KeyInput> = {}): KeyInput => ({
   key,
@@ -19,6 +20,7 @@ const canvas: HostKeyContext = {
   modal: false,
   fileBusy: false,
   empty: false,
+  insideEditor: true,
 };
 
 describe('hostKey', () => {
@@ -139,5 +141,188 @@ describe('Ctrl+E (C10: the Export dialog)', () => {
   it('K2: the editor has no command for Ctrl+E', () => {
     expect(globalCommand(ctrl('e'), 'all')).toBeNull();
     expect(canvasKey(ctrl('e'))).toBeNull();
+  });
+});
+
+const plain = (key: string, mods: Partial<KeyInput> = {}): KeyInput => ({
+  ...ctrl(key, mods),
+  ctrlKey: mods.ctrlKey ?? false,
+});
+
+describe('F1 (A11: the Keyboard shortcuts dialog)', () => {
+  it('opens the list when idle, from the canvas, the name field or outside the editor', () => {
+    expect(hostKey(plain('F1'), canvas)).toBe('shortcuts');
+    expect(hostKey(plain('F1'), { ...canvas, textTarget: true })).toBe('shortcuts');
+    expect(hostKey(plain('F1'), { ...canvas, insideEditor: false })).toBe('shortcuts');
+    expect(hostKey(plain('F1'), { ...canvas, empty: true, fileBusy: true })).toBe('shortcuts');
+  });
+
+  it('does nothing while busy (a label or text editor is open) or a dialog is open', () => {
+    expect(hostKey(plain('F1'), { ...canvas, idle: false })).toBeNull();
+    expect(hostKey(plain('F1'), { ...canvas, idle: false, textTarget: true })).toBeNull();
+    expect(hostKey(plain('F1'), { ...canvas, modal: true })).toBeNull();
+  });
+
+  it('needs F1 alone', () => {
+    for (const mods of [{ ctrlKey: true }, { altKey: true }, { shiftKey: true }, { metaKey: true }])
+      expect(hostKey(plain('F1', mods), canvas)).toBeNull();
+    expect(hostKey(plain('F2'), canvas)).toBeNull();
+  });
+});
+
+describe('Ctrl+F outside the editor root (A11)', () => {
+  it('asks the editor to focus the name field when the target is outside it (e.g. body)', () => {
+    expect(hostKey(ctrl('f'), { ...canvas, insideEditor: false })).toBe('focus-name');
+    expect(hostKey(ctrl('F'), { ...canvas, insideEditor: false })).toBe('focus-name');
+  });
+
+  it('inside the editor its own Ctrl+F acts; modifiers and dialogs rule it out', () => {
+    expect(hostKey(ctrl('f'), canvas)).toBeNull();
+    expect(globalCommand(ctrl('f'), 'all')).toBe('focus-name-field');
+    const outside = { ...canvas, insideEditor: false };
+    expect(hostKey(ctrl('f'), { ...outside, modal: true })).toBeNull();
+    expect(hostKey(ctrl('f', { shiftKey: true }), outside)).toBeNull();
+    expect(hostKey(ctrl('f', { altKey: true }), outside)).toBeNull();
+    expect(hostKey(ctrl('f', { metaKey: true }), outside)).toBeNull();
+  });
+});
+
+describe('K1 complete: every row and nothing else', () => {
+  it('claims exactly the K1 keys on a ready canvas', () => {
+    const keys = [
+      ...'abcdefghijklmnopqrstuvwxyz0123456789=-+',
+      'F1',
+      'F2',
+      'F10',
+      'Delete',
+      'Escape',
+      'Enter',
+      'ArrowLeft',
+      'Alt',
+    ];
+    const claimed: string[] = [];
+    for (const key of keys)
+      for (const ctrlKey of [false, true])
+        for (const shiftKey of [false, true])
+          for (const insideEditor of [true, false]) {
+            const action = hostKey(plain(key, { ctrlKey, shiftKey }), {
+              ...canvas,
+              insideEditor,
+            });
+            if (action !== null)
+              claimed.push(
+                `${ctrlKey ? 'Ctrl+' : ''}${shiftKey ? 'Shift+' : ''}${key}${insideEditor ? '' : ' (outside)'}=${action}`,
+              );
+          }
+    expect(claimed.sort()).toEqual(
+      [
+        'Ctrl+n=new',
+        'Ctrl+n (outside)=new',
+        'Ctrl+o=open',
+        'Ctrl+o (outside)=open',
+        'Ctrl+s=save',
+        'Ctrl+s (outside)=save',
+        'Ctrl+Shift+s=save-as',
+        'Ctrl+Shift+s (outside)=save-as',
+        'Ctrl+e=export',
+        'Ctrl+e (outside)=export',
+        'Ctrl+c=copy-whole',
+        'Ctrl+c (outside)=copy-whole',
+        'Ctrl+v=paste',
+        'Ctrl+v (outside)=paste',
+        'Ctrl+f (outside)=focus-name',
+        'F1=shortcuts',
+        'F1 (outside)=shortcuts',
+      ].sort(),
+    );
+  });
+});
+
+describe('K2 conflict check against the editor keymap', () => {
+  /** SPEC-editor.md K3: the label and text editor keys. */
+  const EDITOR_K3 = [
+    ctrl('b'),
+    ctrl('i'),
+    ctrl('='),
+    ctrl('=', { shiftKey: true }),
+    ctrl('+', { shiftKey: true }),
+    ctrl('d', { shiftKey: true }),
+    ctrl('h', { shiftKey: true }),
+  ];
+  const HOST = [
+    ctrl('n'),
+    ctrl('o'),
+    ctrl('s'),
+    ctrl('s', { shiftKey: true }),
+    ctrl('e'),
+    plain('F1'),
+  ];
+  const same = (a: KeyInput, b: KeyInput) =>
+    a.key.toLowerCase() === b.key.toLowerCase() &&
+    a.ctrlKey === b.ctrlKey &&
+    a.shiftKey === b.shiftKey &&
+    a.altKey === b.altKey &&
+    a.metaKey === b.metaKey;
+
+  it("the host's keys have no editor command: globalCommand, canvasKey, hover or tool keys", () => {
+    for (const key of HOST) {
+      expect(globalCommand(key, 'all'), key.key).toBeNull();
+      expect(canvasKey(key), key.key).toBeNull();
+      expect(hoverKeys(key, null, 'select'), key.key).toBeNull();
+      expect(hoverKeys(key, { kind: 'atom', id: 'a1' } as never, 'bond'), key.key).toBeNull();
+      expect(hoverKeys(key, { kind: 'bond', id: 'b1' } as never, 'bond'), key.key).toBeNull();
+    }
+  });
+
+  it('none of them is an editor K3 key', () => {
+    for (const host of HOST)
+      for (const k3 of EDITOR_K3) expect(same(host, k3), `${host.key} vs ${k3.key}`).toBe(false);
+  });
+
+  it('menu access keys need Alt, which every editor key requires up', () => {
+    for (const key of 'fevhn') {
+      const alt = plain(key, { altKey: true });
+      expect(globalCommand(alt, 'all')).toBeNull();
+      expect(canvasKey(alt)).toBeNull();
+      expect(hoverKeys(alt, null, 'select')).toBeNull();
+      expect(hostKey(alt, canvas)).toBeNull();
+    }
+  });
+});
+
+describe('K3 Alt after Alt+click (R4)', () => {
+  it('an Alt+pointerdown arms; the next Alt key-up is prevented and disarms', () => {
+    let s = altGuard(false, { type: 'pointerdown', altKey: true });
+    expect(s).toEqual({ armed: true, prevent: false });
+    s = altGuard(s.armed, { type: 'keydown', key: 'Alt', repeat: true }); // Alt still held
+    expect(s).toEqual({ armed: true, prevent: false });
+    s = altGuard(s.armed, { type: 'keyup', key: 'Alt' });
+    expect(s).toEqual({ armed: false, prevent: true });
+    expect(altGuard(s.armed, { type: 'keyup', key: 'Alt' })).toEqual({
+      armed: false,
+      prevent: false,
+    });
+  });
+
+  it('a standalone Alt press is untouched, armed or not', () => {
+    expect(altGuard(false, { type: 'keyup', key: 'Alt' })).toEqual({
+      armed: false,
+      prevent: false,
+    });
+    const pressed = altGuard(true, { type: 'keydown', key: 'Alt', repeat: false });
+    expect(pressed).toEqual({ armed: false, prevent: false });
+    expect(altGuard(pressed.armed, { type: 'keyup', key: 'Alt' }).prevent).toBe(false);
+  });
+
+  it('any other keydown disarms; a plain click leaves the flag', () => {
+    expect(altGuard(true, { type: 'keydown', key: 'b', repeat: false })).toEqual({
+      armed: false,
+      prevent: false,
+    });
+    expect(altGuard(true, { type: 'pointerdown', altKey: false })).toEqual({
+      armed: true,
+      prevent: false,
+    });
+    expect(altGuard(true, { type: 'keyup', key: 'b' })).toEqual({ armed: true, prevent: false });
   });
 });

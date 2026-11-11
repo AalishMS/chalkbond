@@ -215,7 +215,7 @@ const COMMAND_CASES: readonly CommandCase[] = [
     cmd: 'zoom-reset',
     blocked: null,
     ready: afterZoomIn,
-    effect: (c) => expect(zoomOf(c)).toBe(zoomOf(sized())),
+    effect: (c) => expect(zoomOf(c)).toBe(1),
   },
   {
     name: 'clean-up',

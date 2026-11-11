@@ -40,7 +40,8 @@ test('launches one secure window titled Chalkbond', async () => {
       nodeIntegration: false,
     });
 
-    // Scaffold window: 960x640 minimum, no default application menu (no zoom accelerators).
+    // 960x640 content minimum; our application menu (A11), never Electron's default, and none of
+    // its items registers an accelerator (no zoom or edit keys taken from the page).
     const shell = await app.evaluate(({ BrowserWindow, Menu }) => ({
       minSize: (() => {
         const win = BrowserWindow.getAllWindows()[0];
@@ -48,11 +49,16 @@ test('launches one secure window titled Chalkbond', async () => {
         win?.setSize(200, 200);
         return win?.getContentSize();
       })(),
-      menu: Menu.getApplicationMenu(),
+      menu: (Menu.getApplicationMenu()?.items ?? []).map((item) => ({
+        label: item.label,
+        registered: [item, ...(item.submenu?.items ?? [])].some((i) => i.registerAccelerator),
+      })),
     }));
     expect(shell.minSize?.[0]).toBeGreaterThanOrEqual(960);
     expect(shell.minSize?.[1]).toBeGreaterThanOrEqual(640);
-    expect(shell.menu).toBe(null);
+    expect(shell.menu).toEqual(
+      ['&File', '&Edit', '&View', '&Help'].map((label) => ({ label, registered: false })),
+    );
 
     await page.keyboard.press('Control+=');
     const zoom = await app.evaluate(({ BrowserWindow }) =>

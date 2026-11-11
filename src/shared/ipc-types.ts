@@ -1,6 +1,8 @@
+import type { AppCommand, MenuState } from './menu';
+
 export type LogErrorRequest = { message: string };
 export type MainEvent =
-  | { type: 'command'; command: string }
+  | { type: 'command'; command: AppCommand }
   | { type: 'open'; ref: { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' } }
   | { type: 'close-requested' }
   | { type: 'flush-recovery' };
@@ -34,6 +36,8 @@ export interface StartupResponse {
 export interface SessionUpdate {
   title: string;
   dirty: boolean;
+  /** A11: the menu's state; main rebuilds the menu when it changed. */
+  menu: MenuState;
 }
 
 export interface ClipboardWriteRequest {

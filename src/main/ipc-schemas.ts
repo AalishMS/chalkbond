@@ -3,8 +3,30 @@ import { z } from 'zod';
 export const logErrorSchema = z.object({ message: z.string().max(4000) }).strict();
 
 export const startupSchema = z.object({}).strict();
+/** A11 (M1): the MenuState main builds the menu from; labels come from the editor's history. */
+const historyLabel = z.string().max(200).nullable();
+const menuStateSchema = z
+  .object({
+    idle: z.boolean(),
+    modal: z.boolean(),
+    textFocus: z.boolean(),
+    empty: z.boolean(),
+    hasSelection: z.boolean(),
+    canUndo: z.boolean(),
+    canRedo: z.boolean(),
+    undoLabel: historyLabel,
+    redoLabel: historyLabel,
+    canCut: z.boolean(),
+    canDuplicate: z.boolean(),
+    canDelete: z.boolean(),
+    canSelectAll: z.boolean(),
+    canZoomIn: z.boolean(),
+    canZoomOut: z.boolean(),
+    preset: z.enum(['slides', 'journal']),
+  })
+  .strict();
 export const sessionUpdateSchema = z
-  .object({ title: z.string().max(300), dirty: z.boolean() })
+  .object({ title: z.string().max(300), dirty: z.boolean(), menu: menuStateSchema })
   .strict();
 
 const maxDrawingBytes = 20 * 1024 * 1024;

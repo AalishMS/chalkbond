@@ -387,7 +387,7 @@ false`, no `role`, enabled per `MenuState`, id; "Undo add bond" casing; "Copy wh
 `menu-state.test.ts`. `keys.test.ts`: K1 full table, K2 against `globalCommand` / `canvasKey` /
 K3 editor keys, K3 (Alt+click then Alt up → prevent; Alt alone → not prevented). `e2e/app-menus.spec.ts`
 (SC2): every application menu id clicked → its effect (e.g. `edit.select-all` selects all,
-`view.zoom-reset` shows 150 %, `file.new` with a stubbed prompt, `view.style-handout` switches,
+`view.zoom-reset` shows 100 % (R18; editor R49), `file.new` with a stubbed prompt, `view.style-handout` switches,
 `help.shortcuts` appears in `commands()`); with the name field focused and "ethanol" typed,
 `edit.copy` puts "ethanol" on the clipboard (Windows file `e2e/win/app-menu-text.spec.ts`) and
 `edit.select-all` selects the field text. `e2e/app-keys.spec.ts`: every K1 key reaches its action
@@ -395,9 +395,9 @@ with the menu installed; Ctrl+C in the name field copies text (Windows file); at
 with the menu bar the Text rail button is fully visible (SC12).
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass (SC2, SC12)
-- [ ] `Menu.getApplicationMenu()` items all have `registerAccelerator === false` (asserted in e2e through `app.evaluate`)
-- [ ] Shot exists
+- [x] Unit and e2e tests pass (SC2, SC12) (Linux; `e2e/win/app-menu-text.spec.ts` written, not run)
+- [x] `Menu.getApplicationMenu()` items all have `registerAccelerator === false` (asserted in e2e through `app.evaluate`)
+- [x] Shot exists (`out/shots/A11/menu-960.png`, looked at; the native menus' look, A04–A06, stays on the Windows checklist)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A11` →
 `A11/menu-960.png` (960×640 content with the menu bar present: the page shows all ten rail

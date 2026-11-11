@@ -48,7 +48,7 @@ deleted like any other item; they are not edited.
 | `docs/mockups/editor/icons.svg` | **Normative.** Every icon, one `<symbol>` per id. Lifted byte-for-byte into `src/renderer/editor/view/icons.svg` (same tooling test) and injected once, hidden, as an inline sprite at the editor root (`?raw` import), so `<use href="#id">` is a same-document reference (Chromium blocks external sprite references on `file://`, which is how the packaged app loads) |
 | `docs/mockups/editor/NN-*.html`, `mockup.css` | **Normative for layout and appearance** (screens 01–11 at 1280×800, 11 at 960×640). `mockup.css` is the reference for region and control CSS; the implementation's `editor.css` follows it with the `.is-hover`/`.is-pressed`/`.is-focus` stand-ins dropped |
 | `docs/mockups/editor/DEVIATIONS.md` | History of how the mock-ups departed from the draft; folded into this spec |
-| This spec | Behaviour, structure and anything the mock-ups do not show. Where a mock-up and this spec disagree on appearance, the mock-up wins, except the items in "Decisions" rows 14 (status-bar formula uses `<sub>`) and R12 (zoom readout) |
+| This spec | Behaviour, structure and anything the mock-ups do not show. Where a mock-up and this spec disagree on appearance, the mock-up wins, except the item in "Decisions" row 14 (status-bar formula uses `<sub>`); R12's zoom-readout exception is superseded by R49 (the mock-up's "Zoom to 100%" wins) |
 
 Reference PNGs of the mock-ups: `node docs/mockups/editor/build.mjs --png out/mockups` (needs
 Playwright's Chromium).
@@ -111,7 +111,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R9 | Name-field suggestions appear only for a single name (no `+` and no arrow token outside brackets). Reaction text gets no dropdown until Enter; a part that is not found gets the not-found row and "Did you mean" chips that replace that part | One clear behaviour; replacing parts mid-typing is confusing | 2026-11-10 |
 | R10 | Suggestion rows show the matched key with the typed prefix in 600 weight: the display name when it matches the prefix, else the first matching synonym followed by `--text-muted` " — " + display name (`ethanoic acid — acetic acid`) | Teachers search by IUPAC or common names; a row must show why it matched | 2026-11-10 |
 | R11 | "Show circle" is offered when the scope has an aromatic bond (`Perception.bonds[id].aromatic`) that is not order 1.5 (draft: "a ring bond of order 2", which would offer it on cyclohexene) | Correct chemistry, read from chem-core | 2026-11-10 |
-| R12 | The zoom readout button and Ctrl+1 reset to the default zoom (150 % Slides); aria-label "Reset zoom (Ctrl+1)" (mock-up: "Zoom to 100%") | Clicking "150%" and getting 100 % would surprise; the default is what the teacher knows | 2026-11-10 |
+| R12 | **Superseded by R49 (2026-11-11).** The zoom readout button and Ctrl+1 reset to the default zoom (150 % Slides); aria-label "Reset zoom (Ctrl+1)" (mock-up: "Zoom to 100%") | Clicking "150%" and getting 100 % would surprise; the default is what the teacher knows | 2026-11-10 |
 | R13 | Zoom to fit (button, Ctrl+0, load): the largest whole percent ≤ the default zoom that shows the ink box with a 48 px margin on every side (screen 08: 115 %) | Fitting a small molecule should not blow it up past the default | 2026-11-10 |
 | R14 | Reaction-text arrow tokens: `->`, `→`, `=>` (forward), `<=>`, `⇌` (equilibrium) | Retrosynthesis is cut; `=>` is a likely typo for `->` | 2026-11-10 |
 | R15 | View components are covered by markup tests in node with `react-dom/server` (`renderToStaticMarkup`), no jsdom | Coverage counts `view/*.tsx`; static markup proves states and ARIA without a new dependency | 2026-11-10 |
@@ -148,6 +148,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R46 | Right-click on an unselected item selects it first (app-shell CM1): whole fragment for an atom/bond, object itself, tool Select before emitting; selected hits and empty canvas retain selection | Native menu acts on the item clicked | 2026-11-10 |
 | R47 | Host-callable name-field focus: canRun unless a label/text editor is open; run increments a focus request counter observed by the view; Ctrl+F uses the same path | Host and view share focus behavior | 2026-11-10 |
 | R48 | IME: a blur during a composition defers the commit to `compositionend`, after the DOM is reconciled into the model (T2 "Model first"). Internal to the view; no public surface or schema change. The host (app-shell F4a) uses only the public `canRun('focus-name-field')` and `subscribe` to wait for the box to close | The model never holds the composing text: committing it at blur would lose or stale the word being typed | 2026-11-11 |
+| R49 | Supersedes R12. `zoom-reset` sets zoom 1 (100 % = true size, 1 pt = 4/3 CSS px) about the canvas centre, whatever the preset, and is the same command from the status-bar readout, Ctrl+1 and app-shell's View > "Zoom to &100%" (A06); the readout's aria-label and tooltip read "Zoom to 100% (Ctrl+1)" / "Zoom to 100%" with key Ctrl+1. The default zoom of a new or loaded document (V2: 150 % Slides, 416.67 % Handout), fit (V3, R13), reveal, frame, the 25–800 % range and every performance budget are unchanged; only an explicit reset changes | The approved app menu and shortcuts list (A06, A12) say "Zoom to 100%"; one command must do what all three places say. R12's 150 % would make the menu item lie | 2026-11-11 |
 
 ---
 
@@ -410,7 +411,7 @@ Esc, Enter and K3 apply; with `shortcuts: 'canvas-only'` the Ctrl rows are left 
 | Delete, Backspace | Delete the selection, else the hovered item |
 | Ctrl+F | Focus the name field |
 | Ctrl+= (Ctrl++), Ctrl+− | Zoom in / out one step |
-| Ctrl+0 / Ctrl+1 | Zoom to fit (R13) / reset zoom (R12) |
+| Ctrl+0 / Ctrl+1 | Zoom to fit (R13) / zoom to 100 % (R49) |
 | Ctrl+Shift+K | Show Kekulé / Show circle |
 | Ctrl+Shift+L | Clean up |
 | Ctrl+Shift+T | Tidy reaction |

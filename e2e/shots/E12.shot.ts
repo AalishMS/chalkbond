@@ -21,14 +21,13 @@ test('E12 canvas: default, zoom, fit, pan, small window', async () => {
     await page.waitForTimeout(100);
     await shot(page, 'E12', 'zoom-in-about-point');
 
+    // R49: the readout goes to 100 %; three steps up are 125, 150, 200 %.
     await page.getByTestId('zoom-reset').click();
-    await page.keyboard.press('Control+=');
+    for (let i = 0; i < 3; i++) await page.keyboard.press('Control+=');
     await page.mouse.move(700, 600);
     await shot(page, 'E12', 'zoom-200');
 
     await page.getByTestId('zoom-reset').click();
-    await page.keyboard.press('Control+-');
-    await page.keyboard.press('Control+-');
     await page.mouse.move(700, 600);
     await shot(page, 'E12', 'zoom-out');
 
