@@ -147,6 +147,7 @@ resolutions of the draft's open questions and of problems found in review.
 | R45 | Host notices and a busy event (clipboard-export): notify dispatches notice-show; busy fires exactly when idle = canRun({type: 'set-preset'}) changes | Host feedback uses the same hint, expiry and announcement slot | 2026-11-10 |
 | R46 | Right-click on an unselected item selects it first (app-shell CM1): whole fragment for an atom/bond, object itself, tool Select before emitting; selected hits and empty canvas retain selection | Native menu acts on the item clicked | 2026-11-10 |
 | R47 | Host-callable name-field focus: canRun unless a label/text editor is open; run increments a focus request counter observed by the view; Ctrl+F uses the same path | Host and view share focus behavior | 2026-11-10 |
+| R48 | IME: a blur during a composition defers the commit to `compositionend`, after the DOM is reconciled into the model (T2 "Model first"). Internal to the view; no public surface or schema change. The host (app-shell F4a) uses only the public `canRun('focus-name-field')` and `subscribe` to wait for the box to close | The model never holds the composing text: committing it at blur would lose or stale the word being typed | 2026-11-11 |
 
 ---
 
@@ -979,7 +980,11 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
     insertParagraph, insertFromPaste, insertFromDrop, delete*, historyUndo/Redo) is cancelled and
     applied to the model; the view re-renders the spans and restores the selection. IME
     composition (not cancelable) is allowed to edit the DOM and reconciled into the model on
-    `compositionend` (`text-dom.ts`). Pasted content is plain text.
+    `compositionend` (`text-dom.ts`). A blur during a composition (a click elsewhere, the host's
+    F4a) does not commit the model, which lacks the composing text: the commit waits, and on
+    `compositionend` the DOM is first reconciled into the model, then the waiting commit runs
+    (R48). Focus coming back before `compositionend` drops the waiting commit. No timeout, no
+    cancel. Pasted content is plain text.
   - Why: `execCommand`-style rich editing produces inconsistent markup (`<sub>` vs styles,
     nested spans) and unpredictable caret affinity at run boundaries; with the model first, every
     rule is a pure, unit-tested function and only selection ↔ offset mapping and IME reconcile

@@ -286,6 +286,13 @@ folder no longer exists. Choose another folder." and the title keeps `*`.
 - [x] R14 (spec first): the prompt's Save goes ahead only if the save succeeded and the drawing is
   clean afterwards; an edit during the write keeps the newer drawing and stops New / Open / close
   (`file-flows.test.ts`). Linux only; Windows native boxes unverified
+- [x] Correction F4a / R17 (editor R48, spec first): New, Open (after validation), close and a
+  handed-over open first finish an open label or text editor through its commit path
+  (`finish-editing.ts` port; `finish-editing.test.ts`, `file-flows.test.ts` F4a incl. an editor
+  opened during the prompt's Save write); an IME blur defers the commit to `compositionend`.
+  `e2e/app-draft-close.spec.ts`: label and existing text at a native close (Cancel keeps, Save
+  writes), `main:event open` while typing, synthetic IME, name field not an edit. Linux only;
+  a real Windows IME and native close unverified
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A8` → `A8/saved.png`
 (scripted: scheme, Ctrl+S with the stubbed dialog: hint "Saved esterification.chalk." in

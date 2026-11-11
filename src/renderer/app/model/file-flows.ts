@@ -1,5 +1,5 @@
-// File flows (SPEC-app-shell.md "Files" F1–F7, F13; CO4; R7, R14; A6 pictures) over injected ports: DOM-free,
-// no timers. One in-progress flag; one pending request (an open ref or a close, latest wins).
+// File flows (SPEC-app-shell.md "Files" F1–F7, F13; CO4; R7, R14, R17; A6 pictures) over injected
+// ports: DOM-free, no timers. One in-progress flag; one pending request (an open ref or a close, latest wins).
 // Every session change publishes N1 itself, after the session changed.
 import {
   emptyDoc,
@@ -45,6 +45,11 @@ export interface FileFlowOptions {
   /** Strict UTF-8 decode; null on a malformed sequence. */
   decodeUtf8(bytes: Uint8Array): string | null;
   encodeUtf8(text: string): Uint8Array;
+  /**
+   * F4a (R17): finishes an open label or text editor through its own commit path and resolves once
+   * it has closed (at once when none is open). The host's DOM port; never cancels, no timeout.
+   */
+  finishEditing(): Promise<void>;
 }
 
 export interface FileFlows {
@@ -135,13 +140,20 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
     return saveAsNow();
   }
 
-  /** F4 with R14: Save proceeds only when it succeeded and the drawing is clean afterwards. */
+  /**
+   * F4 with F4a and R14: an open editor is finished before dirty is decided; Save proceeds only
+   * when it succeeded and the drawing is clean afterwards, with an editor opened during the
+   * write finished first (its newer text keeps the drawing dirty and stops the action).
+   */
   async function confirmDiscard(): Promise<boolean> {
+    await o.finishEditing();
     if (!dirty()) return true;
     const answer = await main.ask({ kind: 'save-changes', name: displayName(session) });
     if (answer === 'discard') return true;
     if (answer === 'cancel') return false;
-    return (await saveNow()) && !dirty();
+    const saved = await saveNow();
+    await o.finishEditing();
+    return saved && !dirty();
   }
 
   /** Replaces the drawing (CO1: only through `load`) and the session; N1 after both changed. */

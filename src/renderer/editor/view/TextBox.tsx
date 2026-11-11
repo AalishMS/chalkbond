@@ -99,6 +99,8 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
   /** The latest model, updated at once by each handler so two events in a tick do not collide. */
   const latest = useRef(edit);
   const composing = useRef(false);
+  /** R48: a blur came during a composition; the commit runs after `compositionend`. */
+  const commitAfterComposition = useRef(false);
   /** What the DOM was last drawn from, so a selection-only change does not redraw it. */
   const drawn = useRef<string | null>(null);
   const handlers = useRef(props);
@@ -218,6 +220,11 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
       // Force the redraw even when the text happens to equal the model's.
       drawn.current = null;
       apply(reconcile(latest.current, text));
+      // R48: the composed text is in the model now, so the commit the blur deferred can run.
+      if (commitAfterComposition.current) {
+        commitAfterComposition.current = false;
+        handlers.current.onCommit();
+      }
     };
 
     // Caret and selection moves the browser makes (arrows, Home/End, mouse) enter the model.
@@ -230,8 +237,13 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
       if (next !== s) apply(next);
     };
 
+    // R48: the model lacks a composition's text until `compositionend`; a blur then waits for it.
     const onBlur = (): void => {
-      if (!composing.current) handlers.current.onCommit();
+      if (composing.current) commitAfterComposition.current = true;
+      else handlers.current.onCommit();
+    };
+    const onFocus = (): void => {
+      commitAfterComposition.current = false;
     };
 
     el.addEventListener('paste', onTransfer);
@@ -241,6 +253,7 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
     el.addEventListener('compositionstart', onCompositionStart);
     el.addEventListener('compositionend', onCompositionEnd);
     el.addEventListener('blur', onBlur);
+    el.addEventListener('focus', onFocus);
     document.addEventListener('selectionchange', onSelectionChange);
     return () => {
       el.removeEventListener('paste', onTransfer);
@@ -250,6 +263,7 @@ export function TextBox(props: TextBoxProps): React.JSX.Element {
       el.removeEventListener('compositionstart', onCompositionStart);
       el.removeEventListener('compositionend', onCompositionEnd);
       el.removeEventListener('blur', onBlur);
+      el.removeEventListener('focus', onFocus);
       document.removeEventListener('selectionchange', onSelectionChange);
     };
   }, []);

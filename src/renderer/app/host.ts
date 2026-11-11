@@ -3,6 +3,7 @@ import { createExportFlow, createExportWriter } from '../clipboard-export/model/
 import { rasterise } from '../clipboard-export/rasterise';
 import { emptyDoc, setStyle, type Doc } from '@core/doc-model';
 import { createEditorController } from '../editor';
+import { createFinishEditing } from './finish-editing';
 import { createFileFlows } from './model/file-flows';
 import { createPresetMemory } from './model/preset-memory';
 import { createSession, sessionUpdate } from './model/session';
@@ -90,6 +91,8 @@ export async function createWindowHost(main: ChalkbondApi) {
       }
     },
     encodeUtf8: (text) => encoder.encode(text),
+    // F4a: an open label or text editor is committed before New, Open or close decide.
+    finishEditing: createFinishEditing(controller),
   });
   // EX1, EX2: the Export dialog's choices and the Save dialog (C3); EX3–EX5: the writer writes the
   // snapshot taken at Save… (no dirty, session or recovery change).

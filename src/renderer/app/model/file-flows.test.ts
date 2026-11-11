@@ -87,6 +87,8 @@ interface Script {
   save?: (FileRef | null)[];
   write?: WriteFileResponse | Deferred<WriteFileResponse>;
   answers?: ('save' | 'discard' | 'cancel')[];
+  /** F4a: what each `finishEditing` call does (an open editor committing), in turn. */
+  finish?: ((controller: ReturnType<typeof fakeController>) => void)[];
 }
 
 function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset: 'slides' })) {
@@ -130,7 +132,14 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
     logError: vi.fn<(message: string) => void>(),
   } satisfies FlowMain;
   let style: 'slides' | 'journal' = 'slides';
+  const finishes = [...(script.finish ?? [])];
+  const finishEditing = vi.fn(async () => {
+    // Only a rig that scripts F4a lists it among the calls (older call lists stay as they were).
+    if (script.finish !== undefined) calls.push('finish');
+    finishes.shift()?.(controller);
+  });
   const flows = createFileFlows({
+    finishEditing,
     main,
     controller,
     session,
@@ -142,6 +151,7 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
   });
   return {
     flows,
+    finishEditing,
     main,
     controller,
     session,
@@ -704,5 +714,115 @@ describe('A9: F3 for exported pictures (clipboard-export E4) and the F14 mapping
     };
     for (const [code, problem] of Object.entries(expected))
       expect(parseProblem(code as ParseErrorCode)).toBe(problem);
+  });
+});
+
+describe('F4a: an open label or text editor is finished before F4 decides (R17)', () => {
+  const commit = (c: ReturnType<typeof fakeController>): void => c.edit();
+
+  it('close: a clean drawing with an open editor is committed first, then the prompt asks', async () => {
+    const r = rig({ answers: ['cancel'], finish: [commit] });
+    r.controller.markSaved();
+    await r.flows.requestClose();
+    expect(r.calls).toEqual(['finish', 'ask Untitled']);
+    expect(r.main.closeOk).not.toHaveBeenCalled();
+    expect(r.controller.isDirty()).toBe(true); // Cancel keeps the edit
+  });
+
+  it('close: nothing open, clean: finish resolves and the window closes without a prompt', async () => {
+    const r = rig({ finish: [] });
+    r.controller.markSaved();
+    await r.flows.requestClose();
+    expect(r.calls).toEqual(['finish', 'closeOk']);
+  });
+
+  it('New: committed first; Save writes the committed drawing, then New goes ahead', async () => {
+    const out = ref('ethanol.chalk');
+    const r = rig({ answers: ['save'], save: [out], finish: [commit] });
+    r.controller.markSaved();
+    await r.flows.newDrawing();
+    expect(r.calls.slice(0, 3)).toEqual(['finish', 'ask Untitled', 'chooseSave Untitled.chalk']);
+    const saved = parse(written(r.main));
+    expect(saved.ok && Object.keys(saved.value.atoms)).toHaveLength(1); // the committed edit
+    expect(r.finishEditing).toHaveBeenCalledTimes(2); // before F4 and after its Save
+    expect(r.controller.load).toHaveBeenCalledTimes(1);
+  });
+
+  it('openRef (F11 / F12): read and validated first, then finished, then the prompt', async () => {
+    const file = ref('toluene.chalk');
+    const r = rig({
+      files: { [file.id]: chalkFile(golden('toluene')) },
+      answers: ['cancel'],
+      finish: [commit],
+    });
+    r.controller.markSaved();
+    await r.flows.openRef(file);
+    expect(r.calls).toEqual(['read toluene.chalk', 'finish', 'ask Untitled']);
+    expect(r.controller.load).not.toHaveBeenCalled();
+  });
+
+  it('Open (Ctrl+O): a file that fails to validate shows F14 and never finishes the editor', async () => {
+    const file = ref('broken.chalk');
+    const r = rig({
+      open: file,
+      files: { [file.id]: { ok: true, bytes: enc.encode('{ nope') } },
+      finish: [],
+    });
+    await r.flows.open();
+    expect(r.calls).toEqual(['chooseOpen', 'read broken.chalk', 'error damaged broken.chalk']);
+    expect(r.finishEditing).not.toHaveBeenCalled();
+  });
+
+  it('Open (Ctrl+O): chosen, validated, finished, prompted', async () => {
+    const file = ref('toluene.chalk');
+    const r = rig({
+      open: file,
+      files: { [file.id]: chalkFile(golden('toluene')) },
+      answers: ['discard'],
+      finish: [commit],
+    });
+    r.controller.markSaved();
+    await r.flows.open();
+    expect(r.calls.slice(0, 4)).toEqual([
+      'chooseOpen',
+      'read toluene.chalk',
+      'finish',
+      'ask Untitled',
+    ]);
+    expect(r.controller.load).toHaveBeenCalledTimes(1);
+  });
+
+  it('R14: an editor opened during the Save write is finished after it; the newer text stops New, Open and close', async () => {
+    for (const action of ['new', 'open', 'close'] as const) {
+      const write = deferred<WriteFileResponse>();
+      const out = ref('esterification.chalk');
+      const file = ref('toluene.chalk');
+      // 1st finish: nothing open. 2nd (after Save): the draft typed during the write commits.
+      const r = rig({
+        answers: ['save'],
+        save: [out],
+        write,
+        files: { [file.id]: chalkFile(golden('toluene')) },
+        finish: [() => undefined, commit],
+      });
+      r.controller.edit();
+      const running =
+        action === 'new'
+          ? r.flows.newDrawing()
+          : action === 'open'
+            ? r.flows.openRef(file)
+            : r.flows.requestClose();
+      await vi.waitFor(() => expect(r.main.writeFile).toHaveBeenCalled());
+      write.resolve({ ok: true });
+      await running;
+      expect(r.controller.markSaved, action).toHaveBeenCalledTimes(1); // the write itself was clean
+      expect(r.finishEditing, action).toHaveBeenCalledTimes(2);
+      expect(r.controller.isDirty(), action).toBe(true);
+      expect(r.controller.load, action).not.toHaveBeenCalled();
+      expect(r.main.closeOk, action).not.toHaveBeenCalled();
+      expect(r.main.ask, action).toHaveBeenCalledTimes(1);
+      // The session is the saved file; N1's '*' follows the editor's dirty event (CO3, host).
+      expect(r.session, action).toMatchObject({ kind: 'chalk', name: 'esterification.chalk' });
+    }
   });
 });

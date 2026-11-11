@@ -104,6 +104,7 @@ draft's, kept or amended at review; R-rows are the reviewer's resolutions.
 | R14 | F4's **Save** answer proceeds with the pending New, Open or close only if the save succeeded **and** the drawing is clean afterwards (`!dirty`). An edit during the write (R7) keeps the newer, dirty drawing and stops the pending action: no replacement, no close, no extra box | An older snapshot reaching disk must never let newer edits be discarded silently | 2026-11-11 |
 | R15 | ST4: a settings read that fails (other than `ENOENT`, after 3 × 100 ms retries of `EBUSY` / `EPERM`) runs on in-memory defaults and never writes that file for the rest of the run | Unreadable preferences must never be overwritten by defaults; a busy file (scanner, sync) usually reads a moment later | 2026-11-11 |
 | R16 | ST5: the stored window takes int32 integers only (size > 0); anything else is W1 via the ST3 repair | A hand-edited or corrupted rectangle must never reach the native `Rectangle` conversion | 2026-11-11 |
+| R17 | F4a: New, Open and close (window close, double-click, drop) first finish an open label or text editor through its commit path, then decide dirty; again after a prompt-triggered Save | A teacher's last typed label must never be lost or saved stale because the native close came while the box was still open | 2026-11-11 |
 | R13 | Draft open questions resolved: Q1 visible (O3); Q2 remembered (O4); Q3 no (O9); Q4 recover (O5); Q5 one-click per user (O6); Q6 en-US (O9); Q7 → R4; Q8 1.0.0 (O6); Q9 yes (O9); Q10 8 (O4) | Recorded so no question stays open | 2026-11-10 |
 
 ---
@@ -238,7 +239,8 @@ focus) and disarms it; any other keydown also disarms it.
 | F1 New | F4; then `controller.load(setStyle(emptyDoc(clock()), { preset: settings.newDrawingStyle }))` (no undo step, not dirty); session Untitled; N4 recovery clear |
 | F2 Open | I1 (filter **Chalkbond drawings** `*.chalk;*.png;*.svg` and, under clipboard-export PDF-A, `*.pdf`; starts in the last open folder, else Documents); cancel → nothing. A name without an Open extension (typed `notes.docx`) → main shows the F14 `unsupported` box built from its base name, I1 answers `null`: the drawing is untouched, no prompt, no ref. Only the name is judged here; a missing file, a directory or a read error with an Open extension is reported by I2 with its own F14 row. Then F3 |
 | F3 Open a ref | I2 → bytes; `fileKindOf(name)`; `extractDrawing(kind, bytes, decodeUtf8)`; `parse`; any failure → I5 error box (F14), the current drawing untouched, no prompt. Success → F4; then `controller.load(doc)`; session = the file (kind `chalk` or `picture`); N2 (recent, last folder); N4. No notice (the title says it) |
-| F4 `confirmDiscard()` | Not dirty → proceed. Dirty → prompt: Save → F5 (cancelled or failed → stop; succeeded but the drawing changed during the write, so still dirty → stop, R14); Don't save → proceed; Cancel → stop. The prompt names the session as the title does (`esterification`, `toluene.png`, `Untitled`) |
+| F4 `confirmDiscard()` | First F4a. Not dirty → proceed. Dirty → prompt: Save → F5, then F4a again (cancelled or failed → stop; succeeded but the drawing changed during the write, or a label or text editor was open, so still dirty → stop, R14); Don't save → proceed; Cancel → stop. The prompt names the session as the title does (`esterification`, `toluene.png`, `Untitled`) |
+| F4a Finish editing | (R17) Before F4 decides anything for New, Open (after F3 validated the file) or close (F13, a handed-over open: F11, F12), and again after F4's Save before R14 decides, an open label or text editor is finished through its own commit and formatting path, as a click elsewhere does: the host's DOM-only port `finishEditing(): Promise<void>` (`src/renderer/app/finish-editing.ts`, injected into `file-flows.ts`) sees an open editor through the controller's public `canRun('focus-name-field')` (false only while one is open), subscribes, blurs the editor's box and resolves once the editor has closed (no timeout). An IME composition in progress keeps it open until `compositionend` (editor IME rule). The name field's text is not a drawing edit and is never inserted. A gesture in progress is cancelled by the existing rules, never committed. File keys stay ignored while typing (K1) |
 | F5 Save | Session is a `.chalk` file with a writable ref → `before = getDoc()`, write `serialize(before)` (C4); else F6. Success: if `getDoc() === before` then `controller.markSaved()` and `forcedDirty` cleared (R7); else the drawing stays dirty; session file kept; N4; notice "Saved esterification.chalk." (the file's base name). Failure → I5 with the write problem, still dirty |
 | F6 Save as | C3 with `format: 'chalk'`, suggested `<session name without extension>.chalk` or `Untitled.chalk`; folder: the picture's folder for a picture-opened drawing, else the last save folder, else Documents. Main decides the folder from the session ref it last received on N2 (the renderer sends no folder or path). Cancel or a failed write changes nothing (session, title, dirty). Then write and F5's success path; the session becomes that file (kind `chalk`, writable ref); N2 |
 | F7 Dirty | `dirty = controller.isDirty() \|\| session.forcedDirty`; `forcedDirty` is true only for a recovered drawing until saved. A picture-opened drawing is not dirty until edited |
@@ -591,7 +593,8 @@ const controller = createEditorController({
   wins), so every flow is unit-tested in node with fakes. While a flow runs, New, Open (dialog),
   Save and Save as are ignored. Every session change publishes N1 itself (title and dirty are
   derived after the session changed, not only on editor events). Open validates the bytes before
-  F4; any failure or cancel leaves the drawing and session unchanged.
+  F4; any failure or cancel leaves the drawing and session unchanged. A `finishEditing` port (F4a)
+  runs before F4's dirty check and after its Save.
 - **CO5** Startup: I7 → `recovery` ? RC3 (then RC4) : `open` ? F3 : the empty drawing. The canvas
   has focus afterwards (editor K5).
 
@@ -690,7 +693,7 @@ ships `LICENSES.chromium.html` itself.
 
 ## Behaviour rules index
 
-W1–W6, M1–M3, K1–K3, CM1–CM3, F1–F14, RC1–RC6, ST1–ST5, AB1, V1–V3, IC1–IC3, SEC1–SEC15,
+W1–W6, M1–M3, K1–K3, CM1–CM3, F1–F14 (and F4a), RC1–RC6, ST1–ST5, AB1, V1–V3, IC1–IC3, SEC1–SEC15,
 CO1–CO5, TH1–TH6, LG1, I1–I2.
 
 ## Required changes to finished modules and scaffold
