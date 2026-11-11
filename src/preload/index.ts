@@ -12,6 +12,7 @@ const api: ChalkbondApi = {
   chooseSave: (format, suggestedName) =>
     ipcRenderer.invoke(CHANNELS.chooseSave, { format, suggestedName }),
   writeFile: (ref, data) => ipcRenderer.invoke(CHANNELS.writeFile, { ref: ref.id, data }),
+  printPdf: (request) => ipcRenderer.invoke(CHANNELS.printPdf, request),
   ask: (request) => ipcRenderer.invoke(CHANNELS.ask, request),
   showFileError: (problem, name) => ipcRenderer.invoke(CHANNELS.showFileError, { problem, name }),
   startup: () => ipcRenderer.invoke(CHANNELS.startup, {}),

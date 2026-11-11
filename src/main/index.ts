@@ -1,6 +1,7 @@
 import { createClipboard } from './clipboard-export/clipboard';
+import { createPdfPrinter } from './clipboard-export/pdf';
 import { randomUUID } from 'node:crypto';
-import { stat } from 'node:fs/promises';
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { app, BrowserWindow, Menu, screen, clipboard, ClipboardItem, dialog } from 'electron';
 import { createDialogs } from './dialogs';
@@ -32,6 +33,7 @@ import {
   fileErrorSchema,
   readFileSchema,
   writeFileSchema,
+  printPdfSchema,
   sessionFileSchema,
   closeOkSchema,
   setSettingsSchema,
@@ -192,6 +194,19 @@ void app.whenReady().then(async () => {
   });
   ipc.handle(CHANNELS.writeFile, writeFileSchema, ({ ref, data }) =>
     files.write(entryOf(ref), data),
+  );
+  // C5 (PD1): a hidden window prints the export SVG; window and temp folder go in a finally.
+  ipc.handle(
+    CHANNELS.printPdf,
+    printPdfSchema,
+    createPdfPrinter({
+      tempRoot: () => app.getPath('temp'),
+      mkdtemp: (prefix) => mkdtemp(prefix),
+      writeFile: (path, text) => writeFile(path, text, 'utf8'),
+      rm: (path) => rm(path, { recursive: true, force: true }),
+      newWindow: (options) => new BrowserWindow(options),
+      log: (message) => log('pdf', message),
+    }),
   );
   ipc.handle(CHANNELS.ask, askSchema, (request) => dialogs.ask(request));
   ipc.handle(CHANNELS.showFileError, fileErrorSchema, ({ problem, name }) =>

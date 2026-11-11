@@ -7,8 +7,10 @@ import {
   drawingPayload,
   exportSvg,
   MAX_PICTURE_BYTES,
+  readPdfDrawing,
   readPngDrawing,
   readSvgDrawing,
+  withPdfDrawing,
   withPictureChunks,
 } from '@core/clipboard-export';
 import { addAtom, addObject, emptyDoc, MAX_FILE_BYTES, setStyle, type Doc } from '@core/doc-model';
@@ -17,6 +19,8 @@ import { createEditorController } from '../../editor';
 import type {
   FileProblem,
   FileRef,
+  PrintPdfRequest,
+  PrintPdfResponse,
   RendererSettings,
   WriteFileResponse,
 } from '../../../shared/ipc-types';
@@ -350,7 +354,10 @@ const SVG_REF: FileRef = {
 };
 const encoder = new TextEncoder();
 
-function writerRig(over: Partial<ExportWriterOptions> = {}) {
+type WriterOverrides = Omit<Partial<ExportWriterOptions>, 'main'> & {
+  main?: Partial<ExportWriterOptions['main']>;
+};
+function writerRig(over: WriterOverrides = {}) {
   const writes: { ref: FileRef; data: Uint8Array }[] = [];
   const writeFile = vi.fn((ref: FileRef, data: Uint8Array) => {
     writes.push({ ref, data });
@@ -368,13 +375,16 @@ function writerRig(over: Partial<ExportWriterOptions> = {}) {
       reduced,
     }),
   );
+  const printPdf = vi.fn((_request: PrintPdfRequest) =>
+    Promise.resolve<PrintPdfResponse>({ ok: false }),
+  );
   const options: ExportWriterOptions = {
-    main: { writeFile, showFileError },
     rasterise,
     notify,
     encodeUtf8: (text) => encoder.encode(text),
     logError,
     ...over,
+    main: { writeFile, showFileError, printPdf, ...over.main },
   };
   return {
     write: createExportWriter(options),
@@ -626,5 +636,123 @@ describe('C11 snapshot and side effects (EX4)', () => {
     expect(controller.getDoc()).toBe(doc);
     expect(controller.isDirty()).toBe(dirty);
     expect(controller.undoLabel()).toBe(undo);
+  });
+});
+
+// C12 (EX3 PDF, PDF-A2, N-E3, C9): the PDF is printed in main (C5) from the unembedded SVG; the
+// renderer embeds the drawing with withPdfDrawing and writes through C4; a refusal, a payload over
+// MAX_FILE_BYTES or an embedded PDF over MAX_PICTURE_BYTES writes the printed PDF unchanged + N-E3.
+const PDF_REF: FileRef = {
+  id: '00000000-0000-4000-8000-0000000000a3',
+  name: 'toluene.pdf',
+  kind: 'pdf',
+};
+const PDF_CHOICES: ExportChoices = { format: 'pdf', pngDpi: 300, pngWhite: false };
+const TOO_LARGE_PDF =
+  'Exported toluene.pdf. It is too large to open again in Chalkbond, so keep the .chalk file.';
+function joinBytes(parts: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
+  return out;
+}
+/** A minimal classic-xref PDF (as Chromium prints), with a comment of `filler` bytes. */
+function classicPdf(filler = 0): Uint8Array {
+  const head = ascii('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n');
+  const pad =
+    filler > 0 ? joinBytes([ascii('%'), new Uint8Array(filler).fill(97), ascii('\n')]) : ascii('');
+  const xrefAt = head.length + pad.length;
+  const tail = ascii(
+    'xref\n0 2\n0000000000 65535 f \n0000000009 00000 n \n' +
+      `trailer\n<< /Size 2 /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF\n`,
+  );
+  return joinBytes([head, pad, tail]);
+}
+function pdfRig(printed: Uint8Array | null, over: WriterOverrides = {}) {
+  const printPdf = vi.fn((_request: PrintPdfRequest) =>
+    Promise.resolve<PrintPdfResponse>(
+      printed === null ? { ok: false } : { ok: true, pdf: printed },
+    ),
+  );
+  return { ...writerRig({ ...over, main: { printPdf } }), printPdf };
+}
+
+describe('C12 PDF (EX3, PDF-A2)', () => {
+  it('prints exportSvg(doc, null, { embed: false }) at its size and writes it with the drawing', async () => {
+    const printed = classicPdf();
+    const r = pdfRig(printed);
+    const doc = drawing(3);
+    await r.write(PDF_REF, PDF_CHOICES, doc);
+    const svg = exportSvg(doc, null, { embed: false });
+    expect(r.printPdf).toHaveBeenCalledExactlyOnceWith({
+      svg: svg.svg,
+      widthPt: svg.width,
+      heightPt: svg.height,
+    });
+    const embedded = withPdfDrawing(printed, drawingPayload(doc));
+    if (!embedded.ok) throw new Error(embedded.reason);
+    expect(r.writes).toEqual([{ ref: PDF_REF, data: embedded.pdf }]);
+    expect(readPdfDrawing(r.writes[0]?.data ?? new Uint8Array())).toBe(drawingPayload(doc));
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith('info', 'Exported toluene.pdf.');
+    expect(r.rasterise).not.toHaveBeenCalled();
+  });
+
+  it('an embedder refusal (PDF-A3) writes the printed PDF unchanged, N-E3, the reason logged', async () => {
+    const printed = ascii('%PDF-1.7\nnot a classic table\n%%EOF\n');
+    const r = pdfRig(printed);
+    await r.write(PDF_REF, PDF_CHOICES, drawing());
+    expect(r.writes).toEqual([{ ref: PDF_REF, data: printed }]);
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith('info', TOO_LARGE_PDF);
+    expect(r.logError.mock.calls.flat().join(' ')).toMatch(/unrecognised/);
+  });
+
+  it('a payload over MAX_FILE_BYTES writes the printed PDF unchanged and N-E3', async () => {
+    const printed = classicPdf();
+    const r = pdfRig(printed);
+    await r.write(PDF_REF, PDF_CHOICES, oversized());
+    expect(r.writes).toEqual([{ ref: PDF_REF, data: printed }]);
+    expect(readPdfDrawing(r.writes[0]?.data ?? new Uint8Array())).toBeNull();
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith('info', TOO_LARGE_PDF);
+    expect(r.logError).toHaveBeenCalled();
+  });
+
+  // The cap is injected (as rasterise's C9 test does): the core embedder builds a string of the
+  // whole file, and a real 64 MiB PDF exhausts a test worker's memory. Production uses the default.
+  it('an embedded PDF over the picture cap: the printed PDF unchanged and N-E3', async () => {
+    const doc = drawing(2);
+    const printed = classicPdf(1000);
+    const embedded = withPdfDrawing(printed, drawingPayload(doc));
+    if (!embedded.ok) throw new Error(embedded.reason);
+    const r = pdfRig(printed, { pictureCap: embedded.pdf.length - 1 });
+    await r.write(PDF_REF, PDF_CHOICES, doc);
+    expect(r.writes).toEqual([{ ref: PDF_REF, data: printed }]);
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith('info', TOO_LARGE_PDF);
+    expect(r.logError).toHaveBeenCalled();
+    const fits = pdfRig(printed, { pictureCap: embedded.pdf.length });
+    await fits.write(PDF_REF, PDF_CHOICES, doc);
+    expect(fits.writes).toEqual([{ ref: PDF_REF, data: embedded.pdf }]);
+    expect(fits.notify).toHaveBeenCalledExactlyOnceWith('info', 'Exported toluene.pdf.');
+  });
+
+  it('a printed PDF itself over MAX_PICTURE_BYTES fails as before: the box, nothing sent', async () => {
+    const huge = new Uint8Array(MAX_PICTURE_BYTES + 1);
+    huge.set(ascii('%PDF-'));
+    const r = pdfRig(huge); // the default cap: MAX_PICTURE_BYTES
+    await r.write(PDF_REF, PDF_CHOICES, drawing());
+    expect(r.writeFile).not.toHaveBeenCalled();
+    expect(r.showFileError).toHaveBeenCalledExactlyOnceWith('write-failed', 'toluene.pdf');
+    expect(r.notify).not.toHaveBeenCalled();
+  });
+
+  it('a failed print: the error box (write-failed), no write, no notice', async () => {
+    const r = pdfRig(null);
+    await r.write(PDF_REF, PDF_CHOICES, drawing());
+    expect(r.writeFile).not.toHaveBeenCalled();
+    expect(r.showFileError).toHaveBeenCalledExactlyOnceWith('write-failed', 'toluene.pdf');
+    expect(r.notify).not.toHaveBeenCalled();
+    expect(r.logError).toHaveBeenCalled();
   });
 });

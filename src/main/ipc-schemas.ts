@@ -49,6 +49,18 @@ export const writeFileSchema = z
     data: z.instanceof(Uint8Array).refine((bytes) => bytes.length <= 64 * 1024 * 1024),
   })
   .strict();
+/** C5 (clipboard-export PD1, C9): an `<svg` of up to 64 MiB of UTF-8; a size in (0, 14 400] pt. */
+const pagePt = z.number().refine((n) => Number.isFinite(n) && n > 0 && n <= 14_400);
+export const printPdfSchema = z
+  .object({
+    svg: z
+      .string()
+      .startsWith('<svg')
+      .refine((text) => Buffer.byteLength(text, 'utf8') <= maxPictureBytes),
+    widthPt: pagePt,
+    heightPt: pagePt,
+  })
+  .strict();
 export const askSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('save-changes'), name: baseName }).strict(),
   z.object({ kind: z.literal('recover') }).strict(),

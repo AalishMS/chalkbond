@@ -8,6 +8,7 @@ import { serialize } from '../src/core/doc-model';
 import { renderSvg } from '../src/core/svg-render';
 import { goldenDoc } from './harness';
 import { launchApp } from './launch';
+import { viewerDifferences } from './pdf-viewer';
 
 test('P8/P9 PD1 print structure and original viewer control', async ({ browserName }, info) => {
   void browserName;
@@ -82,85 +83,17 @@ test('P8/P9 PD1 print structure and original viewer control', async ({ browserNa
     expect(embedded.ok).toBe(true);
     if (!embedded.ok) throw new Error(embedded.reason);
     expect(readPdfDrawing(embedded.pdf)).toBe(payload);
-    const captures = await app.evaluate(
-      async ({ BrowserWindow, app }, input) => {
-        const { mkdtemp, writeFile, rm } = process.getBuiltinModule(
-          'node:fs/promises',
-        ) as typeof FsPromises;
-        const { join } = process.getBuiltinModule('node:path') as typeof NodePath;
-        const folder = await mkdtemp(join(app.getPath('temp'), 'chalkbond-pdf-viewer-'));
-        const capture = async (bytes: number[], name: string, ink: boolean) => {
-          const path = join(folder, name);
-          await writeFile(path, Buffer.from(bytes));
-          const viewer = new BrowserWindow({
-            show: false,
-            width: 800,
-            height: 600,
-            minWidth: 800,
-            minHeight: 600,
-            webPreferences: { plugins: true, partition: 'probe-pdf', backgroundThrottling: false },
-          });
-          try {
-            await viewer.loadFile(path);
-            const deadline = Date.now() + 10_000;
-            let previous: Buffer = Buffer.alloc(0);
-            do {
-              const image = await viewer.webContents.capturePage(undefined, { stayHidden: true });
-              const pixels = image.toBitmap();
-              const size = image.getSize();
-              let white = 0,
-                pageInk = 0;
-              // Ignore toolbar and thumbnails: dark ink must touch white paper in the page area.
-              for (let y = 65; y < size.height - 3; y++) {
-                for (let x = 320; x < size.width - 3; x++) {
-                  const i = (y * size.width + x) * 4;
-                  if (pixels[i] === 255 && pixels[i + 1] === 255 && pixels[i + 2] === 255) white++;
-                  if (
-                    (pixels[i] ?? 255) < 100 &&
-                    (pixels[i + 1] ?? 255) < 100 &&
-                    (pixels[i + 2] ?? 255) < 100 &&
-                    [12, size.width * 12].some((delta) =>
-                      [i - delta, i + delta].every(
-                        (at) =>
-                          pixels[at] === 255 && pixels[at + 1] === 255 && pixels[at + 2] === 255,
-                      ),
-                    )
-                  )
-                    pageInk++;
-                }
-              }
-              if (white > 1000 && (!ink || pageInk > 0) && pixels.equals(previous))
-                return Array.from(pixels);
-              previous = pixels;
-              await new Promise((resolve) => setTimeout(resolve, 100));
-            } while (Date.now() < deadline);
-            throw new Error('INCONCLUSIVE: PDF page ' + name + ' never became ready within 10s');
-          } finally {
-            viewer.destroy();
-          }
-        };
-        try {
-          const original = await capture(input.pdf, 'original.pdf', true);
-          const blank = await capture(input.blank, 'blank.pdf', false);
-          const updated = await capture(input.updated, 'updated.pdf', true);
-          let different = 0,
-            updatedDifferent = 0;
-          for (let i = 0; i < original.length; i += 4) {
-            if (original.slice(i, i + 4).some((v, j) => v !== blank[i + j])) different++;
-            if (original.slice(i, i + 4).some((v, j) => v !== updated[i + j])) updatedDifferent++;
-          }
-          return {
-            different,
-            updatedDifferent,
-            pixels: original.length / 4,
-            windows: BrowserWindow.getAllWindows().length,
-          };
-        } finally {
-          await rm(folder, { recursive: true, force: true });
-        }
-      },
-      { pdf: result.pdf, blank: result.blank, updated: Array.from(embedded.pdf) },
-    );
+    const viewed = await viewerDifferences(app, [
+      { name: 'original.pdf', bytes: result.pdf, ink: true },
+      { name: 'blank.pdf', bytes: result.blank, ink: false },
+      { name: 'updated.pdf', bytes: Array.from(embedded.pdf), ink: true },
+    ]);
+    const captures = {
+      different: viewed.differences[1] ?? 0,
+      updatedDifferent: viewed.differences[2] ?? 0,
+      pixels: viewed.pixels,
+      windows: viewed.windows,
+    };
     mkdirSync(resolve('out/pdf-facts'), { recursive: true });
     writeFileSync(resolve('out/pdf-facts/print.pdf'), Buffer.from(result.pdf));
     await info.attach('observations', {

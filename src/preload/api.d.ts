@@ -6,6 +6,8 @@ import type {
   ClipboardReadResponse,
   FileProblem,
   FileRef,
+  PrintPdfRequest,
+  PrintPdfResponse,
   ReadFileResponse,
   WriteFileResponse,
   MainEvent,
@@ -25,6 +27,8 @@ export interface ChalkbondApi {
   chooseSave(format: ChooseSaveRequest['format'], suggestedName: string): Promise<FileRef | null>;
   /** C4: writes `data` to a writable ref of its kind (atomic, F9). */
   writeFile(ref: FileRef, data: Uint8Array): Promise<WriteFileResponse>;
+  /** C5: prints the export SVG to a one-page PDF in a hidden window (PD1). */
+  printPdf(request: PrintPdfRequest): Promise<PrintPdfResponse>;
   /** I4: a native question box. */
   ask<R extends AskRequest>(request: R): Promise<AskAnswer<R>>;
   /** I5: the F14 error box for `{ problem, name }` (a base name). */

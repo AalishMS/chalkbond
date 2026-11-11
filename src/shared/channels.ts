@@ -5,6 +5,7 @@ export const CHANNELS = {
   readFile: 'file:read',
   chooseSave: 'file:choose-save',
   writeFile: 'file:write',
+  printPdf: 'pdf:print',
   ask: 'dialog:ask',
   showFileError: 'dialog:file-error',
   startup: 'app:startup',

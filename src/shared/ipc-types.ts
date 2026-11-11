@@ -11,6 +11,7 @@ export interface IpcRequestMap {
   'file:read': { ref: string };
   'file:choose-save': ChooseSaveRequest;
   'file:write': { ref: string; data: Uint8Array };
+  'pdf:print': PrintPdfRequest;
   'dialog:ask': AskRequest;
   'dialog:file-error': FileErrorRequest;
   'log:error': LogErrorRequest;
@@ -54,6 +55,14 @@ export type ReadFileResponse =
 /** F14 write problems (C4). */
 export type WriteProblem = 'write-denied' | 'disk-full' | 'busy' | 'folder-gone' | 'write-failed';
 export type WriteFileResponse = { ok: true } | { ok: false; problem: WriteProblem };
+/** C5 (clipboard-export PD1): the unembedded export SVG and its size in pt. */
+export interface PrintPdfRequest {
+  svg: string;
+  widthPt: number;
+  heightPt: number;
+}
+/** C5: the printed PDF (starts with `%PDF-`, at most 64 MiB), or a failure main has logged. */
+export type PrintPdfResponse = { ok: true; pdf: Uint8Array } | { ok: false };
 /** Every F14 problem (I5). */
 export type FileProblem = ReadProblem | WriteProblem | 'no-drawing' | 'newer-version' | 'damaged';
 export interface ChooseSaveRequest {

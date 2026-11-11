@@ -439,9 +439,20 @@ Open of the PDF gives an equal document; CS6: with `printToPDF` stubbed to rejec
 `chalkbond-pdf-*` temp folder no longer exists afterwards and the error box shows "Couldn't save".
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass (SC9; the PDF round trip under A)
-- [ ] The hidden window has `javascript: false`, no preload, and is destroyed after each print (e2e: `BrowserWindow.getAllWindows().length` is 1 afterwards)
-- [ ] Shot exists
+- [x] Unit and e2e tests pass (SC9; the PDF round trip under A; Linux only)
+- [x] The hidden window has `javascript: false`, no preload, and is destroyed after each print (e2e: `BrowserWindow.getAllWindows().length` is 1 afterwards)
+- [x] Shot exists (`C12/exported-pdf.png`, looked at beside A17's N-E1 row)
+
+C12 worker evidence (2026-11-11, Linux): red first: `pdf.test.ts` (module missing) and 6 export-flow
+PDF tests failed; both `export-pdf.spec.ts` tests failed against a build without C5. Main
+`pdf.ts` prints per PD1 (temp `chalkbond-pdf-*`, hidden window without script or preload; window
+destroyed and folder removed in a `finally`; only `%PDF-` bytes up to 64 MiB returned). The
+renderer embeds with `withPdfDrawing`; a refusal, a payload over 20 MiB or an embedded PDF over
+64 MiB writes the printed PDF and shows N-E3 (logged); a printed PDF over 64 MiB is not sent (the
+`write-failed` box). The 64 MiB embedding case is unit-tested with an injected cap: the core
+embedder builds a whole-file string, and a real 64 MiB PDF exhausted the test worker's memory.
+The C4 viewer capture moved to `e2e/pdf-viewer.ts` (shared by `pdf-facts.spec.ts`). `.pdf` in
+Open came with A9; the drop list waits for A15. Windows run (C4 confirmation, real Arial) pending.
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- C12` →
 `C12/exported-pdf.png` (hint "Exported esterification.pdf." or, under B, the same notice; the

@@ -5,20 +5,25 @@
 // (settings:set), closes the dialog, then asks for the file (C3). Writing the file (EX3–EX5) is the
 // `chosen` port's job; `createExportWriter` is that port (C11, C12).
 import {
+  drawingPayload,
   exportFileName,
   exportSvg,
   groupDigits,
   MAX_PICTURE_BYTES,
   pngPixelSize,
+  readPdfDrawing,
   readPngDrawing,
   readSvgDrawing,
+  withPdfDrawing,
 } from '@core/clipboard-export';
-import type { Doc } from '@core/doc-model';
+import { MAX_FILE_BYTES, type Doc } from '@core/doc-model';
 import type { SvgDocument } from '@core/svg-render';
 import type { EditorController } from '../../editor';
 import type {
   FileProblem,
   FileRef,
+  PrintPdfRequest,
+  PrintPdfResponse,
   RendererSettings,
   WriteFileResponse,
 } from '../../../shared/ipc-types';
@@ -199,10 +204,11 @@ export function exportNotice(
 }
 
 export interface ExportWriterOptions {
-  /** C4 and the app-shell error box (I5). */
+  /** C4, the app-shell error box (I5) and C5 (the PDF printed in main, PD1). */
   main: {
     writeFile(ref: FileRef, data: Uint8Array): Promise<WriteFileResponse>;
     showFileError(problem: FileProblem, name: string): Promise<void>;
+    printPdf(request: PrintPdfRequest): Promise<PrintPdfResponse>;
   };
   /** R1 (`rasterise.ts`). */
   rasterise(
@@ -214,6 +220,8 @@ export interface ExportWriterOptions {
   notify(kind: 'info' | 'error', text: string): void;
   encodeUtf8(text: string): Uint8Array;
   logError?(message: string): void;
+  /** The picture carrier cap (Decision C9); default `MAX_PICTURE_BYTES`. A test seam only. */
+  pictureCap?: number;
 }
 
 /** The picture to write and what it holds (judged from its own bytes, EX4). */
@@ -232,8 +240,29 @@ export function createExportWriter(
   o: ExportWriterOptions,
 ): (ref: FileRef, choices: ExportChoices, doc: Doc) => Promise<void> {
   const log = o.logError ?? (() => undefined);
+  const cap = o.pictureCap ?? MAX_PICTURE_BYTES;
 
-  async function picture(choices: ExportChoices, doc: Doc): Promise<Picture | null> {
+  /** PDF-A2: the printed PDF with the drawing, or unchanged (N-E3, logged) when it can't hold it. */
+  function withDrawing(printed: Uint8Array, doc: Doc): Uint8Array {
+    if (printed.length > cap) return printed; // fails below as any picture over the cap
+    const payload = drawingPayload(doc);
+    if (payload.length > MAX_FILE_BYTES) {
+      log('PDF written without the drawing: the drawing is over 20 MiB');
+      return printed;
+    }
+    const embedded = withPdfDrawing(printed, payload);
+    if (!embedded.ok) {
+      log(`PDF written without the drawing: the embedder refused (${embedded.reason})`);
+      return printed;
+    }
+    if (embedded.pdf.length > cap) {
+      log('PDF written without the drawing: with it the file would be over 64 MiB');
+      return printed;
+    }
+    return embedded.pdf;
+  }
+
+  async function picture(choices: ExportChoices, doc: Doc): Promise<Picture> {
     if (choices.format === 'png') {
       const png = await o.rasterise(exportSvg(doc, null), choices.pngDpi, choices.pngWhite);
       return { bytes: png.png, embedded: readPngDrawing(png.png) !== null, reduced: png.reduced };
@@ -242,11 +271,22 @@ export function createExportWriter(
       const { svg } = exportSvg(doc, null);
       return { bytes: o.encodeUtf8(svg), embedded: readSvgDrawing(svg) !== null, reduced: false };
     }
-    return null; // PDF: C12
+    // EX3 PDF: printed in main from the unembedded SVG (C5), the drawing embedded here (R2).
+    const svg = exportSvg(doc, null, { embed: false });
+    const printed = await o.main.printPdf({
+      svg: svg.svg,
+      widthPt: svg.width,
+      heightPt: svg.height,
+    });
+    if (!printed.ok) throw new Error('PDF printing failed');
+    const bytes = withDrawing(printed.pdf, doc);
+    // Read back from the bytes written; a PDF over the cap is not written, so it is not read.
+    const embedded = bytes.length <= cap && readPdfDrawing(bytes) !== null;
+    return { bytes, embedded, reduced: false };
   }
 
   return async (ref, choices, doc) => {
-    let made: Picture | null;
+    let made: Picture;
     try {
       made = await picture(choices, doc);
     } catch (error) {
@@ -254,9 +294,8 @@ export function createExportWriter(
       await o.main.showFileError('write-failed', ref.name);
       return;
     }
-    if (made === null) return;
     // C9: a picture over the carrier cap fails as before; it is never sent to main.
-    if (made.bytes.length > MAX_PICTURE_BYTES) {
+    if (made.bytes.length > cap) {
       log(`Export refused: ${made.bytes.length} bytes is over the picture limit`);
       await o.main.showFileError('write-failed', ref.name);
       return;

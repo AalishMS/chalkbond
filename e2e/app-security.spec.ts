@@ -16,6 +16,7 @@ test('named bridge logs errors and denies windows and permissions', async () => 
       'logError',
       'onMainEvent',
       'platform',
+      'printPdf',
       'readFile',
       'sessionFile',
       'setSettings',
