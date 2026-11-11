@@ -17,6 +17,9 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
         'copy-whole': () => {
           void copyFlow.copy();
         },
+        paste: () => {
+          void copyFlow.paste();
+        },
       }),
     [controller, copyFlow],
   );

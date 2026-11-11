@@ -23,6 +23,7 @@ export async function createWindowHost(main: ChalkbondApi) {
   const copyFlow = createCopyFlow({
     controller,
     write: (value) => main.clipboardWrite(value),
+    read: () => main.clipboardRead(),
     rasterise,
     schedule: (fn, ms) => {
       const id = setTimeout(fn, ms);

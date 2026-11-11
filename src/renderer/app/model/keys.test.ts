@@ -1,4 +1,5 @@
-// K1 host keys (SPEC-app-shell.md "Keyboard (host keys)"): the rows built so far (C8: Ctrl+C).
+// K1 host keys (SPEC-app-shell.md "Keyboard (host keys)"): the rows built so far (C8: Ctrl+C,
+// C9: Ctrl+V).
 import { describe, expect, it } from 'vitest';
 import { globalCommand } from '../../editor/model/keymap';
 import { hostKey, type HostKeyContext, type KeyInput } from './keys';
@@ -11,7 +12,7 @@ const ctrl = (key: string, mods: Partial<KeyInput> = {}): KeyInput => ({
   metaKey: false,
   ...mods,
 });
-const canvas: HostKeyContext = { textTarget: false, selectionEmpty: true };
+const canvas: HostKeyContext = { textTarget: false, selectionEmpty: true, idle: true };
 
 describe('hostKey', () => {
   it('Ctrl+C on a non-text target with nothing selected copies the whole drawing (CB-K)', () => {
@@ -25,17 +26,31 @@ describe('hostKey', () => {
   });
 
   it('never handles Ctrl+C in a text target (R4: native text copy)', () => {
-    expect(hostKey(ctrl('c'), { textTarget: true, selectionEmpty: true })).toBeNull();
-    expect(hostKey(ctrl('c'), { textTarget: true, selectionEmpty: false })).toBeNull();
+    expect(hostKey(ctrl('c'), { textTarget: true, selectionEmpty: true, idle: true })).toBeNull();
+    expect(hostKey(ctrl('c'), { textTarget: true, selectionEmpty: false, idle: true })).toBeNull();
   });
 
   it('handles no other chord: Ctrl+X stays the editor cut, modifiers rule out Ctrl+C', () => {
     expect(hostKey(ctrl('x'), canvas)).toBeNull();
-    expect(hostKey(ctrl('v'), canvas)).toBeNull();
     expect(hostKey(ctrl('c', { shiftKey: true }), canvas)).toBeNull();
     expect(hostKey(ctrl('c', { altKey: true }), canvas)).toBeNull();
     expect(hostKey(ctrl('c', { metaKey: true }), canvas)).toBeNull();
     expect(hostKey(ctrl('c', { ctrlKey: false }), canvas)).toBeNull();
     expect(hostKey(ctrl('Control'), canvas)).toBeNull();
+  });
+
+  it('Ctrl+V on a non-text target while idle pastes (CB-K: the editor paste is not reached)', () => {
+    expect(hostKey(ctrl('v'), canvas)).toBe('paste');
+    expect(hostKey(ctrl('V'), canvas)).toBe('paste'); // Caps Lock
+    expect(hostKey(ctrl('v'), { ...canvas, selectionEmpty: false })).toBe('paste');
+  });
+
+  it('leaves Ctrl+V in a text target to native text paste (R4), and while busy', () => {
+    expect(hostKey(ctrl('v'), { ...canvas, textTarget: true })).toBeNull();
+    expect(hostKey(ctrl('v'), { ...canvas, textTarget: true, selectionEmpty: false })).toBeNull();
+    expect(hostKey(ctrl('v'), { ...canvas, idle: false })).toBeNull();
+    expect(hostKey(ctrl('v', { shiftKey: true }), canvas)).toBeNull();
+    expect(hostKey(ctrl('v', { altKey: true }), canvas)).toBeNull();
+    expect(hostKey(ctrl('v', { ctrlKey: false }), canvas)).toBeNull();
   });
 });

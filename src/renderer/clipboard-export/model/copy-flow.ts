@@ -1,10 +1,10 @@
-// The copy half of the clipboard flow (SPEC-clipboard-export.md CB-C1–CB-C3, CB-Q and notices
-// N-C1–N-C6) over injected ports: DOM-free, no timers of its own. C9 adds paste on `enqueue`.
-import { exportSvg, readSvgDrawing } from '@core/clipboard-export';
+// The clipboard flow (SPEC-clipboard-export.md CB-C1–CB-C3 copy, CB-P1 paste, the CB-Q queue and
+// notices N-C1–N-C6, N-P1–N-P5) over injected ports: DOM-free, no timers of its own.
+import { exportSvg, pasteAction, readSvgDrawing, type PasteAction } from '@core/clipboard-export';
 import type { Doc, Selection, SubDoc } from '@core/doc-model';
 import type { SvgDocument } from '@core/svg-render';
 import type { EditorController } from '../../editor';
-import type { ClipboardWriteRequest } from '../../../shared/ipc-types';
+import type { ClipboardReadResponse, ClipboardWriteRequest } from '../../../shared/ipc-types';
 
 /** How long the Copy button reads "Copied" after a successful copy (a new copy restarts it). */
 export const COPIED_MS = 2000;
@@ -19,12 +19,39 @@ export const NOTICES = {
   empty: 'Nothing to copy yet. Draw something first.',
   reduced: 'Copied. The drawing is very large, so the picture is less sharp than usual.',
   failed: "Couldn't copy. Please try again.",
+  pictureOnly: 'Only drawings copied from Chalkbond can be pasted here.',
+  nothingToPaste: 'Nothing to paste. Copy a drawing, or a compound name, first.',
+  newer: "This drawing was copied from a newer version of Chalkbond and can't be pasted.",
+  damaged: "The copied drawing is damaged and can't be pasted. Copy it again.",
+  textTooLong: 'That text is too long to paste.',
 } as const;
 
+type PasteNotice = Extract<PasteAction, { kind: 'notice' }>['notice'];
+/** N-P1–N-P5: kind and text of each paste notice. */
+const PASTE_NOTICES: Record<PasteNotice, readonly ['info' | 'error', string]> = {
+  'picture-only': ['info', NOTICES.pictureOnly],
+  empty: ['info', NOTICES.nothingToPaste],
+  newer: ['error', NOTICES.newer],
+  damaged: ['error', NOTICES.damaged],
+  'text-too-long': ['info', NOTICES.textTooLong],
+};
+/** What CB-R1 reports when the read fails. */
+const NOTHING: ClipboardReadResponse = {
+  drawing: null,
+  text: null,
+  textTooLong: false,
+  image: false,
+};
+
 export interface CopyPorts {
-  readonly controller: Pick<EditorController, 'getDoc' | 'getSelection' | 'run' | 'notify'>;
+  readonly controller: Pick<
+    EditorController,
+    'getDoc' | 'getSelection' | 'run' | 'canRun' | 'notify'
+  >;
   /** C1 through the preload (`window.chalkbond.clipboardWrite`). */
   write(value: ClipboardWriteRequest): Promise<{ ok: boolean }>;
+  /** C2 through the preload (`window.chalkbond.clipboardRead`). */
+  read(): Promise<ClipboardReadResponse>;
   /** `rasterise.ts` (R1). */
   rasterise(
     svg: SvgDocument,
@@ -40,6 +67,11 @@ export interface CopyFlow {
   copy(): Promise<void>;
   /** The editor's `onCopy` (CB-C1 selection branch, CB-C3 cut). */
   onCopy(sub: SubDoc, doc: Doc, selection: Selection): Promise<void>;
+  /**
+   * CB-P1: the host's Ctrl+V (and later Edit > Paste, the context menu). Does nothing unless the
+   * editor is idle, both when pressed and when its queued turn comes. Resolves when it has finished.
+   */
+  paste(): Promise<void>;
   /** CB-Q: runs `job` after every clipboard job before it; a rejection reaches only its caller. */
   enqueue<T>(job: () => Promise<T>): Promise<T>;
   /** Resolves when every queued job has finished. */
@@ -69,6 +101,9 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
   const changed = (): void => {
     for (const listener of [...listeners]) listener();
   };
+
+  /** No gesture runs and no label or text editor is open (the editor's `busy` event). */
+  const idle = (): boolean => controller.canRun({ type: 'set-preset', preset: 'slides' });
 
   function enqueue<T>(job: () => Promise<T>): Promise<T> {
     const result = tail.then(job);
@@ -123,6 +158,32 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
     onCopy(_sub, doc, selection) {
       // The editor calls onCopy after its own copy or cut: a cut has changed the document.
       return copyPicture(doc, selection, controller.getDoc() === doc ? 'selection' : 'cut');
+    },
+    async paste() {
+      if (!idle()) return;
+      await enqueue(async () => {
+        if (!idle()) return; // a gesture or a text session began while the paste waited
+        const contents = await ports.read().catch(() => NOTHING);
+        // Re-checked after the read: a commit must never land in a gesture or text session.
+        if (!idle()) return;
+        const action = pasteAction(contents, last, controller.canRun('paste'));
+        switch (action.kind) {
+          case 'in-app':
+            controller.run('paste');
+            break;
+          case 'fragment':
+            controller.run({ type: 'paste-sub', sub: action.sub });
+            break;
+          case 'text':
+            controller.run({ type: 'insert-text', text: action.text });
+            break;
+          case 'notice': {
+            const [kind, text] = PASTE_NOTICES[action.notice];
+            controller.notify(kind, text);
+            break;
+          }
+        }
+      });
     },
     enqueue,
     whenIdle: async () => {

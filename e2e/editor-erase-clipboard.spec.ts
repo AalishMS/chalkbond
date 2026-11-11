@@ -87,6 +87,9 @@ test('Ctrl+C, Ctrl+V, Ctrl+V: three ethanols, each 80 px right and down of the l
     await page.waitForTimeout(100);
     await page.keyboard.press('Control+v');
     await page.keyboard.press('Control+v');
+    // Ctrl+V is the host's paste (clipboard-export CB-K): it reads the system clipboard after the
+    // copy has written it (CB-Q), so the pastes land asynchronously.
+    await expect.poll(async () => Object.keys((await readDocument(page)).atoms).length).toBe(9);
     const after = await readDocument(page);
     expect(Object.keys(after.atoms)).toHaveLength(9);
     const sorted = (doc: Doc): string[] =>
@@ -143,7 +146,8 @@ test('Ctrl+D duplicates 1 BLU right and down; Ctrl+X then Ctrl+V moves a molecul
     await page.mouse.move(700, 500);
     await page.waitForTimeout(100);
     await page.keyboard.press('Control+v');
-    expect(Object.keys((await readDocument(page)).atoms)).toHaveLength(6);
+    // The host's paste lands after the cut's clipboard write (CB-Q).
+    await expect.poll(async () => Object.keys((await readDocument(page)).atoms).length).toBe(6);
   } finally {
     await app.close();
   }

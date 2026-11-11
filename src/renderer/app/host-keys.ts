@@ -13,7 +13,7 @@ function isTextTarget(target: EventTarget | null): boolean {
 }
 
 export function installHostKeys(
-  controller: Pick<EditorController, 'getSelection'>,
+  controller: Pick<EditorController, 'getSelection' | 'canRun'>,
   actions: Record<HostKeyAction, () => void>,
 ): () => void {
   const listener = (event: KeyboardEvent): void => {
@@ -22,6 +22,7 @@ export function installHostKeys(
       textTarget: isTextTarget(event.target),
       selectionEmpty:
         selection.atoms.size === 0 && selection.bonds.size === 0 && selection.objects.size === 0,
+      idle: controller.canRun({ type: 'set-preset', preset: 'slides' }),
     });
     if (action === null) return;
     event.preventDefault();

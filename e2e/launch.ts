@@ -21,6 +21,8 @@ export interface LaunchOptions {
   dialogs?: unknown[];
   /** UI success shots only: stub main clipboard.write, retaining real flow and rasterisation. */
   clipboardWriteSuccess?: boolean;
+  /** UI/model-success shots only: main's clipboard is an in-memory store (stub-clipboard-memory). */
+  clipboardMemory?: boolean;
 }
 
 /**
@@ -55,6 +57,7 @@ export async function launchApp(
       resolve(__dirname, 'no-os-mouse.mjs'),
       ...dialogArgs,
       ...(opts.clipboardWriteSuccess ? ['-r', resolve(__dirname, 'stub-clipboard-write.mjs')] : []),
+      ...(opts.clipboardMemory ? ['-r', resolve(__dirname, 'stub-clipboard-memory.mjs')] : []),
       resolve(__dirname, '..'),
       ...(opts.testHooks === false ? [] : ['--chalkbond-test-hooks']),
       `--chalkbond-user-data=${userData}`,

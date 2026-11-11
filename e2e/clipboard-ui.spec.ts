@@ -135,8 +135,13 @@ test.describe('UI success (stubbed main clipboard.write; not Windows clipboard p
         .toBe('Copied the whole drawing. Paste into PowerPoint or Word with Ctrl+V.');
       const s = await readSelection(page);
       expect(s.atoms.length + s.bonds.length + s.objects.length).toBe(0);
-      // R5: the editor's in-app clipboard is untouched, so its own paste has nothing to paste.
+      // Ctrl+V is the host's paste (CB-K), never the editor's own: with main's write stubbed and
+      // the clipboard cleared it finds nothing (N-P2), and the drawing is unchanged.
+      await app.evaluate(({ clipboard }) => clipboard.clear());
       await page.keyboard.press('Control+v');
+      await expect
+        .poll(() => lastNotice(page))
+        .toBe('Nothing to paste. Copy a drawing, or a compound name, first.');
       expect(await readDocument(page)).toEqual(doc);
       await expect(copy).toHaveText('Copy', { timeout: 3000 });
     } finally {

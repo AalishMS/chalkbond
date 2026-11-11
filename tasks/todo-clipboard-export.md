@@ -323,9 +323,10 @@ N-P4; 70 000 characters of text → N-P5; Ctrl+V in the name field pastes the te
 and leaves the document unchanged (SC6's queue order is the flow test).
 
 **Acceptance criteria:**
-- [ ] Flow and keys tests pass
-- [ ] `e2e/win/clipboard-paste.spec.ts` green: every round trip above
-- [ ] Shots exist and look as described
+- [x] Flow and keys tests pass
+- [ ] `e2e/win/clipboard-paste.spec.ts` green: every round trip above — written, not yet run (Windows only)
+- [x] Shots exist and look as described (Linux; main's clipboard is the in-memory store of
+  `e2e/stub-clipboard-memory.mjs` behind the real adapter and flow: UI/model success, not clipboard proof)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- C9` →
 `C9/pasted-cascade.png` (scripted: ethanol selected, Ctrl+C, Ctrl+V: a second ethanol 1 BLU right

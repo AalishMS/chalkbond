@@ -44,6 +44,8 @@ test('keyboard only: name, copy, paste, nudge, undo, tool key, tooltip on focus,
     await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');
     await page.keyboard.press('Control+c');
     await page.keyboard.press('Control+v');
+    // The host's paste (clipboard-export CB-K) lands after the copy's clipboard write (CB-Q).
+    await expect.poll(async () => atomCount(await readDocument(page))).toBe(6);
     const pasted = await readDocument(page);
     expect(atomCount(pasted)).toBe(6);
 
