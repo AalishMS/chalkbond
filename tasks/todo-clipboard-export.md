@@ -483,15 +483,17 @@ export" with the spec's "Windows checks", unticked. Sweep SC1–SC13 into the pl
 **Tests first:** the thresholds (they fail if coverage is short); the perf spec.
 
 **Acceptance criteria:**
-- [ ] `npm test -- --coverage` passes the new thresholds
+- [x] `npm test -- --coverage` passes the new thresholds
 - [ ] `e2e/win/clipboard-perf.spec.ts` green; `docs/editor-perf.md` has the row
-- [ ] Checklist section added, unticked; plan SC table ticked where proven
+- [x] Checklist section added, unticked; plan SC table ticked where proven
 
 Prepared early (2026-11-11, Decision C11, not ticked): `e2e/win/clipboard-perf.spec.ts` is written
 on the real clipboard (no stub) and NOT RUN; the shared sample is `e2e/copy-timing.ts`. The portable
 `e2e/clipboard-perf.spec.ts` (in-memory transport: an encoding and flow result, not Windows
 clipboard proof) failed on `toBlob` (median 1044 ms) and passes on `toDataURL` (48.6 ms); numbers
 in `docs/editor-perf.md`.
+
+C13 worker evidence (2026-11-11, Linux): thresholds added and passed as they stood, so no test was added (core/clipboard-export 100 % lines, renderer/clipboard-export/model 100 %); a probe run with all four thresholds at 101 failed on each, so each glob is enforced. `e2e/win/clipboard-perf.spec.ts` NOT RUN, its box stays unticked, no Windows number in `docs/editor-perf.md`. Full `npm run test:e2e`: 297 passed. Logs /tmp/chalkbond-sonnet-c13-a19-work/.
 
 **Verification:** `npm test -- --coverage`, `npm run test:e2e`, `npm run check`
 

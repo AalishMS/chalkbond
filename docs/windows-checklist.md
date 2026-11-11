@@ -74,3 +74,28 @@ checks above belong to this checkpoint too.
 - [ ] Tooltips: hover a rail button and wait; the tooltip appears after about half a second, to the right, and the next one appears at once; moving off all buttons for about a third of a second restores the delay
 - [ ] Cursors: arrow over empty canvas and rail with Select; a four-way move cursor over a hovered atom, bond or object with Select; a hand over the rotate handle (closed while turning) and a pointing hand over the other handles; crosshair with Bond, Chain, Ring, Atom, Arrow, Plus and Curly; I-beam with Text and over a text object; the small eraser icon with Erase; an open hand while Space is held and a closed hand while panning
 - [ ] A first-use pass without help: draw ethanol, benzene, toluene and "ethanol + acetic acid -> ethyl acetate + water" (SC3); every step is discoverable from the screen alone
+
+## Clipboard and export (clipboard-export, `SPEC-clipboard-export.md` "Windows checks")
+
+Human-only: Office, other applications, eyes. Run with the installed app and Office 2021.
+
+Automated checks that only run on Windows (not run on Linux; none is ticked):
+
+- [ ] `npm run test:e2e` on Windows passes every `e2e/win/clipboard-*.spec.ts`: probes P1-P7 including P2b (`clipboard-facts`, SC2), the CB-W1 formats, SVG, drawing and 300 dpi PNG (`clipboard-copy`, SC3 and SC4), the paste round trips (`clipboard-paste`, SC5) and the IPC handlers (`clipboard-ipc`). A probe that fails is recorded with its fallback in "Facts relied on" and `formats.ts` (SC2).
+- [ ] `e2e/win/clipboard-perf.spec.ts` passes: copy of the 40-atom scheme reaches the real clipboard in at most 500 ms (median of 5; SC12). Append the measured number to `docs/editor-perf.md` as the Windows row.
+- [ ] Look at the C8 and C10 shots (`npm run shots -- C8`, `npm run shots -- C10`) beside the mock-ups A01, A02, A15b and A08a-c (`node docs/mockups/shell/build.mjs --png out/mockups-shell`): the Copy button states, the Export dialog and its three formats match by eye at 1280x800 and 960x640 (SC10).
+
+Human-only checks, with the installed app and Office 2021 (SC13: write down which format Office took, SVG drawing or picture):
+
+- [ ] Draw the SC3 scheme (Slides), press Copy, Ctrl+V on a blank PowerPoint slide: it arrives as a drawing (ribbon **Graphics Format** = SVG) or a picture (**Picture Format**); write down which. At 400 % zoom lines and text are sharp.
+- [ ] The pasted bonds measure 1.41 cm (40 pt) in PowerPoint (Format > Size against a known bond count); labels match 24 pt slide text. If Office took the PNG and it is about 3× too big, write down "300 dpi ignored" (accepted for v1, O5).
+- [ ] On a dark slide background the pasted drawing has no white or black box.
+- [ ] Switch to Handout, copy, paste into Word 2021: bonds about 5 mm, labels the size of 10 pt body text; sharp at 400 %; the print preview looks like a textbook figure.
+- [ ] `H₂SO₄`, `OH`, `CO₂H` in the pasted drawing are Arial and sit as on screen in PowerPoint and Word (a shift would reopen svg-render's text-as-outlines question).
+- [ ] Paste into WhatsApp Desktop (or another chat app) and Paint: a picture arrives.
+- [ ] Copy in Chalkbond, close Chalkbond, start it, Ctrl+V: the drawing comes back editable.
+- [ ] Copy a picture in PowerPoint, Ctrl+V in Chalkbond: "Only drawings copied from Chalkbond can be pasted here."
+- [ ] Export PNG at Print: the Photos app shows it (transparent with White background off); Insert > Pictures in Word gives the same size as the pasted SVG within a few percent.
+- [ ] Export SVG, Insert > Pictures in PowerPoint: identical to the paste.
+- [ ] Export PDF, open it in Edge and in Adobe Acrobat Reader: one page the size of the drawing, text selectable, no error or repair prompt; print it on A4: sharp. (Under PDF-A also: open it in Chalkbond, the drawing is editable.)
+- [ ] Open the exported PNG and SVG in Chalkbond (File > Open): editable and identical.

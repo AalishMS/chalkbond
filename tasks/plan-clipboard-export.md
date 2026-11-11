@@ -140,21 +140,23 @@ frame, Arial, IME, Office, os-input, installer) are not run, and no Windows box 
 
 ## Success Criteria Coverage
 
-| SC | Criterion (short) | Tasks |
-|---|---|---|
-| 1 | Public surface tested; 90 % lines | C5, C6, C4, C13 |
-| 2 | Probes recorded | C3, C4 |
-| 3 | Whole-drawing copy: formats, SVG, drawing, PNG size | C7, C8 |
-| 4 | Selection copy payload | C5, C8 |
-| 5 | Paste round trips | C9 |
-| 6 | Paste during copy | C8 (queue), C9 |
-| 7 | Export PNG then open | C11 (needs A9) |
-| 8 | Export SVG then open | C11 |
-| 9 | Export PDF (and open under PDF-A) | C4, C12 |
-| 10 | Copy button and dialog states, boxes, keyboard | C8, C10, A18 |
-| 11 | Atom options fit at 960 with Copy | C1, C8 |
-| 12 | Copy ≤ 500 ms | C13 |
-| 13 | Windows checks ticked | C13 (section), human |
+Swept at C13 (2026-11-11, Linux). "Linux" = run and passing on the development machine; "Windows-unrun" = written, not run here, box in `docs/windows-checklist.md` section "Clipboard and export" unticked; "human" = needs eyes or Office.
+
+| SC | Criterion (short) | Tasks | Proof and status |
+|---|---|---|---|
+| 1 | Public surface tested; 90 % lines | C5, C6, C4, C13 | Unit and property tests in `src/core/clipboard-export/*.test.ts`, `tests/clipboard-export/*.test.ts` (incl. `pdf-embed.prop.test.ts`), `src/renderer/clipboard-export/model/*.test.ts`. Thresholds in `vitest.config.mts`; `npm test -- --coverage` passes (core/clipboard-export 100 % lines, renderer model 100 %). Linux |
+| 2 | Probes recorded | C3, C4 | P8, P9: `e2e/pdf-facts.spec.ts` (Linux). P1-P7 incl. P2b: `e2e/win/clipboard-facts.spec.ts` Windows-unrun (checklist item 1) |
+| 3 | Whole-drawing copy: formats, SVG, drawing, PNG size | C7, C8 | `e2e/win/clipboard-copy.spec.ts` (SC3) Windows-unrun. On Linux the parts: `src/main/clipboard-export/formats.test.ts`, `clipboard.test.ts`, `copy-flow.test.ts`, `rasterise.test.ts`, and `e2e/clipboard-ui.spec.ts` UI success (stubbed write; not clipboard proof) |
+| 4 | Selection copy payload | C5, C8 | Unit: `src/core/clipboard-export/picture.test.ts`, `copy-flow.test.ts` (Linux). `e2e/win/clipboard-copy.spec.ts` (SC4) Windows-unrun |
+| 5 | Paste round trips | C9 | `e2e/win/clipboard-paste.spec.ts` Windows-unrun. Linux: paste branches in `copy-flow.test.ts` (N-P1, N-P3 and the rest), `tests/clipboard-export/paste-file.test.ts`, `e2e/clipboard-provenance.spec.ts` |
+| 6 | Paste during copy | C8 (queue), C9 | `copy-flow.test.ts` "queue (CB-Q)" (Linux) |
+| 7 | Export PNG then open | C11 (needs A9) | `e2e/export-png.spec.ts` "SC7" (Linux) |
+| 8 | Export SVG then open | C11 | `e2e/export-svg.spec.ts` "SC8" (Linux) |
+| 9 | Export PDF (and open under PDF-A) | C4, C12 | `e2e/export-pdf.spec.ts` "SC9" (Linux); Acrobat and Edge by eye: checklist (human) |
+| 10 | Copy button and dialog states, boxes, keyboard | C8, C10, A18 | `CopyButton.test.tsx`, `ExportDialog.test.tsx`, `e2e/clipboard-ui.spec.ts`, `e2e/export-dialog.spec.ts`, `e2e/app-a11y.spec.ts` (Linux). Shots `e2e/shots/C8.shot.ts`, `C10.shot.ts` compared with the mock-ups by eye at checkpoint V by the orchestrator; the same look on Windows is a checklist item (human) |
+| 11 | Atom options fit at 960 with Copy | C1, C8 | `e2e/clipboard-ui.spec.ts` "Copy at 960 × 640 ... the Atom options fit" (Linux) |
+| 12 | Copy ≤ 500 ms | C13 | `e2e/win/clipboard-perf.spec.ts` Windows-unrun, no number recorded in `docs/editor-perf.md`. Portable `e2e/clipboard-perf.spec.ts` (in-memory transport: encoding and flow only) passes on Linux; it is not Windows clipboard proof |
+| 13 | Windows checks ticked | C13 (section), human | Section "Clipboard and export" added to `docs/windows-checklist.md`, all unticked (human, Windows) |
 
 ## Screenshot review
 

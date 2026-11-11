@@ -57,7 +57,12 @@ export default defineConfig({
       exclude: ['**/*.test.{ts,tsx}', '**/__fixtures__/**', '**/index.ts', '**/font-metrics.ts'],
       reporter: ['text', 'html'],
       // SPEC-editor.md "Testing": src/renderer/editor at least 70 % lines, no file excluded.
-      thresholds: { 'src/renderer/editor/**': { lines: 70 } },
+      thresholds: {
+        'src/renderer/editor/**': { lines: 70 },
+        // SPEC-clipboard-export.md "Testing": at least 90 % lines, no file excluded.
+        'src/core/clipboard-export/**': { lines: 90 },
+        'src/renderer/clipboard-export/model/**': { lines: 90 },
+      },
     },
   },
 });
