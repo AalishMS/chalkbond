@@ -47,10 +47,26 @@ export async function drawThenKill(userData: string, name: string): Promise<Doc>
   const doc = await readDocument(page);
   await expect.poll(() => existsSync(recoveryFile(userData)), { timeout: 12_000 }).toBe(true);
   await expectNoNetwork(app);
-  const exited = new Promise<void>((resolve) => app.process().once('exit', () => resolve()));
-  app.process().kill('SIGKILL');
-  await exited;
+  // Playwright starts Electron through a shell on Windows, so `app.process()` is that wrapper
+  // there and killing it leaves the app alive (it keeps the single-instance lock and the folder).
+  // The pid taken inside the app is the real main process on every platform.
+  const mainPid = await app.evaluate(() => process.pid);
+  const wrapperExited = new Promise<void>((resolve) => app.process().once('exit', () => resolve()));
+  process.kill(mainPid, 'SIGKILL');
+  await wrapperExited;
+  await expect.poll(() => isRunning(mainPid), { timeout: 10_000 }).toBe(false);
   return doc;
+}
+
+/** Whether a process with this pid exists (signal 0 only checks; it sends nothing). */
+function isRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // ESRCH: gone. EPERM would mean it exists but is not ours to signal.
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
 }
 
 /** A real close of the first window (F13), awaited until the app process has exited. */
