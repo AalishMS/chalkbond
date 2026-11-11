@@ -705,8 +705,8 @@ with `reducedMotion: 'reduce'` the dialog has no transition; after a copy the hi
 (`role="status"`) contains the notice.
 
 **Acceptance criteria:**
-- [ ] `e2e/app-a11y.spec.ts` green; fixes made in the components, not the tests
-- [ ] Shots exist
+- [x] `e2e/app-a11y.spec.ts` green; fixes made in the components, not the tests
+- [x] Shots exist
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A18` →
 `A18/focus-copy.png` (scripted: Tab from Redo: Copy with a 2 px accent ring offset 2 px, A03's

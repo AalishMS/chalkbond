@@ -8,6 +8,7 @@ import {
   isDialogEnter,
   Kbd,
   RadioGroup,
+  scrolledTop,
   Segmented,
 } from './primitives';
 it('exposes named, focusable disabled controls', () => {
@@ -99,4 +100,18 @@ it('C10: test ids on options and checkbox, a dialog class, and the Enter handler
     expect(isDialogEnter(key('Enter', mods))).toBe(false);
   expect(isDialogEnter(key('Enter', { isComposing: true }))).toBe(false);
   expect(isDialogEnter(key(' '))).toBe(false);
+});
+
+it('scrolledTop: arrows step 40, pages step a view less 40, Home and End, clamped, other keys null', () => {
+  // A 200 px view over 500 px of content: the last scrollTop is 300.
+  expect(scrolledTop('ArrowDown', 0, 200, 500)).toBe(40);
+  expect(scrolledTop('ArrowUp', 20, 200, 500)).toBe(0);
+  expect(scrolledTop('PageDown', 0, 200, 500)).toBe(160);
+  expect(scrolledTop('PageUp', 100, 200, 500)).toBe(0);
+  expect(scrolledTop('End', 0, 200, 500)).toBe(300);
+  expect(scrolledTop('Home', 250, 200, 500)).toBe(0);
+  expect(scrolledTop('ArrowDown', 290, 200, 500)).toBe(300);
+  expect(scrolledTop('PageDown', 0, 30, 500)).toBe(40);
+  expect(scrolledTop('a', 0, 200, 500)).toBeNull();
+  expect(scrolledTop(' ', 0, 200, 500)).toBeNull();
 });

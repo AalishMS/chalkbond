@@ -198,6 +198,31 @@ export function isDialogEnter(e: {
     e.key === 'Enter' && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && !e.isComposing
   );
 }
+/** The scrollTop a scrolling key leads to in a dialog's body, or null for any other key. */
+export function scrolledTop(
+  key: string,
+  top: number,
+  view: number,
+  content: number,
+): number | null {
+  const step = 40;
+  const page = Math.max(step, view - step);
+  const target =
+    key === 'ArrowDown'
+      ? top + step
+      : key === 'ArrowUp'
+        ? top - step
+        : key === 'PageDown'
+          ? top + page
+          : key === 'PageUp'
+            ? top - page
+            : key === 'Home'
+              ? 0
+              : key === 'End'
+                ? content
+                : null;
+  return target === null ? null : Math.min(Math.max(target, 0), Math.max(content - view, 0));
+}
 export function Dialog({
   title,
   testId = 'dialog',
@@ -221,6 +246,7 @@ export function Dialog({
 }): React.JSX.Element {
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement;
     const dialog = ref.current;
@@ -253,6 +279,17 @@ export function Dialog({
           e.preventDefault();
           e.stopPropagation();
           onEnter();
+        }
+        // A list that scrolls (short windows) is read with the keys; the focus stays on a button.
+        const body = bodyRef.current;
+        const typing =
+          e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+        if (body && !e.defaultPrevented && !typing && !e.ctrlKey && !e.altKey && !e.metaKey) {
+          const top = scrolledTop(e.key, body.scrollTop, body.clientHeight, body.scrollHeight);
+          if (top !== null && body.scrollHeight > body.clientHeight) {
+            e.preventDefault();
+            body.scrollTop = top;
+          }
         }
         if (e.key === 'Tab') {
           const items = [
@@ -287,7 +324,9 @@ export function Dialog({
         <h2 id={id} className="dialog-title">
           {title}
         </h2>
-        <div className="dialog-body">{children}</div>
+        <div className="dialog-body" ref={bodyRef}>
+          {children}
+        </div>
         {footer && <div className="dialog-foot">{footer}</div>}
       </div>
     </div>
