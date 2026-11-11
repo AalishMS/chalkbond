@@ -85,7 +85,7 @@ C5 pure picture ──┴──► C6 pure paste/open ────────�
 - [ ] Commit + push
 
 ### Phase T: copy and paste
-- [ ] C5: Pure core: payload, picture, PNG and SVG embedding
+- [x] C5: Pure core: payload, picture, PNG and SVG embedding
 - [ ] C6: Pure core: paste decision, opening embedded files, file names
 - [ ] C7: Main clipboard (C1, C2) and the renderer rasteriser
 - [ ] C8: Copy: flow, Copy button, Ctrl+C, notices
@@ -152,3 +152,5 @@ by eye at each checkpoint; measurable checks live in e2e specs.
 | Rasterised text differs from the canvas (fonts) | Low | Same Chromium and system Arial; svg-render metrics calibrated; R4 asserts geometry, not pixels |
 | Clipboard e2e flaky when another program touches the clipboard | Low | Each test writes before it reads; runs serially (`workers: 1`); the developer avoids copying during the run |
 | The 960 px top bar overflows with the Atom options and Copy (2 px to spare) | Med | SC11 e2e; R6 lets the bar scroll during "Copied" only |
+
+Checkpoint S status (orchestrator report, 2026-11-11): Linux verified and pushed at 85a5201: check 3,424 tests; e2e 189 tests; A6 shots 2 passed and inspected. Full S remains pending Windows. Still needs Windows: C3 P1–P7/P2b, C4 confirmation, W6 native frame, real Arial, e2e/win, os-input, Office, installer and manual checks. Evidence: /tmp/chalkbond-checkpoint-S.nDiA14/{check-corrected,e2e-corrected,shots-corrected}.log. This worker has not independently verified those checks.

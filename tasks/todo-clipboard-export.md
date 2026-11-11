@@ -189,9 +189,9 @@ PNG chunk round trip on a minimal 1×1 PNG; arbitrary bytes and truncations to t
 throw.
 
 **Acceptance criteria:**
-- [ ] All functions exported from `@core/clipboard-export`; the lint boundary (doc-model, svg-render only) holds
-- [ ] Unit and property tests pass; `src/core/clipboard-export` ≥ 90 % lines for these files (`npm test -- --coverage src/core/clipboard-export`)
-- [ ] No clock, DOM or Node API used (tsconfig.core compiles)
+- [x] All functions exported from `@core/clipboard-export`; the lint boundary (doc-model, svg-render only) holds
+- [x] Unit and property tests pass; `src/core/clipboard-export` ≥ 90 % lines for these files (`npm test -- --coverage src/core/clipboard-export`)
+- [x] No clock, DOM or Node API used (tsconfig.core compiles)
 
 **Verification:** `npm test -- src/core/clipboard-export`, `npm run check`. No visible change.
 

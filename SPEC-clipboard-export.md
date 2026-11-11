@@ -88,6 +88,7 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 
 | # | Decision | Reason | Date |
 |---|---|---|---|
+| O7 | Positive fractional effective DPI is allowed only when no positive integer meets both raster caps after ceil and min 1. Search integers through floor(upper), upper = min(requestedDpi, 720000/widthPt, 720000/heightPt); if none fits, bisect [0,min(1,upper)] for 64 iterations (stop at an unrepresentable midpoint), retaining the feasible lower endpoint. Never return zero DPI; reduced is true. Keep rounded pHYs even when it is zero. | Approved orchestrator resolution for enormous finite drawings; avoids width × height overflow | 2026-11-11 |
 | O1 | The **Copy** button sits at the right end of the top bar, after Undo/Redo (mock-ups A01, A02): a filled primary button with icon and label; after a copy it reads "Copied" with a check for 2 s; below 1100 px window width it shows the label "Copy" with no icon (never icon-only) and the name field narrows to 204 px (A15b) | The top-right corner is where Office and browsers put "send it on"; a word is self-explanatory, two overlapping sheets are not | 2026-11-10 |
 | O2 | Ctrl+C, the Copy button and Edit > Copy copy the selection, or the whole drawing when nothing is selected, writing the picture formats and the editable drawing in one clipboard write. PNG transparent, tight, 300 dpi; SVG written too. Paste reads the system clipboard and follows the editor's cascade rule when the content is the editor's own last copy. Plain text pastes as a name or SMILES through the name-insert path | One shortcut for PowerPoint, Word and Chalkbond; the teacher never chooses a format | 2026-11-10 |
 | O3 | Export dialog exactly as mock-ups A08a–c: three format cards; Size as Screen / Print / Poster in teacher language with the live pixel line and no "dpi"; "White background" off by default and remembered; one Save… button. Selection-only export is out | PNG needs two choices a Save dialog cannot ask; plain words | 2026-11-10 |
@@ -327,7 +328,7 @@ check, size limits). Request limits are enforced by the schema.
   Linux, the faces svg-render's metrics are calibrated against. No font is bundled or loaded.
 - **R3** `pngPixelSize`: `px = pt × dpi / 72` per side, `Math.ceil`, at least 1. If a side would
   exceed `maxSide` or the area `maxPixels`, `dpi` becomes the largest whole number that fits both
-  and `reduced` is true. Example: 800 × 200 pt at 300 dpi = 3334 × 834 px.
+  and `reduced` is true. If no positive integer fits, use Decision O7’s positive fractional fallback. Example: 800 × 200 pt at 300 dpi = 3334 × 834 px.
 - **R4** PNG pixels are not asserted byte-identical across machines. Asserted instead: dimensions
   exactly as R3; `pHYs` and `tEXt` byte-exact; the four corner pixels alpha 0 (or `#ffffff`
   opaque with White background); for the toluene golden input the box of pixels with alpha > 0

@@ -161,3 +161,5 @@ human compares them with A04–A07, A09–A11, A14 at Checkpoint W and in the ch
 | electron-builder packs production `dependencies` (OpenChemLib already bundled in the renderer) and grows the installer | Low | A17 records the size; the packaged smoke proves the app runs; trimming is a later, measured change |
 | The NSIS toolset download needs network on the build machine | Low | Build-time only, once; written in the spec Facts and README |
 | Windows shutdown cannot show a prompt | Low | R5: the recovery file is flushed instead (RC5), checklist item |
+
+Checkpoint S status (orchestrator report, 2026-11-11): Linux verified and pushed at 85a5201: check 3,424 tests; e2e 189 tests; A6 shots 2 passed and inspected. Full S remains pending Windows. Still needs Windows: C3 P1–P7/P2b, C4 confirmation, W6 native frame, real Arial, e2e/win, os-input, Office, installer and manual checks. Evidence: /tmp/chalkbond-checkpoint-S.nDiA14/{check-corrected,e2e-corrected,shots-corrected}.log. This worker has not independently verified those checks.

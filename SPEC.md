@@ -200,6 +200,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 
 | Date | Decision |
 |---|---|
+| 2026-11-11 | clipboard-export O7: positive fractional DPI only when no positive integer fits raster caps; deterministic integer search then 64-step feasible-endpoint bisection; pHYs rounding unchanged. |
 | 2026-11-10 | C2/A4 editor host seam: shared notices, busy transitions, right-click selection before menu, and host-callable name-field focus (SPEC-editor R45–R47). TH2 gains run(cmd) to verify host-direct commands. |
 | 2026-11-09 | Development/build environment: user's Windows machine (no Wine/cross-build). |
 | 2026-11-09 | Unsigned installer accepted — personal use. |
