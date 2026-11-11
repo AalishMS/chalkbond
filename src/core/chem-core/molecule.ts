@@ -111,13 +111,20 @@ export function buildMolecule(
 
     if (interp?.kind === 'abbreviation') {
       kinds.set(id, 'abbreviation');
+      // The v1 groups are monovalent: exactly one single bond. A double or triple bond would
+      // overfill the attachment atom, and the hidden group atoms (laid out by the group, not the
+      // drawing) would then decide its E/Z.
       const n = degree.get(id) ?? 0;
-      if (n !== 1) {
+      const order = used.get(id) ?? 0;
+      if (n !== 1 || order !== 1) {
         warnings.push({
           code: 'abbreviation-bonds',
           atoms: [id],
           bonds: [],
-          message: `"${interp.key}" needs exactly one bond (it has ${n}).`,
+          message:
+            n === 1
+              ? `"${interp.key}" needs exactly one single bond (it has a ${order === 2 ? 'double' : 'triple'} bond).`
+              : `"${interp.key}" needs exactly one bond (it has ${n}).`,
         });
       }
       const group = groupData(interp.key);

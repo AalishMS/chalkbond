@@ -313,6 +313,28 @@ describe('perceive', () => {
       expect(p.fragments[0]!.formula.hill).toBe('C6H6');
     });
 
+    // The v1 groups are monovalent: a double or triple bond is a bond the group can't take
+    // (seed -543139787: C–C=OMe gave a trivalent O whose hidden methyl decided its "E/Z").
+    it.each([
+      [2, 'double'],
+      [3, 'triple'],
+    ] as const)('warns when an abbreviation has one %s bond (%s)', (order, kind) => {
+      const m = mol(['C', { label: 'OMe' }], [[0, 1, order]]);
+      expect(perceive(m.doc).warnings).toEqual([
+        {
+          code: 'abbreviation-bonds',
+          atoms: [m.atoms[1]],
+          bonds: [],
+          message: `"OMe" needs exactly one single bond (it has a ${kind} bond).`,
+        },
+      ]);
+    });
+
+    it('takes one single bond to an abbreviation without a warning', () => {
+      const m = mol(['C', { label: 'OMe' }], [[0, 1, 1]]);
+      expect(perceive(m.doc).warnings).toEqual([]);
+    });
+
     it('treats unknown labels as pseudo-atoms with a warning', () => {
       const m = mol(['C', { label: 'Boc' }], [[0, 1]]);
       const p = perceive(m.doc);

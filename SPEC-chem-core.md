@@ -63,6 +63,7 @@ Found while building the adapter (C1, same version; also pinned by tests):
 | Deuterium is `D` in OCL formulas; isotopes change the weights | Formula counts `D`/`T` separately, like OCL |
 | Unreadable Molfile text and empty SMILES give an empty molecule, not an error | chem-core checks the atom count itself (`invalid-molfile`, `empty`) |
 | Coordinate invention needs parities perceived from the old layout first | The adapter does it; stereo survives Clean Structure |
+| A double bond at a neutral trivalent O (`C/C=O/C`) gets E/Z from the coordinates of every substituent | An expanded abbreviation's hidden atoms could decide a configuration: a double or triple bond to an abbreviation is an `abbreviation-bonds` warning, so it is never valid chemistry |
 | Helper perception moves plain H atoms with exactly one bond to a non-H atom (no isotope/charge/label) and their bonds to the end of OCL's lists, by swapping; an H with two bonds or bonded to H stays; `setHydrogenProtection` doesn't stop it | The adapter doesn't predict this: it tags each atom (x = caller index) before perception, reads the final order back, maps bonds by endpoints, then sets the real coordinates (Checkpoint G review: H–C–H–O threw) |
 | `inventCoordinates()` deletes explicit H atoms unless `keepHydrogens: true` | The adapter keeps them (drawn H atoms are doc atoms) |
 | OCL's average atomic weights are an older IUPAC set (S 32.066, Cl 35.453, Se 78.96, Zn 65.39) and iodine is 126.9 | chem-core's own weight table for MW (see "Name lookup") |
@@ -296,7 +297,9 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
   Case-sensitive (`Me` ≠ `ME`). Each has a test that its SMILES gives the expected formula.
   Research-level groups (Boc, Ts, TBS…) are left out; adding more is a data change.
 - An abbreviation atom with ≠ 1 bond gets an `abbreviation-bonds` warning (0 bonds: capped
-  with H for formula purposes).
+  with H for formula purposes). The groups are monovalent, so one double or triple bond gets it
+  too (fast-check seed −543139787: C–C=OMe made a trivalent O whose hidden methyl, placed by the
+  group's own layout, decided an "E/Z" the drawing never showed, and Clean Structure flipped it).
 - Anything else is `unknown`: drawn as typed, treated as a pseudo-atom, `unknown-label` warning.
 - Abbreviations are matched before element symbols, so `Ac` = acetyl and `Pr` = propyl (not
   actinium / praseodymium), as in other drawing tools. Pseudo-atoms `R`, `X`, `*` typed as labels

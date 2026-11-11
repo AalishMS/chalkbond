@@ -258,6 +258,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-10 | Linux font calibration: preserve Arial advances and logical layout; include bold Liberation Sans bars (`\|`, `¦`) with 0.225 em ink descent and fractions (`¼`, `¾`) with 0.075 em right overhang. Apply only to runs containing those glyphs; keep calibration tolerances and other extents unchanged. |
 
 | 2026-11-11 | C7 approved IPC correction: C1 drawing is nullable only above MAX_FILE_BYTES; omit editable entry while retaining picture formats. Non-null validation unchanged; no Doc schema change. |
+| 2026-11-11 | chem-core: an abbreviation takes exactly one **single** bond; a double or triple bond to it is an `abbreviation-bonds` warning (groups are monovalent; fixes fast-check seed −543139787, where hidden group atoms decided E/Z). |
 
 ## Open Questions
 

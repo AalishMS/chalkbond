@@ -172,6 +172,31 @@ describe('openchemlib facts found while building the adapter', () => {
     expect(m.getBondAtom(0, stereo[0]!)).toBe(1);
   });
 
+  // A double bond at a neutral trivalent O (what a double bond to an expanded OMe builds)
+  // gets E/Z from the coordinates of every substituent, hidden group atoms included.
+  it('assigns E/Z to a C=O double bond at a neutral trivalent O from the coordinates', () => {
+    const smiles = (methylY: number): string => {
+      const m = new Molecule(4, 3);
+      const xy = [
+        [-1, 0.5],
+        [0, 0],
+        [1, 0],
+        [2, methylY],
+      ] as const;
+      for (const [i, [x, y]] of xy.entries()) {
+        const a = m.addAtom(i === 2 ? 8 : 6);
+        m.setAtomX(a, x);
+        m.setAtomY(a, y);
+      }
+      m.setBondType(m.addBond(0, 1), Molecule.cBondTypeSingle);
+      m.setBondType(m.addBond(1, 2), Molecule.cBondTypeDouble);
+      m.setBondType(m.addBond(2, 3), Molecule.cBondTypeSingle);
+      return m.toIsomericSmiles();
+    };
+    expect(smiles(0.5)).toBe('C/C=O\\C'); // methyl on the same side: Z
+    expect(smiles(-0.5)).toBe('C/C=O/C');
+  });
+
   it('uses older atomic weights (iodine 126.9, sulfur 32.066) than PubChem', () => {
     expect(Molecule.fromSmiles('[I]').getMolecularFormula().relativeWeight).toBe(126.9);
     expect(Molecule.fromSmiles('[S]').getMolecularFormula().relativeWeight).toBeCloseTo(32.066, 6);
