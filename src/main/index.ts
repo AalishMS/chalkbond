@@ -1,8 +1,13 @@
 import { createClipboard } from './clipboard-export/clipboard';
+import { randomUUID } from 'node:crypto';
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { app, BrowserWindow, Menu, screen, clipboard, ClipboardItem } from 'electron';
+import { app, BrowserWindow, Menu, screen, clipboard, ClipboardItem, dialog } from 'electron';
+import { createDialogs } from './dialogs';
+import { createFiles } from './files';
+import { createFileRefs } from './model/file-refs';
 import { firstWindowBounds } from './model/window-bounds';
-import type { StartupResponse } from '../shared/ipc-types';
+import type { ReadFileResponse, StartupResponse } from '../shared/ipc-types';
 import { testFlags } from './model/args';
 
 import { pathToFileURL } from 'node:url';
@@ -14,6 +19,12 @@ import {
   sessionUpdateSchema,
   clipboardWriteSchema,
   clipboardReadSchema,
+  askSchema,
+  chooseOpenSchema,
+  chooseSaveSchema,
+  fileErrorSchema,
+  readFileSchema,
+  writeFileSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
@@ -109,6 +120,50 @@ void app.whenReady().then(() => {
   );
   ipc.handle(CHANNELS.clipboardWrite, clipboardWriteSchema, clipboardPort.write);
   ipc.handle(CHANNELS.clipboardRead, clipboardReadSchema, clipboardPort.read);
+  // Files (A7): the renderer holds opaque refs only (R8); paths stay in this registry.
+  const refs = createFileRefs(() => randomUUID());
+  const files = createFiles({ log: (message) => log('files', message) });
+  const entryOf = (id: string) => {
+    const entry = refs.get(id);
+    if (!entry) throw new Error('Unknown file ref');
+    return entry;
+  };
+  const documents = (): string => app.getPath('documents');
+  const dialogs = createDialogs({
+    port: {
+      open: (options) =>
+        mainWindow ? dialog.showOpenDialog(mainWindow, options) : dialog.showOpenDialog(options),
+      save: (options) =>
+        mainWindow ? dialog.showSaveDialog(mainWindow, options) : dialog.showSaveDialog(options),
+      box: (options) =>
+        mainWindow ? dialog.showMessageBox(mainWindow, options) : dialog.showMessageBox(options),
+    },
+    refs,
+    exists: (path) =>
+      stat(path).then(
+        () => true,
+        () => false,
+      ),
+    // Last open / save folders arrive with session and settings (A8, A10); Documents until then.
+    folders: { open: documents, save: documents },
+  });
+  ipc.handle(CHANNELS.chooseOpen, chooseOpenSchema, () => dialogs.chooseOpen());
+  ipc.handle(CHANNELS.readFile, readFileSchema, async ({ ref }): Promise<ReadFileResponse> => {
+    const result = await files.read(entryOf(ref).path);
+    if (result.ok) return result;
+    // A ref always has an Open extension, so `unsupported` cannot answer I2.
+    return { ok: false, problem: result.problem === 'unsupported' ? 'unreadable' : result.problem };
+  });
+  ipc.handle(CHANNELS.chooseSave, chooseSaveSchema, ({ format, suggestedName }) =>
+    dialogs.chooseSave(format, suggestedName),
+  );
+  ipc.handle(CHANNELS.writeFile, writeFileSchema, ({ ref, data }) =>
+    files.write(entryOf(ref), data),
+  );
+  ipc.handle(CHANNELS.ask, askSchema, (request) => dialogs.ask(request));
+  ipc.handle(CHANNELS.showFileError, fileErrorSchema, ({ problem, name }) =>
+    dialogs.showFileError(problem, name),
+  );
   ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
   ipc.handle(CHANNELS.startup, startupSchema, (): StartupResponse => ({
     settings: {

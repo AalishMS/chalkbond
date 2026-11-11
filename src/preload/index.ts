@@ -7,6 +7,13 @@ import type { ChalkbondApi } from './api';
 const api: ChalkbondApi = {
   clipboardWrite: (value) => ipcRenderer.invoke(CHANNELS.clipboardWrite, value),
   clipboardRead: () => ipcRenderer.invoke(CHANNELS.clipboardRead, {}),
+  chooseOpen: () => ipcRenderer.invoke(CHANNELS.chooseOpen, {}),
+  readFile: (ref) => ipcRenderer.invoke(CHANNELS.readFile, { ref: ref.id }),
+  chooseSave: (format, suggestedName) =>
+    ipcRenderer.invoke(CHANNELS.chooseSave, { format, suggestedName }),
+  writeFile: (ref, data) => ipcRenderer.invoke(CHANNELS.writeFile, { ref: ref.id, data }),
+  ask: (request) => ipcRenderer.invoke(CHANNELS.ask, request),
+  showFileError: (problem, name) => ipcRenderer.invoke(CHANNELS.showFileError, { problem, name }),
   startup: () => ipcRenderer.invoke(CHANNELS.startup, {}),
   updateSession: (value) => ipcRenderer.send(CHANNELS.updateSession, value),
   platform: process.platform,

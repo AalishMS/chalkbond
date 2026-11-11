@@ -7,6 +7,12 @@ export type MainEvent =
 export interface IpcRequestMap {
   'clipboard:write': ClipboardWriteRequest;
   'clipboard:read': Record<string, never>;
+  'file:choose-open': Record<string, never>;
+  'file:read': { ref: string };
+  'file:choose-save': ChooseSaveRequest;
+  'file:write': { ref: string; data: Uint8Array };
+  'dialog:ask': AskRequest;
+  'dialog:file-error': FileErrorRequest;
   'log:error': LogErrorRequest;
   'app:startup': Record<string, never>;
   'session:update': SessionUpdate;
@@ -36,4 +42,28 @@ export interface ClipboardReadResponse {
   text: string | null;
   textTooLong: boolean;
   image: boolean;
+}
+
+/** I2 read problems; `unsupported` is a drop's (I3) and never answers I2. */
+export type ReadProblem = 'missing' | 'too-large' | 'unreadable' | 'unsupported';
+export type ReadFileResponse =
+  { ok: true; bytes: Uint8Array } | { ok: false; problem: Exclude<ReadProblem, 'unsupported'> };
+/** F14 write problems (C4). */
+export type WriteProblem = 'write-denied' | 'disk-full' | 'busy' | 'folder-gone' | 'write-failed';
+export type WriteFileResponse = { ok: true } | { ok: false; problem: WriteProblem };
+/** Every F14 problem (I5). */
+export type FileProblem = ReadProblem | WriteProblem | 'no-drawing' | 'newer-version' | 'damaged';
+export interface ChooseSaveRequest {
+  format: FileRef['kind'];
+  /** A base name (no `/` or `\`). */
+  suggestedName: string;
+}
+export type AskRequest = { kind: 'save-changes'; name: string } | { kind: 'recover' };
+export type AskAnswer<R extends AskRequest> = R extends { kind: 'recover' }
+  ? 'recover' | 'delete'
+  : 'save' | 'discard' | 'cancel';
+export interface FileErrorRequest {
+  problem: FileProblem;
+  /** A base name (no `/` or `\`). */
+  name: string;
 }

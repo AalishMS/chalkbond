@@ -246,8 +246,8 @@ the I5 schema. `write-problem.test.ts`: each errno. `dialogs` R6 rule as a pure 
 `a.CHALK` kept). Handler tests: each schema rejects bad payloads.
 
 **Acceptance criteria:**
-- [ ] Unit tests pass; `src/main/model` ≥ 90 % lines so far
-- [ ] No channel returns or accepts a path (schema review in the test: no `path` field except I3, which arrives in A15)
+- [x] Unit tests pass; `src/main/model` ≥ 90 % lines so far
+- [x] No channel returns or accepts a path (schema review in the test: no `path` field except I3, which arrives in A15)
 
 **Verification:** `npm test -- src/main`, `npm run check`. No visible change (native dialogs; their
 use and stubs are e2e-tested in A8, A9).

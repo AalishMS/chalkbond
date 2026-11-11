@@ -7,13 +7,19 @@ test('named bridge logs errors and denies windows and permissions', async () => 
   try {
     const page = await app.firstWindow();
     expect(await page.evaluate(() => Object.keys(window.chalkbond).sort())).toEqual([
+      'ask',
+      'chooseOpen',
+      'chooseSave',
       'clipboardRead',
       'clipboardWrite',
       'logError',
       'onMainEvent',
       'platform',
+      'readFile',
+      'showFileError',
       'startup',
       'updateSession',
+      'writeFile',
     ]);
     expect(await page.evaluate(() => Notification.requestPermission())).toBe('denied');
     const prefs = await app.evaluate(({ BrowserWindow }) => {

@@ -29,3 +29,44 @@ export const clipboardWriteSchema = z
   })
   .strict();
 export const clipboardReadSchema = z.object({}).strict();
+
+// A7 (SPEC-app-shell.md I1, I2, I4, I5; clipboard-export C3, C4). No schema carries a path (R8).
+const fileRefId = z.uuid();
+const fileKind = z.enum(['chalk', 'png', 'svg', 'pdf']);
+/** A base name for a native box or a suggested file name: ≤ 255 characters, no `/` or `\`. */
+const baseName = z
+  .string()
+  .max(255)
+  .regex(/^[^/\\]*$/);
+export const chooseOpenSchema = z.object({}).strict();
+export const readFileSchema = z.object({ ref: fileRefId }).strict();
+export const chooseSaveSchema = z.object({ format: fileKind, suggestedName: baseName }).strict();
+export const writeFileSchema = z
+  .object({
+    ref: fileRefId,
+    data: z.instanceof(Uint8Array).refine((bytes) => bytes.length <= 64 * 1024 * 1024),
+  })
+  .strict();
+export const askSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('save-changes'), name: baseName }).strict(),
+  z.object({ kind: z.literal('recover') }).strict(),
+]);
+export const fileErrorSchema = z
+  .object({
+    problem: z.enum([
+      'missing',
+      'too-large',
+      'unsupported',
+      'no-drawing',
+      'newer-version',
+      'damaged',
+      'unreadable',
+      'write-denied',
+      'disk-full',
+      'busy',
+      'folder-gone',
+      'write-failed',
+    ]),
+    name: baseName,
+  })
+  .strict();
