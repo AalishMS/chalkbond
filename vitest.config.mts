@@ -62,6 +62,9 @@ export default defineConfig({
         // SPEC-clipboard-export.md "Testing": at least 90 % lines, no file excluded.
         'src/core/clipboard-export/**': { lines: 90 },
         'src/renderer/clipboard-export/model/**': { lines: 90 },
+        // SPEC-app-shell.md "Testing": the model folders at least 90 % lines, no file excluded.
+        'src/main/model/**': { lines: 90 },
+        'src/renderer/app/model/**': { lines: 90 },
       },
     },
   },

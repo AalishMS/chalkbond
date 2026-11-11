@@ -138,7 +138,7 @@ frame, Arial, IME, Office, os-input, installer) are not run, and no Windows box 
 - [ ] A16: App and file icons
 - [ ] A17: Installer build and packaged smoke test
 - [ ] A18: Accessibility pass for the new UI
-- [ ] A19: app-shell coverage thresholds
+- [x] A19: app-shell coverage thresholds
 - [ ] A20: Docs, Windows checklist, version 1.0.0
 
 ### Checkpoint Z — release

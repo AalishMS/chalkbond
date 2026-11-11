@@ -726,8 +726,10 @@ focus cell), `A18/focus-export-card.png` (Ctrl+E: PNG card ring as A08a).
 **Tests first:** the thresholds themselves.
 
 **Acceptance criteria:**
-- [ ] `npm test -- --coverage` passes with the new thresholds (and C13's)
-- [ ] No file added to `coverage.exclude`
+- [x] `npm test -- --coverage` passes with the new thresholds (and C13's)
+- [x] No file added to `coverage.exclude`
+
+A19 worker evidence (2026-11-11, Linux): thresholds added and passed as they stood, no test added (src/main/model 100 % lines, src/renderer/app/model 100 %); the earlier probe at 101 % failed on both globs. Logs /tmp/chalkbond-sonnet-c13-a19-work/cov-a19.log.
 
 **Verification:** `npm test -- --coverage`, `npm run check`
 
