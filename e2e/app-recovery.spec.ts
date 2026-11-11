@@ -150,10 +150,9 @@ test('RC3: a recovery file that does not parse, or is not a drawing, is deleted 
   }
 });
 
-test('RC5: query-session-end writes the recovery file within 1 s, prevents nothing, and the close keeps it', async () => {
-  const { app, page } = await launchIn(userData, { dialogs: [] });
-  await insertName(page, 'ethanol');
-  const prevented = await app.evaluate(({ BrowserWindow }) => {
+// Synthetic events only: they prove the guard's logic, not what Windows does at a real shutdown.
+const emitQuerySessionEnd = (app: ElectronApplication): Promise<boolean> =>
+  app.evaluate(({ BrowserWindow }) => {
     let wasPrevented = false;
     BrowserWindow.getAllWindows()[0]?.emit('query-session-end', {
       preventDefault: () => {
@@ -162,9 +161,29 @@ test('RC5: query-session-end writes the recovery file within 1 s, prevents nothi
     });
     return wasPrevented;
   });
-  expect(prevented).toBe(false);
+
+test('RC5, R24: a cancelled shutdown (query-session-end only) writes the file within 1 s, prevents nothing, and the next real close still prompts', async () => {
+  const { app, page } = await launchIn(userData, { dialogs: [{ response: 1 }] });
+  await insertName(page, 'ethanol');
+  expect(await emitQuerySessionEnd(app)).toBe(false);
   await expect.poll(() => existsSync(recoveryFile(userData)), { timeout: 1000 }).toBe(true);
   expect(fileDoc(recoveryFile(userData)).atoms).toEqual((await readDocument(page)).atoms);
+  // The shutdown was cancelled: an ordinary close shows the save prompt (the one scripted box,
+  // Don't save), then N4 clears the file.
+  await closeWindowForReal(app);
+  expect(existsSync(recoveryFile(userData))).toBe(false);
+  expect(existsSync(recoveryMeta(userData))).toBe(false);
+});
+
+test('RC5, R24: query-session-end then session-end, then the close: no prompt, the recovery file stays', async () => {
+  const { app, page } = await launchIn(userData, { dialogs: [] });
+  await insertName(page, 'ethanol');
+  expect(await emitQuerySessionEnd(app)).toBe(false);
+  await expect.poll(() => existsSync(recoveryFile(userData)), { timeout: 1000 }).toBe(true);
+  expect(fileDoc(recoveryFile(userData)).atoms).toEqual((await readDocument(page)).atoms);
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0]?.emit('session-end', {});
+  });
   // Windows then closes the window: no prompt (no box is scripted), no clear.
   await closeWindowForReal(app);
   expect(existsSync(recoveryFile(userData))).toBe(true);

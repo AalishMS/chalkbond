@@ -36,6 +36,7 @@ is sized for one worker session. The same table is in `tasks/plan-app-shell.md`.
 | 12 | 12 | A11 Native menus and host keys · A12 Keyboard shortcuts dialog and About | W menus and keys |
 | 13 | 13 | A13 Context menus · A14 Recovery | W → **Checkpoint W** (after A13); A14 opens X |
 | 14 | 14 | A15 Recent files, single instance, drag and drop · A16 App and file icons | X → **Checkpoint X** (after A15); A16 opens Y |
+| 14b | corrective | A14a · A14b | X (recovery corrections after the audit of d2edcff) |
 | 15 | 15 | A17 Installer build and packaged smoke · A18 Accessibility pass | Y release |
 | 16 | 16 | C13 clipboard-export coverage, performance, checklist · A19 app-shell coverage | Y |
 | 17 | 17 | A20 Docs, version 1.0.0 | Y → **Checkpoint Z (release)** |

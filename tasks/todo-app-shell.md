@@ -514,6 +514,37 @@ box's look (A11) goes on the checklist.
 
 **Scope:** M
 
+## A14a: Session end and the close guard (R24)
+
+**Description:** `guardClose` (`src/main/lifecycle.ts`) listens to `session-end` as well.
+`query-session-end` only sends `flush-recovery` and changes no guard state; only `session-end`
+lets the following `close` skip F4 and the recovery clear (RC5, R24). The flush stays best effort:
+nothing is prevented or awaited. The quit flush's Windows gap is documented only.
+
+**Tests first:** `lifecycle.test.ts`: `query-session-end` then `close` is prevented and sends
+`close-requested` (the defect; fails first); `query-session-end` never calls `preventDefault` and
+sends `flush-recovery`; `session-end` then `close` goes ahead, `closing()` runs, nothing is sent;
+`query-session-end` + `session-end` + `close` likewise. `e2e/app-recovery.spec.ts` replaces the
+old RC5 test by two: (a) a synthetic `query-session-end` writes the file within 1 s and prevents
+nothing, then a real close shows the save prompt (Don't save: the window closes, the file is gone);
+(b) synthetic `query-session-end` then `session-end`, then a real close with `dialogs: []` closes
+without a box and the file stays.
+
+**Acceptance criteria:**
+- [x] `lifecycle.test.ts` and both e2e tests pass (Linux; synthetic events prove only the guard's logic)
+- [x] `npm run check` green
+- [ ] A real cancelled shutdown and a real shutdown behave as R24 says (Windows; synthetic events on Linux prove only the guard's logic)
+
+**Verification:** `npm run check`; `npx electron-vite build` then
+`npx playwright test --project=e2e e2e/app-recovery.spec.ts`. The two Windows checks are in the
+spec's "Windows checks".
+
+**Dependencies:** A14
+
+**Files:** `SPEC-app-shell.md`, `SPEC.md`, `src/main/{lifecycle.ts,lifecycle.test.ts}`, `e2e/app-recovery.spec.ts`, `tasks/*`
+
+**Scope:** S
+
 ## A15: Recent files, single instance, drag and drop
 
 **Description:** `model/recent.ts` (F10) and the Open recent submenu with Clear; missing entries

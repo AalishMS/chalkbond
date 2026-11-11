@@ -1,8 +1,10 @@
 // Window close and app quit (SPEC-app-shell.md F13, RC2, RC5, R5, R20). A close is handed to the
 // renderer (`close-requested`) once it has sent its first N1; its N5 closes the window only after
 // the recovery chain is idle, so the N4 sent just before it has removed the file. A gone renderer
-// or a Windows session end (`query-session-end`, RC5) closes without the prompt and never clears
-// recovery. Quit waits for one flush of settings and recovery.
+// or a close after Windows' `session-end` (irrevocable, RC5, R24) closes without the prompt and
+// never clears recovery. `query-session-end` is only a question (the shutdown can still be
+// cancelled): it asks the renderer for a best-effort flush and changes no guard state. Quit waits
+// for one flush of settings and recovery (not run at a Windows session end).
 import { CHANNELS } from '../shared/channels';
 import type { MainEvent } from '../shared/ipc-types';
 
@@ -12,7 +14,10 @@ interface Preventable {
 
 /** The parts of a `BrowserWindow` the guard uses (a fake in tests). */
 export interface GuardedWindow {
-  on(event: 'close' | 'query-session-end', listener: (event: Preventable) => void): unknown;
+  on(
+    event: 'close' | 'query-session-end' | 'session-end',
+    listener: (event: Preventable) => void,
+  ): unknown;
   close(): void;
   isDestroyed(): boolean;
   webContents: {
@@ -39,11 +44,14 @@ export function guardClose(win: GuardedWindow, ports: CloseGuardPorts) {
   win.webContents.on('render-process-gone', () => {
     allowed = true;
   });
-  // RC5, R5: Windows is ending the session. Nothing is prevented and no box is shown; the renderer
-  // writes the recovery file at once, and the close that follows skips F4 (no discard, no N4).
+  // RC5, R24: Windows asks whether the session may end. Nothing is prevented or awaited and no
+  // state changes (the shutdown may be cancelled); the renderer writes the recovery file at once.
   win.on('query-session-end', () => {
-    allowed = true;
     send({ type: 'flush-recovery' });
+  });
+  // R24: `session-end` cannot be prevented. The close that follows skips F4 and never clears.
+  win.on('session-end', () => {
+    allowed = true;
   });
   win.on('close', (event) => {
     if (allowed || !ready || win.webContents.isCrashed()) {

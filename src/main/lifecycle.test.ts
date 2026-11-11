@@ -1,6 +1,6 @@
 // F13 close, RC2 normal close, RC5 shutdown and the one quit flush (SPEC-app-shell.md) with fake
-// windows: a normal close waits for the recovery chain (N4 then N5), a gone renderer or a session
-// end closes without the prompt and never clears, and quit flushes settings and recovery once.
+// windows: a normal close waits for the recovery chain (N4 then N5), a gone renderer or a close after
+// `session-end` (R24) closes without the prompt and never clears, and quit flushes settings and recovery once.
 import { EventEmitter } from 'node:events';
 import { describe, expect, it, vi } from 'vitest';
 import { guardClose, installQuitFlush } from './lifecycle';
@@ -103,13 +103,44 @@ describe('guardClose (F13, RC2, RC5)', () => {
     expect(win.close().prevented).toBe(false);
   });
 
-  it('RC5: query-session-end sends flush-recovery, prevents nothing; the later close skips F4', () => {
-    const { win, guard, closing } = setup();
-    guard.rendererReady();
+  const asking = () => {
     const event = { prevented: false, preventDefault: () => (event.prevented = true) };
+    return event;
+  };
+
+  it('RC5: query-session-end sends flush-recovery and prevents nothing', () => {
+    const { win, guard } = setup();
+    guard.rendererReady();
+    const event = asking();
     win.emit('query-session-end', event);
     expect(event.prevented).toBe(false);
     expect(win.sent).toEqual([{ type: 'flush-recovery' }]);
+  });
+
+  it('R24: a close after query-session-end alone (shutdown cancelled) is an ordinary close', () => {
+    const { win, guard, closing } = setup();
+    guard.rendererReady();
+    win.emit('query-session-end', asking());
+    win.sent.length = 0;
+    expect(win.close().prevented).toBe(true);
+    expect(win.sent).toEqual([{ type: 'close-requested' }]);
+    expect(closing).not.toHaveBeenCalled();
+  });
+
+  it('R24: session-end, then the close, goes ahead without the prompt', () => {
+    const { win, guard, closing } = setup();
+    guard.rendererReady();
+    win.emit('session-end', {});
+    expect(win.close().prevented).toBe(false);
+    expect(win.sent).toEqual([]);
+    expect(closing).toHaveBeenCalledTimes(1);
+  });
+
+  it('R24: query-session-end, session-end, close: goes ahead; only the flush was sent', () => {
+    const { win, guard, closing } = setup();
+    guard.rendererReady();
+    win.emit('query-session-end', asking());
+    win.emit('session-end', {});
     expect(win.close().prevented).toBe(false);
     expect(win.sent).toEqual([{ type: 'flush-recovery' }]);
     expect(closing).toHaveBeenCalledTimes(1);
