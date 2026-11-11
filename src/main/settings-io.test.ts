@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { defaultSettings, parseSettings, type Settings } from './model/settings';
-import { createSettingsStore, SETTINGS_DELAY_MS } from './settings-io';
+import { createSettingsStore, SETTINGS_DELAY_MS, SETTINGS_READ_RETRY_MS } from './settings-io';
 
 let dir = '';
 let file = '';
@@ -172,5 +172,106 @@ describe('update and the 500 ms debounce', () => {
     await s.flush();
     expect(onDisk().newDrawingStyle).toBe('journal');
     expect(onDisk().export.pngWhite).toBe(true);
+  });
+});
+
+describe('a failed read (EBUSY / EPERM retried; the file is then left alone)', () => {
+  const errno = (code: string): Error =>
+    Object.assign(new Error(`${code}: settings.json`), { code });
+  /** A reader that throws `codes` in turn, then reads the real file; `sleeps` records waits. */
+  function flaky(codes: string[]) {
+    const sleeps: number[] = [];
+    let calls = 0;
+    const log: string[] = [];
+    const clock = timers();
+    const s = createSettingsStore({
+      file,
+      log: (m) => log.push(m),
+      setTimer: clock.setTimer,
+      readText: async (path) => {
+        calls++;
+        const code = codes.shift();
+        if (code !== undefined) throw errno(code);
+        return readFileSync(path, 'utf8');
+      },
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+    });
+    return { s, log, clock, sleeps, calls: () => calls };
+  }
+  const kept = JSON.stringify({
+    ...defaultSettings(),
+    newDrawingStyle: 'journal',
+    folders: { open: '/o', save: '/s', export: '/e' },
+  });
+
+  it('two transient failures, then success: every field is kept, not rewritten', async () => {
+    writeFileSync(file, kept);
+    const { s, sleeps, calls, log } = flaky(['EBUSY', 'EPERM']);
+    const loaded = await s.load();
+    expect(loaded.newDrawingStyle).toBe('journal');
+    expect(loaded.folders).toEqual({ open: '/o', save: '/s', export: '/e' });
+    expect(calls()).toBe(3);
+    expect(sleeps).toEqual([100, 100]);
+    expect(SETTINGS_READ_RETRY_MS).toBe(100);
+    expect(readFileSync(file, 'utf8')).toBe(kept);
+    expect(log).toEqual([]);
+    s.update((v) => ({ ...v, export: { ...v.export, pngDpi: 600 } }));
+    await s.flush();
+    expect(onDisk().export.pngDpi).toBe(600);
+    expect(onDisk().folders.save).toBe('/s');
+  });
+
+  it('EBUSY exhausted (1 + 3 tries): defaults in memory, logged, and no write ever', async () => {
+    writeFileSync(file, kept);
+    const { s, sleeps, calls, log, clock } = flaky(['EBUSY', 'EBUSY', 'EPERM', 'EBUSY']);
+    expect(await s.load()).toEqual(defaultSettings());
+    expect(calls()).toBe(4);
+    expect(sleeps).toEqual([100, 100, 100]);
+    expect(log.join('\n')).toMatch(/read failed.*EBUSY/i);
+    // Updates still work in memory; the debounce, flush and pending never touch the file.
+    s.update(journal);
+    expect(s.get().newDrawingStyle).toBe('journal');
+    expect(clock.live()).toHaveLength(0);
+    expect(s.pending()).toBe(false);
+    clock.fire();
+    await s.flush();
+    s.update((v) => ({ ...v, window: { x: 1, y: 2, width: 300, height: 200, maximized: false } }));
+    await s.flush();
+    expect(readFileSync(file, 'utf8')).toBe(kept);
+    expect(readdirSync(dir)).toEqual(['settings.json']);
+  });
+
+  it('EACCES is not retried: defaults, logged, and the unreadable bytes are kept', async () => {
+    writeFileSync(file, kept);
+    const { s, sleeps, calls, log } = flaky(['EACCES']);
+    expect(await s.load()).toEqual(defaultSettings());
+    expect(calls()).toBe(1);
+    expect(sleeps).toEqual([]);
+    expect(log.join('\n')).toMatch(/read failed.*EACCES/i);
+    s.update(journal);
+    await s.flush();
+    expect(s.pending()).toBe(false);
+    expect(readFileSync(file, 'utf8')).toBe(kept);
+  });
+
+  it('ENOENT is a new settings file: no retry, nothing logged, and changes are written', async () => {
+    const { s, sleeps, calls, log } = flaky(['ENOENT']);
+    expect(await s.load()).toEqual(defaultSettings());
+    expect(calls()).toBe(1);
+    expect(sleeps).toEqual([]);
+    expect(log).toEqual([]);
+    s.update(journal);
+    await s.flush();
+    expect(onDisk().newDrawingStyle).toBe('journal');
+  });
+
+  it('a successful read of broken JSON is still repaired and rewritten (ST3)', async () => {
+    writeFileSync(file, '{ not json');
+    const { s, log } = flaky(['EPERM']);
+    expect(await s.load()).toEqual(defaultSettings());
+    expect(log.join('\n')).toMatch(/broken/i);
+    expect(parseSettings(readFileSync(file, 'utf8')).problem).toBeNull();
   });
 });

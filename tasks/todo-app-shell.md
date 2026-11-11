@@ -349,6 +349,7 @@ equal; maximized restored; a `settings.json` with bounds at x = 10 000 → W1 si
 - [x] Unit and e2e tests pass (`settings.test.ts`, `settings-io.test.ts`, `window-bounds.test.ts`, `session-folders.test.ts`, `ipc-schemas.test.ts` I8, `preset-memory.test.ts`, `host.test.ts`; `e2e/app-settings.spec.ts`). Linux only: the headless backend reports a 1 × 1 work area, so the Linux W2 checks are relative to the work area (stored = the work area, not maximized / maximized; x = 10 000 → W1; a real close stores the normal bounds); the todo's `setBounds({x: 100, y: 80, width: 1100, height: 760})` relaunch and maximize is `e2e/win/app-window-memory.spec.ts`, not yet run on Windows
 - [x] The renderer never receives a path from settings (schema of I7's `settings`): `rendererSettings` unit test, I8 `setSettingsSchema` rejects folders / window / recent, e2e ST2
 - [x] Shot exists (`A10/new-handout.png`, looked at)
+- [x] Correction (R15, R16): ST4 read retries (EBUSY / EPERM 3 × 100 ms) and no write after a failed read (`settings-io.test.ts` injected reader; e2e: a folder at `settings.json` keeps its bytes); ST5 int32-integer window (`settings.test.ts` 100.5 and 3000000000; e2e malformed window starts usable at W1); e2e the open, save and export folders survive a real close and relaunch
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A10` →
 `A10/new-handout.png` (scripted: switch to Handout, Ctrl+N, Don't save: empty drawing with

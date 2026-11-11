@@ -3,12 +3,13 @@
 // settings.json, and loads (Open of a picture, test hook) never remembered. Every close is real
 // (relaunch.ts). On Linux the headless backend reports a 1 × 1 work area, so the W2 checks here
 // are relative to the work area; the 1100 × 760 rectangle of the todo is e2e/win/app-window-memory.
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { drawingPayload, withPictureChunks } from '../src/core/clipboard-export';
-import { setStyle } from '../src/core/doc-model';
+import { serialize, setStyle } from '../src/core/doc-model';
+import { dialogLog, exportWith, expectNotice, openFrom, saveTo } from './export-steps';
 import { goldenDoc, loadDocument, readDocument } from './harness';
 import { closeForReal, launchWith, windowState, windowTitle, workArea } from './relaunch';
 
@@ -179,5 +180,110 @@ test('ST2: startup and I8 carry no path; I8 rejects a folder and stores Export c
     expect(readSettings()?.['folders']).toEqual({ open: null, save: null, export: null });
   } finally {
     await closeForReal(app);
+  }
+});
+
+test('W2: a malformed stored window (fractional, beyond int32) starts usable at the W1 place', async () => {
+  let { app } = await launchWith(userData);
+  const first = await windowState(app);
+  await closeForReal(app);
+  const base = readSettings() ?? {};
+  for (const window of [
+    { x: 100.5, y: 80, width: 1100, height: 760, maximized: false },
+    { x: 3000000000, y: 80, width: 1100, height: 760, maximized: false },
+    { x: 0, y: 0, width: 1100.5, height: 3000000000, maximized: false },
+  ]) {
+    writeFileSync(settingsFile(), JSON.stringify({ ...base, window }));
+    let page;
+    ({ app, page } = await launchWith(userData, { size: SIZE }));
+    try {
+      await expect(page.getByTestId('canvas')).toBeVisible();
+      expect(await windowState(app), JSON.stringify(window)).toEqual(first);
+    } finally {
+      await closeForReal(app);
+    }
+    expect(readFileSync(join(userData, 'logs', 'main.log'), 'utf8')).toMatch(/settings.*repaired/i);
+  }
+});
+
+test('ST3: an unreadable settings.json is never written; the run uses defaults in memory', async () => {
+  // A folder where the file belongs: the read fails with EISDIR on every platform (not retried).
+  mkdirSync(settingsFile());
+  writeFileSync(join(settingsFile(), 'keep.txt'), 'original bytes');
+  const { app, page } = await launchWith(userData, { size: SIZE });
+  try {
+    await expect(page.getByTestId('canvas')).toBeVisible();
+    await page.evaluate(() =>
+      window.chalkbond.setSettings({ export: { format: 'svg', pngDpi: 600, pngWhite: true } }),
+    );
+    expect((await page.evaluate(() => window.chalkbond.startup())).settings.export).toEqual({
+      format: 'svg',
+      pngDpi: 600,
+      pngWhite: true,
+    });
+  } finally {
+    await closeForReal(app);
+  }
+  expect(readFileSync(join(settingsFile(), 'keep.txt'), 'utf8')).toBe('original bytes');
+  const log = readFileSync(join(userData, 'logs', 'main.log'), 'utf8');
+  expect(log).toMatch(/settings.*read failed/i);
+  expect(log).not.toMatch(/settings.*write failed/i);
+});
+
+test('ST2: the open, save and export folders survive a real close and relaunch', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'chalkbond-e2e-folders-'));
+  const [opened, saved, exported] = ['opened', 'saved', 'exported'].map((name) => {
+    const folder = join(root, name);
+    mkdirSync(folder);
+    return folder;
+  }) as [string, string, string];
+  writeFileSync(join(opened, 'ethanol.chalk'), serialize(goldenDoc('ethanol')));
+  try {
+    let { app, page } = await launchWith(userData, {
+      size: SIZE,
+      launch: {
+        dialogs: [
+          openFrom(join(opened, 'ethanol.chalk')),
+          saveTo(join(saved, 'copy.chalk')),
+          saveTo(join(exported, 'copy.svg')),
+        ],
+      },
+    });
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+o');
+    await expect.poll(() => windowTitle(app)).toBe('ethanol - Chalkbond');
+    await page.keyboard.press('Control+Shift+s');
+    await expect.poll(() => windowTitle(app)).toBe('copy - Chalkbond');
+    await exportWith(page, { format: 'svg' });
+    await expectNotice(page, 'Exported copy.svg.');
+    await closeForReal(app);
+    expect(readSettings()?.['folders']).toEqual({ open: opened, save: saved, export: exported });
+
+    const cancelled = { canceled: true, filePaths: [], filePath: '' };
+    ({ app, page } = await launchWith(userData, {
+      size: SIZE,
+      launch: { dialogs: [cancelled, cancelled, cancelled, { response: 1 }] },
+    }));
+    try {
+      // Export needs a drawing; a test-hook load (the close may ask: "Don't save").
+      await loadDocument(page, goldenDoc('ethanol'));
+      await page.getByTestId('canvas').focus();
+      await page.keyboard.press('Control+o');
+      await expect.poll(async () => (await dialogLog(app)).length).toBe(1);
+      await page.getByTestId('canvas').focus();
+      await page.keyboard.press('Control+Shift+s');
+      await expect.poll(async () => (await dialogLog(app)).length).toBe(2);
+      await exportWith(page, { format: 'svg' });
+      await expect.poll(async () => (await dialogLog(app)).length).toBe(3);
+      expect((await dialogLog(app)).map((d) => d.options['defaultPath'])).toEqual([
+        opened,
+        join(saved, 'Untitled.chalk'),
+        join(exported, 'Untitled.svg'),
+      ]);
+    } finally {
+      await closeForReal(app);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });

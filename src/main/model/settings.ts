@@ -54,13 +54,23 @@ const isPath = (v: unknown): v is string =>
   typeof v === 'string' && v.length > 0 && v.length <= MAX_PATH;
 const pathOrNull = (v: unknown): string | null => (isPath(v) ? v : null);
 
+const INT32_MIN = -2147483648;
+const INT32_MAX = 2147483647;
+/** A signed 32-bit integer, as Electron's native `Rectangle` holds it. */
+const isInt32 = (n: unknown): n is number =>
+  typeof n === 'number' && Number.isInteger(n) && n >= INT32_MIN && n <= INT32_MAX;
+
+/**
+ * W2: integer int32 `x` / `y`, positive int32 `width` / `height` and a boolean `maximized`;
+ * anything else (fractional, out of range, non-finite, non-numeric) is null (W1), so main never
+ * hands an invalid rectangle to `screen` or `setBounds`.
+ */
 function windowOf(v: unknown): StoredWindow | null {
   if (!isPlain(v)) return null;
   const { x, y, width, height, maximized } = v;
-  const finite = [x, y, width, height].every((n) => typeof n === 'number' && Number.isFinite(n));
-  if (!finite || typeof maximized !== 'boolean') return null;
-  if ((width as number) <= 0 || (height as number) <= 0) return null;
-  return { x, y, width, height, maximized } as StoredWindow;
+  if (!isInt32(x) || !isInt32(y) || !isInt32(width) || !isInt32(height)) return null;
+  if (typeof maximized !== 'boolean' || width <= 0 || height <= 0) return null;
+  return { x, y, width, height, maximized };
 }
 
 function recentOf(v: unknown): string[] {

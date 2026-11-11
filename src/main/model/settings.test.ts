@@ -112,6 +112,34 @@ describe('parseSettings', () => {
     );
   });
 
+  it('W2: a window needs int32 integer x / y and positive int32 width / height', () => {
+    const MAX = 2147483647;
+    const MIN = -2147483648;
+    const bad: Record<string, unknown>[] = [
+      { x: 100.5 },
+      { y: -0.25 },
+      { width: 1100.5 },
+      { height: 760.001 },
+      { x: 3000000000 },
+      { y: MIN - 1 },
+      { width: 3000000000 },
+      { height: MAX + 1 },
+      { width: -1 },
+      { x: '100' },
+      { y: null },
+      { width: true },
+    ];
+    for (const patch of bad) {
+      const result = parseSettings(
+        JSON.stringify({ ...FULL, window: { ...FULL.window, ...patch } }),
+      );
+      expect(result.settings.window, JSON.stringify(patch)).toBeNull();
+      expect(result.problem, JSON.stringify(patch)).toBe('repaired');
+    }
+    const edge = { x: MIN, y: MAX, width: MAX, height: 1, maximized: false };
+    expect(parseSettings(JSON.stringify({ ...FULL, window: edge })).settings.window).toEqual(edge);
+  });
+
   it('rejects non-finite window numbers', () => {
     const text = serializeSettings(FULL).replace('"x": 100', '"x": 1e999');
     expect(parseSettings(text).settings.window).toBeNull();

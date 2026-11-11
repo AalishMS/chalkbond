@@ -102,6 +102,8 @@ draft's, kept or amended at review; R-rows are the reviewer's resolutions.
 | R11 | The Windows Jump List (`app.addRecentDocument`) is cut | No user story needs it; the in-app recent list covers reopening | 2026-11-10 |
 | R12 | Shell tokens and icons are lifted into `src/renderer/app/` as their own files (V1), never merged into the editor's `tokens.css` / `icons.svg` | Each lifted file stays a copy of exactly one normative file; the editor's tooling test is untouched | 2026-11-10 |
 | R14 | F4's **Save** answer proceeds with the pending New, Open or close only if the save succeeded **and** the drawing is clean afterwards (`!dirty`). An edit during the write (R7) keeps the newer, dirty drawing and stops the pending action: no replacement, no close, no extra box | An older snapshot reaching disk must never let newer edits be discarded silently | 2026-11-11 |
+| R15 | ST4: a settings read that fails (other than `ENOENT`, after 3 × 100 ms retries of `EBUSY` / `EPERM`) runs on in-memory defaults and never writes that file for the rest of the run | Unreadable preferences must never be overwritten by defaults; a busy file (scanner, sync) usually reads a moment later | 2026-11-11 |
+| R16 | ST5: the stored window takes int32 integers only (size > 0); anything else is W1 via the ST3 repair | A hand-edited or corrupted rectangle must never reach the native `Rectangle` conversion | 2026-11-11 |
 | R13 | Draft open questions resolved: Q1 visible (O3); Q2 remembered (O4); Q3 no (O9); Q4 recover (O5); Q5 one-click per user (O6); Q6 en-US (O9); Q7 → R4; Q8 1.0.0 (O6); Q9 yes (O9); Q10 8 (O4) | Recorded so no question stays open | 2026-11-10 |
 
 ---
@@ -296,6 +298,7 @@ interface Settings {
   export: { format: 'png' | 'svg' | 'pdf'; pngDpi: 150 | 300 | 600; pngWhite: boolean };
                                                                  // default png, 300, false
   window: { x: number; y: number; width: number; height: number; maximized: boolean } | null;
+                                                                 // ST5: int32 integers, size > 0
   recent: string[];                                              // ≤ 8 absolute paths
   folders: { open: string | null; save: string | null; export: string | null };
 }
@@ -314,6 +317,16 @@ interface Settings {
 - **ST3** (A10) A broken file, or one with a repaired field or a dropped key, is logged and
   rewritten valid at start. Writes go to a temp file in the same folder, then a rename. Pending
   changes are flushed on `will-quit`.
+- **ST4** (R15) The start-up read retries only `EBUSY` / `EPERM`, 3 × 100 ms (as F9). `ENOENT` is a
+  new settings file: defaults, written normally. Any other failure, or `EBUSY` / `EPERM` after the
+  retries, is logged; the run uses the defaults in memory (changes still apply in memory) and
+  writes that file **never** this run: no repair, no debounced write, no flush on `will-quit`, no
+  window bounds on close; the file's bytes stay as they were. No visible warning. The next launch
+  that reads it succeeds normally. A read that succeeds but finds broken JSON is ST3 (rewritten).
+- **ST5** (R16) `window` holds only signed 32-bit **integers** `x`, `y` and positive 32-bit
+  integers `width`, `height`, plus a boolean `maximized`; a fractional, out-of-range,
+  non-finite, non-numeric or non-positive value makes `window` null (W1) through ST3's repair, so
+  main never passes an invalid `Rectangle` to `screen.getDisplayMatching` or `setBounds`.
 - Left out: fonts, bond length, line width, language, theme, autosave interval, clipboard
   options, default folder, update checks, "open last file at start".
 
@@ -677,7 +690,7 @@ ships `LICENSES.chromium.html` itself.
 
 ## Behaviour rules index
 
-W1–W6, M1–M3, K1–K3, CM1–CM3, F1–F14, RC1–RC6, ST1–ST2, AB1, V1–V3, IC1–IC3, SEC1–SEC15,
+W1–W6, M1–M3, K1–K3, CM1–CM3, F1–F14, RC1–RC6, ST1–ST5, AB1, V1–V3, IC1–IC3, SEC1–SEC15,
 CO1–CO5, TH1–TH6, LG1, I1–I2.
 
 ## Required changes to finished modules and scaffold
@@ -702,7 +715,7 @@ CO1–CO5, TH1–TH6, LG1, I1–I2.
 
 | Level | What | Where |
 |---|---|---|
-| Unit (node) | `menu-model` (every row of M1/M2: label, accelerator text, `registerAccelerator: false`, no `role`, enabled rule, command; undo label casing; `&` doubling; recent labels with duplicates; modal disables all; M3 text focus); `context-menu-model` (CM1 both menus, CM3); `recent`; `settings` (defaults, each invalid field, unknown keys, broken JSON); `window-bounds` (W1 small and large work areas, W2 half-visible rule, two displays); `args` (`fileArg` with flags, Chromium extras, quotes, other extensions; `testFlags` packaged vs not); `titles`; `messages` (every F14 row); `write-problem` (errno → problem); `file-refs`; renderer `keys` (K1 table, text target, idle, dialog open, K2 conflicts, K3); `session`, `file-flows` (F1–F13 with fake ports: every prompt answer, cancel in Save as, failed write keeps dirty, failed open keeps the drawing, picture Save goes to Save as, R7 identity check, recovered `forcedDirty`, queued open request); `recovery-timer` (2 s / 10 s, injected clock); `shortcuts` (every row maps to the editor keymap or K1); IPC `handle()` (SEC6) and every schema (SEC5, SEC15); `files.ts` in a temp folder (SEC7, SEC8, F9) | colocated `*.test.ts` |
+| Unit (node) | `menu-model` (every row of M1/M2: label, accelerator text, `registerAccelerator: false`, no `role`, enabled rule, command; undo label casing; `&` doubling; recent labels with duplicates; modal disables all; M3 text focus); `context-menu-model` (CM1 both menus, CM3); `recent`; `settings` (defaults, each invalid field, unknown keys, broken JSON, ST5 fractional and beyond-int32 window); `settings-io` (ST4 injected reader: transient EBUSY / EPERM then success, exhausted retries, EACCES, ENOENT); `window-bounds` (W1 small and large work areas, W2 half-visible rule, two displays); `args` (`fileArg` with flags, Chromium extras, quotes, other extensions; `testFlags` packaged vs not); `titles`; `messages` (every F14 row); `write-problem` (errno → problem); `file-refs`; renderer `keys` (K1 table, text target, idle, dialog open, K2 conflicts, K3); `session`, `file-flows` (F1–F13 with fake ports: every prompt answer, cancel in Save as, failed write keeps dirty, failed open keeps the drawing, picture Save goes to Save as, R7 identity check, recovered `forcedDirty`, queued open request); `recovery-timer` (2 s / 10 s, injected clock); `shortcuts` (every row maps to the editor keymap or K1); IPC `handle()` (SEC6) and every schema (SEC5, SEC15); `files.ts` in a temp folder (SEC7, SEC8, F9) | colocated `*.test.ts` |
 | View markup (node) | primitives in every state, shortcuts dialog, drop overlay: roles, names, `aria-*`, test ids | `*.test.tsx` |
 | Tooling | V2; ICO structure and `icon.png` size; notices complete; SEC11; SEC13; lint probes of A1 | `tests/tooling/shell-*.test.ts`, `app-*.test.ts` |
 | E2E (built app, dialogs stubbed per TH4) | listed per task in `tasks/todo-app-shell.md`; the round trips of "Success criteria" | `e2e/app-*.spec.ts`, `e2e/win/app-*.spec.ts` |
