@@ -758,7 +758,7 @@ once and update the size row. Sweep both specs' success criteria into the plans'
 **Acceptance criteria:**
 - [x] Checklist sections present and unticked; every human-only SC of both specs appears in them
 - [x] AGENTS.md, README.md, CAPABILITY-MAP.md, SPEC.md updated; `package.json` and `package-lock.json` at version 1.0.0 (release pending the Windows checkpoint; Linux worker, 2026-11-11)
-- [ ] `dist/Chalkbond-1.0.0-setup.exe` built and its sizes written in the spec's I1 table (needs Windows, Checkpoint Z step 6 and 8; not run)
+- [x] `dist/Chalkbond-1.0.0-setup.exe` built and its sizes written in the spec's I1 table (installer 109,915,593 bytes, unpacked 347,499,681, installed 347,681,841 after installing on the development machine; Windows, 2026-11-11)
 - [x] Both plans' SC tables point every criterion at a passing test, a shot or a checklist item (windows-unrun and human items marked)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots`, `npm run dist:win`,
@@ -771,6 +771,8 @@ once and update the size row. Sweep both specs' success criteria into the plans'
 **Scope:** S
 
 ### Checkpoint Z — release (see the plan)
+
+Human batch 1, 2026-11-11: the setup was installed on the development machine and its size written in I1; first five "Clipboard and export" human checks passed (details in the plan). Checkpoint Z is not reached.
 
 ## Corrective verification before C5/C6 (2026-11-10)
 

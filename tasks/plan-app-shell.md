@@ -153,6 +153,8 @@ Windows run of the automated gates of Checkpoint Z, verified by the orchestrator
 - [ ] `docs/windows-checklist.md` sections "Clipboard and export" and "App shell and installer" present, unticked
 - [ ] Commit + push
 
+Human batch 1 (2026-11-11, Windows 11 Pro 26300, development laptop, Office Professional Plus 2016 Click-to-Run Version 2610; performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and files): installed from the setup on the development machine (installed size 347,681,841 bytes, 331.6 MiB, 24 files, written in `SPEC-app-shell.md` I1), and the first five human "Clipboard and export" checks passed (SVG drawing, Graphics Format, in PowerPoint and Word at true size, 8.69 x 1.21 in). Checkpoint Z is not reached: SmartScreen, the clean-account installs, the chat-app paste and every other human check, and Checkpoints K, E32 and R, are open.
+
 ## Success Criteria Coverage
 
 Swept at A20 (2026-11-11, Linux); the Windows cells updated after the Windows run of 2026-11-11 (note above). "Linux" = run and passing on the development machine; "Windows" = run and passing on the Windows machine; "Windows-unrun" = written, not run; "human" = needs eyes, Office or a Windows machine, box in `docs/windows-checklist.md` section "App shell and installer" unticked.
@@ -171,7 +173,7 @@ Swept at A20 (2026-11-11, Linux); the Windows cells updated after the Windows ru
 | 10 | No request leaves the app; permissions denied | A3 (counter checked by every e2e file from then on) | `e2e/app-security.spec.ts`, `tests/tooling/app-security.test.ts` (Linux) |
 | 11 | Handlers reject bad payloads and other frames | A3, every channel task | `src/main/ipc.test.ts`, `src/main/ipc-schemas.test.ts` (Linux) |
 | 12 | Content minimum 960×640; rail fits with the menu bar | A6, A11 | `e2e/app-window.spec.ts` (Linux). The Windows native frame: `e2e/app-window.spec.ts` and `e2e/win/app-window-memory.spec.ts` pass on Windows (2026-11-11), and `e2e/app-settings.spec.ts` W1 checks the first-launch content at the real 125 % scale (`533a77d`, `52de9e5`). The display-scaling checklist item stays (human, open) |
-| 13 | Icons; installer builds; packaged app launches | A16, A17 | `tests/tooling/app-icons.test.ts`, `tests/tooling/app-notices.test.ts` (Linux); `npm run test:packaged` against `dist/linux-unpacked` (Linux development check). `npm run dist:win` (exit 0, installer 104.8 MiB) and the Windows packaged run (7 passed): Windows, 2026-11-11. The installed size is open |
+| 13 | Icons; installer builds; packaged app launches | A16, A17 | `tests/tooling/app-icons.test.ts`, `tests/tooling/app-notices.test.ts` (Linux); `npm run test:packaged` against `dist/linux-unpacked` (Linux development check). `npm run dist:win` (exit 0, installer 104.8 MiB) and the Windows packaged run (7 passed): Windows, 2026-11-11. Installed size written in I1 (347,681,841 bytes, 2026-11-11); the clean-account installs and SmartScreen are open |
 | 14 | Shots match mock-ups; Windows checks ticked | every UI task; A20 (checklist), human | Shots `e2e/shots/A4`, `A6`, `A8`–`A15`, `A18`, `C8`–`C12` compared by eye by the orchestrator at each checkpoint (Linux). On Windows the shots were compared by eye by the orchestrator on 2026-11-11 (C8, C10, A15 and others, they match). The Windows checks are in the checklist section "App shell and installer", all unticked (human, open) |
 
 ## Screenshot review

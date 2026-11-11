@@ -16,13 +16,17 @@ The product spec is `SPEC.md`; the module list is `CAPABILITY-MAP.md`. Module id
 | 3 | `svg-render` | doc-model, chem-core | done; automated Windows checks passed 2026-11-11; Office checks in `docs/windows-checklist.md` still unticked |
 | 4 | `editor` | doc-model, chem-core, svg-render | done; "Editor" checks in `docs/windows-checklist.md` still unticked |
 | 5 | `clipboard-export` | doc-model, svg-render | implemented; automated Windows gates passed 2026-11-11; human checks open (`docs/windows-checklist.md`) |
-| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11; human checks and installed size open (`docs/windows-checklist.md`) |
+| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11; human checks open (`docs/windows-checklist.md`) |
 
 Version 1.0.0 is prepared in `package.json`; the release is pending Checkpoint Z on a Windows
 machine (`docs/windows-checklist.md`). Everything was built on Linux; on 2026-11-11 the automated
 Windows gates passed at `956a4a4` (check, e2e with `e2e/win`, os-input, `dist:win`, packaged smoke
-test, shots). The installer has been built but not installed; the human checks and the installed
-size are open.
+test, shots). The installer was installed on the development machine on 2026-11-11 and the
+installed size is written (`SPEC-app-shell.md` I1). The first five Office paste checks passed
+(SVG drawing in PowerPoint and Word at true size, Office 2016 Click-to-Run Version 2610; run by a
+computer-use agent, verified by the orchestrator). Open: the clean-account installs and
+SmartScreen, the rest of the clipboard and export checks, the rest of "App shell and installer",
+and Checkpoints K, E32 and R.
 
 ## Workflow
 
@@ -304,13 +308,17 @@ Vitest projects (`vitest.config.mts`):
 All six modules are implemented. The automated Windows gates (Checkpoint Z steps 1-7) passed on
 2026-11-11 at `956a4a4`: `npm run test:e2e` including `e2e/win/` (321), `npm run test:e2e:os-input`,
 the C3 clipboard probes (keys decided, Decision R9), `npm run dist:win`, `npm run test:packaged`
-and `npm run shots`. What is open: `docs/windows-checklist.md` step 8 (the installed size in
-`SPEC-app-shell.md` I1; installer and unpacked sizes are written) and step 9, the human sections
-("Clipboard and export" Office checks, "App shell and installer", Checkpoints K, E32 and R).
+and `npm run shots`. Step 8 is done: installer, unpacked and installed sizes are in
+`SPEC-app-shell.md` I1 (installed on the development machine, 2026-11-11). Step 9 (the human
+sections) is in progress: the first five "Clipboard and export" boxes and the first "App shell and
+installer" box are ticked. What is open: the clean-account installs and SmartScreen, the other
+clipboard and export checks (chat app, round trips, exports), the other "App shell and installer"
+boxes, and Checkpoints K, E32 and R.
 Version 1.0.0 is not declared released until they pass.
 
-- Windows gates still open: the installed size, Office, IME, shutdown, display scaling and the
-  other human checks in the checklist, on Windows 10 and 11.
+- Windows gates still open: clean-account installs and SmartScreen, IME, shutdown, display scaling,
+  Office checks for svg-render (Checkpoint K) and the other human checks in the checklist, on
+  Windows 10 and 11.
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
   the code and tests. Decisions of later dates supersede older text anywhere (including this file).
 - A bug found in a finished module: add a failing regression test first. A property-test failure

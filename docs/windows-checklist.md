@@ -1,10 +1,14 @@
 # Windows verification checklist
 
 **Checkpoint Z (release) is partly run.** The automated steps 1-7 of "Checkpoint Z" ran and passed
-on Windows on 2026-11-11 at `956a4a4`, run and read by the orchestrator. Step 8 is half done (the
-installer and unpacked sizes are written; the installed size is open) and step 9, the human
-sections, is open: the human boxes in "Clipboard and export" and every box in "App shell and
-installer" are unticked. The release is not declared until they pass.
+on Windows on 2026-11-11 at `956a4a4`, run and read by the orchestrator. Step 8 is done (the
+installer, unpacked and installed sizes are written). Step 9, the human sections, is in progress:
+the first batch (2026-11-11, Office 2016 Click-to-Run Version 2610 on the development machine,
+performed by a computer-use agent at the owner's request and verified by the orchestrator) ticked
+the first five human boxes of "Clipboard and export" and the first box of "App shell and installer".
+Everything else is open: the rest of "Clipboard and export", the clean-account installs and
+SmartScreen, the other boxes of "App shell and installer", and Checkpoints K, E32 and R. The
+release is not declared until they pass.
 
 Run on the Windows machine (PowerShell) at each checkpoint. Tick items in the commit that
 records the checkpoint.
@@ -34,8 +38,8 @@ i5-11400H, 16 GB, display at 125 % with a second monitor). Run and read by the o
 5. The C3 probes P1-P7 and P2b passed inside step 3. The keys were decided by them (Decision R9 in `SPEC-clipboard-export.md`).
 6. `npm run dist:win`, from a real console window: exit 0; `dist/Chalkbond-1.0.0-setup.exe` 109,915,593 bytes (104.8 MiB), `dist/win-unpacked` 347,499,681 bytes (331.4 MiB, 21 files), `dist/builder-effective-config.yaml` written.
 7. `npm run test:packaged` against `dist/win-unpacked`: exit 0, 7 passed.
-8. Installer and unpacked sizes are written in `SPEC-app-shell.md` I1. The installed size is not measured yet: it comes from the owner's install.
-9. Not started: no human box is ticked.
+8. Installer, unpacked and installed sizes are written in `SPEC-app-shell.md` I1 (installed 347,681,841 bytes, 331.6 MiB, 24 files, after installing on the development machine on 2026-11-11).
+9. In progress. Batch 1 (2026-11-11), performed by a computer-use agent in the Codex desktop app driving the real mouse and keyboard at the owner's request, verified by the orchestrator against its screenshots, an SVG exported from the same drawing, the installed folder, the shortcut files and the registry; machine: Windows 11 Pro 26H2 (build 26300.9818), the development laptop (not a clean account); Office: Microsoft Office Professional Plus 2016, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel (not Office 2021). Done: install on the development machine; installed size; the first five human boxes of "Clipboard and export" (SVG drawing in PowerPoint and Word at true size); Paint received a 2607 x 362 px picture. One observation without a tick: closing Chalkbond with an unsaved drawing showed the native prompt "Do you want to save changes to \"Untitled\"?" with Save, Don't save and Cancel, and Don't save closed the app. Open: everything else.
 
 Also run: `npm run shots` (97 passed, 220 PNGs), compared by eye by the orchestrator (see "Clipboard and export").
 
@@ -123,12 +127,13 @@ Automated checks that only run on Windows (ticked from the orchestrator's run of
 
 Human-only checks, with the installed app and Office 2021 (SC13: write down which format Office took, SVG drawing or picture):
 
-- [ ] Draw the SC3 scheme (Slides), press Copy, Ctrl+V on a blank PowerPoint slide: it arrives as a drawing (ribbon **Graphics Format** = SVG) or a picture (**Picture Format**); write down which. At 400 % zoom lines and text are sharp.
-- [ ] The pasted bonds measure 1.41 cm (40 pt) in PowerPoint (Format > Size against a known bond count); labels match 24 pt slide text. If Office took the PNG and it is about 3× too big, write down "300 dpi ignored" (accepted for v1, O5).
-- [ ] On a dark slide background the pasted drawing has no white or black box.
-- [ ] Switch to Handout, copy, paste into Word 2021: bonds about 5 mm, labels the size of 10 pt body text; sharp at 400 %; the print preview looks like a textbook figure.
-- [ ] `H₂SO₄`, `OH`, `CO₂H` in the pasted drawing are Arial and sit as on screen in PowerPoint and Word (a shift would reopen svg-render's text-as-outlines question).
+- [x] Draw the SC3 scheme (Slides), press Copy, Ctrl+V on a blank PowerPoint slide: it arrives as a drawing (ribbon **Graphics Format** = SVG) or a picture (**Picture Format**); write down which. At 400 % zoom lines and text are sharp. Result 2026-11-11: it arrived as the SVG drawing (ribbon **Graphics Format**; SC13: SVG drawing in PowerPoint and Word, Click-to-Run Version 2610); lines and text sharp at 400 %. Scheme "ethanol + acetic acid -> ethyl acetate + water" plus a text "H2SO4" above the arrow. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and files. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
+- [x] The pasted bonds measure 1.41 cm (40 pt) in PowerPoint (Format > Size against a known bond count); labels match 24 pt slide text. If Office took the PNG and it is about 3× too big, write down "300 dpi ignored" (accepted for v1, O5). Result 2026-11-11: PowerPoint shows Height 1.21", Width 8.69"; the SVG exported from the same drawing is 625.597 x 86.808 pt (8.689 x 1.206 in), so the paste is at true size; bond segments 40.00 pt (1.41 cm), label font 24 pt (subscripts 16.8 pt). Office took the SVG, so "300 dpi ignored" does not apply. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and the exported SVG. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
+- [x] On a dark slide background the pasted drawing has no white or black box. Result 2026-11-11: on a dark blue slide background the drawing sits directly on the colour, no box. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
+- [x] Switch to Handout, copy, paste into Word 2021: bonds about 5 mm, labels the size of 10 pt body text; sharp at 400 %; the print preview looks like a textbook figure. Result 2026-11-11: pasted into Word (not Word 2021) under a line of Arial 10 pt text as SVG (**Graphics Format**), Height 0.46", Width 3.16" (0.364 of the Slides size, bonds about 14.5 pt = 5.1 mm), label letters about the height of the 10 pt text, sharp at 400 %, print preview a clean black-on-white figure within the page width. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
+- [x] `H₂SO₄`, `OH`, `CO₂H` in the pasted drawing are Arial and sit as on screen in PowerPoint and Word (a shift would reopen svg-render's text-as-outlines question). Result 2026-11-11: `H2SO4`, `HO`/`OH`, `H2O` in PowerPoint and Word are plain sans-serif matching the canvas, subscripts smaller and lowered, nothing shifted, overlapping a bond or cut off. The font name inside Office was not read (no Convert to Shape); the SVG declares font-family "Arial, Helvetica, sans-serif". `CO₂H` was not among the labels checked. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and the SVG. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
 - [ ] Paste into WhatsApp Desktop (or another chat app) and Paint: a picture arrives.
+  - Partly seen 2026-11-11 (not ticked): Paint received a picture of 2607 x 362 px (the 300 dpi pixel size of the drawing) on its white canvas, performed by a computer-use agent at the owner's request, verified by the orchestrator. A chat app was not tried; open.
 - [ ] Copy in Chalkbond, close Chalkbond, start it, Ctrl+V: the drawing comes back editable.
 - [ ] Copy a picture in PowerPoint, Ctrl+V in Chalkbond: "Only drawings copied from Chalkbond can be pasted here."
 - [ ] Export PNG at Print: the Photos app shows it (transparent with White background off); Insert > Pictures in Word gives the same size as the pasted SVG within a few percent.
@@ -138,10 +143,11 @@ Human-only checks, with the installed app and Office 2021 (SC13: write down whic
 
 ## App shell and installer (app-shell, `SPEC-app-shell.md` "Windows checks")
 
-Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 10 and a clean Windows 11 account. No human has run anything here yet; the automated steps built the installer and smoke-tested the unpacked app.
+Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 10 and a clean Windows 11 account. The automated steps built the installer and smoke-tested the unpacked app; the first human batch (2026-11-11, development machine, by a computer-use agent, verified by the orchestrator) ticked the first box and left a note under the second; everything else is open.
 
-- [ ] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1).
+- [x] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1). Done 2026-11-11 (`dist:win` exit 0 at `956a4a4`): installer 109,915,593 bytes (104.8 MiB), unpacked `dist/win-unpacked` 347,499,681 bytes (331.4 MiB, 21 files), installed 347,681,841 bytes (331.6 MiB, 24 files, measured 2026-11-11 after installing on the development machine); all three are in `SPEC-app-shell.md` I1.
 - [ ] On a clean Windows 10 and a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
+  - Observed 2026-11-11 on the development machine only (Windows 11 Pro 26300, not a clean account): installed from `dist/Chalkbond-1.0.0-setup.exe` (the folder `%LOCALAPPDATA%\Programs\Chalkbond` did not exist before), "Chalkbond Setup, Installing, please wait...", Chalkbond opened by itself, no admin or UAC prompt, no SmartScreen box (the installer was built locally and has no Mark of the Web, so this says nothing about a downloaded or copied installer), desktop shortcut (in the OneDrive-redirected Desktop folder) and Start-menu shortcut "Chalkbond" with the green icon, `HKCU\Software\Classes\.chalk` is "Chalkbond drawing", `Chalkbond.exe` ProductVersion 1.0.0.0. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots, the installed folder, the shortcut files and the registry. Still open: SmartScreen, the installs on clean Windows 10 and Windows 11 accounts without admin rights, network disconnected.
 - [ ] Cold start of the installed app to a usable canvas is under 3 s on the teacher's laptop (`SPEC.md` SC1).
 - [ ] Save `test.chalk` on the desktop: Explorer shows the A16 file icon and type "Chalkbond drawing"; double-clicking opens it; double-clicking a second `.chalk` while Chalkbond has unsaved changes shows the save prompt, then opens it in the same window.
 - [ ] Menus look like A04–A06 and the context menus like A07 (sentence case, access keys underlined after Alt, shortcuts shown); Alt then F opens File, arrows and Enter work; every shown shortcut works from the canvas; Ctrl+C / Ctrl+V / Ctrl+Z inside the name field act on its text; right-click in the name field shows Cut / Copy / Paste / Select all.

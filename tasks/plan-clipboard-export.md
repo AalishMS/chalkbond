@@ -95,7 +95,7 @@ C5 pure picture ──┴──► C6 pure paste/open ────────�
 ### Checkpoint T — copy and paste work
 - [x] `npm run check` green; `npm run test:e2e` green on Windows including `e2e/win/clipboard-*.spec.ts`
 - [ ] Shots of C8 and C9 compared side by side with A01, A02, A15b and A17
-- [ ] One manual paste into PowerPoint (first two "Windows checks" items) tried and noted in the commit message
+- [x] One manual paste into PowerPoint (first two "Windows checks" items) tried and noted in the commit message (2026-11-11: arrived as SVG at 8.69 x 1.21 in; noted in the commit `docs: Checkpoint Z human batch 1 recorded ...`)
 - [ ] Commit + push
 
 Linux run of Checkpoint T, verified by the orchestrator at `cb3a14b` (2026-11-11): `npm run check`
@@ -143,6 +143,8 @@ Windows run of the automated gates of Checkpoint Z, verified by the orchestrator
 - [ ] Every success criterion in `SPEC-clipboard-export.md` met by a test, shot or checklist item (table below)
 - [ ] `npm run check`, `npm run test:e2e`, `npm run shots` green; coverage thresholds pass
 - [ ] Commit + push
+
+Human batch 1 (2026-11-11, Windows 11 Pro 26300, development laptop, Office Professional Plus 2016 Click-to-Run Version 2610; performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and files): installed from the setup on the development machine (installed size 347,681,841 bytes, 331.6 MiB, 24 files, written in `SPEC-app-shell.md` I1), and the first five human "Clipboard and export" checks passed (SVG drawing, Graphics Format, in PowerPoint and Word at true size, 8.69 x 1.21 in). Checkpoint Z is not reached: SmartScreen, the clean-account installs, the chat-app paste and every other human check, and Checkpoints K, E32 and R, are open.
 
 ## Success Criteria Coverage
 
