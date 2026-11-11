@@ -17,6 +17,8 @@ export default defineConfig({
         ...(process.platform === 'win32' ? [] : [/[\\/]win[\\/]/]),
       ],
     },
+    // `packaged` needs `dist/` from `npm run dist:win` (A17); it is not part of `test:e2e`.
+    { name: 'packaged', testMatch: /.*\.packaged\.ts/ },
     { name: 'shots', testMatch: /.*\.shot\.ts/ },
     { name: 'os-input', testMatch: /[\\/]os-input[\\/].*\.spec\.ts/ },
   ],

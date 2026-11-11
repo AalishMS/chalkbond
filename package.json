@@ -21,7 +21,9 @@
     "test:watch": "vitest",
     "golden:sheet": "node scripts/golden-sheet.mjs",
     "icons": "node scripts/build-icons.mjs",
+    "notices": "node scripts/build-notices.mjs",
     "test:e2e": "electron-vite build && playwright test --project=e2e",
+    "test:packaged": "playwright test --project=packaged",
     "test:e2e:os-input": "electron-vite build && playwright test --project=os-input",
     "shots": "electron-vite build && playwright test --project=shots",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test"

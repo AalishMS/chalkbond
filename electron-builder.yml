@@ -1,22 +1,31 @@
 appId: com.chalkbond.app
 productName: Chalkbond
-directories:
-  buildResources: build
-  output: dist
-files:
-  - out/**
-  - package.json
+copyright: Copyright © 2026 Aalish
+directories: { buildResources: build, output: dist }
+files: [out/**, package.json]
+extraResources:
+  - { from: build/THIRD-PARTY-NOTICES.txt, to: THIRD-PARTY-NOTICES.txt }
+  - { from: build/icon.png, to: icon.png }
+electronLanguages: [en-US]
+publish: null
+fileAssociations:
+  - { ext: chalk, name: Chalkbond drawing, description: Chalkbond drawing, icon: chalk-file.ico }
 win:
-  target:
-    - target: nsis
-      arch: [x64]
+  target: [{ target: nsis, arch: [x64] }]
   executableName: Chalkbond
   icon: build/icon.ico
 nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
-  artifactName: Chalkbond-${version}-setup.${ext}
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
   shortcutName: Chalkbond
   uninstallDisplayName: Chalkbond
-  createDesktopShortcut: always
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  differentialPackage: false
+  installerIcon: icon.ico
+  uninstallerIcon: icon.ico
+  installerHeaderIcon: icon.ico
+  artifactName: Chalkbond-${version}-setup.${ext}
 npmRebuild: false

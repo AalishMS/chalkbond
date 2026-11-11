@@ -25,6 +25,16 @@ export interface LaunchOptions {
   clipboardWriteSuccess?: boolean;
   /** UI/model-success shots only: main's clipboard is an in-memory store (stub-clipboard-memory). */
   clipboardMemory?: boolean;
+  /**
+   * A packaged app (`dist/<platform>-unpacked/...`) instead of the built sources (A17). Nothing
+   * is preloaded: a packaged Electron ignores `-r`, so the OS-mouse guard and the dialog stubs
+   * cannot load, and the test flags (TH1) are not added (pass `extraArgs` to prove they are
+   * ignored). `userData`, `dialogs` and the clipboard stubs do not apply. Only the Linux
+   * switches are added.
+   */
+  executablePath?: string;
+  /** Extra environment variables for the app (a packaged Linux run sets `XDG_CONFIG_HOME`). */
+  env?: Record<string, string>;
 }
 
 /**
@@ -44,6 +54,14 @@ export async function launchApp(
   options: LaunchOptions | string[] = {},
 ): Promise<ElectronApplication> {
   const opts: LaunchOptions = Array.isArray(options) ? { extraArgs: options } : options;
+  if (opts.executablePath !== undefined) {
+    const packaged = await electron.launch({
+      executablePath: opts.executablePath,
+      args: [...(opts.extraArgs ?? []), ...linuxSwitches()],
+      env: { ...inheritedEnv(), ...opts.env },
+    });
+    return withCloseGuard(packaged);
+  }
   const ownedUserData =
     opts.userData === undefined ? mkdtempSync(join(tmpdir(), 'chalkbond-e2e-')) : undefined;
   const userData = opts.userData ?? ownedUserData ?? '';
@@ -57,6 +75,11 @@ export async function launchApp(
       }
     });
   }
+  return withCloseGuard(app);
+}
+
+/** `close()` checks SEC4 (no unexpected request), then destroys the windows and closes. */
+function withCloseGuard(app: ElectronApplication): ElectronApplication {
   const close = app.close.bind(app);
   app.close = async () => {
     try {
@@ -83,10 +106,6 @@ export async function launchApp(
  * test flags (TH1), the extra arguments, then the Linux switches.
  */
 function appArgs(opts: LaunchOptions, userData: string): string[] {
-  const linuxArgs =
-    process.platform === 'linux'
-      ? ['--no-sandbox', ...(process.env['DISPLAY'] ? [] : ['--ozone-platform=headless'])]
-      : [];
   return [
     '-r',
     resolve(__dirname, 'no-os-mouse.mjs'),
@@ -97,18 +116,27 @@ function appArgs(opts: LaunchOptions, userData: string): string[] {
     ...(opts.testHooks === false ? [] : ['--chalkbond-test-hooks']),
     `--chalkbond-user-data=${userData}`,
     ...(opts.extraArgs ?? []),
-    ...linuxArgs,
+    ...linuxSwitches(),
   ];
 }
 
-function appEnv(opts: LaunchOptions): Record<string, string> {
-  const inherited = Object.fromEntries(
+function linuxSwitches(): string[] {
+  return process.platform === 'linux'
+    ? ['--no-sandbox', ...(process.env['DISPLAY'] ? [] : ['--ozone-platform=headless'])]
+    : [];
+}
+
+function inheritedEnv(): Record<string, string> {
+  return Object.fromEntries(
     Object.entries(process.env).filter(
       (entry): entry is [string, string] => entry[1] !== undefined,
     ),
   );
+}
+
+function appEnv(opts: LaunchOptions): Record<string, string> {
   return {
-    ...inherited,
+    ...inheritedEnv(),
     NODE_ENV: 'production',
     ...(opts.dialogs === undefined ? {} : { CHALKBOND_TEST_DIALOGS: JSON.stringify(opts.dialogs) }),
   };

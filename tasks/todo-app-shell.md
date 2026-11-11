@@ -676,6 +676,10 @@ and `icon.png`. A check of `dist/builder-effective-config.yaml`: `nsis.oneClick:
 - [ ] `npm run dist:win` succeeds on Windows; `dist/Chalkbond-0.1.0-setup.exe` (version bumped in A20) exists and is between 50 and 200 MB
 - [ ] `npm run test:packaged` green; the effective-config check passes; sizes written in the spec
 - [ ] No install was needed for any of the above (installing is the checklist's job)
+- Linux results (development checks, not the Windows gates above; no Windows machine here):
+  - [x] `tests/tooling/app-notices.test.ts` green; `npm run notices` twice leaves the file byte-identical
+  - [x] `npm run test:packaged` green against `dist/linux-unpacked` (`npx electron-builder --linux dir`, run from a terminal so `dist/builder-effective-config.yaml` is written); the effective config matches I1
+  - [x] The OS-mouse guard cannot be loaded into a packaged app (`-r` is ignored); the packaged test sends no pointer input; documented in the spec's Packaging section
 
 **Verification:** `npm run notices`, `npm run dist:win`, `npm run test:packaged`, `npm run check`.
 No in-app shot (packaging).

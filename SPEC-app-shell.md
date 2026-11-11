@@ -703,6 +703,18 @@ licence files of the packages bundled into the app (runtime `dependencies` plus 
 `react-dom`, `scheduler`); a tooling test checks each package's licence text is present. Electron
 ships `LICENSES.chromium.html` itself.
 
+**Packaged check (A17).** `npm run test:packaged` (Playwright project `packaged`, not part of
+`test:e2e`, `shots` or `npm run check`) launches the unpacked app through `e2e/launch.ts`
+(`executablePath`): `dist/win-unpacked/Chalkbond.exe` on Windows, which uses the real
+`%APPDATA%\Chalkbond` (the test only reads and closes), and on Linux the `dist/linux-unpacked`
+executable built for development with `npx electron-builder --linux dir` (a development check,
+not a release gate), where the test sets `XDG_CONFIG_HOME` to a fresh temp folder so the
+developer's real config folder is untouched. A packaged Electron ignores `-r`, so the OS-mouse
+guard cannot be loaded into it: the packaged test sends no pointer input and asserts nothing that
+depends on hover. The effective-config check reads `dist/builder-effective-config.yaml`, which
+electron-builder writes only when its output is a terminal and `CI` is unset (`npm run dist:win`
+from a console does).
+
 ## Behaviour rules index
 
 W1–W6, M1–M3, K1–K3, CM1–CM3, F1–F14 (and F4a), RC1–RC7, ST1–ST5, AB1, V1–V3, IC1–IC3, SEC1–SEC15,
