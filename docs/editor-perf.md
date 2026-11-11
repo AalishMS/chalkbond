@@ -68,3 +68,33 @@ was removed after profiling; the frame probe and all budgets are unchanged.
 
 After correction, targeted e2e (5/5): whole-fragment median 8.8 ms / p95 9.4 ms; bond preview
 p95 9.1 ms; partial selection p95 6.4 ms; commit maximum/p95 40.8 ms; cold start 442 ms.
+
+## Copy timing, portable (clipboard-export SC12, Decision C11; Linux, 2026-11-11)
+
+`npx playwright test --project=e2e e2e/clipboard-perf.spec.ts`: an **encoding and flow result,
+not the Windows OS clipboard**. Main's clipboard is the in-memory store of
+`e2e/stub-clipboard-memory.mjs` behind the real C1 adapter and IPC; the Copy button, copy flow,
+`exportSvg`, rasteriser and chunk writing are real. Fixture: the editor perf scheme (41 atoms,
+nothing selected, whole-drawing copy, 5470 × 954 px at 300 dpi). One sample: Copy click (capture
+listener, renderer `performance.now`) to the first DOM mutation after which the button reads
+"Copied" and the N-C2 notice has been heard (a MutationObserver: no polling task runs in the
+page while the copy is under way). Five samples, no warm-up, no retry; between samples the spec
+waits only for the button to return to rest. Machine: Intel Core i7-8750H (2.2 GHz, 12 threads),
+15 GB, Linux, Electron's Chromium headless (no display), `--force-device-scale-factor=1`,
+1280 x 800; load average about 5 from other work.
+
+| Encoder | Budget | n | Median | Samples |
+|---|---|---|---|---|
+| `canvas.toBlob` (before C11) | <= 500 ms | 5 | 1044.4 ms | 1044.4, 1056.9, 1034.8, 1039.9, 1058.2 |
+| `canvas.toDataURL` + `pngFromDataUrl` (C11) | <= 500 ms | 5 | 48.6 ms | 48.6, 67.1, 32.5, 37.7, 62.1 |
+
+`toBlob` encodes in an idle task; the copy waited about a second for it. A first draft of the
+probe that polled on zero-delay timers kept the page busy enough for the idle task to run at once
+and read 55.6 ms for `toBlob`: the sample must not run tasks of its own. The PNGs of both encoders
+have identical pixels (toluene at Print, transparent and white: byte-identical files; the scheme's
+clipboard PNG: 0 of 20,873,520 RGBA bytes differ, same IHDR, pHYs and chunk layout; the tEXt
+differs only in the document's `modified` time).
+
+**Pending:** the Windows SC12 run on the real clipboard, `e2e/win/clipboard-perf.spec.ts` (C13),
+written and not run. Logs: `/tmp/chalkbond-opus-memory-encoder-lJJJQm/` (`t2-red-perf-e2e-2.log`,
+`t2-green-perf-e2e.log`).

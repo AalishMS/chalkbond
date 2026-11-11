@@ -487,6 +487,12 @@ export" with the spec's "Windows checks", unticked. Sweep SC1–SC13 into the pl
 - [ ] `e2e/win/clipboard-perf.spec.ts` green; `docs/editor-perf.md` has the row
 - [ ] Checklist section added, unticked; plan SC table ticked where proven
 
+Prepared early (2026-11-11, Decision C11, not ticked): `e2e/win/clipboard-perf.spec.ts` is written
+on the real clipboard (no stub) and NOT RUN; the shared sample is `e2e/copy-timing.ts`. The portable
+`e2e/clipboard-perf.spec.ts` (in-memory transport: an encoding and flow result, not Windows
+clipboard proof) failed on `toBlob` (median 1044 ms) and passes on `toDataURL` (48.6 ms); numbers
+in `docs/editor-perf.md`.
+
 **Verification:** `npm test -- --coverage`, `npm run test:e2e`, `npm run check`
 
 **Dependencies:** C12, A18
