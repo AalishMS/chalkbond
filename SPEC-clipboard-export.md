@@ -197,7 +197,7 @@ selection: Export is the whole drawing.
 Short windows (approved 2026-11-11): at the minimum 960 × 640 content the top edge stays at
 `--dialog-top` (96) and `--dialog-bottom` (32) stays free below the box; when the PNG body needs
 more room it scrolls inside the shell (the body has a 4 px gutter so focus rings are not clipped)
-and the footer buttons stay visible. No token, control size or the top edge changes.
+and the footer buttons stay visible. No token, control size or the top edge changes. The body is read with the keyboard as in app-shell R26 (the radio cards keep their arrow keys, so ArrowDown on a card selects and does not scroll).
 
 The drawing's size (pt) for the size line is measured once per document with one unembedded
 `exportSvg(doc, null, { embed: false })` when the dialog opens (cached while the document is the

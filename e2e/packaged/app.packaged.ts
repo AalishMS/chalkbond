@@ -9,7 +9,7 @@
 import { expect, test, type ElectronApplication } from '@playwright/test';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { clickMenu } from '../app-menu';
 import { launchApp } from '../launch';
 
@@ -97,6 +97,12 @@ test('resources hold THIRD-PARTY-NOTICES.txt and icon.png', async () => {
   const resources = await app.evaluate(() => process.resourcesPath);
   expect(existsSync(join(resources, 'THIRD-PARTY-NOTICES.txt'))).toBe(true);
   expect(existsSync(join(resources, 'icon.png'))).toBe(true);
+});
+
+test('Electron and Chromium licence files ship beside the executable (named in the notices)', () => {
+  const beside = dirname(unpackedExecutable());
+  expect(existsSync(join(beside, 'LICENSE.electron.txt'))).toBe(true);
+  expect(existsSync(join(beside, 'LICENSES.chromium.html'))).toBe(true);
 });
 
 test('I1: the effective electron-builder config', () => {

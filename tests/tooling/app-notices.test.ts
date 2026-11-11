@@ -38,6 +38,7 @@ describe('THIRD-PARTY-NOTICES.txt (I2)', () => {
   it('credits PubChem, states no licence for its data and points to Electron licences', () => {
     expect(committed).toContain('PubChem');
     expect(committed).toContain('pubchem.ncbi.nlm.nih.gov');
+    expect(committed).toContain('LICENSE.electron.txt');
     expect(committed).toContain('LICENSES.chromium.html');
   });
 

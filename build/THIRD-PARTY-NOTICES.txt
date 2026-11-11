@@ -185,5 +185,5 @@ claim about the licence of PubChem's data; see PubChem's own policies for its te
 Electron and Chromium
 ========================================================================
 
-Electron's own licence and the licences of Chromium's components are in LICENSE and
+Electron's own licence and the licences of Chromium's components are in LICENSE.electron.txt and
 LICENSES.chromium.html, installed with Chalkbond.

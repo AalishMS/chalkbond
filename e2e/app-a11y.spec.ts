@@ -195,6 +195,27 @@ test('a scrolling dialog list can be read with the keyboard alone (short window)
   }
 });
 
+test('a scrolling Export dialog: ArrowDown on a radio card selects, it does not scroll (R26)', async () => {
+  const { app, page } = await openApp({ size: [960, 640] });
+  try {
+    await loadScheme(page);
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+e');
+    const body = page.getByTestId('export-dialog').locator('.dialog-body');
+    await expect(body).toBeVisible();
+    expect(await body.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    await expect(page.getByTestId('export-format-png')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByTestId('export-format-svg')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByTestId('export-format-svg')).toBeFocused();
+    // Give any wrongly started scroll time to show, then check it did not move.
+    await page.waitForTimeout(100);
+    expect(await body.evaluate((el) => el.scrollTop)).toBe(0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('Export dialog: Cancel by mouse returns the focus to the canvas too', async () => {
   const { app, page } = await openApp();
   try {

@@ -42,7 +42,7 @@ export function buildNotices(root) {
     'Electron and Chromium',
     RULE,
     '',
-    "Electron's own licence and the licences of Chromium's components are in LICENSE and",
+    "Electron's own licence and the licences of Chromium's components are in LICENSE.electron.txt and",
     'LICENSES.chromium.html, installed with Chalkbond.',
     '',
   );
