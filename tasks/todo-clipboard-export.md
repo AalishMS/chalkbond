@@ -442,6 +442,7 @@ Open of the PDF gives an equal document; CS6: with `printToPDF` stubbed to rejec
 - [x] Unit and e2e tests pass (SC9; the PDF round trip under A; Linux only)
 - [x] The hidden window has `javascript: false`, no preload, and is destroyed after each print (e2e: `BrowserWindow.getAllWindows().length` is 1 afterwards)
 - [x] Shot exists (`C12/exported-pdf.png`, looked at beside A17's N-E1 row)
+- [x] Corrective (Decision C10, 2026-11-11): PDF-A embedding and reading are byte-based with bounded memory; a real near-64 MiB PDF (opaque stream before a classic table, no injected cap) round trips, keeps its prefix and offsets, and is refused exactly as before, under the 5 s unit timeout (`tests/clipboard-export/pdf-embed.large.test.ts`, the export-flow default-cap case); results equal C12's parser on generated, mutated and truncated files (`pdf-embed.prop.test.ts`, oracle `pdf-embed-oracle.ts`)
 
 C12 worker evidence (2026-11-11, Linux): red first: `pdf.test.ts` (module missing) and 6 export-flow
 PDF tests failed; both `export-pdf.spec.ts` tests failed against a build without C5. Main
@@ -451,6 +452,9 @@ renderer embeds with `withPdfDrawing`; a refusal, a payload over 20 MiB or an em
 64 MiB writes the printed PDF and shows N-E3 (logged); a printed PDF over 64 MiB is not sent (the
 `write-failed` box). The 64 MiB embedding case is unit-tested with an injected cap: the core
 embedder builds a whole-file string, and a real 64 MiB PDF exhausted the test worker's memory.
+Corrected by Decision C10: on the C12 embedder the near-64 MiB core cases took 8–190 s each (304 s
+for four, 3.7 GB resident; all failed, three by timeout) and the default-cap flow case 33.6 s
+(3.4 GB, timeout); after, 0.2–1.8 s each and 0.44 s, 0.58 GB resident for the file.
 The C4 viewer capture moved to `e2e/pdf-viewer.ts` (shared by `pdf-facts.spec.ts`). `.pdf` in
 Open came with A9; the drop list waits for A15. Windows run (C4 confirmation, real Arial) pending.
 

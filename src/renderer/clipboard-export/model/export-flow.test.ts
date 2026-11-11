@@ -719,8 +719,8 @@ describe('C12 PDF (EX3, PDF-A2)', () => {
     expect(r.logError).toHaveBeenCalled();
   });
 
-  // The cap is injected (as rasterise's C9 test does): the core embedder builds a string of the
-  // whole file, and a real 64 MiB PDF exhausts a test worker's memory. Production uses the default.
+  // The exact boundary with an injected cap on a small PDF; the next test is the same rule at the
+  // production cap with a real near-64 MiB printed PDF (Decision C10).
   it('an embedded PDF over the picture cap: the printed PDF unchanged and N-E3', async () => {
     const doc = drawing(2);
     const printed = classicPdf(1000);
@@ -735,6 +735,40 @@ describe('C12 PDF (EX3, PDF-A2)', () => {
     await fits.write(PDF_REF, PDF_CHOICES, doc);
     expect(fits.writes).toEqual([{ ref: PDF_REF, data: embedded.pdf }]);
     expect(fits.notify).toHaveBeenCalledExactlyOnceWith('info', 'Exported toluene.pdf.');
+  });
+
+  it('a real near-64 MiB printed PDF at the default cap: embedded up to 64 MiB, else N-E3', async () => {
+    const MiB = 1024 * 1024;
+    const doc = drawing(2);
+    const payload = drawingPayload(doc);
+    /** Byte equality without a deep diff of 64 MiB. */
+    const same = (a: Uint8Array | undefined, b: Uint8Array): boolean => {
+      if (a === undefined || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+      return true;
+    };
+    // Offsets have 8 digits from 16 MiB up, so the update adds a constant number of bytes.
+    const probe = withPdfDrawing(classicPdf(16 * MiB), payload);
+    if (!probe.ok) throw new Error(probe.reason);
+    const filler = MAX_PICTURE_BYTES - (probe.pdf.length - 16 * MiB);
+
+    const printed = classicPdf(filler); // with the drawing: exactly MAX_PICTURE_BYTES
+    const r = pdfRig(printed); // the default cap
+    await r.write(PDF_REF, PDF_CHOICES, doc);
+    const written = r.writes[0]?.data;
+    expect(r.writes).toHaveLength(1);
+    expect(written?.length).toBe(MAX_PICTURE_BYTES);
+    expect(same(written?.subarray(0, printed.length), printed)).toBe(true);
+    expect(readPdfDrawing(written ?? new Uint8Array())).toBe(payload);
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith('info', 'Exported toluene.pdf.');
+
+    const bigger = classicPdf(filler + 1); // with the drawing: one byte over
+    const over = pdfRig(bigger);
+    await over.write(PDF_REF, PDF_CHOICES, doc);
+    expect(over.writes).toHaveLength(1);
+    expect(same(over.writes[0]?.data, bigger)).toBe(true);
+    expect(over.notify).toHaveBeenCalledExactlyOnceWith('info', TOO_LARGE_PDF);
+    expect(over.logError.mock.calls.flat().join(' ')).toMatch(/over 64 MiB/);
   });
 
   it('a printed PDF itself over MAX_PICTURE_BYTES fails as before: the box, nothing sent', async () => {
