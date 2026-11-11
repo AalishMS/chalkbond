@@ -1,6 +1,5 @@
 // SC5 and the paste round trips (tasks/todo-clipboard-export.md C9) on the real Windows clipboard
-// (Windows only; e2e/win is ignored elsewhere). NOT RUN YET: written on Linux for C9; the drawing
-// key is the unverified preferred one of formats.ts until probe C3 runs on Windows.
+// (Windows only; e2e/win is ignored elsewhere). The drawing key is the one probe C3 verified.
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 import { drawingPayload } from '../../src/core/clipboard-export';
 import {
@@ -12,14 +11,7 @@ import {
 } from '../../src/core/doc-model';
 import { preferredFormats } from '../../src/main/clipboard-export/formats';
 import { expectBlockedRequests } from '../launch';
-import {
-  canvasPoint,
-  goldenDoc,
-  heardNotices,
-  openApp,
-  readDocument,
-  readSelection,
-} from '../harness';
+import { goldenDoc, heardNotices, openApp, readDocument, readSelection } from '../harness';
 import { loadScheme, selectEthanol } from '../fixtures';
 
 /** A 1×1 transparent PNG, base64: a picture from another app. */
@@ -45,6 +37,14 @@ const writeText = (app: ElectronApplication, text: string) =>
 async function pasteOnCanvas(page: Page): Promise<void> {
   await page.getByTestId('canvas').focus();
   await page.keyboard.press('Control+v');
+}
+
+/** The content layer's viewport transform (zoom `k`, translation `e`, `f` in canvas px; Slides, 40 pt bond). */
+async function contentView(page: Page): Promise<{ k: number; e: number; f: number }> {
+  const attr = await page.locator('[data-layer="content"]').getAttribute('transform');
+  const m = /^matrix\(([^ ]+) 0 0 ([^ ]+) ([^ ]+) ([^)]+)\)$/.exec(attr ?? '');
+  if (!m) throw new Error(`unexpected content transform ${attr}`);
+  return { k: Number(m[1]), e: Number(m[3]), f: Number(m[4]) };
 }
 
 const atomIds = (doc: Doc): string[] => Object.keys(doc.atoms);
@@ -97,6 +97,9 @@ test('Copy with nothing selected, Ctrl+V: the whole drawing as a fragment at the
     const before = await loadScheme(page);
     await page.getByTestId('copy').click();
     await expect(page.getByTestId('copy')).toHaveText('Copied');
+    // CB1 places the fragment at the canvas centre of the view as it is when Ctrl+V is pressed;
+    // V5 then brings the result into view and may zoom or pan, so the view is read first.
+    const view = await contentView(page);
     await pasteOnCanvas(page);
     await expect
       .poll(async () => atomIds(await readDocument(page)).length)
@@ -105,16 +108,20 @@ test('Copy with nothing selected, Ctrl+V: the whole drawing as a fragment at the
     expect(Object.keys(after.objects)).toHaveLength(2 * Object.keys(before.objects).length);
     const selection = await readSelection(page);
     expect(selection.atoms.sort()).toEqual(added(before, after).sort());
-    // The pasted part's bounds centre is the canvas centre (the pointer is over the Copy button).
+    // The pasted part's bounds centre was the canvas centre in the view at paste time (the pointer
+    // is over the Copy button). Measured with the view of that moment, not the one after V5.
     const box = bounds(after, {
       atoms: new Set(selection.atoms as AtomId[]),
       bonds: new Set(selection.bonds as BondId[]),
       objects: new Set(selection.objects as ObjectId[]),
     });
     if (!box) throw new Error('nothing pasted');
-    const centre = await canvasPoint(page, { x: box.x + box.w / 2, y: box.y + box.h / 2 });
     const canvas = await page.getByTestId('canvas').boundingBox();
     if (!canvas) throw new Error('canvas has no box');
+    const centre = {
+      x: canvas.x + view.e + (box.x + box.w / 2) * 40 * view.k,
+      y: canvas.y + view.f + (box.y + box.h / 2) * 40 * view.k,
+    };
     expect(Math.abs(centre.x - (canvas.x + canvas.width / 2))).toBeLessThanOrEqual(1);
     expect(Math.abs(centre.y - (canvas.y + canvas.height / 2))).toBeLessThanOrEqual(1);
     await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');

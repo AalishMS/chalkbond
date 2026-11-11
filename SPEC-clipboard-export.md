@@ -620,7 +620,8 @@ Each names the test or check that proves it.
    (unit + `clipboard-copy.spec.ts`).
 5. Round trip in the app: copy a selection then Ctrl+V pastes at source + (1, 1) BLU; a drawing
    written to the clipboard from main (as another session) pastes as a fragment at the canvas
-   centre; the text "ethanol" inserts ethanol; an image-only clipboard shows N-P1; a newer-version
+   centre (the centre of the view when Ctrl+V is pressed: the editor's V5 then brings the result
+   into view and may zoom or pan, so a test measures the placement with the view of that moment); the text "ethanol" inserts ethanol; an image-only clipboard shows N-P1; a newer-version
    drawing shows N-P3 (`e2e/win/clipboard-paste.spec.ts`).
 6. A paste pressed during a copy reads the new clipboard (flow test of CB-Q).
 7. Export PNG at Print of the toluene golden input: size per R3, `pHYs` 11811, R4 holds; opening it
