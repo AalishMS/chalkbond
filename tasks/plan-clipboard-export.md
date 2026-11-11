@@ -86,7 +86,7 @@ C5 pure picture ──┴──► C6 pure paste/open ────────�
 
 ### Phase T: copy and paste
 - [x] C5: Pure core: payload, picture, PNG and SVG embedding
-- [ ] C6: Pure core: paste decision, opening embedded files, file names
+- [x] C6: Pure core: paste decision, opening embedded files, file names
 - [ ] C7: Main clipboard (C1, C2) and the renderer rasteriser
 - [ ] C8: Copy: flow, Copy button, Ctrl+C, notices
 - [ ] C9: Paste: flow, Ctrl+V, notices, round trips

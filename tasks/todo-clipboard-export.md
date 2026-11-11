@@ -216,8 +216,8 @@ empty → `Untitled.png`, a 200-char name capped, `ethanol.chalk` → `ethanol.p
 Property: `extractDrawing` on arbitrary bytes for every kind never throws.
 
 **Acceptance criteria:**
-- [ ] Exported from `@core/clipboard-export`; tests pass; module ≥ 90 % lines so far
-- [ ] `pasteAction` reads no clock and calls `parse` only
+- [x] Exported from `@core/clipboard-export`; tests pass; module ≥ 90 % lines so far
+- [x] `pasteAction` reads no clock and calls `parse` only
 
 **Verification:** `npm test -- src/core/clipboard-export`, `npm run check`. No visible change.
 
