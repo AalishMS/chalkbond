@@ -87,12 +87,13 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
       'zoom-fit',
     ]);
     // Wrap-around: name field, the options bar (one stop: the selected option), Undo, Redo,
-    // the rail (one stop: the active tool), the canvas.
-    expect(await tab(page, 6)).toEqual([
+    // the host's actions (app-shell: Copy), the rail (one stop: the active tool), the canvas.
+    expect(await tab(page, 7)).toEqual([
       'namefield-input',
       'opt-single',
       'undo',
       'redo',
+      'copy',
       'tool-bond',
       'canvas',
     ]);
@@ -104,8 +105,9 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
 test('Shift+Tab walks the same order backwards', async () => {
   const { app, page } = await openApp();
   try {
-    expect(await tab(page, 5, true)).toEqual([
+    expect(await tab(page, 6, true)).toEqual([
       'tool-bond',
+      'copy',
       'redo',
       'undo',
       'opt-single',

@@ -278,9 +278,15 @@ async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
   const field = await box(page.getByTestId('namefield'));
   near(field.x, 12);
   near(field.height, 32);
-  await expect(page.getByTestId('topbar')).not.toHaveClass(/has-actions/);
-  await expect(page.getByTestId('topbar-actions')).toHaveCount(0);
-  near(field.width, Math.floor(Math.min(360, Math.max(240, 0.26 * w))));
+  const hasActions = (await page.getByTestId('topbar-actions').count()) > 0;
+  if (hasActions) {
+    await expect(page.getByTestId('topbar')).toHaveClass(/has-actions/);
+    near(field.width, w < 1100 ? 204 : Math.floor(Math.min(360, Math.max(240, 0.26 * w))));
+  } else {
+    await expect(page.getByTestId('topbar')).not.toHaveClass(/has-actions/);
+    await expect(page.getByTestId('topbar-actions')).toHaveCount(0);
+    near(field.width, Math.floor(Math.min(360, Math.max(240, 0.26 * w))));
+  }
   near(field.y, 8);
   const icon = await box(page.getByTestId('namefield').locator('.icon'));
   near(icon.x - field.x, 8);
@@ -302,7 +308,11 @@ async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
     near(b.y, 8);
   }
   near(redo.x - (undo.x + undo.width), 4);
-  near(w - (redo.x + redo.width), 12);
+  if (hasActions) {
+    const actions = await box(page.getByTestId('topbar-actions'));
+    near(actions.x - (redo.x + redo.width), w < 1100 ? 8 : 12);
+    near(w - (actions.x + actions.width), 12);
+  } else near(w - (redo.x + redo.width), 12);
   await expect(page.getByTestId('undo')).toHaveAttribute('aria-disabled', 'true');
 
   // Status bar controls: 24 high, readout 48 wide, preset segments 64x24, 2 px apart.

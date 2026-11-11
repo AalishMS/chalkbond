@@ -19,6 +19,8 @@ export interface LaunchOptions {
    * order; loads `stub-dialogs.mjs` before the app's code runs.
    */
   dialogs?: unknown[];
+  /** UI success shots only: stub main clipboard.write, retaining real flow and rasterisation. */
+  clipboardWriteSuccess?: boolean;
 }
 
 /**
@@ -52,6 +54,7 @@ export async function launchApp(
       '-r',
       resolve(__dirname, 'no-os-mouse.mjs'),
       ...dialogArgs,
+      ...(opts.clipboardWriteSuccess ? ['-r', resolve(__dirname, 'stub-clipboard-write.mjs')] : []),
       resolve(__dirname, '..'),
       ...(opts.testHooks === false ? [] : ['--chalkbond-test-hooks']),
       `--chalkbond-user-data=${userData}`,

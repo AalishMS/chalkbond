@@ -22,7 +22,7 @@ at startup).
 The **scheme fixture** used by shots and e2e is built by `loadScheme(page)` in `e2e/fixtures.ts`
 (added in C8): it types `ethanol + acetic acid -> ethyl acetate + water` into the name field, adds
 the condition `conc. H2SO4, Δ` above the arrow with the Text tool, presses Esc until nothing is
-selected and returns the document (the SC3 scheme of A01). Golden inputs (`ethanol`,
+selected and the Select tool is active (the Esc ladder's last step) and returns the document (the SC3 scheme of A01). Golden inputs (`ethanol`,
 `toluene`, `naphthalene`) come from `e2e/harness.ts` `goldenDoc`.
 
 ---
@@ -285,15 +285,15 @@ after Redo's right edge, its right edge at 1268; at 960×640 it is ≥ 56 wide, 
 `aria-disabled="true"`.
 
 **Acceptance criteria:**
-- [ ] Flow, markup and keys tests pass; `src/renderer/clipboard-export/model` ≥ 90 % lines so far
-- [ ] `e2e/win/clipboard-copy.spec.ts` and `e2e/clipboard-ui.spec.ts` green (SC3, SC4, SC11, the box parts of SC10)
-- [ ] Shots exist and look as described below
+- [x] Flow, markup and keys tests pass; `src/renderer/clipboard-export/model` ≥ 90 % lines so far
+- [ ] `e2e/win/clipboard-copy.spec.ts` and `e2e/clipboard-ui.spec.ts` green (SC3, SC4, SC11, the box parts of SC10) — `clipboard-ui` green on Linux (its "UI success" group stubs main's `clipboard.write`); the Windows spec is written and not yet run
+- [x] Shots exist and look as described below (Linux; transport stubbed, not clipboard proof)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- C8` →
 `C8/main.png` (A01: scheme loaded, nothing selected; Copy at the right end of the top bar, blue,
 copy icon + "Copy", Undo/Redo to its left; the rest of the window as the editor shots),
 `C8/copied.png` (A02, scripted: click Copy, capture within 1 s: button "Copied" with a check, same
-width; hint slot "Copied the whole drawing. Paste into PowerPoint or Word with Ctrl+V."),
+height and right edge, a few px wider as A02 draws it (88 px for 84); hint slot "Copied the whole drawing. Paste into PowerPoint or Word with Ctrl+V."),
 `C8/copied-selection.png` (scripted: click ethanol with Select, Ctrl+C; hint "Copied. Paste into
 PowerPoint or Word with Ctrl+V."), `C8/min-960.png` (A15b: Atom tool via the rail, label-only
 "Copy" 8 px after Redo, name field 204 px, every Atom option visible including δ−),
