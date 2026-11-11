@@ -2,11 +2,30 @@
 // state from the remembered choices, the live size line, the reopen line, Save… → settings:set
 // then C3 with `exportFileName`; Cancel and a cancelled native dialog do nothing. Fakes only.
 import { describe, expect, it, vi } from 'vitest';
-import { exportSvg } from '@core/clipboard-export';
-import { addAtom, emptyDoc, setStyle, type Doc } from '@core/doc-model';
-import type { FileRef, RendererSettings } from '../../../shared/ipc-types';
+import {
+  crc32,
+  drawingPayload,
+  exportSvg,
+  MAX_PICTURE_BYTES,
+  readPngDrawing,
+  readSvgDrawing,
+  withPictureChunks,
+} from '@core/clipboard-export';
+import { addAtom, addObject, emptyDoc, MAX_FILE_BYTES, setStyle, type Doc } from '@core/doc-model';
+import type { SvgDocument } from '@core/svg-render';
+import { createEditorController } from '../../editor';
+import type {
+  FileProblem,
+  FileRef,
+  RendererSettings,
+  WriteFileResponse,
+} from '../../../shared/ipc-types';
 import {
   createExportFlow,
+  createExportWriter,
+  exportNotice,
+  type ExportWriterOptions,
+  type PngDpi,
   PDF_OUTCOME,
   reopenLine,
   sizeLine,
@@ -204,7 +223,11 @@ describe('EX2 Save…', () => {
     flow.open();
     flow.choose({ pngDpi: 150 });
     await flow.save();
-    expect(chosen).toHaveBeenCalledWith(REF, { format: 'png', pngDpi: 150, pngWhite: false });
+    expect(chosen).toHaveBeenCalledWith(
+      REF,
+      { format: 'png', pngDpi: 150, pngWhite: false },
+      drawing(),
+    );
   });
 
   it('busy from Save… until the export step ends: Ctrl+E does not reopen meanwhile', async () => {
@@ -280,5 +303,328 @@ describe('reopen line', () => {
 
   it('the probe outcome in force is A (Decision C4)', () => {
     expect(PDF_OUTCOME).toBe('A');
+  });
+});
+
+// C11 (EX3–EX5, N-E1–N-E3, C9 obligations): the chosen file gets the snapshot taken at Save…;
+// N-E3 is judged from the bytes actually written, then N-E2, then N-E1; a failed write is the
+// app-shell error box. Fakes for the ports; a real editor controller for the "no side effect" proof.
+const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
+const ascii = (s: string): Uint8Array => Uint8Array.from(s, (c) => c.charCodeAt(0));
+function pngChunk(type: string, data: Uint8Array): Uint8Array {
+  const b = new Uint8Array(data.length + 12);
+  new DataView(b.buffer).setUint32(0, data.length);
+  b.set(ascii(type), 4);
+  b.set(data, 8);
+  new DataView(b.buffer).setUint32(b.length - 4, crc32(b.subarray(4, -4)));
+  return b;
+}
+/** The canvas's PNG stand-in: signature, IHDR (1 × 1), IEND (never decoded). */
+function rawPng(): Uint8Array {
+  const ihdr = new Uint8Array(13);
+  new DataView(ihdr.buffer).setUint32(0, 1);
+  new DataView(ihdr.buffer).setUint32(4, 1);
+  ihdr.set([8, 6, 0, 0, 0], 8);
+  const parts = [
+    Uint8Array.from(PNG_SIGNATURE),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IEND', ascii('')),
+  ];
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
+  return out;
+}
+const PNG_REF: FileRef = {
+  id: '00000000-0000-4000-8000-0000000000a1',
+  name: 'toluene.png',
+  kind: 'png',
+};
+const SVG_REF: FileRef = {
+  id: '00000000-0000-4000-8000-0000000000a2',
+  name: 'toluene.svg',
+  kind: 'svg',
+};
+const encoder = new TextEncoder();
+
+function writerRig(over: Partial<ExportWriterOptions> = {}) {
+  const writes: { ref: FileRef; data: Uint8Array }[] = [];
+  const writeFile = vi.fn((ref: FileRef, data: Uint8Array) => {
+    writes.push({ ref, data });
+    return Promise.resolve<WriteFileResponse>({ ok: true });
+  });
+  const showFileError = vi.fn((_problem: FileProblem, _name: string) => Promise.resolve());
+  const notify = vi.fn();
+  const logError = vi.fn();
+  let reduced = false;
+  // As the real rasteriser: the PNG carries the SVG's metadata payload (R1).
+  const rasterise = vi.fn((svg: SvgDocument, dpi: number, _white: boolean) =>
+    Promise.resolve({
+      png: withPictureChunks(rawPng(), { dpi, payload: readSvgDrawing(svg.svg) }),
+      dpi,
+      reduced,
+    }),
+  );
+  const options: ExportWriterOptions = {
+    main: { writeFile, showFileError },
+    rasterise,
+    notify,
+    encodeUtf8: (text) => encoder.encode(text),
+    logError,
+    ...over,
+  };
+  return {
+    write: createExportWriter(options),
+    writes,
+    writeFile,
+    showFileError,
+    notify,
+    logError,
+    rasterise,
+    setReduced: (v: boolean) => {
+      reduced = v;
+    },
+  };
+}
+const PNG_CHOICES = (pngDpi: PngDpi, pngWhite = false): ExportChoices => ({
+  format: 'png',
+  pngDpi,
+  pngWhite,
+});
+const SVG_CHOICES: ExportChoices = { format: 'svg', pngDpi: 300, pngWhite: false };
+/** A valid drawing whose editable payload is over MAX_FILE_BYTES (emptyDoc stores the string twice). */
+const oversized = (): Doc => {
+  const [d] = addAtom(emptyDoc('x'.repeat(MAX_FILE_BYTES / 2 + 1)), { element: 'C', x: 0, y: 0 });
+  return d;
+};
+
+describe('C11 notices (N-E1–N-E3)', () => {
+  it('N-E3 outranks N-E2, which outranks N-E1', () => {
+    expect(exportNotice('a.png', { embedded: true, reduced: false })).toBe('Exported a.png.');
+    expect(exportNotice('a.png', { embedded: true, reduced: true })).toBe(
+      'Exported a.png. The drawing is very large, so the picture is less sharp than you chose.',
+    );
+    const tooLarge =
+      'Exported a.png. It is too large to open again in Chalkbond, so keep the .chalk file.';
+    expect(exportNotice('a.png', { embedded: false, reduced: true })).toBe(tooLarge);
+    expect(exportNotice('a.png', { embedded: false, reduced: false })).toBe(tooLarge);
+  });
+});
+
+describe('C11 PNG (EX3)', () => {
+  for (const dpi of [150, 300, 600] as const) {
+    it(`${dpi}: rasterises exportSvg(doc, null) at the chosen size and writes those bytes`, async () => {
+      const r = writerRig();
+      const doc = drawing(3);
+      await r.write(PNG_REF, PNG_CHOICES(dpi), doc);
+      expect(r.rasterise).toHaveBeenCalledTimes(1);
+      expect(r.rasterise).toHaveBeenCalledWith(exportSvg(doc, null), dpi, false);
+      const png = (await r.rasterise.mock.results[0]?.value) as { png: Uint8Array };
+      expect(r.writes).toEqual([{ ref: PNG_REF, data: png.png }]);
+      expect(readPngDrawing(r.writes[0]?.data ?? new Uint8Array())).toBe(drawingPayload(doc));
+      expect(r.notify).toHaveBeenCalledExactlyOnceWith('info', 'Exported toluene.png.');
+      expect(r.showFileError).not.toHaveBeenCalled();
+    });
+  }
+
+  it('White background passes the fill flag', async () => {
+    const r = writerRig();
+    await r.write(PNG_REF, PNG_CHOICES(300, true), drawing());
+    expect(r.rasterise.mock.calls[0]?.[2]).toBe(true);
+  });
+
+  it('a reduced picture (R3) shows N-E2', async () => {
+    const r = writerRig();
+    r.setReduced(true);
+    await r.write(PNG_REF, PNG_CHOICES(600), drawing());
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith(
+      'info',
+      'Exported toluene.png. The drawing is very large, so the picture is less sharp than you chose.',
+    );
+  });
+
+  it('a payload over MAX_FILE_BYTES: written without the chunk, N-E3 (outranks reduced)', async () => {
+    const r = writerRig();
+    r.setReduced(true);
+    const doc = oversized();
+    expect(drawingPayload(doc).length).toBeGreaterThan(MAX_FILE_BYTES);
+    await r.write(PNG_REF, PNG_CHOICES(300), doc);
+    expect(r.writes).toHaveLength(1);
+    expect(readPngDrawing(r.writes[0]?.data ?? new Uint8Array())).toBeNull();
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith(
+      'info',
+      'Exported toluene.png. It is too large to open again in Chalkbond, so keep the .chalk file.',
+    );
+  });
+
+  it('N-E3 is judged from the bytes written: a PNG whose chunk was dropped (C9 cap)', async () => {
+    const r = writerRig({
+      rasterise: (_svg, dpi) =>
+        Promise.resolve({
+          png: withPictureChunks(rawPng(), { dpi, payload: null }),
+          dpi,
+          reduced: false,
+        }),
+    });
+    await r.write(PNG_REF, PNG_CHOICES(300), drawing());
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith(
+      'info',
+      'Exported toluene.png. It is too large to open again in Chalkbond, so keep the .chalk file.',
+    );
+  });
+
+  it('a picture over MAX_PICTURE_BYTES is never sent: the error box, no write, no notice', async () => {
+    const huge = new Uint8Array(MAX_PICTURE_BYTES + 1);
+    huge.set(PNG_SIGNATURE);
+    const r = writerRig({
+      rasterise: (_svg, dpi) => Promise.resolve({ png: huge, dpi, reduced: false }),
+    });
+    await r.write(PNG_REF, PNG_CHOICES(300), drawing());
+    expect(r.writeFile).not.toHaveBeenCalled();
+    expect(r.showFileError).toHaveBeenCalledExactlyOnceWith('write-failed', 'toluene.png');
+    expect(r.notify).not.toHaveBeenCalled();
+    expect(r.logError).toHaveBeenCalled();
+  });
+
+  it('a rasterising failure: the error box, no write, logged', async () => {
+    const r = writerRig({ rasterise: () => Promise.reject(new Error('decode')) });
+    await r.write(PNG_REF, PNG_CHOICES(300), drawing());
+    expect(r.writeFile).not.toHaveBeenCalled();
+    expect(r.showFileError).toHaveBeenCalledExactlyOnceWith('write-failed', 'toluene.png');
+    expect(r.notify).not.toHaveBeenCalled();
+    expect(r.logError).toHaveBeenCalled();
+  });
+});
+
+describe('C11 SVG (EX3, EX5)', () => {
+  it('writes the UTF-8 bytes of exportSvg(doc, null).svg exactly, no BOM', async () => {
+    const r = writerRig();
+    const doc = drawing(3);
+    await r.write(SVG_REF, SVG_CHOICES, doc);
+    const data = r.writes[0]?.data ?? new Uint8Array();
+    expect(data).toEqual(encoder.encode(exportSvg(doc, null).svg));
+    expect(Array.from(data.subarray(0, 4))).toEqual(Array.from(ascii('<svg')));
+    expect(r.rasterise).not.toHaveBeenCalled();
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith('info', 'Exported toluene.svg.');
+  });
+
+  it('non-ASCII text is UTF-8 encoded', async () => {
+    const r = writerRig();
+    const [doc] = addObject(drawing(1), {
+      type: 'text',
+      at: { x: 2, y: 0 },
+      runs: [{ text: 'conc. H₂SO₄, Δ' }],
+      align: 'left',
+    });
+    await r.write(SVG_REF, SVG_CHOICES, doc);
+    expect(new TextDecoder().decode(r.writes[0]?.data)).toBe(exportSvg(doc, null).svg);
+  });
+
+  it('a payload over MAX_FILE_BYTES: the SVG has no metadata and N-E3', async () => {
+    const r = writerRig();
+    const doc = oversized();
+    await r.write(SVG_REF, SVG_CHOICES, doc);
+    const text = new TextDecoder().decode(r.writes[0]?.data);
+    expect(text).toBe(exportSvg(doc, null, { embed: false }).svg);
+    expect(readSvgDrawing(text)).toBeNull();
+    expect(r.notify).toHaveBeenCalledExactlyOnceWith(
+      'info',
+      'Exported toluene.svg. It is too large to open again in Chalkbond, so keep the .chalk file.',
+    );
+  });
+});
+
+describe('C11 failed writes (EX4)', () => {
+  it('a refused write shows the file error for its problem; no notice', async () => {
+    const errors: [FileProblem, string][] = [];
+    const rig2 = writerRig({
+      main: {
+        writeFile: () => Promise.resolve({ ok: false, problem: 'write-denied' }),
+        showFileError: (problem, name) => {
+          errors.push([problem, name]);
+          return Promise.resolve();
+        },
+      },
+    });
+    await rig2.write(PNG_REF, PNG_CHOICES(300), drawing());
+    expect(errors).toEqual([['write-denied', 'toluene.png']]);
+    expect(rig2.notify).not.toHaveBeenCalled();
+  });
+
+  it('a rejected write (main refused it) shows write-failed and is logged', async () => {
+    const errors: [FileProblem, string][] = [];
+    const r = writerRig({
+      main: {
+        writeFile: () => Promise.reject(new Error('Rejected IPC request')),
+        showFileError: (problem, name) => {
+          errors.push([problem, name]);
+          return Promise.resolve();
+        },
+      },
+    });
+    await r.write(SVG_REF, SVG_CHOICES, drawing());
+    expect(errors).toEqual([['write-failed', 'toluene.svg']]);
+    expect(r.notify).not.toHaveBeenCalled();
+    expect(r.logError).toHaveBeenCalled();
+  });
+});
+
+describe('C11 snapshot and side effects (EX4)', () => {
+  it('Save… captures the drawing once; edits during the Save dialog or rasterising are not exported', async () => {
+    const r = writerRig();
+    let release: (() => void) | undefined;
+    const slow = writerRig({
+      rasterise: async (svg, dpi, white) => {
+        await new Promise<void>((resolve) => (release = resolve));
+        return r.rasterise(svg, dpi, white);
+      },
+    });
+    let answer: ((ref: FileRef | null) => void) | undefined;
+    const before = drawing(2);
+    const g = rig({
+      main: { chooseSave: () => new Promise<FileRef | null>((res) => (answer = res)) },
+      chosen: slow.write,
+    });
+    g.setDoc(before);
+    g.flow.open();
+    const saving = g.flow.save();
+    await vi.waitFor(() => expect(answer).toBeDefined());
+    g.setDoc(drawing(5)); // an edit while the Save dialog is open
+    answer?.(PNG_REF);
+    await vi.waitFor(() => expect(release).toBeDefined());
+    g.setDoc(drawing(7)); // an edit while rasterising
+    release?.();
+    await saving;
+    expect(r.rasterise).toHaveBeenCalledWith(exportSvg(before, null), 300, false);
+    expect(readPngDrawing(slow.writes[0]?.data ?? new Uint8Array())).toBe(drawingPayload(before));
+  });
+
+  it('export leaves the document, its history and the dirty flag as they were', async () => {
+    const controller = createEditorController({ clock: () => NOW });
+    controller.load(drawing(2));
+    controller.run('select-all');
+    controller.run('duplicate');
+    const doc = controller.getDoc();
+    const dirty = controller.isDirty();
+    const undo = controller.undoLabel();
+    expect(dirty).toBe(true);
+    const w = writerRig({ notify: (kind, text) => controller.notify(kind, text) });
+    const flow = createExportFlow({
+      main: { chooseSave: () => Promise.resolve(SVG_REF) },
+      controller,
+      settings: () => SVG_CHOICES,
+      remember: () => Promise.resolve(),
+      sessionName: () => 'toluene.chalk',
+      chosen: w.write,
+    });
+    expect(flow.open()).toBe(true);
+    await flow.save();
+    expect(w.writes).toHaveLength(1);
+    expect(controller.getDoc()).toBe(doc);
+    expect(controller.isDirty()).toBe(dirty);
+    expect(controller.undoLabel()).toBe(undo);
   });
 });

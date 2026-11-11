@@ -1,12 +1,27 @@
 // Export dialog state and flow (SPEC-clipboard-export.md "Export dialog", EX1, EX2; app-shell ST2)
 // over injected ports: DOM-free, no timers. EX1 opens with the remembered choices; the drawing's
 // size (pt) is measured once per document (one unembedded `exportSvg`), so a choice change is
-// pixel arithmetic only. EX2: Save… remembers the choices (settings:set), closes the dialog, then
-// asks for the file (C3). Writing the file (EX3–EX5) is the `chosen` port's job (C11, C12).
-import { exportFileName, exportSvg, groupDigits, pngPixelSize } from '@core/clipboard-export';
+// pixel arithmetic only. EX2: Save… takes one snapshot of the drawing, remembers the choices
+// (settings:set), closes the dialog, then asks for the file (C3). Writing the file (EX3–EX5) is the
+// `chosen` port's job; `createExportWriter` is that port (C11, C12).
+import {
+  exportFileName,
+  exportSvg,
+  groupDigits,
+  MAX_PICTURE_BYTES,
+  pngPixelSize,
+  readPngDrawing,
+  readSvgDrawing,
+} from '@core/clipboard-export';
 import type { Doc } from '@core/doc-model';
+import type { SvgDocument } from '@core/svg-render';
 import type { EditorController } from '../../editor';
-import type { FileRef, RendererSettings } from '../../../shared/ipc-types';
+import type {
+  FileProblem,
+  FileRef,
+  RendererSettings,
+  WriteFileResponse,
+} from '../../../shared/ipc-types';
 
 export type ExportChoices = RendererSettings['export'];
 export type ExportFormat = ExportChoices['format'];
@@ -78,8 +93,11 @@ export interface ExportFlowOptions {
   sessionName(): string | null;
   /** The drawing's size in pt; default one unembedded `exportSvg` (no payload is built). */
   measure?(doc: Doc): DrawingSize;
-  /** EX3–EX5 for the chosen file (C11, C12). Without it nothing is written. */
-  chosen?(ref: FileRef, choices: ExportChoices): Promise<void>;
+  /**
+   * EX3–EX5 for the chosen file (C11, C12) with the drawing as it was when Save… was pressed.
+   * Without it nothing is written.
+   */
+  chosen?(ref: FileRef, choices: ExportChoices, doc: Doc): Promise<void>;
   logError?(message: string): void;
 }
 
@@ -146,6 +164,8 @@ export function createExportFlow(o: ExportFlowOptions): ExportFlow {
     async save() {
       if (state === null) return;
       const { choices } = state;
+      // EX4: one snapshot before any await; edits made meanwhile are not exported.
+      const doc = o.controller.getDoc();
       saving = true;
       set(null);
       try {
@@ -155,7 +175,7 @@ export function createExportFlow(o: ExportFlowOptions): ExportFlow {
         });
         const name = exportFileName(o.sessionName(), choices.format);
         const ref = await o.main.chooseSave(choices.format, name);
-        if (ref !== null && o.chosen) await o.chosen(ref, choices);
+        if (ref !== null && o.chosen) await o.chosen(ref, choices, doc);
       } catch (error) {
         log(`Export failed: ${String(error)}`);
       } finally {
@@ -163,5 +183,96 @@ export function createExportFlow(o: ExportFlowOptions): ExportFlow {
       }
     },
     busy: () => saving,
+  };
+}
+
+/** N-E1, N-E2, N-E3 (A17): N-E3 outranks N-E2, which outranks N-E1. */
+export function exportNotice(
+  name: string,
+  written: { embedded: boolean; reduced: boolean },
+): string {
+  if (!written.embedded)
+    return `Exported ${name}. It is too large to open again in Chalkbond, so keep the .chalk file.`;
+  if (written.reduced)
+    return `Exported ${name}. The drawing is very large, so the picture is less sharp than you chose.`;
+  return `Exported ${name}.`;
+}
+
+export interface ExportWriterOptions {
+  /** C4 and the app-shell error box (I5). */
+  main: {
+    writeFile(ref: FileRef, data: Uint8Array): Promise<WriteFileResponse>;
+    showFileError(problem: FileProblem, name: string): Promise<void>;
+  };
+  /** R1 (`rasterise.ts`). */
+  rasterise(
+    svg: SvgDocument,
+    dpi: number,
+    white: boolean,
+  ): Promise<{ png: Uint8Array; dpi: number; reduced: boolean }>;
+  /** The status-bar notice (`controller.notify`). */
+  notify(kind: 'info' | 'error', text: string): void;
+  encodeUtf8(text: string): Uint8Array;
+  logError?(message: string): void;
+}
+
+/** The picture to write and what it holds (judged from its own bytes, EX4). */
+interface Picture {
+  bytes: Uint8Array;
+  embedded: boolean;
+  reduced: boolean;
+}
+
+/**
+ * The `chosen` port (EX3–EX5): builds the picture from the snapshot, writes it through C4, then
+ * shows N-E1–N-E3, or the error box when nothing could be written. It reads and changes nothing
+ * else: no document, dirty state, history, session file or recovery file.
+ */
+export function createExportWriter(
+  o: ExportWriterOptions,
+): (ref: FileRef, choices: ExportChoices, doc: Doc) => Promise<void> {
+  const log = o.logError ?? (() => undefined);
+
+  async function picture(choices: ExportChoices, doc: Doc): Promise<Picture | null> {
+    if (choices.format === 'png') {
+      const png = await o.rasterise(exportSvg(doc, null), choices.pngDpi, choices.pngWhite);
+      return { bytes: png.png, embedded: readPngDrawing(png.png) !== null, reduced: png.reduced };
+    }
+    if (choices.format === 'svg') {
+      const { svg } = exportSvg(doc, null);
+      return { bytes: o.encodeUtf8(svg), embedded: readSvgDrawing(svg) !== null, reduced: false };
+    }
+    return null; // PDF: C12
+  }
+
+  return async (ref, choices, doc) => {
+    let made: Picture | null;
+    try {
+      made = await picture(choices, doc);
+    } catch (error) {
+      log(`Export failed: ${String(error)}`);
+      await o.main.showFileError('write-failed', ref.name);
+      return;
+    }
+    if (made === null) return;
+    // C9: a picture over the carrier cap fails as before; it is never sent to main.
+    if (made.bytes.length > MAX_PICTURE_BYTES) {
+      log(`Export refused: ${made.bytes.length} bytes is over the picture limit`);
+      await o.main.showFileError('write-failed', ref.name);
+      return;
+    }
+    let result: WriteFileResponse;
+    try {
+      result = await o.main.writeFile(ref, made.bytes);
+    } catch (error) {
+      log(`Export write refused: ${String(error)}`);
+      result = { ok: false, problem: 'write-failed' };
+    }
+    if (!result.ok) {
+      await o.main.showFileError(result.problem, ref.name);
+      return;
+    }
+    if (!made.embedded) log('Export written without the drawing: too large to embed');
+    o.notify('info', exportNotice(ref.name, made));
   };
 }

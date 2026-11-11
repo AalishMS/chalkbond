@@ -102,6 +102,11 @@ exit 0 (3567 tests), isolated `npm run test:e2e` exit 0 (197), C8 (5) and C9 (3)
 against A01, A02, A15b and A17. The checkpoint stays open: Windows (`e2e/win/clipboard-*`, C3
 probes, PDF/native frame/Arial, os-input) and the PowerPoint/Office checks are not run.
 
+Linux run of Checkpoint U, verified by the orchestrator at `c9f4861` (2026-11-11): `npm run check`
+exit 0 (3728 tests), isolated `npm run test:e2e` exit 0 (225), A10 and C10 shots (5) passed and
+compared with A08a–c; pushed. The checkpoint stays open: full Windows acceptance (e2e/win, C3
+probes, C4 PDF confirmation, native frame, Arial, Office, os-input, installer) is not run.
+
 ### Phase V: export (after app-shell A7–A10)
 - [ ] C10: Export dialog (A08a–c), choices remembered, Ctrl+E
 - [ ] C11: Export PNG and SVG; reopen round trips

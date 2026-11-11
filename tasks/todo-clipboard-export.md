@@ -403,9 +403,16 @@ flow) of that PNG gives a document whose `serialize` equals the original's. `e2e
 toluene.png." after a save as `toluene.chalk` first.
 
 **Acceptance criteria:**
-- [ ] Flow tests pass; both e2e specs green (SC7, SC8 round trips)
-- [ ] A drawing over `MAX_FILE_BYTES` payload (generated in a unit test) exports without the chunk and shows N-E3 (flow test)
-- [ ] Shot exists
+- [x] Flow tests pass; both e2e specs green (SC7, SC8 round trips; Linux only)
+- [x] A drawing over `MAX_FILE_BYTES` payload (generated in a unit test) exports without the chunk and shows N-E3 (flow test)
+- [x] Shot exists (`C11/exported.png`, looked at beside A17's N-E1 row)
+
+C11 worker evidence (2026-11-11, Linux): red first: 18 unit tests failed on the missing writer;
+the 5 e2e tests (`export-png`, `export-svg`) failed against a build without it (no notice, no box).
+The writer (`createExportWriter`, the flow's `chosen` port) gets the snapshot taken at Save…;
+N-E3 is read from the written bytes (`readPngDrawing` / `readSvgDrawing`), then N-E2, then N-E1; a
+picture over `MAX_PICTURE_BYTES`, a rasterising error or a rejected write shows the
+`write-failed` box (nothing over the cap is sent). Windows run pending.
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- C11` →
 `C11/exported.png` (scripted: scheme saved as `esterification.chalk` via stubbed dialogs, Export

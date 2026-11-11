@@ -95,6 +95,11 @@ probes, PDF/native frame/Arial, os-input) and the PowerPoint/Office checks are n
 - [ ] `npm run check` green; `e2e/app-files.spec.ts`, `app-open-pictures.spec.ts`, `app-open-errors.spec.ts`, `app-settings.spec.ts` green
 - [ ] Commit + push
 
+Linux run of Checkpoint U, verified by the orchestrator at `c9f4861` (2026-11-11): `npm run check`
+exit 0 (3728 tests), isolated `npm run test:e2e` exit 0 (225), A10 and C10 shots (5) passed and
+compared with A08a–c; pushed. The checkpoint stays open: full Windows acceptance (e2e/win, C3
+probes, C4 PDF confirmation, native frame, Arial, Office, os-input, installer) is not run.
+
 ### Phase W: menus and keys (after clipboard-export C10–C12)
 - [ ] A11: Native menus (M1–M3) and host keys (K1–K3)
 - [ ] A12: Keyboard shortcuts dialog (A12) and About (A14)
