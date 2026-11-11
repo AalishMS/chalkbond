@@ -106,7 +106,8 @@ each fallback key of CB-W1 (`image/svg+xml`, `web application/x-chalkbond`) writ
 Record every result in the spec's "Facts relied on" (replace "probe P1–P3 / P4 / P2b" wording
 with what was observed) and create `src/main/clipboard-export/formats.ts` exporting the key used
 for each entry (`BITMAP_KEY`, `PNG_KEY | null`, `SVG_KEY | null`, `DRAWING_KEY`) with a comment
-naming the probe line.
+naming the probe line. (Note 2026-11-11: Decision R9 superseded the `PNG_KEY | null` and
+`SVG_KEY | null` of this text; see the result at the top of this task.)
 
 **Tests first:** the probe spec itself (each P a `test`). A probe whose preferred key fails is
 not a failing test: the test asserts the observed behaviour and the fallback's success, and the

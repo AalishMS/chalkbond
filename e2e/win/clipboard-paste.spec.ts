@@ -11,7 +11,15 @@ import {
 } from '../../src/core/doc-model';
 import { preferredFormats } from '../../src/main/clipboard-export/formats';
 import { expectBlockedRequests } from '../launch';
-import { goldenDoc, heardNotices, openApp, readDocument, readSelection } from '../harness';
+import {
+  canvasPoint,
+  goldenDoc,
+  heardNotices,
+  openApp,
+  readContentView,
+  readDocument,
+  readSelection,
+} from '../harness';
 import { loadScheme, selectEthanol } from '../fixtures';
 
 /** A 1×1 transparent PNG, base64: a picture from another app. */
@@ -37,14 +45,6 @@ const writeText = (app: ElectronApplication, text: string) =>
 async function pasteOnCanvas(page: Page): Promise<void> {
   await page.getByTestId('canvas').focus();
   await page.keyboard.press('Control+v');
-}
-
-/** The content layer's viewport transform (zoom `k`, translation `e`, `f` in canvas px; Slides, 40 pt bond). */
-async function contentView(page: Page): Promise<{ k: number; e: number; f: number }> {
-  const attr = await page.locator('[data-layer="content"]').getAttribute('transform');
-  const m = /^matrix\(([^ ]+) 0 0 ([^ ]+) ([^ ]+) ([^)]+)\)$/.exec(attr ?? '');
-  if (!m) throw new Error(`unexpected content transform ${attr}`);
-  return { k: Number(m[1]), e: Number(m[3]), f: Number(m[4]) };
 }
 
 const atomIds = (doc: Doc): string[] => Object.keys(doc.atoms);
@@ -99,7 +99,7 @@ test('Copy with nothing selected, Ctrl+V: the whole drawing as a fragment at the
     await expect(page.getByTestId('copy')).toHaveText('Copied');
     // CB1 places the fragment at the canvas centre of the view as it is when Ctrl+V is pressed;
     // V5 then brings the result into view and may zoom or pan, so the view is read first.
-    const view = await contentView(page);
+    const view = await readContentView(page);
     await pasteOnCanvas(page);
     await expect
       .poll(async () => atomIds(await readDocument(page)).length)
@@ -118,10 +118,12 @@ test('Copy with nothing selected, Ctrl+V: the whole drawing as a fragment at the
     if (!box) throw new Error('nothing pasted');
     const canvas = await page.getByTestId('canvas').boundingBox();
     if (!canvas) throw new Error('canvas has no box');
-    const centre = {
-      x: canvas.x + view.e + (box.x + box.w / 2) * 40 * view.k,
-      y: canvas.y + view.f + (box.y + box.h / 2) * 40 * view.k,
-    };
+    const centre = await canvasPoint(
+      page,
+      { x: box.x + box.w / 2, y: box.y + box.h / 2 },
+      undefined,
+      view,
+    );
     expect(Math.abs(centre.x - (canvas.x + canvas.width / 2))).toBeLessThanOrEqual(1);
     expect(Math.abs(centre.y - (canvas.y + canvas.height / 2))).toBeLessThanOrEqual(1);
     await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true');

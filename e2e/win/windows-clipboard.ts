@@ -10,6 +10,7 @@ import type { ElectronApplication } from '@playwright/test';
 const STREAM_FORMATS = ['PNG', 'image/svg+xml', 'application/x-chalkbond'];
 
 const SCRIPT = String.raw`
+$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 $data = [System.Windows.Forms.Clipboard]::GetDataObject()
 $out = [ordered]@{ formats = @(); nativeFormats = @(); streams = [ordered]@{} }
@@ -45,11 +46,25 @@ export function readWindowsClipboard(): WindowsClipboard {
   try {
     const script = join(dir, 'read.ps1');
     writeFileSync(script, SCRIPT);
-    const stdout = execFileSync(
-      'powershell.exe',
-      ['-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', script],
-      { encoding: 'utf8', env: { ...process.env, CHALKBOND_STREAMS: STREAM_FORMATS.join(',') } },
-    );
+    // A failing .NET call must not look like a missing stream: with 'Stop' the script ends with a
+    // non-zero exit code, and execFileSync then throws with the script's stderr in the message.
+    let stdout: string;
+    try {
+      stdout = execFileSync(
+        'powershell.exe',
+        ['-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', script],
+        {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: { ...process.env, CHALKBOND_STREAMS: STREAM_FORMATS.join(',') },
+        },
+      );
+    } catch (error) {
+      const failed = error as Error & { stderr?: string };
+      throw new Error(`reading the Windows clipboard failed: ${failed.stderr || failed.message}`, {
+        cause: error,
+      });
+    }
     const parsed = JSON.parse(stdout.trim()) as {
       formats: string[] | string | null;
       nativeFormats: string[] | string | null;

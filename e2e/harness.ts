@@ -135,26 +135,50 @@ export async function insertName(page: Page, text: string): Promise<void> {
   await page.keyboard.press('Enter');
 }
 
+/** The content layer's viewport transform: zoom `k`, translation `e`, `f` in canvas px. */
+export interface ContentView {
+  k: number;
+  e: number;
+  f: number;
+}
+
+/** The content layer's current viewport transform (`matrix(k 0 0 k e f)`). */
+export async function readContentView(page: Page): Promise<ContentView> {
+  const attr = await page.locator('[data-layer="content"]').getAttribute('transform');
+  const m = /^matrix\(([^ ]+) 0 0 ([^ ]+) ([^ ]+) ([^)]+)\)$/.exec(attr ?? '');
+  if (!m) throw new Error(`unexpected content transform ${attr}`);
+  return { k: Number(m[1]), e: Number(m[3]), f: Number(m[4]) };
+}
+
 /**
  * Where a document point (BLU) is on the page, in client px: the canvas origin plus the content
  * layer's `matrix(k 0 0 k x y)` applied to the point in pt (`bondLength` pt per BLU, 40 for the
- * Slides preset).
+ * Slides preset). `view` is the transform to use (one read earlier); the default is the current one.
  */
 export async function canvasPoint(
   page: Page,
   blu: { x: number; y: number },
   bondLength = 40,
+  view?: ContentView,
 ): Promise<{ x: number; y: number }> {
-  const attr = await page.locator('[data-layer="content"]').getAttribute('transform');
-  const m = /^matrix\(([^ ]+) 0 0 ([^ ]+) ([^ ]+) ([^)]+)\)$/.exec(attr ?? '');
-  if (!m) throw new Error(`unexpected content transform ${attr}`);
+  const { k, e, f } = view ?? (await readContentView(page));
   const canvas = await page.getByTestId('canvas').boundingBox();
   if (!canvas) throw new Error('canvas has no box');
-  const k = Number(m[1]);
   return {
-    x: canvas.x + Number(m[3]) + blu.x * bondLength * k,
-    y: canvas.y + Number(m[4]) + blu.y * bondLength * k,
+    x: canvas.x + e + blu.x * bondLength * k,
+    y: canvas.y + f + blu.y * bondLength * k,
   };
+}
+
+/** Whether a process with this pid exists (signal 0 only checks; it sends nothing). */
+export function isRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // ESRCH: gone. EPERM would mean it exists but is not ours to signal.
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
 }
 
 /** What the host seam reported through `subscribe`, as `listenEvents` collected it. */

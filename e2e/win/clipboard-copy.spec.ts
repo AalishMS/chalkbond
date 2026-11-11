@@ -2,7 +2,12 @@
 // The Windows side is read through .NET (windows-clipboard.ts): that is what Office sees. The
 // native PNG is Chromium's re-encoding (same pixels, no pHYs: SPEC-clipboard-export.md R9).
 import { expect, test, type ElectronApplication } from '@playwright/test';
-import { drawingPayload, exportSvg, pictureDoc } from '../../src/core/clipboard-export';
+import {
+  drawingPayload,
+  exportSvg,
+  pictureDoc,
+  readPngDrawing,
+} from '../../src/core/clipboard-export';
 import {
   parse,
   serialize,
@@ -49,6 +54,8 @@ test('SC3: Copy with nothing selected writes the CB-W1 formats, the SVG, the dra
       width: Math.ceil((svg.width * 300) / 72),
       height: Math.ceil((svg.height * 300) / 72),
     });
+    // Nor is the drawing readable from the clipboard PNG: Chromium drops the tEXt chunk too (R9).
+    expect(readPngDrawing(native.streams['PNG'] ?? Buffer.alloc(0))).toBeNull();
     expectBlockedRequests(app, 0);
   } finally {
     await app.close();

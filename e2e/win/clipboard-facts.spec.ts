@@ -10,7 +10,8 @@ import {
   SVG_KEY,
   preferredFormats,
 } from '../../src/main/clipboard-export/formats';
-import { goldenDoc } from '../harness';
+import { drawingPayload, readPngDrawing, withPictureChunks } from '../../src/core/clipboard-export';
+import { goldenDoc, isRunning } from '../harness';
 import { launchApp } from '../launch';
 import {
   pngSize,
@@ -75,11 +76,16 @@ test('P1/P2/P2b/P3/P6: the CB-W1 write is accepted, listed and byte-exact', asyn
   }
 });
 
-test('P4: the native PNG is Chromium re-encoding without pHYs, with or without the raw PNG key', async () => {
+test('P4: the native PNG is Chromium re-encoding without pHYs or the drawing chunk, with or without the raw PNG key', async () => {
   const app = await launchApp();
   try {
-    const png = await pngWithPhys(app);
-    expect(png.includes('pHYs')).toBe(true);
+    // The picture a Copy would hand over: a pHYs chunk and the tEXt drawing chunk.
+    const png = withPictureChunks(await pngWithPhys(app), {
+      dpi: 300,
+      payload: drawingPayload(doc),
+    });
+    expect(Buffer.from(png).includes('pHYs')).toBe(true);
+    expect(readPngDrawing(png)).toBe(drawingPayload(doc));
     await writeEntries(app, [{ key: BITMAP_KEY, value: png, type: 'image/png' }]);
     const alone = readWindowsClipboard().streams['PNG'];
     await writeEntries(app, [
@@ -93,6 +99,8 @@ test('P4: the native PNG is Chromium re-encoding without pHYs, with or without t
     );
     expect(alone).toBeDefined();
     expect(alone?.includes('pHYs')).toBe(false);
+    // The tEXt drawing chunk is gone as well: the drawing is not readable from the clipboard PNG.
+    expect(readPngDrawing(alone ?? Buffer.alloc(0))).toBeNull();
     expect(alone).not.toEqual(png);
     expect(pngSize(alone ?? Buffer.alloc(24))).toEqual({ width: 8, height: 8 });
     // The raw key changes nothing, and `has` does not find it even though a native PNG exists.
@@ -107,16 +115,22 @@ test('P4: the native PNG is Chromium re-encoding without pHYs, with or without t
 
 test('P5: the raw drawing key survives its writer quitting', async () => {
   let app = await launchApp();
+  // On Windows `app.process()` is Playwright's shell wrapper; the pid taken inside the app is the
+  // real writer.
+  let writerPid = 0;
   try {
     await writeEntries(app, [
       { key: BITMAP_KEY, value: await pngWithPhys(app), type: 'image/png' },
       { key: SVG_KEY, value: svg },
       { key: DRAWING_KEY, value: drawing },
     ]);
+    writerPid = await app.evaluate(() => process.pid);
   } finally {
     await app.close();
   }
-  // The writer is gone: the native data is still there ...
+  // The writer is gone (proven, not assumed): the native data is still there ...
+  expect(writerPid).toBeGreaterThan(0);
+  await expect.poll(() => isRunning(writerPid), { timeout: 10_000 }).toBe(false);
   const native = readWindowsClipboard();
   expect(native.streams['application/x-chalkbond']).toEqual(drawing);
   expect(native.streams['image/svg+xml']).toEqual(svg);

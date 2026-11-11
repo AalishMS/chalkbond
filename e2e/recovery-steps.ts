@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, type ElectronApplication, type Page } from '@playwright/test';
 import type { Doc } from '../src/core/doc-model';
-import { expectNoNetwork, insertName, openApp, readDocument } from './harness';
+import { expectNoNetwork, insertName, isRunning, openApp, readDocument } from './harness';
 import type { LaunchOptions } from './launch';
 
 export const recoveryFile = (userData: string): string =>
@@ -56,17 +56,6 @@ export async function drawThenKill(userData: string, name: string): Promise<Doc>
   await wrapperExited;
   await expect.poll(() => isRunning(mainPid), { timeout: 10_000 }).toBe(false);
   return doc;
-}
-
-/** Whether a process with this pid exists (signal 0 only checks; it sends nothing). */
-function isRunning(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    // ESRCH: gone. EPERM would mean it exists but is not ours to signal.
-    return (error as NodeJS.ErrnoException).code === 'EPERM';
-  }
 }
 
 /** A real close of the first window (F13), awaited until the app process has exited. */
