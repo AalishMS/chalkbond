@@ -9,6 +9,7 @@ import type {
   ReadFileResponse,
   WriteFileResponse,
   MainEvent,
+  RendererSettings,
   StartupResponse,
   SessionUpdate,
 } from '../shared/ipc-types';
@@ -29,6 +30,8 @@ export interface ChalkbondApi {
   /** I5: the F14 error box for `{ problem, name }` (a base name). */
   showFileError(problem: FileProblem, name: string): Promise<void>;
   startup(): Promise<StartupResponse>;
+  /** I8: remembers renderer settings (ST1 style, Export choices); main writes settings.json. */
+  setSettings(value: Partial<RendererSettings>): Promise<void>;
   updateSession(value: SessionUpdate): void;
   /** N2: the session's file (null: Untitled after New); main keeps the folders, never the page. */
   sessionFile(ref: FileRef | null): void;

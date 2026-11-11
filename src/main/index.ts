@@ -7,7 +7,13 @@ import { createDialogs } from './dialogs';
 import { createFiles } from './files';
 import { createFileRefs } from './model/file-refs';
 import { createSessionFolders } from './model/session-folders';
-import { firstWindowBounds } from './model/window-bounds';
+import {
+  firstWindowBounds,
+  restoredWindowBounds,
+  type RememberedWindow,
+} from './model/window-bounds';
+import { rendererSettings, withRendererSettings } from './model/settings';
+import { createSettingsStore, type SettingsStore } from './settings-io';
 import type { ReadFileResponse, StartupResponse } from '../shared/ipc-types';
 import { testFlags } from './model/args';
 
@@ -28,15 +34,17 @@ import {
   writeFileSchema,
   sessionFileSchema,
   closeOkSchema,
+  setSettingsSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
 
 installWebContentsSecurity();
 let mainWindow: BrowserWindow | undefined;
+let settings: SettingsStore | undefined;
 const APP_ID = 'com.chalkbond.app';
 
-function createMainWindow(): BrowserWindow {
+function createMainWindow(remembered: RememberedWindow | null): BrowserWindow {
   const win = new BrowserWindow({
     useContentSize: true,
     autoHideMenuBar: false,
@@ -68,8 +76,15 @@ function createMainWindow(): BrowserWindow {
   if ((minimum[0] ?? 0) < 960 || (minimum[1] ?? 0) < 640) {
     win.setMinimumSize(960 + frame[0], 640 + frame[1]);
   }
-  const { maximized, ...bounds } = firstWindowBounds(screen.getPrimaryDisplay().workArea, frame);
+  // W2: the remembered window if half of it lies on the display it matches best; else W1.
+  const restored =
+    remembered === null
+      ? null
+      : restoredWindowBounds(remembered, screen.getDisplayMatching(remembered).workArea);
+  const { maximized, ...bounds } =
+    restored ?? firstWindowBounds(screen.getPrimaryDisplay().workArea, frame);
   win.setBounds(bounds);
+  // Maximize after the bounds, so un-maximizing gives the remembered normal bounds back.
   if (maximized) win.maximize();
   win.once('ready-to-show', () => win.show());
 
@@ -97,10 +112,17 @@ if (flags.hooks) {
 
 app.setAppUserModelId(APP_ID);
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   // No default menu: its accelerators (Ctrl+0, Ctrl+=) would zoom the page and steal editor keys.
   Menu.setApplicationMenu(null);
   const log = createLogger(app.getPath('userData'));
+  // Settings (ST1, ST2, W2): read once before the window exists; written 500 ms after a change.
+  const store = createSettingsStore({
+    file: join(app.getPath('userData'), 'settings.json'),
+    log: (message) => log('settings', message),
+  });
+  settings = store;
+  await store.load();
   installSessionSecurity(
     (message) => log('security', message),
     () => {
@@ -132,7 +154,10 @@ void app.whenReady().then(() => {
     return entry;
   };
   const documents = (): string => app.getPath('documents');
-  const folders = createSessionFolders(documents);
+  // F2, F6, ST2: the last open, save and export folders, remembered in settings.json.
+  const folders = createSessionFolders(documents, store.get().folders, (next) =>
+    store.update((s) => ({ ...s, folders: next })),
+  );
   const dialogs = createDialogs({
     port: {
       open: (options) =>
@@ -158,9 +183,13 @@ void app.whenReady().then(() => {
     // A ref always has an Open extension, so `unsupported` cannot answer I2.
     return { ok: false, problem: result.problem === 'unsupported' ? 'unreadable' : result.problem };
   });
-  ipc.handle(CHANNELS.chooseSave, chooseSaveSchema, ({ format, suggestedName }) =>
-    dialogs.chooseSave(format, suggestedName),
-  );
+  ipc.handle(CHANNELS.chooseSave, chooseSaveSchema, async ({ format, suggestedName }) => {
+    const ref = await dialogs.chooseSave(format, suggestedName);
+    // ST2: an Export Save dialog (every format but .chalk) remembers its folder.
+    const entry = ref === null || format === 'chalk' ? undefined : refs.get(ref.id);
+    if (entry) folders.exported(entry);
+    return ref;
+  });
   ipc.handle(CHANNELS.writeFile, writeFileSchema, ({ ref, data }) =>
     files.write(entryOf(ref), data),
   );
@@ -169,14 +198,16 @@ void app.whenReady().then(() => {
     dialogs.showFileError(problem, name),
   );
   ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
+  // I7 with ST2: the renderer's view only (no path, folder, window or recent list).
   ipc.handle(CHANNELS.startup, startupSchema, (): StartupResponse => ({
-    settings: {
-      newDrawingStyle: 'slides',
-      export: { format: 'png', pngDpi: 300, pngWhite: false },
-    },
+    settings: rendererSettings(store.get()),
     recovery: null,
     open: null,
   }));
+  // I8: a strict partial RendererSettings (preset switches, Export choices).
+  ipc.handle(CHANNELS.setSettings, setSettingsSchema, (change) => {
+    store.update((s) => withRendererSettings(s, change));
+  });
   let session: { title: string; dirty: boolean } | undefined;
   let closing: ReturnType<typeof guardClose> | undefined;
   ipc.on(CHANNELS.updateSession, sessionUpdateSchema, (value) => {
@@ -193,12 +224,20 @@ void app.whenReady().then(() => {
   });
   // N5 (F13): the renderer ran F4 and agreed to close.
   ipc.on(CHANNELS.closeOk, closeOkSchema, () => closing?.closeOk());
-  mainWindow = createMainWindow();
-  closing = guardClose(mainWindow);
+  /** W2: on a real close, the outer normal bounds and the maximized flag. */
+  const rememberWindow = (win: BrowserWindow): void => {
+    const bounds = win.getNormalBounds();
+    const maximized = win.isMaximized();
+    store.update((s) => ({ ...s, window: { ...bounds, maximized } }));
+  };
+  const openWindow = (): void => {
+    const win = createMainWindow(store.get().window);
+    mainWindow = win;
+    closing = guardClose(win, () => rememberWindow(win));
+  };
+  openWindow();
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length !== 0) return;
-    mainWindow = createMainWindow();
-    closing = guardClose(mainWindow);
+    if (BrowserWindow.getAllWindows().length === 0) openWindow();
   });
 });
 
@@ -207,15 +246,19 @@ void app.whenReady().then(() => {
  * (`close-requested`), which runs F4 and answers with N5. Main intercepts only once the renderer
  * has sent its first N1 (it listens for main events by then), and never once the renderer is gone
  * (`render-process-gone`): then the window closes without asking (the recovery file covers it).
+ * `closing` runs for every close that goes ahead (W2 remembers the bounds then).
  */
-function guardClose(win: BrowserWindow) {
+function guardClose(win: BrowserWindow, closing: () => void) {
   let ready = false;
   let allowed = false;
   win.webContents.on('render-process-gone', () => {
     allowed = true;
   });
   win.on('close', (event) => {
-    if (allowed || !ready || win.webContents.isCrashed()) return;
+    if (allowed || !ready || win.webContents.isCrashed()) {
+      closing();
+      return;
+    }
     event.preventDefault();
     win.webContents.send(CHANNELS.mainEvent, { type: 'close-requested' });
   });
@@ -229,6 +272,17 @@ function guardClose(win: BrowserWindow) {
     },
   };
 }
+
+// Settings are flushed before quit: a change younger than 500 ms (the window bounds) still lands.
+let flushed = false;
+app.on('will-quit', (event) => {
+  if (flushed || settings === undefined || !settings.pending()) return;
+  event.preventDefault();
+  void settings.flush().finally(() => {
+    flushed = true;
+    app.quit();
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

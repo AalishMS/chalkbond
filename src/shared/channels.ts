@@ -8,6 +8,7 @@ export const CHANNELS = {
   ask: 'dialog:ask',
   showFileError: 'dialog:file-error',
   startup: 'app:startup',
+  setSettings: 'settings:set',
   updateSession: 'session:update',
   sessionFile: 'session:file',
   closeOk: 'app:close-ok',

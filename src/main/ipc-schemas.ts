@@ -76,3 +76,18 @@ export const fileErrorSchema = z
 // A8 (SPEC-app-shell.md N2, N5): the session file by ref (null for Untitled) and the close answer.
 export const sessionFileSchema = z.object({ ref: fileRefId.nullable() }).strict();
 export const closeOkSchema = z.object({}).strict();
+
+// A10 (SPEC-app-shell.md I8, ST2): a partial RendererSettings; no path, folder, window or recent.
+export const setSettingsSchema = z
+  .object({
+    newDrawingStyle: z.enum(['slides', 'journal']).optional(),
+    export: z
+      .object({
+        format: z.enum(['png', 'svg', 'pdf']),
+        pngDpi: z.union([z.literal(150), z.literal(300), z.literal(600)]),
+        pngWhite: z.boolean(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();

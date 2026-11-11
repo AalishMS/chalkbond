@@ -15,6 +15,7 @@ export interface IpcRequestMap {
   'dialog:file-error': FileErrorRequest;
   'log:error': LogErrorRequest;
   'app:startup': Record<string, never>;
+  'settings:set': Partial<RendererSettings>;
   'session:update': SessionUpdate;
   'session:file': { ref: string | null };
   'app:close-ok': Record<string, never>;

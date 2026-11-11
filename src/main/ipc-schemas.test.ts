@@ -122,3 +122,34 @@ describe('R8: no path crosses the bridge', () => {
     expect(types).not.toMatch(/\bfilePath/);
   });
 });
+
+describe('A10 I8 settings:set', () => {
+  const EXPORT = { format: 'svg', pngDpi: 600, pngWhite: true };
+  it('accepts a partial RendererSettings', () => {
+    ok(schemas.setSettingsSchema, {});
+    ok(schemas.setSettingsSchema, { newDrawingStyle: 'journal' });
+    ok(schemas.setSettingsSchema, { export: EXPORT });
+    ok(schemas.setSettingsSchema, {
+      newDrawingStyle: 'slides',
+      export: { ...EXPORT, pngDpi: 150 },
+    });
+  });
+
+  it('rejects paths, main-only fields, unknown keys and invalid values', () => {
+    for (const v of [
+      null,
+      { newDrawingStyle: 'poster' },
+      { export: { ...EXPORT, format: 'jpg' } },
+      { export: { ...EXPORT, pngDpi: 72 } },
+      { export: { ...EXPORT, pngDpi: '300' } },
+      { export: { ...EXPORT, pngWhite: 1 } },
+      { export: { format: 'png' } },
+      { export: { ...EXPORT, folder: 'C:\\x' } },
+      { folders: { open: 'C:\\x' } },
+      { window: { x: 0, y: 0, width: 1, height: 1, maximized: false } },
+      { recent: ['C:\\x.chalk'] },
+      { version: 1 },
+    ])
+      bad(schemas.setSettingsSchema, v);
+  });
+});

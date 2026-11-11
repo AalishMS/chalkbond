@@ -46,8 +46,9 @@ describe('createSessionFolders', () => {
     for (const kind of ['png', 'svg', 'pdf'] as const) {
       folders.sessionFile(refs.get(refs.add(`C:\\Pics\\t.${kind}`, kind, 'opened').id) ?? null);
       expect(folders.saveFolder('chalk')).toBe('C:\\Pics');
-      // Export keeps its own rule (last save folder), not the picture's.
+      // Export keeps its own rule (export folder, else last save folder), not the picture's.
       expect(folders.saveFolder('png')).toBe('C:\\Save');
+      expect(folders.saveFolder(kind)).toBe('C:\\Save');
     }
   });
 
@@ -60,5 +61,69 @@ describe('createSessionFolders', () => {
     folders.sessionFile(refs.get(refs.add('/d/e.chalk', 'chalk', 'opened').id) ?? null);
     expect(folders.saveFolder('chalk')).toBe(DOCS);
     expect(folders.openFolder()).toBe('/d');
+  });
+});
+
+describe('A10: remembered folders (ST2)', () => {
+  function persisted(initial: Parameters<typeof createSessionFolders>[1]) {
+    let n = 0;
+    const refs = createFileRefs(() => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`);
+    const changes: unknown[] = [];
+    const folders = createSessionFolders(
+      () => DOCS,
+      initial,
+      (f) => changes.push(f),
+    );
+    const entry = (path: string, kind: 'chalk' | 'png' | 'svg' | 'pdf', how: 'opened' | 'saved') =>
+      refs.get(refs.add(path, kind, how).id) ?? null;
+    return { folders, changes, entry };
+  }
+
+  it('starts from the stored folders', () => {
+    const { folders } = persisted({ open: 'C:\\O', save: 'C:\\S', export: 'C:\\E' });
+    expect(folders.openFolder()).toBe('C:\\O');
+    expect(folders.saveFolder('chalk')).toBe('C:\\S');
+    for (const f of ['png', 'svg', 'pdf'] as const) expect(folders.saveFolder(f)).toBe('C:\\E');
+  });
+
+  it('export falls back to the last save folder, then Documents', () => {
+    expect(persisted({ open: null, save: 'C:\\S', export: null }).folders.saveFolder('png')).toBe(
+      'C:\\S',
+    );
+    expect(persisted({ open: null, save: null, export: null }).folders.saveFolder('svg')).toBe(
+      DOCS,
+    );
+  });
+
+  it('an export choice sets the export folder only; New does not clear it', () => {
+    const { folders, changes, entry } = persisted({ open: null, save: 'C:\\S', export: null });
+    const chosen = entry('C:\\Slides\\t.png', 'png', 'saved');
+    if (chosen) folders.exported(chosen);
+    expect(folders.saveFolder('pdf')).toBe('C:\\Slides');
+    expect(folders.saveFolder('chalk')).toBe('C:\\S');
+    expect(folders.openFolder()).toBe(DOCS);
+    folders.sessionFile(null);
+    expect(folders.saveFolder('svg')).toBe('C:\\Slides');
+    expect(changes).toEqual([{ open: null, save: 'C:\\S', export: 'C:\\Slides' }]);
+  });
+
+  it('reports open and save changes for persistence; a picture session keeps the A6 rule', () => {
+    const { folders, changes, entry } = persisted({ open: null, save: null, export: 'C:\\E' });
+    folders.sessionFile(entry('C:\\Pics\\t.png', 'png', 'opened'));
+    folders.sessionFile(entry('C:\\Work\\t.chalk', 'chalk', 'saved'));
+    expect(changes).toEqual([
+      { open: 'C:\\Pics', save: null, export: 'C:\\E' },
+      { open: 'C:\\Pics', save: 'C:\\Work', export: 'C:\\E' },
+    ]);
+    folders.sessionFile(entry('C:\\Pics\\u.svg', 'svg', 'opened'));
+    expect(folders.saveFolder('chalk')).toBe('C:\\Pics');
+    expect(folders.saveFolder('png')).toBe('C:\\E');
+  });
+
+  it('an unchanged folder reports nothing', () => {
+    const { folders, changes, entry } = persisted({ open: 'C:\\O', save: null, export: null });
+    folders.sessionFile(entry('C:\\O\\a.chalk', 'chalk', 'opened'));
+    folders.sessionFile(null);
+    expect(changes).toEqual([]);
   });
 });

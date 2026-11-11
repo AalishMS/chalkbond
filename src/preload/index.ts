@@ -15,6 +15,7 @@ const api: ChalkbondApi = {
   ask: (request) => ipcRenderer.invoke(CHANNELS.ask, request),
   showFileError: (problem, name) => ipcRenderer.invoke(CHANNELS.showFileError, { problem, name }),
   startup: () => ipcRenderer.invoke(CHANNELS.startup, {}),
+  setSettings: (value) => ipcRenderer.invoke(CHANNELS.setSettings, value),
   updateSession: (value) => ipcRenderer.send(CHANNELS.updateSession, value),
   sessionFile: (ref) => ipcRenderer.send(CHANNELS.sessionFile, { ref: ref?.id ?? null }),
   closeOk: () => ipcRenderer.send(CHANNELS.closeOk, {}),

@@ -3,8 +3,10 @@ import { rasterise } from '../clipboard-export/rasterise';
 import { emptyDoc, setStyle, type Doc } from '@core/doc-model';
 import { createEditorController } from '../editor';
 import { createFileFlows } from './model/file-flows';
+import { createPresetMemory } from './model/preset-memory';
 import { createSession, sessionUpdate } from './model/session';
 import type { ChalkbondApi } from '../../preload/api';
+import type { RendererSettings } from '../../shared/ipc-types';
 
 /** Called once before React mounts: effects and StrictMode never own controller lifetime. */
 export async function createWindowHost(main: ChalkbondApi) {
@@ -32,6 +34,34 @@ export async function createWindowHost(main: ChalkbondApi) {
     },
   });
   late.flow = copyFlow;
+  // ST1, ST2: the renderer's settings (no path); a change is kept here and sent to main (I8).
+  const settings: RendererSettings = {
+    newDrawingStyle: startup.settings.newDrawingStyle,
+    export: { ...startup.settings.export },
+  };
+  const remember = async (change: Partial<RendererSettings>): Promise<void> => {
+    if (change.newDrawingStyle !== undefined) settings.newDrawingStyle = change.newDrawingStyle;
+    if (change.export !== undefined) settings.export = { ...change.export };
+    try {
+      await main.setSettings(change);
+    } catch (error) {
+      main.logError(`Settings not stored: ${String(error)}`);
+    }
+  };
+  // CO1: every host load goes through the preset memory, so a load is never remembered (ST1).
+  const presets = createPresetMemory({
+    controller,
+    remember: (style) => {
+      void remember({ newDrawingStyle: style });
+    },
+  });
+  const hostController = {
+    getDoc: () => controller.getDoc(),
+    load: presets.load,
+    markSaved: () => controller.markSaved(),
+    isDirty: () => controller.isDirty(),
+    notify: (kind: 'info' | 'error', text: string) => controller.notify(kind, text),
+  };
   const session = createSession();
   let sent: ReturnType<typeof sessionUpdate> | undefined;
   /** N1 for the current session and document; sent only when title or dirty changed. */
@@ -45,12 +75,12 @@ export async function createWindowHost(main: ChalkbondApi) {
   const encoder = new TextEncoder();
   const fileFlows = createFileFlows({
     main,
-    controller,
+    controller: hostController,
     session,
     publish: publishSession,
     clock,
-    // ST1: the startup settings' style until A10 tracks preset switches.
-    newDrawingStyle: () => startup.settings.newDrawingStyle,
+    // ST1: the style of the last preset switch (startup settings until one happens).
+    newDrawingStyle: () => settings.newDrawingStyle,
     decodeUtf8: (bytes) => {
       try {
         return decoder.decode(bytes);
@@ -67,9 +97,13 @@ export async function createWindowHost(main: ChalkbondApi) {
     fileFlows,
     session,
     publishSession,
+    /** ST2: a copy of the renderer settings now. */
+    settings: (): RendererSettings => ({ ...settings, export: { ...settings.export } }),
+    /** I8: remembers a settings change (here at once; main writes the file). */
+    remember,
     /** TH2 `load`: the document as an Untitled session (no prompt; a test seam only). */
     loadUntitled(doc: Doc): void {
-      controller.load(doc);
+      presets.load(doc);
       Object.assign(session, createSession());
       main.sessionFile(null);
       publishSession();

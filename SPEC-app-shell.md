@@ -117,7 +117,7 @@ inside the window.
 | Rule | |
 |---|---|
 | W1 First launch | `useContentSize: true`. If a 1280×800 content window fits the primary display's work area: that size, centred. Otherwise maximized (normal bounds: that size clipped to the work area, centred) |
-| W2 Remembered | On close store `getNormalBounds()` (outer) and `isMaximized()`. On launch restore them if at least half of the stored rectangle lies inside the work area of `screen.getDisplayMatching(rect)`; else W1. Maximized is applied after the bounds. Pure: `src/main/model/window-bounds.ts` |
+| W2 Remembered | On every close that goes ahead (F13 allowed, the renderer gone, or before the first N1) store `getNormalBounds()` (outer) and `isMaximized()`. On launch restore them if at least half of the stored rectangle lies inside the work area of `screen.getDisplayMatching(rect)`; else W1. Maximized is applied after the bounds. Pure: `src/main/model/window-bounds.ts` |
 | W3 Title | `windowTitle(name, dirty)`: `*` when dirty, the name, ` - Chalkbond`: `Untitled - Chalkbond`, `*esterification - Chalkbond` (a `.chalk` shows without extension), `ethanol.png - Chalkbond` (a picture keeps its extension), `*Recovered drawing - Chalkbond`. Main calls `setTitle` and prevents `page-title-updated` |
 | W4 Menu bar | Always visible (`autoHideMenuBar: false`); Alt or F10 focuses it (Windows) |
 | W5 Zoom | `webContents.setZoomMode('disabled')` |
@@ -305,6 +305,15 @@ interface Settings {
   a switch; not a load) stores `newDrawingStyle`. New uses it.
 - **ST2** The renderer sees only `RendererSettings = { newDrawingStyle, export }`; paths stay in
   main. Export's Save dialog starts in `folders.export` (else `folders.save`, else Documents).
+  `folders.open` / `folders.save` follow N2 (an opened / a Save-as ref); `folders.export` is the
+  folder of the file an Export Save dialog returned (C3 with `png`, `svg` or `pdf`). A picture
+  session's Save as still starts in the picture's folder (A6). `recent` is parsed and kept; only
+  A15 changes it. ST1's "not a load": the host's loads (New, Open, recover, test hook) go through
+  one wrapper around `controller.load` that suppresses the memory for that call; dirty and busy
+  are not signals (a real switch may undo back to clean, or happen while a save runs).
+- **ST3** (A10) A broken file, or one with a repaired field or a dropped key, is logged and
+  rewritten valid at start. Writes go to a temp file in the same folder, then a rename. Pending
+  changes are flushed on `will-quit`.
 - Left out: fonts, bond length, line width, language, theme, autosave interval, clipboard
   options, default folder, update checks, "open last file at start".
 
