@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
 import { launchApp, expectBlockedRequests } from '../launch';
 import { preferredFormats } from '../../src/main/clipboard-export/formats';
+import { pngSize, readElectronClipboard, readWindowsClipboard } from './windows-clipboard';
 
 test('named IPC writes and reads the real Windows clipboard atomically', async () => {
   const app = await launchApp();
@@ -23,35 +23,27 @@ test('named IPC writes and reads the real Windows clipboard atomically', async (
     });
     expect(result.ok).toEqual({ ok: true });
     expect(result.clip).toEqual({ drawing: '{}', text: null, textTooLong: false, image: true });
-    const bytes = await app.evaluate(async ({ clipboard }, formats) => {
-      const items = await clipboard.read();
-      const values: Record<string, number[]> = {};
-      for (const key of [formats.png, formats.svg, formats.drawing]) {
-        if (!key) continue;
-        const item = items.find((entry) => entry.types.includes(key));
-        if (!item) throw Error(`Missing ${key}`);
-        const blob = await item.getType(key);
-        if (!('arrayBuffer' in blob)) throw Error('Expected Blob');
-        values[key] = Array.from(new Uint8Array(await blob.arrayBuffer()));
-      }
-      return values;
-    }, preferredFormats);
-    expect(bytes[preferredFormats.png ?? '']).toEqual(result.png);
-    expect(bytes[preferredFormats.svg ?? '']).toEqual(Array.from(Buffer.from(result.svg)));
-    expect(bytes[preferredFormats.drawing]).toEqual(Array.from(Buffer.from('{}')));
-    const formats = execFileSync(
-      'powershell',
-      [
-        '-NoProfile',
-        '-STA',
-        '-Command',
-        'Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetDataObject().GetFormats()',
-      ],
-      { encoding: 'utf8' },
+    // Electron: the drawing is exact, the bitmap is found, the SVG is listed under its plain name.
+    const electron = await readElectronClipboard(app, [
+      preferredFormats.bitmap,
+      preferredFormats.drawing,
+    ]);
+    expect(electron.has[preferredFormats.bitmap]).toBe(true);
+    expect(Buffer.from(electron.bytes[preferredFormats.drawing] ?? [])).toEqual(Buffer.from('{}'));
+    expect(electron.types).toContain('image/svg+xml');
+    // Windows (what Office sees): native SVG and drawing exact, a PNG of the same pixel size
+    // (Chromium re-encodes it, so the bytes differ), no text format.
+    const native = readWindowsClipboard();
+    expect(native.nativeFormats).toEqual(
+      expect.arrayContaining(['PNG', 'image/svg+xml', 'application/x-chalkbond']),
     );
-    for (const key of ['PNG', 'image/svg+xml', 'application/x-chalkbond'])
-      expect(formats).toContain(key);
-    expect(formats).not.toMatch(/UnicodeText|^Text$/m);
+    expect(native.formats).not.toContain('Text');
+    expect(native.formats).not.toContain('UnicodeText');
+    expect(native.streams['image/svg+xml']).toEqual(Buffer.from(result.svg));
+    expect(native.streams['application/x-chalkbond']).toEqual(Buffer.from('{}'));
+    expect(pngSize(native.streams['PNG'] ?? Buffer.alloc(24))).toEqual(
+      pngSize(Uint8Array.from(result.png)),
+    );
     expectBlockedRequests(app, 0);
   } finally {
     await app.close();

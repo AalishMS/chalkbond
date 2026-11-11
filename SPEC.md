@@ -200,6 +200,7 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 
 | Date | Decision |
 |---|---|
+| 2026-11-11 | clipboard-export C3 (R9), decided by Windows probe (Electron 45.2.3, Windows 11): the clipboard write is the bitmap `image/png`, the raw SVG key and the raw drawing key. No exact-PNG entry (the raw `PNG` key is ignored; Windows' PNG is Chromium's re-encoding without `pHYs`, so a pasted bitmap has the 300 dpi pixel size but no dpi tag; accepted for v1) and no fallback keys (the MIME SVG key is dropped). |
 | 2026-11-11 | A20: version 1.0.0 prepared (`package.json`, `package-lock.json`); release pending the Windows checkpoint (Checkpoint Z, `docs/windows-checklist.md`). No Windows run of the installer, `e2e/win`, the C3 probes or the human checks has happened; the I1 installer and installed sizes are unmeasured. |
 | 2026-11-11 | app-shell A11 (R18, R19; editor R49 supersedes R12): "Zoom to 100%" from View, Ctrl+1 and the status-bar readout sets zoom 1 (100 %); new and loaded drawings still open at the V2 default (150 % Slides, 416.67 % Handout). Help > Keyboard shortcuts is enabled when idle, matching K1's F1. The M1 enabled rules live once in `src/shared/menu.ts`, re-checked by the renderer before a menu command runs. |
 | 2026-11-11 | clipboard-export O7: positive fractional DPI only when no positive integer fits raster caps; deterministic integer search then 64-step feasible-endpoint bisection; pHYs rounding unchanged. |

@@ -1,5 +1,5 @@
 import type { ClipboardWriteRequest, ClipboardReadResponse } from '../../shared/ipc-types';
-import { preferredFormats, type FormatSelection } from './formats';
+import { preferredFormats as formats } from './formats';
 
 interface ReadItem {
   types: readonly string[];
@@ -15,7 +15,6 @@ export function createClipboard<T>(
   clipboard: ClipboardPort<T>,
   Item: new (entries: Record<string, Blob>) => T,
   log: (message: string) => void,
-  formats: FormatSelection = preferredFormats,
 ) {
   return {
     async write(value: ClipboardWriteRequest): Promise<{ ok: boolean }> {
@@ -23,8 +22,7 @@ export function createClipboard<T>(
         const entries: Record<string, Blob> = {
           [formats.bitmap]: new Blob([new Uint8Array(value.png)], { type: 'image/png' }),
         };
-        if (formats.png) entries[formats.png] = new Blob([new Uint8Array(value.png)]);
-        if (formats.svg) entries[formats.svg] = new Blob([value.svg]);
+        entries[formats.svg] = new Blob([value.svg]);
         if (value.drawing !== null) entries[formats.drawing] = new Blob([value.drawing]);
         await clipboard.write([new Item(entries)]);
         return { ok: true };

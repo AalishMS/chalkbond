@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { createClipboard } from './clipboard';
-import { selectFormats } from './formats';
+import { preferredFormats } from './formats';
 import { clipboardWriteSchema } from '../ipc-schemas';
 import { validateRequest } from '../ipc';
 
@@ -54,37 +54,35 @@ it('validates every field through the central sender check', () => {
     ),
   ).toThrow();
 });
-it('writes atomically for every independent named fallback and omits null drawing', async () => {
-  for (const formats of [
-    selectFormats(),
-    selectFormats({ png: 'omit' }),
-    selectFormats({ svg: 'mime' }),
-    selectFormats({ svg: 'omit' }),
-    selectFormats({ drawing: 'web' }),
-  ]) {
-    const write = vi.fn(async (_items: Item[]) => {});
-    class Item {
-      constructor(readonly entries: Record<string, Blob>) {}
-    }
-    const port = createClipboard(
-      { write, read: async () => [], readText: async () => '', has: async () => false },
-      Item,
-      vi.fn(),
-      formats,
-    );
-    expect(await port.write(request)).toEqual({ ok: true });
-    expect(write).toHaveBeenCalledTimes(1);
-    const entries = write.mock.calls[0]?.[0][0]?.entries;
-    expect(Object.keys(entries ?? {})).toEqual([
-      formats.bitmap,
-      ...(formats.png ? [formats.png] : []),
-      ...(formats.svg ? [formats.svg] : []),
-      formats.drawing,
-    ]);
-    expect(await entries?.[formats.drawing]?.text()).toBe('{}');
-    await port.write({ ...request, drawing: null });
-    expect(write.mock.calls[1]?.[0][0]?.entries[formats.drawing]).toBeUndefined();
+it('writes the three CB-W1 entries atomically and omits a null drawing', async () => {
+  const write = vi.fn(async (_items: Item[]) => {});
+  class Item {
+    constructor(readonly entries: Record<string, Blob>) {}
   }
+  const port = createClipboard(
+    { write, read: async () => [], readText: async () => '', has: async () => false },
+    Item,
+    vi.fn(),
+  );
+  expect(await port.write(request)).toEqual({ ok: true });
+  expect(write).toHaveBeenCalledTimes(1);
+  const entries = write.mock.calls[0]?.[0][0]?.entries;
+  expect(Object.keys(entries ?? {})).toEqual([
+    preferredFormats.bitmap,
+    preferredFormats.svg,
+    preferredFormats.drawing,
+  ]);
+  expect(entries?.[preferredFormats.bitmap]?.type).toBe('image/png');
+  expect(
+    Buffer.from(await (entries?.[preferredFormats.bitmap]?.arrayBuffer() ?? new ArrayBuffer(0))),
+  ).toEqual(Buffer.from(png));
+  expect(await entries?.[preferredFormats.svg]?.text()).toBe('<svg/>');
+  expect(await entries?.[preferredFormats.drawing]?.text()).toBe('{}');
+  await port.write({ ...request, drawing: null });
+  expect(Object.keys(write.mock.calls[1]?.[0][0]?.entries ?? {})).toEqual([
+    preferredFormats.bitmap,
+    preferredFormats.svg,
+  ]);
 });
 it('bounds readers and catches errors without retrying writes', async () => {
   const log = vi.fn();
@@ -94,10 +92,9 @@ it('bounds readers and catches errors without retrying writes', async () => {
   class Item {
     constructor(readonly entries: Record<string, Blob>) {}
   }
-  const formats = selectFormats();
   const read = vi.fn(async () => [
     {
-      types: [formats.drawing, 'image/svg+xml'],
+      types: [preferredFormats.drawing, 'image/svg+xml'],
       getType: async () => new Blob(['a'.repeat(21 * 1024 * 1024)]),
     },
   ]);

@@ -1,13 +1,13 @@
 import { expect, test } from 'vitest';
-import { preferredFormats, selectFormats } from './formats';
+import { BITMAP_KEY, DRAWING_KEY, SVG_KEY, preferredFormats } from './formats';
 
-test('preferred and every named fallback share the selection interface', () => {
-  expect(selectFormats()).toEqual(preferredFormats);
-  expect(selectFormats({ png: 'omit', svg: 'mime', drawing: 'web' })).toEqual({
+// CB-W1 / Decision R9: exactly the keys probe C3 verified on Windows; no exact-PNG entry, no fallback.
+test('the format keys are exactly the verified three', () => {
+  expect(preferredFormats).toEqual({
     bitmap: 'image/png',
-    png: null,
-    svg: 'image/svg+xml',
-    drawing: 'web application/x-chalkbond',
+    svg: 'electron application/osclipboard;format="image/svg+xml"',
+    drawing: 'electron application/osclipboard;format="application/x-chalkbond"',
   });
-  expect(selectFormats({ svg: 'omit' }).svg).toBeNull();
+  expect(Object.keys(preferredFormats)).toEqual(['bitmap', 'svg', 'drawing']);
+  expect([BITMAP_KEY, SVG_KEY, DRAWING_KEY]).toEqual(Object.values(preferredFormats));
 });

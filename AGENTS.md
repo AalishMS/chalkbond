@@ -213,9 +213,11 @@ Vitest projects (`vitest.config.mts`):
   clipboard entry, PNG `tEXt`, SVG `<metadata>`, PDF stream. It is read back only by `parse`.
   The editable payload stays within `MAX_FILE_BYTES` (20 MiB); a picture carrier may be up to
   `MAX_PICTURE_BYTES` (64 MiB) (C9).
-- `src/main/clipboard-export/formats.ts` names the clipboard keys (CB-W1). They are the preferred
-  keys and UNVERIFIED until the C3 probes (`e2e/win/clipboard-facts.spec.ts`, P1-P7, P2b) run on
-  Windows; `selectFormats` carries the named fallbacks. Never choose keys from Linux observations.
+- `src/main/clipboard-export/formats.ts` names the clipboard keys (CB-W1): the bitmap
+  `image/png`, the raw SVG key and the raw drawing key, verified by the C3 probes on Windows
+  (2026-11-11, Decision R9; `e2e/win/clipboard-facts.spec.ts`). There is no exact-PNG entry and no
+  fallback key. The raw SVG key is reported by Electron as plain `image/svg+xml`, so never check it
+  with `has(rawKey)`. Never choose keys from Linux observations.
   The PDF probes P8 and P9 (`e2e/pdf-facts.spec.ts`) run on Linux (outcome PDF-A).
 - Rasterising happens in the renderer (SVG, `<img>`, `<canvas>`, `toDataURL`, X10, C11); the PDF is
   printed in main and embedded in the renderer (R2), so main imports no core (app-shell SEC9).
@@ -299,8 +301,7 @@ human checks for the Windows machine) and holds the "Clipboard and export" and "
 installer" sections, all unticked. Version 1.0.0 is not declared released until they pass.
 
 - Windows gates still open: `npm run test:e2e` including `e2e/win/`, `npm run test:e2e:os-input`,
-  the C3 clipboard probes P1-P7 and P2b (`src/main/clipboard-export/formats.ts` still holds
-  UNVERIFIED preferred keys; never select keys from Linux observations), `npm run dist:win`,
+  `npm run dist:win`,
   `npm run test:packaged` on Windows, the installer and installed sizes in `SPEC-app-shell.md` I1
   (unmeasured), Office, IME, shutdown and display scaling.
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then

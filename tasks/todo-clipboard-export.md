@@ -86,8 +86,10 @@ edit with no gesture emits none; `controller-commands.test.ts` still agrees for 
 
 ## C3: Windows clipboard probe
 
-Preparation only (2026-11-10, Linux): probe and typed selector written; P1–P7 UNRUN,
-needs Windows. Preferred constants UNVERIFIED; no fallback selected. C3 remains incomplete.
+Run on Windows 11, Electron 45.2.3 (2026-11-11). Result: the keys are the bitmap `image/png`, the
+raw SVG key and the raw drawing key; no exact-PNG entry, no fallback (SPEC-clipboard-export.md
+Decision R9). `formats.ts` exports `BITMAP_KEY`, `SVG_KEY`, `DRAWING_KEY` and `preferredFormats`
+(the `PNG_KEY | null` and `selectFormats` of the preparation are gone).
 
 **Description:** rule R1, probes P1–P7 (spec "Testing"). Write
 `e2e/win/clipboard-facts.spec.ts`, which runs the clipboard API in main through `app.evaluate`
@@ -112,9 +114,9 @@ spec row says which applies. If `image/png` itself is rejected (P1), stop and re
 is allowed for the bitmap.
 
 **Acceptance criteria:**
-- [ ] `e2e/win/clipboard-facts.spec.ts` green on Windows (`npx playwright test e2e/win/clipboard-facts.spec.ts` after `npm run build`)
-- [ ] Facts table rows for the clipboard rewritten with the observed results, in this commit
-- [ ] `formats.ts` exists, typed, with the chosen keys; CB-W1's table unchanged or amended to match
+- [x] `e2e/win/clipboard-facts.spec.ts` green on Windows (`npx playwright test e2e/win/clipboard-facts.spec.ts` after `npm run build`)
+- [x] Facts table rows for the clipboard rewritten with the observed results, in this commit
+- [x] `formats.ts` exists, typed, with the chosen keys; CB-W1's table unchanged or amended to match
 
 **Verification:** `npm run build`, the probe spec above, `npm run check`. No visible change.
 

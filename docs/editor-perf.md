@@ -95,6 +95,23 @@ have identical pixels (toluene at Print, transparent and white: byte-identical f
 clipboard PNG: 0 of 20,873,520 RGBA bytes differ, same IHDR, pHYs and chunk layout; the tEXt
 differs only in the document's `modified` time).
 
-**Pending:** the Windows SC12 run on the real clipboard, `e2e/win/clipboard-perf.spec.ts` (C13),
-written and not run. Logs: `/tmp/chalkbond-opus-memory-encoder-lJJJQm/` (`t2-red-perf-e2e-2.log`,
+Logs of the portable run: `/tmp/chalkbond-opus-memory-encoder-lJJJQm/` (`t2-red-perf-e2e-2.log`,
 `t2-green-perf-e2e.log`).
+
+## Copy timing, Windows real clipboard (clipboard-export SC12; Windows 11, 2026-11-11)
+
+`npx playwright test --project=e2e e2e/win/clipboard-perf.spec.ts`, run alone with nothing else
+running, after `npx electron-vite build`. **The sample includes the real OS clipboard write**:
+no clipboard stub is loaded, so the Copy click to "Copied" covers `exportSvg`, the rasteriser,
+the C1 IPC and Electron's `clipboard.write` of the CB-W1 entries (bitmap, raw SVG, raw drawing);
+the spec then checks the drawing key and the native `PNG`, `image/svg+xml`,
+`application/x-chalkbond` formats are on the clipboard. Same fixture and sample definition as the
+portable run (`e2e/copy-timing.ts`: 41 atoms, nothing selected, five samples, no warm-up, no
+retry). Machine: Intel Core i5-11400H (2.7 GHz, 6 cores, 12 threads), 16 GB, Windows 11,
+Electron 45.2.3, a real window.
+
+| Run | Budget | n | Median | Samples |
+|---|---|---|---|---|
+| Windows, real clipboard (alone) | <= 500 ms | 5 | 50.9 ms | 90.6, 57.0, 49.0, 49.3, 50.9 |
+
+The first sample is the slowest (cold encoder); the median is about a tenth of the budget.

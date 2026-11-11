@@ -52,26 +52,44 @@ remain intact. Readiness stops at stable page ink, within the unchanged 10 s max
 Windows P8/P9 remain UNRUN. All probe windows/folders are cleaned up; default SEC4 stays zero.
 
 
-C3 preparation (2026-11-10): P1–P7 including P2b are **UNRUN on Linux; needs Windows**.
-The exported preferred constants are UNVERIFIED. No fallback has been selected.
-The typed selection interface includes every named CB-W1 fallback for C7.
+C3 Windows observation (2026-11-11, Electron 45.2.3, Windows 11; `e2e/win/clipboard-facts.spec.ts`,
+raw `PROBE` lines kept by the orchestrator): P1–P7 including P2b are **observed**.
+
+- No `clipboard.write` was rejected for any key set; entries a key cannot carry are dropped silently.
+- **Bitmap** `image/png` (`Blob` type `image/png`): `has` is true. Windows lists `PNG`, `Format17`,
+  `Bitmap`, `DeviceIndependentBitmap`. Chromium re-encodes the PNG: the bytes differ and **`pHYs` is
+  gone**, both in Electron's `read()` and in the native `PNG` stream.
+- **Raw PNG key** `electron application/osclipboard;format="PNG"`: no effect. With or without it
+  the native `PNG` is the same re-encoding without `pHYs`; `has(rawPngKey)` is false even though a
+  native `PNG` exists. It is not written.
+- **Raw SVG key** `electron application/osclipboard;format="image/svg+xml"` (either `Blob` type):
+  Windows holds a native `image/svg+xml` stream **byte-identical** to what was written. Electron
+  reports it under the plain name `image/svg+xml` in `read()` `types`; `has(rawSvgKey)` is false and
+  the raw key is not in `types`. Presence is checked natively or under the plain name.
+- **MIME SVG key** `image/svg+xml` (typed `Blob`, untyped `Blob`, string): nothing reaches Windows
+  or `read()`. `web image/svg+xml` leaves only a `Web Custom Format<n>`. No fallback remains.
+- **Raw drawing key** `…format="application/x-chalkbond"`: native `application/x-chalkbond`
+  byte-exact; in Electron `has` is true, it is in `types` and `getType` is exact; it survives the
+  writer quitting (P5, the next launch reads it). `web application/x-chalkbond` also round-trips
+  (natively a `Web Custom Format<n>`) and is not used.
+- No `Text` / `UnicodeText` in any variant (P6).
 
 
 Checked on 2026-11-10 against the code, `node_modules/electron/electron.d.ts` ("Type definitions
 for Electron 45.2.3") and the installed packages. Rows marked **probe** are pinned by task C3
 (`e2e/win/clipboard-facts.spec.ts`) or C4 (`e2e/pdf-facts.spec.ts`) before any code depends on
-them, like chem-core's OCL library-fact tests. If a probe fails, the named fallback applies and
-this table is amended in the probe's own commit.
+them, like chem-core's OCL library-fact tests. If a probe shows a key does not work,
+this table and CB-W1 are amended in the probe's own commit (C3: Decision R9).
 
 | Fact (source, quoted) | Consequence |
 |---|---|
 | The clipboard exists only for main. `electron.d.ts` 26688–26701, `namespace Main { … const clipboard: Clipboard; class ClipboardItem extends Electron.ClipboardItem {} …`; 27122–27130, `namespace Renderer { const contextBridge … const ipcRenderer … const webFrame … const webUtils …` (no clipboard) | The main process owns the system clipboard; the renderer reaches it through C1 / C2 |
 | **The draft's claim is correct.** 7441–7485, `interface Clipboard { clear(): void; has(mimetype: string): Promise<boolean>; read(): Promise<Electron.ClipboardItem[]>; readText(): Promise<string>; write(data: ClipboardItem[]): Promise<void>; writeText(text: string): Promise<void>; readonly selection: Clipboard; }`. No `writeImage`, `writeBuffer`, `readImage`, `availableFormats` | All formats go in one `write([new ClipboardItem({…})])` |
 | 7466–7470, on `write`: "Resolves once the data has been written to the clipboard. All entries supplied in a single `write()` call are committed to the system clipboard atomically." | No format can clear another; a reader never sees half a copy |
-| 7449–7455, on `has`: "To check for a raw format, eg `public/utf8-plain-text`, use the `electron application/osclipboard` custom format (`electron application/osclipboard;format="public/utf8-plain-text"`)." **The typings document the raw format only for `has`**, not as a `ClipboardItem` key for `write` or a `getType` argument | **UNRUN Linux; needs Windows (P1–P3)**: whether raw keys are accepted by `write` and returned by `read`/`getType`. Fallbacks per entry in rule CB-W1 |
+| 7449–7455, on `has`: "To check for a raw format, eg `public/utf8-plain-text`, use the `electron application/osclipboard` custom format (`electron application/osclipboard;format="public/utf8-plain-text"`)." **The typings document the raw format only for `has`**, not as a `ClipboardItem` key for `write` or a `getType` argument | **Observed on Windows (P1–P3, 2026-11-11)**: `write` accepts raw SVG and drawing keys; the drawing is returned by `read`/`getType`, the SVG is reported under its plain name (see C3 paragraph above). The raw PNG key is accepted and ignored. Rule CB-W1 holds the result |
 | 7508, `constructor(items: Record<string, (string) \| (ClipboardBookmark) \| (Blob) \| (Promise<(Blob) \| (string)>)>)`; 7522–7529, `types`: "for an item returned by `clipboard.read()` these are the MIME types the platform clipboard currently makes available" | Entries are `Blob`s (Node's global `Blob`, typed by `@types/node`); the reader checks `types` before `getType` (which "Rejects when `type` is not present") |
-| How Chromium stores an `image/png` entry on Windows (standard bitmap, its own `PNG` format, re-encoding that drops `pHYs`) is not in the typings | **UNRUN Linux; needs Windows (P4)** records it; the raw `PNG` entry carrying our `pHYs` is kept only if P4 shows it coexists with `image/png` |
-| The Windows format names Office reads (`PNG`, `image/svg+xml`) can be listed outside Electron with .NET `System.Windows.Forms.Clipboard.GetDataObject().GetFormats()` in `powershell -STA` | **UNRUN Linux; needs Windows (P2b)** lists the formats a CB-W1 write leaves, exactly as Office sees them |
+| How Chromium stores an `image/png` entry on Windows (standard bitmap, its own `PNG` format, re-encoding that drops `pHYs`) is not in the typings | **Observed on Windows (P4, 2026-11-11)**: Windows lists `PNG`, `Format17`, `Bitmap`, `DeviceIndependentBitmap`; the `PNG` is Chromium's re-encoding without `pHYs`, and the raw `PNG` key does not change it. The clipboard bitmap therefore carries the 300 dpi pixel size but no `pHYs` (Decision R9) |
+| The Windows format names Office reads (`PNG`, `image/svg+xml`) can be listed outside Electron with .NET `System.Windows.Forms.Clipboard.GetDataObject().GetFormats()` in `powershell -STA` | **Observed on Windows (P2b, 2026-11-11)**: a CB-W1 write leaves `PNG`, `Format17`, `Bitmap`, `DeviceIndependentBitmap`, `image/svg+xml`, `application/x-chalkbond` and no text format |
 | Which format PowerPoint and Word 2021 prefer and whether they honour `pHYs` **cannot be established from the repo** | Write vector and bitmap; never `text/plain`, `text/html`, `text/rtf` (Office would paste text). Human check: "Windows checks" |
 | 19400, `printToPDF(options: PrintToPDFOptions): Promise<Buffer>`; 12004–12080 `PrintToPDFOptions`: `margins?: PrintToPDFMargins`, `pageSize?: ('A0' … 'Ledger') \| (Size)`, `preferCSSPageSize?: boolean`, `printBackground?: boolean`, `generateTaggedPDF?: boolean` | PDF = a hidden window printing one inline SVG on a page the size of the drawing (rule PD1). Whether Chromium writes a classic cross-reference table (needed by rule PDF-A) is **probe P8** |
 | P8 / P9 corrective probe, Linux Electron 45.2.3 (2026-11-10) | Classic xref in fresh print and fixture; hidden page ink proven against blank; embedded capture identical (0/480,000); payload readback equal; 20×20 pt print accepted. **PDF-A applies; Windows confirmation unrun** |
@@ -107,7 +125,7 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 | X5 | The drawing travels as compact ASCII `.chalk` text (`drawingPayload`) everywhere: clipboard entry, PNG `tEXt`, SVG `<metadata>`, PDF stream | One format, read back only by `parse`; ASCII survives Latin-1 and XML escaping | 2026-11-10 |
 | X10 | Rasterise in the renderer (SVG → `<img>` → `<canvas>` → PNG), then add `pHYs` and `tEXt` with pure code | Same Chromium and system Arial as the canvas; no hidden window, no native module | 2026-11-10 |
 | X11 | No new dependency | PNG chunks, CRC-32 and a PDF incremental update are small pure code | 2026-11-10 |
-| R1 | Raw Windows formats are written only after probe C3 shows `write` accepts them; each entry has a named fallback (CB-W1). The probe is the first implementation task of this module | The typings document the raw syntax for `has` only | 2026-11-10 |
+| R1 | Raw Windows formats are written only after probe C3 shows `write` accepts them (CB-W1). The probe is the first implementation task of this module. (The named fallbacks it also asked for were dropped by Decision R9: the probe left none to use.) | The typings document the raw syntax for `has` only | 2026-11-10 |
 | R2 | The PDF is printed in main and returned to the renderer (C5 `pdf:print`); the renderer embeds the drawing with pure code and writes the file through C4 | Keeps the main process free of core imports (app-shell SEC9) while the embedding stays a unit-tested core function | 2026-11-10 |
 | R3 | Paste from the canvas context menu behaves exactly like Ctrl+V (CB-P1); the editor's explicit-point paste is not used | One paste rule; PowerPoint's context-menu Paste also lands where Ctrl+V does | 2026-11-10 |
 | R4 | Ctrl+C / Ctrl+V / Ctrl+X in a text target (name field, label editor, text editor) are never handled by this module: native text behaviour wins. Edit > Cut / Copy / Paste with a text target focused act on the text (app-shell M3) | The teacher copying a name in the name field must get the name | 2026-11-10 |
@@ -115,6 +133,7 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 | R6 | A compact "Copied" (below 1100 px) shows the word without the check and may widen the button for its 2 s; the editor's options bar scrolls horizontally if it must | Keeping 56 px for "Copied" would clip it; the state lasts 2 s | 2026-11-10 |
 | R7 | Numbers in the Export dialog are grouped with a comma by a pure function (`groupDigits`), never `toLocaleString` | Same text on every machine; testable | 2026-11-10 |
 | R8 | Draft open questions resolved: Q1 → O4; Q2 (white PNG by default) → no, remembered checkbox (O3); Q3, Q4 → O5; Q5 → yes (O2); Q6 → label-only (O1); Q7 → 300 dpi (X3) | Recorded so no question stays open | 2026-11-10 |
+| R9 | CB-W1 on Windows is decided by probe C3 (2026-11-11, Electron 45.2.3, Windows 11): the entries are the bitmap `image/png`, the raw SVG key and the raw drawing key, nothing else. **No exact-PNG entry**: the raw `PNG` key is accepted and ignored and Windows' `PNG` is always Chromium's re-encoding without `pHYs`, so a bitmap paste carries the 300 dpi pixel size but no 300 dpi tag (accepted for v1, O5; the checklist item "300 dpi ignored" stays the human record). **No fallbacks**: the MIME `image/svg+xml` key and `web image/svg+xml` are dropped or give no native SVG, and `web application/x-chalkbond`, though it works, is unused. `formats.ts` holds exactly these keys. SVG presence is checked natively or under the plain type `image/svg+xml`, never with `has(rawKey)`. The pixels handed to `image/png` (and their `pHYs` chunk) are unchanged; `pHYs` is asserted only for exported PNG files and unit tests | Evidence: `e2e/win/clipboard-facts.spec.ts` (P1–P7, P2b). Product code keeps no dead fallback path | 2026-11-11 |
 
 ---
 
@@ -401,16 +420,16 @@ check, size limits). Request limits are enforced by the schema.
 ### Clipboard rules (main `clipboard.ts`, renderer `copy-flow.ts`)
 
 - **CB-W1** Write (C1), after validation, one call `clipboard.write([new ClipboardItem(entries)])`
-  with the entries below (omit the drawing entry when C1 drawing is null). `formats.ts` holds the key actually used for each, chosen by probe C3
-  and recorded in "Facts relied on"; no text format is ever written. A rejected write → `{ ok:
-  false }` and a log line (app-shell LG1).
+  with the entries below (omit the drawing entry when C1 drawing is null). `formats.ts` holds
+  exactly these keys, verified by probe C3 on Windows (2026-11-11, Decision R9; "Facts relied on");
+  no text format is ever written. A rejected write → `{ ok: false }` and a log line (app-shell LG1).
 
-  | Entry | Preferred key | Fallback (used when the probe rejects the preferred key) |
+  | Entry | Key | Status |
   |---|---|---|
-  | bitmap | `image/png`: `Blob([png], {type: 'image/png'})` | none: required. If P1 rejects it, stop and ask the orchestrator |
-  | exact PNG (keeps `pHYs`) | `electron application/osclipboard;format="PNG"`: `Blob([png])` | omitted; the checklist records Office's size |
-  | SVG (UTF-8) | `electron application/osclipboard;format="image/svg+xml"`: `Blob([svg])` | `image/svg+xml` (Chromium's own SVG entry); if also rejected, omitted |
-  | drawing (ASCII) | `electron application/osclipboard;format="application/x-chalkbond"`: `Blob([drawing])` | `web application/x-chalkbond` (Chromium web custom format) |
+  | bitmap | `image/png`: `Blob([png], {type: 'image/png'})` | kept, verified. Windows holds Chromium's re-encoding (same pixels, no `pHYs`) |
+  | exact PNG (keeps `pHYs`) | none | **not written**: the raw `PNG` key is accepted and ignored (R9) |
+  | SVG (UTF-8) | `electron application/osclipboard;format="image/svg+xml"`: `Blob([svg])` | kept, verified: a native `image/svg+xml` stream, byte-exact; Electron reports it as `image/svg+xml`, so `has(rawKey)` is false. No fallback (the MIME key is dropped) |
+  | drawing (ASCII) | `electron application/osclipboard;format="application/x-chalkbond"`: `Blob([drawing])` | kept, verified: native and Electron byte-exact, survives the writer quitting. No fallback is coded |
 
 - **CB-R1** Read (C2): `items = await clipboard.read()`; `drawing` = the drawing entry's text
   (key from `formats.ts`) if present and ≤ `MAX_FILE_BYTES` bytes, else null; `text` =
@@ -557,7 +576,7 @@ and `Image`, Zod 4.6.7, doc-model, svg-render.
 | Flow (node) | `copy-flow`, `export-flow` with fake ports: selection vs whole drawing, `lastEditorCopy` bookkeeping, CB-Q order, notices, button state and its 2 s timer (injected clock), cancel paths, settings stored on Save…, PDF-A2 fallback | `src/renderer/clipboard-export/model/*.test.ts` |
 | Handler (node) | C1, C2, C5 handlers with a fake `IpcMainInvokeEvent` and a stubbed `clipboard` (CS1, CS2) | `src/main/clipboard-export/*.test.ts` |
 | View markup (node) | `CopyButton`, `ExportDialog` via `renderToStaticMarkup`: names, roles, `aria-disabled`, `aria-checked`, test ids, PNG block per format, reopen line per format and outcome | `*.test.tsx` |
-| Probe (Electron) | C3 (Windows): P1 preferred entries accepted together; P2 `has` true for each; P2b the Windows format list contains `PNG`, `image/svg+xml` and the drawing format, and no `UnicodeText`/`Text`; P3 `read` + `getType` return exact bytes; P4 `image/png` alone vs with raw `PNG`; P5 a value written by one launch is read by the next; P6 no text after CB-W1 (`has('text/plain')` false, `readText()` empty); P7 each fallback key works. C4 (all platforms): P8 Chromium's printToPDF writes a classic xref table; the updated PDF renders in Chromium's PDF viewer identically to the original; P9 a 20 × 20 pt page | `e2e/win/clipboard-facts.spec.ts`, `e2e/pdf-facts.spec.ts` |
+| Probe (Electron) | C3 (Windows), asserted: P1 the CB-W1 entries are accepted together and the bitmap alone is found by `has`; P2 `has` is true for the bitmap and the drawing, and the raw SVG is reported under the plain name `image/svg+xml` (`has(rawSvgKey)` false); P2b the native format list (.NET) contains `PNG`, `image/svg+xml` and `application/x-chalkbond`, and no `UnicodeText`/`Text`; P3 the native SVG and drawing bytes are exact and Electron's `getType` is exact for the drawing; P4 the native `PNG` has no `pHYs` with or without the raw `PNG` key (and is identical in both); P5 the raw drawing key survives its writer quitting, natively and through the next launch; P6 no text after CB-W1 (`has('text/plain')` false, `readText()` empty); P7 the MIME `image/svg+xml` key (untyped, typed, string) is dropped and the `web application/x-chalkbond` key round-trips. C4 (all platforms): P8 Chromium's printToPDF writes a classic xref table; the updated PDF renders in Chromium's PDF viewer identically to the original; P9 a 20 × 20 pt page | `e2e/win/clipboard-facts.spec.ts`, `e2e/pdf-facts.spec.ts` |
 | E2E (built app) | rule-by-rule in the success criteria below | `e2e/win/clipboard-*.spec.ts`, `e2e/export-*.spec.ts` |
 | Shots | named per task in `tasks/todo-clipboard-export.md`, compared with A01, A02, A08a–c, A15b, A17 | `e2e/shots/C<n>.shot.ts` |
 | Manual (Windows, Office 2021) | "Windows checks" | `docs/windows-checklist.md` |
@@ -590,12 +609,13 @@ Each names the test or check that proves it.
 1. Every function in "Public surface" exists with unit and property tests; `src/core/clipboard-export`
    and `src/renderer/clipboard-export/model` ≥ 90 % lines (`npm test -- --coverage` thresholds);
    `npm run check` green.
-2. Probes P1–P9 pass or their fallback is recorded in "Facts relied on" and `formats.ts`, in the
+2. Probes P1–P9 pass or the result is recorded in "Facts relied on" and `formats.ts`, in the
    probe task's commit (C3, C4).
 3. After the Copy button with nothing selected, the Windows clipboard lists the CB-W1 formats and
-   no text format (P2b check inside `e2e/win/clipboard-copy.spec.ts`); the SVG entry equals
+   no text format (P2b check inside `e2e/win/clipboard-copy.spec.ts`); the native SVG stream equals
    `exportSvg(doc, null).svg`; the drawing entry parses to a document whose `serialize` equals
-   `serialize(doc)`; the PNG entry is `ceil(W·300/72) × ceil(H·300/72)` with `pHYs` 11811 px/m.
+   `serialize(doc)`; the native PNG is `ceil(W·300/72) × ceil(H·300/72)` pixels (its `pHYs` is
+   Chromium's to drop, Decision R9; `pHYs` 11811 is asserted on exported files and in unit tests).
 4. Copy of a selection: the drawing entry equals `drawingPayload(pictureDoc(doc, selection))`
    (unit + `clipboard-copy.spec.ts`).
 5. Round trip in the app: copy a selection then Ctrl+V pastes at source + (1, 1) BLU; a drawing

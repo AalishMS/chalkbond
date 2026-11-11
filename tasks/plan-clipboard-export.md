@@ -76,7 +76,7 @@ C5 pure picture ──┴──► C6 pure paste/open ────────�
 ### Phase S: foundations (with app-shell A1–A6)
 - [ ] C1: Editor `actions` slot after Undo/Redo (SPEC-editor.md first)
 - [ ] C2: Editor `notify` and the `busy` event (SPEC-editor.md first)
-- [ ] C3: Windows clipboard probe; `formats.ts` and the spec's Facts amended
+- [x] C3: Windows clipboard probe; `formats.ts` and the spec's Facts amended
 - [ ] C4: PDF incremental-update probe; outcome A or B recorded in the spec
 
 ### Checkpoint S — foundations
@@ -149,7 +149,7 @@ Swept at C13 (2026-11-11, Linux). "Linux" = run and passing on the development m
 | SC | Criterion (short) | Tasks | Proof and status |
 |---|---|---|---|
 | 1 | Public surface tested; 90 % lines | C5, C6, C4, C13 | Unit and property tests in `src/core/clipboard-export/*.test.ts`, `tests/clipboard-export/*.test.ts` (incl. `pdf-embed.prop.test.ts`), `src/renderer/clipboard-export/model/*.test.ts`. Thresholds in `vitest.config.mts`; `npm test -- --coverage` passes (core/clipboard-export 100 % lines, renderer model 100 %). Linux |
-| 2 | Probes recorded | C3, C4 | P8, P9: `e2e/pdf-facts.spec.ts` (Linux). P1-P7 incl. P2b: `e2e/win/clipboard-facts.spec.ts` Windows-unrun (checklist item 1) |
+| 2 | Probes recorded | C3, C4 | P8, P9: `e2e/pdf-facts.spec.ts` (Linux). P1-P7 incl. P2b: `e2e/win/clipboard-facts.spec.ts`, run on Windows 11 / Electron 45.2.3 on 2026-11-11, facts in the spec, Decision R9 |
 | 3 | Whole-drawing copy: formats, SVG, drawing, PNG size | C7, C8 | `e2e/win/clipboard-copy.spec.ts` (SC3) Windows-unrun. On Linux the parts: `src/main/clipboard-export/formats.test.ts`, `clipboard.test.ts`, `copy-flow.test.ts`, `rasterise.test.ts`, and `e2e/clipboard-ui.spec.ts` UI success (stubbed write; not clipboard proof) |
 | 4 | Selection copy payload | C5, C8 | Unit: `src/core/clipboard-export/picture.test.ts`, `copy-flow.test.ts` (Linux). `e2e/win/clipboard-copy.spec.ts` (SC4) Windows-unrun |
 | 5 | Paste round trips | C9 | `e2e/win/clipboard-paste.spec.ts` Windows-unrun. Linux: paste branches in `copy-flow.test.ts` (N-P1, N-P3 and the rest), `tests/clipboard-export/paste-file.test.ts`, `e2e/clipboard-provenance.spec.ts` |
@@ -176,7 +176,7 @@ by eye at each checkpoint; measurable checks live in e2e specs.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | `write` rejects raw osclipboard keys | High | C3 probes each key; named fallbacks per entry (CB-W1); `image/png` alone still gives Office a picture |
-| Chromium re-encodes `image/png` and drops `pHYs`, so Office pastes 300 dpi pictures 3× too large | Med | Raw `PNG` entry when P4 allows; SVG preferred by Office anyway; accepted for v1 (O5); checklist records it |
+| Chromium re-encodes `image/png` and drops `pHYs`, so Office pastes 300 dpi pictures 3× too large | Med | Happened (P4, 2026-11-11): the raw `PNG` entry is ignored and Windows' PNG has no `pHYs`. SVG preferred by Office anyway; accepted for v1 (O5, R9); checklist records it |
 | Chromium's PDF uses cross-reference streams or its viewer rejects the update | Med | C4 decides before any export code; outcome B is fully specified |
 | The PDF viewer probe window is blocked by our own security rules | Med | The probe window uses its own session partition; the plain PDF is the control: if it does not render either, the worker stops and reports instead of deciding |
 | Rasterised text differs from the canvas (fonts) | Low | Same Chromium and system Arial; svg-render metrics calibrated; R4 asserts geometry, not pixels |
