@@ -5,10 +5,12 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type ElectronApplication } from '@playwright/test';
 import { parse, serialize, type Doc } from '../src/core/doc-model';
 import { dialogLog } from './export-steps';
-import { expectNoNetwork, goldenDoc, insertName, readDocument } from './harness';
+import { expectNoNetwork, goldenDoc, heardNotices, insertName, readDocument } from './harness';
+import { launchSecondInstance } from './launch';
+import { menuItems } from './app-menu';
 import {
   closeWindowForReal,
   DELETE,
@@ -211,6 +213,86 @@ test('RC2: Save clears the recovery file; undo back to the saved drawing clears 
     await page.keyboard.press('Control+Z');
     await expect.poll(() => existsSync(recoveryFile(userData))).toBe(false);
     await expect.poll(() => windowTitle(app)).toBe('saved - Chalkbond');
+  } finally {
+    await app.close();
+  }
+});
+
+// A15 (R23, RC4, RC7): file requests while the recover box is still open (a held scripted answer).
+const releaseBox = (app: ElectronApplication) =>
+  app.evaluate(() =>
+    (globalThis as { __chalkbondReleaseDialog?: () => void }).__chalkbondReleaseDialog?.(),
+  );
+
+test('R23: during the offer an edit writes nothing and a second launch waits; Recover keeps the drawing, N-A2 names the latest', async () => {
+  const a = join(files, 'a.chalk');
+  const b = join(files, 'b.chalk');
+  writeFileSync(a, serialize(goldenDoc('ethanol')));
+  writeFileSync(b, serialize(goldenDoc('acetic-acid')));
+  const drawn = await drawThenKill(userData, 'benzene');
+  const lastRun = readFileSync(recoveryFile(userData), 'utf8');
+  const { app, page } = await launchIn(userData, {
+    dialogs: [{ ...RECOVER, hold: true }],
+    extraArgs: [a],
+  });
+  try {
+    await expect.poll(async () => (await dialogLog(app)).length).toBe(1);
+    // RC7: an edit while the box is open would be written 2 s later if tracking ran.
+    await insertName(page, 'water');
+    expect(await launchSecondInstance({ userData, extraArgs: [b] })).toEqual({
+      code: 0,
+      signal: null,
+    });
+    await page.waitForTimeout(2500);
+    expect(readFileSync(recoveryFile(userData), 'utf8')).toBe(lastRun);
+    expect(await windowTitle(app)).not.toMatch(/^(a|b) - /);
+    await releaseBox(app);
+    await expect.poll(() => windowTitle(app)).toBe('*Recovered drawing - Chalkbond');
+    expect((await readDocument(page)).atoms).toEqual(drawn.atoms);
+    await expect
+      .poll(() => heardNotices(page))
+      .toContainEqual({
+        kind: 'info',
+        text: 'Recovered your unsaved drawing. Save it, then open b.chalk again.',
+      });
+    expect((await heardNotices(page)).filter((n) => n.text.startsWith('Recovered'))).toHaveLength(
+      1,
+    );
+    expect((await dialogLog(app)).map((d) => d.options)).toEqual([RECOVER_BOX]);
+    expect(readFileSync(recoveryFile(userData), 'utf8')).toBe(lastRun);
+    expect((await menuItems(app)).filter((i) => /^file\.recent\.\d/.test(i.id))).toEqual([]);
+  } finally {
+    await app.close();
+  }
+});
+
+test('R23: Delete after a second launch during the offer opens only the latest file, once', async () => {
+  const a = join(files, 'a.chalk');
+  const b = join(files, 'b.chalk');
+  writeFileSync(a, serialize(goldenDoc('ethanol')));
+  writeFileSync(b, serialize(goldenDoc('acetic-acid')));
+  await drawThenKill(userData, 'benzene');
+  const { app, page } = await launchIn(userData, {
+    dialogs: [{ ...DELETE, hold: true }],
+    extraArgs: [a],
+  });
+  try {
+    await expect.poll(async () => (await dialogLog(app)).length).toBe(1);
+    expect(await launchSecondInstance({ userData, extraArgs: [b] })).toEqual({
+      code: 0,
+      signal: null,
+    });
+    await releaseBox(app);
+    await expect.poll(() => windowTitle(app)).toBe('b - Chalkbond');
+    expect((await readDocument(page)).atoms).toEqual(goldenDoc('acetic-acid').atoms);
+    expect(existsSync(recoveryFile(userData))).toBe(false);
+    expect((await dialogLog(app)).map((d) => d.options)).toEqual([RECOVER_BOX]);
+    // Only b reached the session (N2 → recent): a was never opened first.
+    await expect
+      .poll(async () =>
+        (await menuItems(app)).filter((i) => /^file\.recent\.\d/.test(i.id)).map((i) => i.label),
+      )
+      .toEqual(['&1 b.chalk']);
   } finally {
     await app.close();
   }

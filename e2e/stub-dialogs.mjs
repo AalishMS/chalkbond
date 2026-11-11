@@ -6,7 +6,9 @@
 // the value the promise resolves to, e.g. `{ response: 1, checkboxChecked: false }` or
 // `{ canceled: false, filePaths: [...] }`) and records `{ method, options }` on
 // `globalThis.__chalkbondDialogLog`. A call with no answer left rejects, so an unexpected box
-// fails the test instead of hanging it. Production never loads this file.
+// fails the test instead of hanging it. An answer with `hold: true` is held: its promise resolves
+// (without `hold`) only when the test calls `globalThis.__chalkbondReleaseDialog()`, so a test can
+// act while a box is open. Production never loads this file.
 import { dialog } from 'electron';
 
 const answers = JSON.parse(process.env.CHALKBOND_TEST_DIALOGS ?? '[]');
@@ -25,6 +27,13 @@ for (const method of ['showMessageBox', 'showOpenDialog', 'showSaveDialog']) {
     if (next >= answers.length) {
       return Promise.reject(new Error(`stub-dialogs: no scripted answer left for ${method}`));
     }
-    return Promise.resolve(answers[next++]);
+    const answer = answers[next++];
+    if (answer === null || typeof answer !== 'object' || answer.hold !== true) {
+      return Promise.resolve(answer);
+    }
+    const { hold: _hold, ...value } = answer;
+    return new Promise((resolve) => {
+      globalThis.__chalkbondReleaseDialog = () => resolve(value);
+    });
   };
 }

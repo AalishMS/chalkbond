@@ -41,7 +41,8 @@ function setup() {
     text: (method) => calls.push(['text', method]),
     exit: () => calls.push(['exit']),
     about: () => calls.push(['about']),
-    recent: (index) => calls.push(['recent', index]),
+    openRecent: (path) => calls.push(['open-recent', path]),
+    clearRecent: () => calls.push(['clear-recent']),
   };
   return { menu: createAppMenu(ports), ports, templates, calls };
 }
@@ -61,7 +62,7 @@ const find = (template: Template | undefined, id: string) => {
 describe('createAppMenu', () => {
   it('M2/R1: every item, separators and menus included, registerAccelerator false, no role', () => {
     const { menu, templates, ports } = setup();
-    menu.apply(ready, ['a.chalk — Grade 11']);
+    menu.apply(ready, [{ label: 'a.chalk — Grade 11', path: '/g11/a.chalk' }]);
     const template = templates[0] ?? [];
     expect(ports.Menu.setApplicationMenu).toHaveBeenCalledTimes(1);
     const items = flat(template);
@@ -77,7 +78,7 @@ describe('createAppMenu', () => {
 
   it('routes clicks: renderer commands, text methods, Exit, About, recent', () => {
     const { menu, templates, calls } = setup();
-    menu.apply(ready, ['a.chalk — X']);
+    menu.apply(ready, [{ label: 'a.chalk — X', path: '/x/a.chalk' }]);
     for (const id of ['file.save', 'file.exit', 'help.about', 'file.recent.0', 'file.recent.clear'])
       find(templates.at(-1), id).click();
     menu.apply({ ...ready, textFocus: true });
@@ -87,11 +88,39 @@ describe('createAppMenu', () => {
       ['command', 'file.save'],
       ['exit'],
       ['about'],
-      ['recent', 0],
-      ['recent', 'clear'],
+      ['open-recent', '/x/a.chalk'],
+      ['clear-recent'],
       ['text', 'copy'],
       ['text', 'selectAll'],
     ]);
+  });
+
+  it('R21: a recent click opens the path captured when its menu was built, not a later list', () => {
+    const { menu, templates, calls } = setup();
+    menu.apply(ready, [
+      { label: 'a.chalk', path: '/one/a.chalk' },
+      { label: 'b.chalk', path: '/one/b.chalk' },
+    ]);
+    const stale = find(templates.at(-1), 'file.recent.1');
+    // The list reorders (an open elsewhere) before the stale item is clicked.
+    menu.apply(ready, [
+      { label: 'b.chalk', path: '/one/b.chalk' },
+      { label: 'a.chalk', path: '/one/a.chalk' },
+    ]);
+    stale.click();
+    find(templates.at(-1), 'file.recent.1').click();
+    expect(calls).toEqual([
+      ['open-recent', '/one/b.chalk'],
+      ['open-recent', '/one/a.chalk'],
+    ]);
+  });
+
+  it('a recent entry built disabled (not idle) is ignored when clicked', () => {
+    const { menu, templates, calls } = setup();
+    menu.apply({ ...ready, idle: false }, [{ label: 'a.chalk', path: '/a.chalk' }]);
+    find(templates.at(-1), 'file.recent.0').click();
+    find(templates.at(-1), 'file.recent.clear').click();
+    expect(calls).toEqual([]);
   });
 
   it('ignores a click on an item built disabled (MenuItem.click does not check)', () => {
@@ -109,10 +138,13 @@ describe('createAppMenu', () => {
     expect(templates).toHaveLength(1);
     menu.apply({ ...ready, undoLabel: 'Add bond' });
     expect(templates).toHaveLength(2);
-    menu.apply({ ...ready, undoLabel: 'Add bond' }, ['x']);
+    menu.apply({ ...ready, undoLabel: 'Add bond' }, [{ label: 'x', path: '/x' }]);
     expect(templates).toHaveLength(3);
-    menu.apply({ ...ready, undoLabel: 'Add bond' }, ['x']);
+    menu.apply({ ...ready, undoLabel: 'Add bond' }, [{ label: 'x', path: '/x' }]);
     expect(templates).toHaveLength(3);
+    // Same label, another file: the click must open the new path, so the menu is rebuilt.
+    menu.apply({ ...ready, undoLabel: 'Add bond' }, [{ label: 'x', path: '/y/x' }]);
+    expect(templates).toHaveLength(4);
     expect(menu.state().undoLabel).toBe('Add bond');
   });
 

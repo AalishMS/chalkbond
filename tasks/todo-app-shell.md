@@ -539,9 +539,14 @@ the box "Chalkbond can't open “notes.docx”."; a JS-made `File` → `unsuppor
 and nothing opened (SEC14); `webUtils` works in the sandboxed preload (probe).
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass (SC8, SC4 second-instance part)
-- [ ] I3 is the only channel that carries a path, and only the preload sends it
-- [ ] Shot exists
+- [x] Unit and e2e tests pass (SC8, SC4 second-instance part) (Linux; the real Explorer double-click and association are A17/Windows)
+- [x] I3 is the only channel that carries a path, and only the preload sends it (`ipc-schemas.test.ts` R8 block; preload `webUtils.getPathForFile`)
+- [x] Shot exists (`out/shots/A15/drop.png`, looked at against A13; ".pdf" added per PDF-A)
+
+Also landed (spec first, Decisions R21–R23): recent clicks open the path captured at menu build;
+OS opens wait while Export / Keyboard shortcuts is open, drops then open nothing; RC4 covers requests
+during the startup offer and RC7 suspends recovery tracking until it is answered
+(`e2e/app-recovery.spec.ts` R23 cases with a held scripted answer).
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A15` → `A15/drop.png`
 (A13, scripted: scheme, synthetic `dragenter` with Files: pale blue overlay over the whole page,

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { CopyButton, type CopyDisabledReason } from '../clipboard-export/CopyButton';
 import { ExportDialog } from '../clipboard-export/ExportDialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
+import { DropOverlay } from './DropOverlay';
+import { installDropTarget } from './drop-target';
+import { createDropTracker } from './model/drop';
 import { PDF_OUTCOME } from '../clipboard-export/model/export-flow';
 import type { CopyFlow } from '../clipboard-export/model/copy-flow';
 import { Editor, type EditorController } from '../editor';
@@ -49,7 +52,7 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
         host.commands.push(event.command);
         host.runCommand(event.command);
       } else if (event.type === 'close-requested') void fileFlows.requestClose();
-      else if (event.type === 'open') void fileFlows.openRef(event.ref);
+      else if (event.type === 'open') void host.openRequested(event.ref);
       else host.flushRecovery();
     });
     host.publishSession();
@@ -84,6 +87,10 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
       stopMain();
     };
   }, [controller, exportFlow, fileFlows, host]);
+  // F12: the drop overlay follows window drag events; a drop goes to I3 through the preload.
+  const drops = useMemo(() => createDropTracker(), []);
+  useEffect(() => installDropTarget(window, drops, host), [drops, host]);
+  const dropping = useSyncExternalStore(drops.subscribe, drops.visible);
   // The e2e test hook (TH2): main loads the page with `?testHooks=1` only for an unpackaged build
   // started with `--chalkbond-test-hooks`. Without the query nothing is defined.
   useEffect(() => {
@@ -108,6 +115,7 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <Editor controller={controller} actions={actions} />
       {shortcutsOpen && <ShortcutsDialog onClose={host.shortcutsDialog.close} />}
+      {dropping && <DropOverlay />}
       {exportState && (
         <ExportDialog
           state={exportState}

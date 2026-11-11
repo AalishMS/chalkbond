@@ -159,6 +159,9 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
     adopt: vi.fn(() => {
       recoveryCalls.push('adopt');
     }),
+    resume: vi.fn(() => {
+      recoveryCalls.push('resume');
+    }),
   };
   let style: 'slides' | 'journal' = 'slides';
   const finishes = [...(script.finish ?? [])];
@@ -1003,11 +1006,11 @@ describe('A14 RC3 / RC4 startup (CO5)', () => {
     });
     expect(r.flows.dirty()).toBe(true);
     expect(r.titles.at(-1)).toBe('*Recovered drawing - Chalkbond');
-    expect(r.recoveryCalls).toEqual(['adopt']);
+    expect(r.recoveryCalls).toEqual(['adopt', 'resume']);
     await r.flows.save();
     expect(r.main.chooseSave).toHaveBeenCalledWith('chalk', 'esterification.chalk');
     expect(r.flows.dirty()).toBe(false);
-    expect(r.recoveryCalls).toEqual(['adopt', 'settle clean']);
+    expect(r.recoveryCalls).toEqual(['adopt', 'resume', 'settle clean']);
   });
 
   it('Delete: clears the file, keeps the empty drawing', async () => {
@@ -1080,7 +1083,7 @@ describe('A14 RC3 / RC4 startup (CO5)', () => {
     expect(idle.controller.load).not.toHaveBeenCalled();
   });
 
-  it('startup runs as a flow: Ctrl+N waits it out (ignored), an open request queues after it', async () => {
+  it('startup runs as a flow: Ctrl+N waits it out (ignored); after Delete a request made during the offer opens', async () => {
     const answer = deferred<string>();
     const file = ref('ethanol.chalk');
     const r = rig({ traceRecovery: true, files: { [file.id]: chalkFile(golden('ethanol')) } });
@@ -1090,11 +1093,113 @@ describe('A14 RC3 / RC4 startup (CO5)', () => {
     expect(r.flows.busy()).toBe(true);
     await r.flows.newDrawing();
     void r.flows.openRef(file);
+    expect(r.main.readFile).not.toHaveBeenCalled();
+    answer.resolve('delete');
+    await starting;
+    expect(r.main.ask).toHaveBeenNthCalledWith(1, { kind: 'recover' });
+    expect(r.calls).toEqual([
+      'recovery clear',
+      'read ethanol.chalk',
+      'sessionFile ethanol.chalk',
+      'recovery clear',
+    ]);
+  });
+
+  it('R23 RC4: requests during the offer replace each other; Recover drops all, N-A2 names the latest', async () => {
+    const answer = deferred<string>();
+    const [a, b, c] = [ref('a.chalk'), ref('b.chalk'), ref('c.chalk')];
+    const r = rig({
+      traceRecovery: true,
+      files: Object.fromEntries([a, b, c].map((f) => [f.id, chalkFile(golden('ethanol'))])),
+    });
+    r.main.ask.mockImplementationOnce(() => answer.promise);
+    const starting = r.flows.start({ recovery: { text, name: 'Untitled' }, open: a });
+    await vi.waitFor(() => expect(r.main.ask).toHaveBeenCalled());
+    void r.flows.openRef(b);
+    void r.flows.openRef(c);
     answer.resolve('recover');
     await starting;
-    await vi.waitFor(() => expect(r.main.readFile).toHaveBeenCalled());
-    // The scripted answer replaced the recording fake: the box is the first call, then the load.
-    expect(r.main.ask).toHaveBeenNthCalledWith(1, { kind: 'recover' });
-    expect(r.calls.slice(0, 2)).toEqual(['sessionFile null', 'read ethanol.chalk']);
+    expect(r.main.readFile).not.toHaveBeenCalled();
+    expect(r.calls).toEqual(['sessionFile null']);
+    expect(r.session.kind).toBe('recovered');
+    expect(r.controller.notify).toHaveBeenCalledTimes(1);
+    expect(r.controller.notify).toHaveBeenCalledWith(
+      'info',
+      'Recovered your unsaved drawing. Save it, then open c.chalk again.',
+    );
+    expect(r.recoveryCalls).toEqual(['adopt', 'resume']);
+    expect(r.flows.busy()).toBe(false);
+  });
+
+  it('R23 RC4: Delete opens only the latest request made during the offer, once', async () => {
+    const answer = deferred<string>();
+    const [a, b] = [ref('a.chalk'), ref('b.chalk')];
+    const r = rig({
+      traceRecovery: true,
+      files: Object.fromEntries([a, b].map((f) => [f.id, chalkFile(golden('ethanol'))])),
+    });
+    r.main.ask.mockImplementationOnce(() => answer.promise);
+    const starting = r.flows.start({ recovery: { text, name: 'Untitled' }, open: a });
+    await vi.waitFor(() => expect(r.main.ask).toHaveBeenCalled());
+    void r.flows.openRef(b);
+    answer.resolve('delete');
+    await starting;
+    expect(r.calls).toEqual([
+      'recovery clear',
+      'read b.chalk',
+      'sessionFile b.chalk',
+      'recovery clear',
+    ]);
+    expect(r.recoveryCalls).toEqual(['clear', 'resume', 'clear']);
+    expect(r.session).toMatchObject({ kind: 'chalk', name: 'b.chalk' });
+  });
+
+  it('R23 RC4: an unparsable recovery file: no box, cleared, tracking resumed, the startup file opens', async () => {
+    const a = ref('a.chalk');
+    const r = rig({ traceRecovery: true, files: { [a.id]: chalkFile(golden('ethanol')) } });
+    await r.flows.start({ recovery: { text: '{', name: 'x' }, open: a });
+    expect(r.main.ask).not.toHaveBeenCalled();
+    expect(r.main.readFile.mock.calls.map(([f]) => f.name)).toEqual(['a.chalk']);
+    expect(r.recoveryCalls).toEqual(['clear', 'resume', 'clear']);
+  });
+
+  it('R23 RC4: a request during the open that Delete started queues as usual (latest wins)', async () => {
+    const answer = deferred<string>();
+    const read = deferred<ReadFileResponse>();
+    const [a, b] = [ref('a.chalk'), ref('b.chalk')];
+    const r = rig({ traceRecovery: true, files: { [b.id]: chalkFile(golden('ethanol')) } });
+    r.main.ask.mockImplementationOnce(() => answer.promise);
+    r.main.readFile.mockImplementationOnce(() => read.promise);
+    const starting = r.flows.start({ recovery: { text, name: 'Untitled' }, open: a });
+    await vi.waitFor(() => expect(r.main.ask).toHaveBeenCalled());
+    answer.resolve('delete');
+    await vi.waitFor(() => expect(r.main.readFile).toHaveBeenCalledTimes(1));
+    void r.flows.openRef(b);
+    read.resolve(chalkFile(golden('toluene')));
+    await starting;
+    expect(r.main.readFile.mock.calls.map(([f]) => f.name)).toEqual(['a.chalk', 'b.chalk']);
+    expect(r.session).toMatchObject({ name: 'b.chalk' });
+  });
+
+  it('R23: a close during the offer stays queued and prompts for the recovered drawing', async () => {
+    const answer = deferred<string>();
+    const r = rig({ traceRecovery: true, answers: ['cancel'] });
+    r.main.ask.mockImplementationOnce(() => answer.promise);
+    const starting = r.flows.start({ recovery: { text, name: 'Untitled' }, open: null });
+    await vi.waitFor(() => expect(r.main.ask).toHaveBeenCalled());
+    void r.flows.requestClose();
+    answer.resolve('recover');
+    await starting;
+    expect(r.calls).toEqual(['sessionFile null', 'ask Recovered drawing']);
+    expect(r.main.closeOk).not.toHaveBeenCalled();
+  });
+
+  it('RC7: no recovery offer, no resume; with one, resume runs once after the answer', async () => {
+    const plain = rig();
+    await plain.flows.start({ recovery: null, open: null });
+    expect(plain.recovery.resume).not.toHaveBeenCalled();
+    const offered = rig({ recover: ['delete'] });
+    await offered.flows.start({ recovery: { text, name: 'Untitled' }, open: null });
+    expect(offered.recoveryCalls).toEqual(['clear', 'resume']);
   });
 });

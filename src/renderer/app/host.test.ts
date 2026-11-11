@@ -367,3 +367,134 @@ describe('A14 host recovery wiring (RC1, RC3, RC5; CO5)', () => {
     }
   });
 });
+
+describe('A15 incoming opens (F11, R22) and drops (F12, SEC14)', () => {
+  const B: FileRef = { id: '00000000-0000-4000-8000-000000000002', name: 'b.chalk', kind: 'chalk' };
+  const fileMain = () => {
+    const { main } = fakeMain(DEFAULTS);
+    const readFile = vi.fn(() =>
+      Promise.resolve({
+        ok: true as const,
+        bytes: new TextEncoder().encode(serialize(drawing('journal'))),
+      }),
+    );
+    const showFileError = vi.fn(() => Promise.resolve());
+    const openDroppedFile = vi.fn<ChalkbondApi['openDroppedFile']>();
+    Object.assign(main, { readFile, showFileError, openDroppedFile });
+    return { main, readFile, showFileError, openDroppedFile };
+  };
+
+  it('no dialog open: an incoming open runs F3 at once', async () => {
+    const { main, readFile } = fileMain();
+    const host = await createWindowHost(main, () => false);
+    await host.openRequested(REF);
+    expect(readFile).toHaveBeenCalledWith(REF);
+    expect(host.session).toMatchObject({ kind: 'chalk', name: 'a.chalk' });
+  });
+
+  it('while Export is open an incoming open waits (latest wins), leaves the dialog, runs after it closes', async () => {
+    const { main, readFile } = fileMain();
+    const host = await createWindowHost(main, () => false);
+    host.loadUntitled(drawing('slides'));
+    host.exportFlow.open();
+    const dialog = host.exportFlow.state();
+    await host.openRequested(REF);
+    await host.openRequested(B);
+    expect(readFile).not.toHaveBeenCalled();
+    expect(host.exportFlow.state()).toEqual(dialog);
+    host.exportFlow.cancel();
+    await vi.waitFor(() => expect(host.session.name).toBe('b.chalk'));
+    expect(readFile).toHaveBeenCalledTimes(1);
+    expect(readFile).toHaveBeenCalledWith(B);
+  });
+
+  it('while Keyboard shortcuts is open an incoming open waits until it closes', async () => {
+    const { main, readFile } = fileMain();
+    const host = await createWindowHost(main, () => false);
+    host.actions.shortcuts();
+    await host.openRequested(REF);
+    expect(readFile).not.toHaveBeenCalled();
+    expect(host.shortcutsDialog.open()).toBe(true);
+    host.shortcutsDialog.close();
+    await vi.waitFor(() => expect(readFile).toHaveBeenCalledWith(REF));
+  });
+
+  it('a drop asks I3 through the preload; the ref opens (F3)', async () => {
+    const { main, readFile, openDroppedFile } = fileMain();
+    openDroppedFile.mockResolvedValue({ ok: true, ref: REF });
+    const host = await createWindowHost(main, () => false);
+    const file = new File(['x'], 'a.chalk');
+    await host.openDropped(file);
+    expect(openDroppedFile).toHaveBeenCalledWith(file);
+    expect(readFile).toHaveBeenCalledWith(REF);
+  });
+
+  it("a refused drop shows the F14 box with main's name (the file's name when main has none)", async () => {
+    const { main, readFile, showFileError, openDroppedFile } = fileMain();
+    openDroppedFile
+      .mockResolvedValueOnce({ ok: false, problem: 'unsupported', name: 'notes.docx' })
+      .mockResolvedValueOnce({ ok: false, problem: 'unsupported', name: '' })
+      .mockRejectedValueOnce(new Error('ipc'));
+    const host = await createWindowHost(main, () => false);
+    await host.openDropped(new File(['x'], 'notes.docx'));
+    await host.openDropped(new File(['x'], 'made.chalk'));
+    await host.openDropped(new File(['x'], 'boom.chalk'));
+    expect(showFileError.mock.calls).toEqual([
+      ['unsupported', 'notes.docx'],
+      ['unsupported', 'made.chalk'],
+    ]);
+    expect(readFile).not.toHaveBeenCalled();
+    expect(main.logError).toHaveBeenCalledWith(expect.stringMatching(/^Drop failed: /));
+  });
+
+  it('a drop while a dialog is open opens nothing and asks nothing', async () => {
+    const { main, openDroppedFile } = fileMain();
+    const host = await createWindowHost(main, () => false);
+    host.actions.shortcuts();
+    await host.openDropped(new File(['x'], 'a.chalk'));
+    expect(openDroppedFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('A15 RC7: recovery tracking waits for the startup offer (R23)', () => {
+  it('an edit before the answer writes nothing and clears nothing; after Delete it is written', async () => {
+    vi.useFakeTimers();
+    try {
+      const { main } = fakeMain(DEFAULTS);
+      let answer!: (value: string) => void;
+      Object.assign(main, {
+        startup: () =>
+          Promise.resolve({
+            settings: DEFAULTS,
+            recovery: { text: serialize(drawing('journal')), name: 'a.chalk' },
+            open: null,
+          }),
+        ask: vi.fn(() => new Promise<string>((resolve) => (answer = resolve))),
+      });
+      const host = await createWindowHost(
+        main,
+        () => false,
+        () => undefined,
+      );
+      host.controller.run({ type: 'insert-text', text: 'ethanol' });
+      const starting = host.start();
+      vi.advanceTimersByTime(20_000);
+      host.flushRecovery();
+      host.controller.run('undo');
+      host.controller.run('redo');
+      vi.advanceTimersByTime(20_000);
+      expect(main.writeRecovery).not.toHaveBeenCalled();
+      expect(main.clearRecovery).not.toHaveBeenCalled();
+      answer('delete');
+      await vi.waitFor(() => expect(main.clearRecovery).toHaveBeenCalledTimes(1));
+      await starting;
+      vi.advanceTimersByTime(2000);
+      expect(main.writeRecovery).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(main.writeRecovery).mock.lastCall?.[0].text).toBe(
+        serialize(host.controller.getDoc()),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

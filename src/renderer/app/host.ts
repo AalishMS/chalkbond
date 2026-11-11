@@ -19,7 +19,7 @@ import { createSession, recoveryName, sessionUpdate } from './model/session';
 import type { ChalkbondApi } from '../../preload/api';
 import { CONTEXT_COMMANDS, type ContextCommand } from '../../shared/menu';
 import type { HostHit } from '../editor';
-import type { RendererSettings, SessionUpdate } from '../../shared/ipc-types';
+import type { FileRef, RendererSettings, SessionUpdate } from '../../shared/ipc-types';
 
 /** M3: a text target has focus (no document in node tests). */
 const focusedText = (): boolean =>
@@ -109,6 +109,8 @@ export async function createWindowHost(
     text: () => serialize(controller.getDoc()),
     name: () => recoveryName(session),
   });
+  // RC7 (R23): last run's file must survive until the startup offer is answered (resumed by it).
+  if (startup.recovery !== null) recovery.suspend();
   controller.subscribe((event) => {
     if (event.type === 'doc' || event.type === 'dirty') recovery.update();
   });
@@ -182,6 +184,16 @@ export async function createWindowHost(
     logError: (message) => main.logError(message),
   });
   exportOpen = () => exportFlow.state() !== null;
+  // R22: an OS open (F11) that arrives while a dialog is open waits for it to close (latest wins).
+  let heldOpen: FileRef | null = null;
+  const releaseHeld = (): void => {
+    if (heldOpen === null || modal()) return;
+    const ref = heldOpen;
+    heldOpen = null;
+    void fileFlows.openRef(ref);
+  };
+  exportFlow.subscribe(releaseHeld);
+  shortcutsListeners.add(releaseHeld);
   /** What a menu command does: the functions the keys and buttons call (M1). */
   const actions: AppActions = {
     newDrawing: () => void fileFlows.newDrawing(),
@@ -238,7 +250,28 @@ export async function createWindowHost(
       contextOpen = false;
     }
   };
+  /** `main:event {open}` (F10, F11): F3 now, queued while a flow runs, held while a dialog is open. */
+  const openRequested = async (ref: FileRef): Promise<void> => {
+    if (modal()) {
+      heldOpen = ref;
+      return;
+    }
+    await fileFlows.openRef(ref);
+  };
+  /** F12, SEC14: a dropped File → I3 (the preload reads its path) → F3, or the F14 box. */
+  const openDropped = async (file: File): Promise<void> => {
+    if (modal()) return;
+    try {
+      const result = await main.openDroppedFile(file);
+      if (result.ok) await fileFlows.openRef(result.ref);
+      else await main.showFileError(result.problem, result.name || file.name);
+    } catch (error) {
+      main.logError(`Drop failed: ${String(error)}`);
+    }
+  };
   return {
+    openRequested,
+    openDropped,
     commands: [] as string[],
     controller,
     copyFlow,

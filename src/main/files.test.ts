@@ -236,3 +236,71 @@ describe('write (SEC8, F9)', () => {
     expect(await files().write(target, CHALK)).toEqual({ ok: false, problem: 'folder-gone' });
   });
 });
+
+describe('inspect (I3 drop, SEC7)', () => {
+  it('a regular file with an Open extension → its kind and base name', async () => {
+    await writeFile(join(dir, 'ethanol.chalk'), CHALK);
+    await writeFile(join(dir, 'pic.PDF'), PNG);
+    expect(await files().inspect(join(dir, 'ethanol.chalk'))).toEqual({
+      ok: true,
+      kind: 'chalk',
+      name: 'ethanol.chalk',
+    });
+    expect(await files().inspect(join(dir, 'pic.PDF'))).toEqual({
+      ok: true,
+      kind: 'pdf',
+      name: 'pic.PDF',
+    });
+  });
+
+  it('another extension, an empty path (JS-made File) or a directory → unsupported', async () => {
+    await writeFile(join(dir, 'notes.docx'), CHALK);
+    mkdirSync(join(dir, 'folder.chalk'));
+    expect(await files().inspect(join(dir, 'notes.docx'))).toEqual({
+      ok: false,
+      problem: 'unsupported',
+      name: 'notes.docx',
+    });
+    expect(await files().inspect('')).toEqual({ ok: false, problem: 'unsupported', name: '' });
+    expect(await files().inspect(join(dir, 'folder.chalk'))).toEqual({
+      ok: false,
+      problem: 'unsupported',
+      name: 'folder.chalk',
+    });
+  });
+
+  it('a missing file → missing (logged)', async () => {
+    const log = vi.fn();
+    expect(await files({ log }).inspect(join(dir, 'gone.svg'))).toEqual({
+      ok: false,
+      problem: 'missing',
+      name: 'gone.svg',
+    });
+    expect(log).toHaveBeenCalled();
+  });
+
+  it('size limits as read: .chalk 20 MiB, pictures 64 MiB', async () => {
+    const sized = async (name: string, size: number): Promise<string> => {
+      const handle = await open(join(dir, name), 'w');
+      await handle.truncate(size);
+      await handle.close();
+      return join(dir, name);
+    };
+    expect(await files().inspect(await sized('ok.chalk', MAX_READ_BYTES))).toMatchObject({
+      ok: true,
+    });
+    expect(await files().inspect(await sized('big.chalk', MAX_READ_BYTES + 1))).toEqual({
+      ok: false,
+      problem: 'too-large',
+      name: 'big.chalk',
+    });
+    expect(await files().inspect(await sized('ok.png', MAX_PICTURE_READ_BYTES))).toMatchObject({
+      ok: true,
+    });
+    expect(await files().inspect(await sized('big.pdf', MAX_PICTURE_READ_BYTES + 1))).toEqual({
+      ok: false,
+      problem: 'too-large',
+      name: 'big.pdf',
+    });
+  });
+});

@@ -54,7 +54,8 @@ export const clipboardWriteSchema = z
   .strict();
 export const clipboardReadSchema = z.object({}).strict();
 
-// A7 (SPEC-app-shell.md I1, I2, I4, I5; clipboard-export C3, C4). No schema carries a path (R8).
+// A7 (SPEC-app-shell.md I1, I2, I4, I5; clipboard-export C3, C4). No schema carries a path (R8)
+// except I3's below.
 const fileRefId = z.uuid();
 const fileKind = z.enum(['chalk', 'png', 'svg', 'pdf']);
 /** A base name for a native box or a suggested file name: ≤ 255 characters, no `/` or `\`. */
@@ -142,3 +143,7 @@ export const writeRecoverySchema = z
   })
   .strict();
 export const clearRecoverySchema = z.object({}).strict();
+
+// A15 (SPEC-app-shell.md I3, SEC14): the one request that carries a path, sent by the preload
+// from `webUtils.getPathForFile` (`''` for a JS-made File, which main answers `unsupported`).
+export const fileDroppedSchema = z.object({ path: z.string().max(4096) }).strict();

@@ -1,5 +1,7 @@
 import { expectNoNetwork } from './harness';
+import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { _electron as electron, type ElectronApplication } from '@playwright/test';
@@ -42,36 +44,10 @@ export async function launchApp(
   options: LaunchOptions | string[] = {},
 ): Promise<ElectronApplication> {
   const opts: LaunchOptions = Array.isArray(options) ? { extraArgs: options } : options;
-  const linuxArgs =
-    process.platform === 'linux'
-      ? ['--no-sandbox', ...(process.env['DISPLAY'] ? [] : ['--ozone-platform=headless'])]
-      : [];
   const ownedUserData =
     opts.userData === undefined ? mkdtempSync(join(tmpdir(), 'chalkbond-e2e-')) : undefined;
-  const userData = opts.userData ?? ownedUserData;
-  const dialogArgs =
-    opts.dialogs === undefined ? [] : ['-r', resolve(__dirname, 'stub-dialogs.mjs')];
-  const app = await electron.launch({
-    args: [
-      '-r',
-      resolve(__dirname, 'no-os-mouse.mjs'),
-      ...dialogArgs,
-      ...(opts.clipboardWriteSuccess ? ['-r', resolve(__dirname, 'stub-clipboard-write.mjs')] : []),
-      ...(opts.clipboardMemory ? ['-r', resolve(__dirname, 'stub-clipboard-memory.mjs')] : []),
-      resolve(__dirname, '..'),
-      ...(opts.testHooks === false ? [] : ['--chalkbond-test-hooks']),
-      `--chalkbond-user-data=${userData}`,
-      ...(opts.extraArgs ?? []),
-      ...linuxArgs,
-    ],
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      ...(opts.dialogs === undefined
-        ? {}
-        : { CHALKBOND_TEST_DIALOGS: JSON.stringify(opts.dialogs) }),
-    },
-  });
+  const userData = opts.userData ?? ownedUserData ?? '';
+  const app = await electron.launch({ args: appArgs(opts, userData), env: appEnv(opts) });
   if (ownedUserData !== undefined) {
     app.process().once('exit', () => {
       try {
@@ -100,6 +76,80 @@ export async function launchApp(
     }
   };
   return app;
+}
+
+/**
+ * The command line of every launch: the OS-mouse guard first, the optional stubs, the app, the
+ * test flags (TH1), the extra arguments, then the Linux switches.
+ */
+function appArgs(opts: LaunchOptions, userData: string): string[] {
+  const linuxArgs =
+    process.platform === 'linux'
+      ? ['--no-sandbox', ...(process.env['DISPLAY'] ? [] : ['--ozone-platform=headless'])]
+      : [];
+  return [
+    '-r',
+    resolve(__dirname, 'no-os-mouse.mjs'),
+    ...(opts.dialogs === undefined ? [] : ['-r', resolve(__dirname, 'stub-dialogs.mjs')]),
+    ...(opts.clipboardWriteSuccess ? ['-r', resolve(__dirname, 'stub-clipboard-write.mjs')] : []),
+    ...(opts.clipboardMemory ? ['-r', resolve(__dirname, 'stub-clipboard-memory.mjs')] : []),
+    resolve(__dirname, '..'),
+    ...(opts.testHooks === false ? [] : ['--chalkbond-test-hooks']),
+    `--chalkbond-user-data=${userData}`,
+    ...(opts.extraArgs ?? []),
+    ...linuxArgs,
+  ];
+}
+
+function appEnv(opts: LaunchOptions): Record<string, string> {
+  const inherited = Object.fromEntries(
+    Object.entries(process.env).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  );
+  return {
+    ...inherited,
+    NODE_ENV: 'production',
+    ...(opts.dialogs === undefined ? {} : { CHALKBOND_TEST_DIALOGS: JSON.stringify(opts.dialogs) }),
+  };
+}
+
+/** The Electron binary Playwright launches (`require('electron')` outside Electron is its path). */
+function electronBinary(): string {
+  const resolved: unknown = createRequire(__filename)('electron');
+  if (typeof resolved !== 'string') throw new Error('electron did not resolve to its binary');
+  return resolved;
+}
+
+/**
+ * F11, SC8: starts a second app process exactly as `launchApp` would (the OS-mouse guard, the same
+ * flags and user-data folder) and resolves with its exit once it has ended. A running first app
+ * holds the single-instance lock of that folder, so the second process hands its command line over
+ * and quits. `userData` is required: without the first app's folder there is no lock to meet.
+ * Rejects if the process has not exited within `timeoutMs` (it is killed then).
+ */
+export function launchSecondInstance(
+  opts: LaunchOptions & { userData: string },
+  timeoutMs = 15_000,
+): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
+  const child = spawn(electronBinary(), appArgs(opts, opts.userData), {
+    env: appEnv(opts),
+    stdio: 'ignore',
+  });
+  return new Promise((resolveExit, reject) => {
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      reject(new Error('the second instance did not exit'));
+    }, timeoutMs);
+    child.once('error', (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.once('exit', (code, signal) => {
+      clearTimeout(timer);
+      resolveExit({ code, signal });
+    });
+  });
 }
 
 // Deliberate SEC4 tests declare the precise expected count; all other launches require zero.

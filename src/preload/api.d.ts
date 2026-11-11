@@ -6,6 +6,7 @@ import type {
   ClipboardReadResponse,
   ContextMenuAnswer,
   ContextMenuRequest,
+  FileDroppedResponse,
   FileProblem,
   FileRef,
   PrintPdfRequest,
@@ -26,6 +27,11 @@ export interface ChalkbondApi {
   chooseOpen(): Promise<FileRef | null>;
   /** I2: the bytes of a ref main handed out. */
   readFile(ref: FileRef): Promise<ReadFileResponse>;
+  /**
+   * I3 (F12, SEC14): a dropped file; the preload reads its path (`webUtils.getPathForFile`) and
+   * main checks it. A ref to open, or why not (`unsupported` with an empty name for a JS-made File).
+   */
+  openDroppedFile(file: File): Promise<FileDroppedResponse>;
   /** C3: the Save dialog for `format`; `suggestedName` is a base name. Null when cancelled. */
   chooseSave(format: ChooseSaveRequest['format'], suggestedName: string): Promise<FileRef | null>;
   /** C4: writes `data` to a writable ref of its kind (atomic, F9). */

@@ -163,3 +163,73 @@ describe('recovery (RC5 flush)', () => {
     expect(r.sent).toHaveLength(2);
   });
 });
+
+describe('RC7: suspended while the startup offer is unanswered (R23)', () => {
+  it('no write, no change-driven clear and no flush while suspended', () => {
+    const r = rig();
+    r.recovery.suspend();
+    r.edit();
+    r.advance(20_000);
+    r.recovery.flush();
+    // Undo back to the saved drawing: would clear when tracking.
+    r.state.doc = r.state.saved as typeof r.state.doc;
+    r.recovery.update();
+    r.advance(20_000);
+    expect(r.sent).toEqual([]);
+  });
+
+  it('a timer started before the suspension never fires', () => {
+    const r = rig();
+    r.edit();
+    r.recovery.suspend();
+    r.advance(20_000);
+    expect(r.sent).toEqual([]);
+  });
+
+  it('Delete: the explicit clear goes out; resume then writes a drawing edited during the offer', () => {
+    const r = rig();
+    r.recovery.suspend();
+    r.edit();
+    r.recovery.clear();
+    r.recovery.resume();
+    expect(r.sent).toEqual(['clear']);
+    r.advance(2000);
+    expect(r.sent).toEqual(['clear', 'write {"v":1} Untitled']);
+  });
+
+  it('Delete with a clean drawing: resume writes nothing; tracking works again afterwards', () => {
+    const r = rig();
+    r.recovery.suspend();
+    r.recovery.clear();
+    r.recovery.resume();
+    r.advance(20_000);
+    expect(r.sent).toEqual(['clear']);
+    r.edit();
+    r.advance(2000);
+    expect(r.sent).toEqual(['clear', 'write {"v":1} Untitled']);
+  });
+
+  it('Recover: adopt then resume writes nothing until the recovered drawing changes', () => {
+    const r = rig();
+    r.recovery.suspend();
+    r.edit(); // an edit during the offer, replaced by the recovered drawing
+    r.state.doc = { v: 40 };
+    r.state.saved = r.state.doc;
+    r.state.forced = true;
+    r.recovery.adopt();
+    r.recovery.resume();
+    r.advance(20_000);
+    expect(r.sent).toEqual([]);
+    r.edit();
+    r.advance(2000);
+    expect(r.sent).toEqual(['write {"v":41} Untitled']);
+  });
+
+  it('resume without a suspension changes nothing', () => {
+    const r = rig();
+    r.edit();
+    r.recovery.resume();
+    r.advance(2000);
+    expect(r.sent).toEqual(['write {"v":1} Untitled']);
+  });
+});

@@ -1,6 +1,6 @@
 import { CHANNELS } from '../shared/channels';
 import type { MainEvent } from '../shared/ipc-types';
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type { ChalkbondApi } from './api';
 
 // Narrow, typed API only. Never expose ipcRenderer, fs or other Node/Electron objects.
@@ -9,6 +9,9 @@ const api: ChalkbondApi = {
   clipboardRead: () => ipcRenderer.invoke(CHANNELS.clipboardRead, {}),
   chooseOpen: () => ipcRenderer.invoke(CHANNELS.chooseOpen, {}),
   readFile: (ref) => ipcRenderer.invoke(CHANNELS.readFile, { ref: ref.id }),
+  // I3 (SEC14): the path is read here, never by the page; '' for a File the page made itself.
+  openDroppedFile: (file) =>
+    ipcRenderer.invoke(CHANNELS.fileDropped, { path: webUtils.getPathForFile(file) }),
   chooseSave: (format, suggestedName) =>
     ipcRenderer.invoke(CHANNELS.chooseSave, { format, suggestedName }),
   writeFile: (ref, data) => ipcRenderer.invoke(CHANNELS.writeFile, { ref: ref.id, data }),

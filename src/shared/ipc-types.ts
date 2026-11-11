@@ -11,6 +11,7 @@ export interface IpcRequestMap {
   'clipboard:read': Record<string, never>;
   'file:choose-open': Record<string, never>;
   'file:read': { ref: string };
+  'file:dropped': FileDroppedRequest;
   'file:choose-save': ChooseSaveRequest;
   'file:write': { ref: string; data: Uint8Array };
   'pdf:print': PrintPdfRequest;
@@ -59,6 +60,14 @@ export interface ClipboardReadResponse {
 export type ReadProblem = 'missing' | 'too-large' | 'unreadable' | 'unsupported';
 export type ReadFileResponse =
   { ok: true; bytes: Uint8Array } | { ok: false; problem: Exclude<ReadProblem, 'unsupported'> };
+/** I3 (SEC14): sent by the preload only; the one request with a path (R8). */
+export interface FileDroppedRequest {
+  path: string;
+}
+/** I3: a ref for the dropped file, or why not (with its base name for the F14 box). */
+export type FileDroppedResponse =
+  | { ok: true; ref: FileRef }
+  | { ok: false; problem: 'unsupported' | 'missing' | 'too-large'; name: string };
 /** F14 write problems (C4). */
 export type WriteProblem = 'write-denied' | 'disk-full' | 'busy' | 'folder-gone' | 'write-failed';
 export type WriteFileResponse = { ok: true } | { ok: false; problem: WriteProblem };

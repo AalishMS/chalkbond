@@ -123,6 +123,12 @@ stays open: the full Windows gates (e2e/win including the C11/C12 performance sp
 clipboard probes, PDF with Arial, Office, native frame, window memory, IME, os-input, installer)
 are not run, and no Windows box is ticked.
 
+Linux run of Checkpoint W, verified by the orchestrator at `d2edcff` (2026-11-11): `npm run check`
+exit 0 (3953 tests), isolated `npm run test:e2e` exit 0 (275), shots A11, A12, A13 and A14 passed and
+viewed against their references; pushed. Logs: `/tmp/chalkbond-checkpoint-W.A0LJti/`. The checkpoint
+stays open: native menus looked at by hand against A04–A07, the Windows gates (e2e/win, native
+frame, Arial, IME, Office, os-input, installer) are not run, and no Windows box is ticked.
+
 ### Phase Y: hardening (with app-shell A16–A20)
 - [ ] C13: Coverage thresholds, copy performance, "Clipboard and export" checklist section
 

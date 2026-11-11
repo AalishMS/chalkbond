@@ -1,5 +1,5 @@
 // A7 channel schemas (SPEC-app-shell.md I1, I2, I4, I5; clipboard-export C3, C4): each rejects bad
-// payloads, and no channel accepts or returns a path (R8; I3 arrives in A15).
+// payloads, and no channel but I3 accepts a path; none returns one (R8, SEC14).
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -109,17 +109,42 @@ function keysOf(schema: ZodType): string[] {
   return [];
 }
 
-describe('R8: no path crosses the bridge', () => {
-  it('no request schema has a path field', () => {
-    const all: ZodType[] = Object.values(schemas);
-    expect(all.length).toBeGreaterThanOrEqual(13);
-    for (const schema of all) expect(keysOf(schema)).not.toContain('path');
+describe('R8: no path crosses the bridge but I3', () => {
+  it('only I3 (file:dropped) has a path field', () => {
+    const withPath = Object.entries(schemas as Record<string, ZodType>)
+      .filter(([, schema]) => keysOf(schema).includes('path'))
+      .map(([name]) => name);
+    expect(Object.keys(schemas).length).toBeGreaterThanOrEqual(14);
+    expect(withPath).toEqual(['fileDroppedSchema']);
   });
 
-  it('no response type has a path field', () => {
+  it('no response type has a path field; the one request type with a path is I3', () => {
     const types = readFileSync(resolve(__dirname, '../shared/ipc-types.ts'), 'utf8');
-    expect(types).not.toMatch(/\bpath\??\s*:/);
-    expect(types).not.toMatch(/\bfilePath/);
+    const i3 = /export interface FileDroppedRequest \{[^}]*\}/.exec(types)?.[0] ?? '';
+    expect(i3).toMatch(/\bpath: string;/);
+    const rest = types.replace(i3, '');
+    expect(rest).not.toMatch(/\bpath\??\s*:/);
+    expect(rest).not.toMatch(/\bfilePath/);
+  });
+});
+
+describe('A15 I3 file:dropped', () => {
+  it('takes a path of up to 4096 characters (empty: a JS-made File)', () => {
+    ok(schemas.fileDroppedSchema, { path: '/home/t/ethanol.chalk' });
+    ok(schemas.fileDroppedSchema, { path: 'C:\\Users\\T\\a b.chalk' });
+    ok(schemas.fileDroppedSchema, { path: '' });
+    ok(schemas.fileDroppedSchema, { path: 'x'.repeat(4096) });
+  });
+
+  it('rejects a longer path, another type, extras or nothing', () => {
+    for (const v of [
+      { path: 'x'.repeat(4097) },
+      { path: 3 },
+      { path: '/a.chalk', ref: ID },
+      {},
+      null,
+    ])
+      bad(schemas.fileDroppedSchema, v);
   });
 });
 

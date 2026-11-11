@@ -16,6 +16,7 @@ import {
   type TextMethod,
   type TopMenu,
 } from './model/menu-model';
+import type { RecentEntry } from './model/recent';
 
 export interface MenuPorts {
   /** `Menu` from electron, read at call time (TH4: a test may stub its methods). */
@@ -26,8 +27,10 @@ export interface MenuPorts {
   text(method: TextMethod): void;
   exit(): void;
   about(): void;
-  /** Open recent (A15): the entry's index, or `clear`. */
-  recent(index: number | 'clear'): void;
+  /** Open recent (F10, R21): the path captured when the clicked entry's menu was built. */
+  openRecent(path: string): void;
+  /** Open recent > Clear recently opened. */
+  clearRecent(): void;
 }
 
 /** The state before the first N1: nothing runs yet but Exit, About, Fit and Zoom to 100%. */
@@ -56,10 +59,11 @@ function same(a: MenuState, b: MenuState): boolean {
 
 export function createAppMenu(ports: MenuPorts) {
   let state = INITIAL_MENU_STATE;
-  let recent: readonly string[] = [];
+  let recent: readonly RecentEntry[] = [];
   let built = false;
 
-  const run = (action: MenuAction): void => {
+  /** `entries`: the recent list this menu was built from (R21: never the list at click time). */
+  const run = (action: MenuAction, entries: readonly RecentEntry[]): void => {
     switch (action.kind) {
       case 'command':
         return ports.command(action.command);
@@ -69,16 +73,18 @@ export function createAppMenu(ports: MenuPorts) {
         return ports.exit();
       case 'about':
         return ports.about();
-      case 'recent':
-        return ports.recent(action.index);
+      case 'recent': {
+        const entry = entries[action.index];
+        return entry === undefined ? undefined : ports.openRecent(entry.path);
+      }
       case 'recent-clear':
-        return ports.recent('clear');
+        return ports.clearRecent();
       case 'none':
         return undefined;
     }
   };
 
-  const item = (node: MenuNode): MenuItemConstructorOptions => {
+  const item = (node: MenuNode, entries: readonly RecentEntry[]): MenuItemConstructorOptions => {
     if (node.kind === 'separator') return { type: 'separator', registerAccelerator: false };
     return {
       id: node.id,
@@ -87,36 +93,40 @@ export function createAppMenu(ports: MenuPorts) {
       registerAccelerator: false,
       enabled: node.enabled,
       ...(node.radio ? { type: 'radio' as const, checked: node.checked ?? false } : {}),
-      ...(node.submenu ? { submenu: node.submenu.map(item) } : {}),
+      ...(node.submenu ? { submenu: node.submenu.map((n) => item(n, entries)) } : {}),
       click: () => {
         // A click on an item built disabled is ignored (MenuItem.click() does not check it). A
         // radio flips itself natively: rebuild from the model, which N1 then updates.
         if (node.radio) setImmediate(() => install());
-        if (node.enabled) run(node.action);
+        if (node.enabled) run(node.action, entries);
       },
     };
   };
 
-  const top = (menu: TopMenu): MenuItemConstructorOptions => ({
+  const top = (menu: TopMenu, entries: readonly RecentEntry[]): MenuItemConstructorOptions => ({
     id: menu.id,
     label: menu.label,
     registerAccelerator: false,
-    submenu: menu.submenu.map(item),
+    submenu: menu.submenu.map((n) => item(n, entries)),
   });
 
   const install = (): void => {
-    ports.Menu.setApplicationMenu(ports.Menu.buildFromTemplate(menuModel(state, recent).map(top)));
+    const entries = recent;
+    const labels = entries.map((e) => e.label);
+    ports.Menu.setApplicationMenu(
+      ports.Menu.buildFromTemplate(menuModel(state, labels).map((m) => top(m, entries))),
+    );
     built = true;
   };
 
   return {
-    /** Applies N1's state (and the recent list, A15); rebuilds only when something changed. */
-    apply(next: MenuState, nextRecent: readonly string[] = recent): void {
+    /** Applies N1's state (and the recent list, F10); rebuilds only when something changed. */
+    apply(next: MenuState, nextRecent: readonly RecentEntry[] = recent): void {
       const changed =
         !built ||
         !same(state, next) ||
         nextRecent.length !== recent.length ||
-        nextRecent.some((name, i) => name !== recent[i]);
+        nextRecent.some((e, i) => e.label !== recent[i]?.label || e.path !== recent[i]?.path);
       state = next;
       recent = nextRecent;
       if (changed) install();

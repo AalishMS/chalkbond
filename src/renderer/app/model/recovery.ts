@@ -2,7 +2,8 @@
 // drawing is dirty (F7: the editor's dirty or a recovered drawing's forcedDirty), N3 carries the
 // committed document (never a preview: `doc()` / `text()` read the controller's committed drawing)
 // on the RC1 timer; when it becomes clean (Save, undo back to the saved state) N4 clears the file.
-// Explicit clears come from the file flows (New / Open after F4, Delete, a normal close).
+// Explicit clears come from the file flows (New / Open after F4, Delete, a normal close). RC7 (R23):
+// while the startup offer is unanswered nothing is written or cleared by a change.
 import { createRecoveryTimer } from './recovery-timer';
 
 export interface RecoveryMain {
@@ -35,6 +36,13 @@ export interface Recovery {
   adopt(): void;
   /** RC5: N3 at once when dirty. */
   flush(): void;
+  /** RC7: the startup offer is open; changes and flushes send nothing (explicit clears still do). */
+  suspend(): void;
+  /**
+   * RC7: the offer is answered. After `adopt` (Recover) nothing is written until a change; otherwise
+   * a dirty drawing (edited during the offer) starts the RC1 timer. Nothing when not suspended.
+   */
+  resume(): void;
 }
 
 export function createRecovery(o: RecoveryOptions): Recovery {
@@ -42,6 +50,9 @@ export function createRecovery(o: RecoveryOptions): Recovery {
   let lastDoc: unknown = o.doc();
   /** N4 was sent and nothing has been written since. False at start: last run's file may exist. */
   let cleared = false;
+  let suspended = false;
+  /** `adopt` ran during the suspension: the recovered drawing is the file already. */
+  let adopted = false;
 
   const write = (): void => {
     if (!o.dirty()) return;
@@ -61,6 +72,7 @@ export function createRecovery(o: RecoveryOptions): Recovery {
 
   return {
     update() {
+      if (suspended) return;
       const dirty = o.dirty();
       const doc = o.doc();
       const changed = doc !== lastDoc;
@@ -79,14 +91,28 @@ export function createRecovery(o: RecoveryOptions): Recovery {
       if (!o.dirty()) clear();
     },
     adopt() {
+      adopted = true;
       timer.cancel();
       wasDirty = o.dirty();
       lastDoc = o.doc();
       cleared = false;
     },
     flush() {
+      if (suspended) return;
       timer.cancel();
       write();
+    },
+    suspend() {
+      suspended = true;
+      adopted = false;
+      timer.cancel();
+    },
+    resume() {
+      if (!suspended) return;
+      suspended = false;
+      lastDoc = o.doc();
+      wasDirty = o.dirty();
+      if (wasDirty && !adopted) timer.change();
     },
   };
 }

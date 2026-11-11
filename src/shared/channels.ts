@@ -3,6 +3,7 @@ export const CHANNELS = {
   clipboardRead: 'clipboard:read',
   chooseOpen: 'file:choose-open',
   readFile: 'file:read',
+  fileDropped: 'file:dropped',
   chooseSave: 'file:choose-save',
   writeFile: 'file:write',
   printPdf: 'pdf:print',

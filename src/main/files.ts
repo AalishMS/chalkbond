@@ -3,7 +3,7 @@
 import { randomBytes } from 'node:crypto';
 import { open, readFile, rename as fsRename, stat, unlink } from 'node:fs/promises';
 import type { ReadProblem, WriteFileResponse } from '../shared/ipc-types';
-import { kindOfPath, type FileEntry, type FileKind } from './model/file-refs';
+import { baseName, kindOfPath, type FileEntry, type FileKind } from './model/file-refs';
 import { readProblem, writeProblem } from './model/write-problem';
 
 /** clipboard-export `MAX_FILE_BYTES`: the largest `.chalk` file main reads (SEC7). */
@@ -17,6 +17,10 @@ const RENAME_RETRIES = 3;
 const RENAME_RETRY_MS = 100;
 
 export type ReadResult = { ok: true; bytes: Uint8Array } | { ok: false; problem: ReadProblem };
+/** I3: a dropped path checked as SEC7 reads it, with its base name for the box or the ref. */
+export type InspectResult =
+  | { ok: true; kind: FileKind; name: string }
+  | { ok: false; problem: 'unsupported' | 'missing' | 'too-large'; name: string };
 
 export interface FilesOptions {
   /** LG1: the full error goes to the log, never to the screen. */
@@ -62,6 +66,28 @@ export function createFiles(options: FilesOptions = {}) {
   }
 
   return {
+    /**
+     * I3 (F12, SEC7): what a dropped path is, before main hands out a ref: an Open extension, a
+     * regular file (links followed) and the read limits (.chalk 20 MiB, pictures 64 MiB). Any other
+     * name, an empty path (a JS-made `File`) or a directory → `unsupported`; a stat failure → `missing`
+     * (logged); the bytes are read later through the ref (I2), which reports read errors.
+     */
+    async inspect(path: string): Promise<InspectResult> {
+      const name = baseName(path);
+      const kind = kindOfPath(path);
+      if (kind === null) return { ok: false, problem: 'unsupported', name };
+      const max = kind === 'chalk' ? MAX_READ_BYTES : MAX_PICTURE_READ_BYTES;
+      try {
+        const info = await stat(path);
+        if (!info.isFile()) return { ok: false, problem: 'unsupported', name };
+        if (info.size > max) return { ok: false, problem: 'too-large', name };
+        return { ok: true, kind, name };
+      } catch (error) {
+        log(`Dropped file not found: ${String(error)}`);
+        return { ok: false, problem: 'missing', name };
+      }
+    },
+
     /**
      * SEC7: a regular file (links followed) with an Open extension, at most 20 MiB for a `.chalk`
      * and 64 MiB for a picture (Decision C9 of clipboard-export).

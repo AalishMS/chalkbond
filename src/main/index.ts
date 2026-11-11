@@ -32,6 +32,8 @@ import { fileArg, testFlags } from './model/args';
 import { kindOfPath } from './model/file-refs';
 import { guardClose, installQuitFlush } from './lifecycle';
 import { createRecovery } from './recovery';
+import { createRecent } from './model/recent';
+import { createOpenRequests } from './model/open-requests';
 
 import { pathToFileURL } from 'node:url';
 import { CHANNELS } from '../shared/channels';
@@ -55,6 +57,7 @@ import {
   contextMenuSchema,
   writeRecoverySchema,
   clearRecoverySchema,
+  fileDroppedSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { createAppMenu, createContextMenus } from './menu';
@@ -132,7 +135,29 @@ if (flags.hooks) {
 
 app.setAppUserModelId(APP_ID);
 
-void app.whenReady().then(async () => {
+// F11: a file a launch asks to open (the first launch's command line, then each second launch's),
+// handed to I7 or sent as `main:event {open}` once the renderer listens (latest wins).
+let sendOpen: (path: string) => void = () => undefined;
+const openRequests = createOpenRequests(fileArg(process.argv), (path) => sendOpen(path));
+
+// F11 single instance: the lock lives in userData, set above (TH1). A second process hands its
+// command line to this one through `second-instance` and quits with code 0, without a window.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const win = mainWindow;
+    if (win && !win.isDestroyed()) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+    const path = fileArg(argv);
+    if (path !== null) openRequests.request(path);
+  });
+  void app.whenReady().then(startApp);
+}
+
+async function startApp(): Promise<void> {
   const log = createLogger(app.getPath('userData'));
   // M1–M3 (O3): our menu replaces Electron's default, whose registered accelerators (Ctrl+0,
   // Ctrl+=) would zoom the page and steal editor keys. Installed before the window exists, so W6
@@ -144,8 +169,9 @@ void app.whenReady().then(async () => {
     text: (method) => mainWindow?.webContents[method](),
     exit: () => mainWindow?.close(),
     about: () => void about.show(),
-    // Open recent (A15): the list is empty until then, so these items are never enabled.
-    recent: () => undefined,
+    // F10, R21: the path captured when the clicked menu was built; F3 runs in the renderer.
+    openRecent: (path) => sendOpen(path),
+    clearRecent: () => recent.clear(),
   });
   appMenu.apply(appMenu.state());
   // AB1: the icon and the licence notices ship in resources/ (I1) or sit in build/ (dev).
@@ -166,6 +192,16 @@ void app.whenReady().then(async () => {
     log: (message) => log('settings', message),
   });
   await store.load();
+  // F10: the recent list (paths stay here); every change is stored and rebuilds the menu.
+  const recent = createRecent({
+    initial: store.get().recent,
+    caseInsensitive: process.platform === 'win32',
+    changed: (list) => {
+      store.update((s) => ({ ...s, recent: [...list] }));
+      appMenu.apply(appMenu.state(), recent.entries());
+    },
+  });
+  appMenu.apply(appMenu.state(), recent.entries());
   installSessionSecurity(
     (message) => log('security', message),
     () => {
@@ -190,6 +226,8 @@ void app.whenReady().then(async () => {
   ipc.handle(CHANNELS.clipboardRead, clipboardReadSchema, clipboardPort.read);
   // Files (A7): the renderer holds opaque refs only (R8); paths stay in this registry.
   const refs = createFileRefs(() => randomUUID());
+  /** The ref N2 last named (F10: a successful write to it is a Save). */
+  let sessionRef: string | null = null;
   const files = createFiles({ log: (message) => log('files', message) });
   const entryOf = (id: string) => {
     const entry = refs.get(id);
@@ -221,8 +259,11 @@ void app.whenReady().then(async () => {
   });
   ipc.handle(CHANNELS.chooseOpen, chooseOpenSchema, () => dialogs.chooseOpen());
   ipc.handle(CHANNELS.readFile, readFileSchema, async ({ ref }): Promise<ReadFileResponse> => {
-    const result = await files.read(entryOf(ref).path);
+    const path = entryOf(ref).path;
+    const result = await files.read(path);
     if (result.ok) return result;
+    // F10: a missing file leaves the recent list (the renderer shows "can't be found").
+    if (result.problem === 'missing') recent.remove(path);
     // A ref always has an Open extension, so `unsupported` cannot answer I2.
     return { ok: false, problem: result.problem === 'unsupported' ? 'unreadable' : result.problem };
   });
@@ -233,9 +274,25 @@ void app.whenReady().then(async () => {
     if (entry) folders.exported(entry);
     return ref;
   });
-  ipc.handle(CHANNELS.writeFile, writeFileSchema, ({ ref, data }) =>
-    files.write(entryOf(ref), data),
-  );
+  ipc.handle(CHANNELS.writeFile, writeFileSchema, async ({ ref, data }) => {
+    const entry = entryOf(ref);
+    const result = await files.write(entry, data);
+    // F10: a successful Save in place counts (Save as is added by its N2).
+    if (result.ok && ref === sessionRef) recent.add(entry.path);
+    return result;
+  });
+  // I3 (F12, SEC14): a dropped file's path, read by the preload; checked as SEC7, then a ref.
+  ipc.handle(CHANNELS.fileDropped, fileDroppedSchema, async ({ path }) => {
+    const result = await files.inspect(path);
+    return result.ok ? { ok: true as const, ref: refs.add(path, result.kind, 'opened') } : result;
+  });
+  // F10, F11: an opened ref for a path main chose (Open recent, a second launch), sent to F3.
+  sendOpen = (path) => {
+    const kind = kindOfPath(path);
+    const win = mainWindow;
+    if (kind === null || !win || win.isDestroyed()) return;
+    win.webContents.send(CHANNELS.mainEvent, { type: 'open', ref: refs.add(path, kind, 'opened') });
+  };
   // C5 (PD1): a hidden window prints the export SVG; window and temp folder go in a finally.
   ipc.handle(
     CHANNELS.printPdf,
@@ -279,13 +336,10 @@ void app.whenReady().then(async () => {
     flush: () => Promise.all([store.flush(), recovery.idle()]),
     log: (message) => log('quit', message),
   });
-  // F11 (A15 subset, early for RC4): the file on the first launch's command line, handed out once.
-  let startupFile = fileArg(process.argv);
   // I7 with ST2: the renderer's view only (no path, folder, window or recent list). The recovery
   // file is checked for size and signature here; the renderer parses it (RC3).
   ipc.handle(CHANNELS.startup, startupSchema, async (): Promise<StartupResponse> => {
-    const path = startupFile;
-    startupFile = null;
+    const path = openRequests.takeStartup();
     const kind = path === null ? null : kindOfPath(path);
     return {
       settings: rendererSettings(store.get()),
@@ -304,13 +358,20 @@ void app.whenReady().then(async () => {
     session = { title: value.title, dirty: value.dirty };
     appMenu.apply(value.menu);
     closing?.rendererReady();
+    openRequests.listening();
   });
-  // N2: the session file by ref (null after New). An unknown id is ignored and logged.
+  // N2: the session file by ref (null after New). An unknown id is ignored and logged. A file
+  // that became the session was opened or saved: it goes to the top of the recent list (F10).
   ipc.on(CHANNELS.sessionFile, sessionFileSchema, ({ ref }) => {
-    if (ref === null) return folders.sessionFile(null);
+    if (ref === null) {
+      sessionRef = null;
+      return folders.sessionFile(null);
+    }
     const entry = refs.get(ref);
-    if (entry) folders.sessionFile(entry);
-    else log('files', 'Unknown session file ref');
+    if (!entry) return log('files', 'Unknown session file ref');
+    sessionRef = ref;
+    folders.sessionFile(entry);
+    recent.add(entry.path);
   });
   // N5 (F13): the renderer ran F4 and agreed to close.
   ipc.on(CHANNELS.closeOk, closeOkSchema, () => closing?.closeOk());
@@ -334,7 +395,7 @@ void app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) openWindow();
   });
-});
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

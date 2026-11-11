@@ -60,7 +60,7 @@ export interface FileFlowOptions {
 }
 
 /** What the flows tell recovery (RC2): explicit clears, a save's outcome, a recovered drawing. */
-export type RecoveryPort = Pick<Recovery, 'clear' | 'settle' | 'adopt'>;
+export type RecoveryPort = Pick<Recovery, 'clear' | 'settle' | 'adopt' | 'resume'>;
 
 /** CO5: what I7 handed over: a recovery file main found (unparsed) and a file request (F11). */
 export type Startup = Pick<StartupResponse, 'recovery' | 'open'>;
@@ -75,7 +75,10 @@ export interface FileFlows {
   newDrawing(): Promise<void>;
   /** F2 then F3 (Ctrl+O). Ignored while a flow runs. */
   open(): Promise<void>;
-  /** F3 for a ref main handed over (F11, F12); waits while a flow runs (latest wins). */
+  /**
+   * F3 for a ref main handed over (F11, F12); waits while a flow runs (latest wins). During the
+   * startup recovery offer it replaces the startup request instead (RC4, R23).
+   */
   openRef(ref: FileRef): Promise<void>;
   /** F5 (Ctrl+S). Ignored while a flow runs. */
   save(): Promise<void>;
@@ -101,6 +104,9 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
   const { main, controller, session } = o;
   let running = false;
   let pending: Pending | null = null;
+  /** RC4 (R23): while the startup offer is unanswered, the latest file request (else null). */
+  let offering = false;
+  let requested: FileRef | null = null;
 
   const dirty = (): boolean => session.forcedDirty || controller.isDirty();
 
@@ -198,8 +204,20 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
     o.publish();
   }
 
+  /**
+   * RC3, RC4, RC7 (R23): while the offer is open, file requests replace the startup one (latest
+   * wins); Recover keeps the recovered drawing and names the latest in N-A2; Delete, or a file that
+   * does not parse, opens only the latest. Recovery tracking resumes once the offer is answered.
+   */
   async function startNow({ recovery, open }: Startup): Promise<void> {
-    if (recovery !== null) {
+    if (recovery === null) {
+      if (open !== null) await openNow(open);
+      return;
+    }
+    offering = true;
+    requested = open;
+    let kept = false;
+    try {
       const parsed = parse(recovery.text);
       if (!parsed.ok) {
         // RC3: deleted silently and logged (the code only, never the drawing).
@@ -207,18 +225,25 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
         main.logError(`Recovery file not used: ${parsed.error.code}`);
       } else if ((await main.ask({ kind: 'recover' })) === 'recover') {
         recover(parsed.value, recovery.name);
-        if (open !== null) {
-          controller.notify(
-            'info',
-            `Recovered your unsaved drawing. Save it, then open ${open.name} again.`,
-          );
-        }
-        return;
+        kept = true;
       } else {
         o.recovery.clear();
       }
+    } finally {
+      offering = false;
+      o.recovery.resume();
     }
-    if (open !== null) await openNow(open);
+    const latest = requested;
+    requested = null;
+    if (latest === null) return;
+    if (kept) {
+      controller.notify(
+        'info',
+        `Recovered your unsaved drawing. Save it, then open ${latest.name} again.`,
+      );
+    } else {
+      await openNow(latest);
+    }
   }
 
   /**
@@ -275,6 +300,10 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
             if (ref !== null) await openNow(ref);
           }),
     openRef(ref) {
+      if (offering) {
+        requested = ref;
+        return Promise.resolve();
+      }
       if (!running) return run(() => openNow(ref));
       pending = { kind: 'open', ref };
       return Promise.resolve();
