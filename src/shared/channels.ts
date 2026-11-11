@@ -8,6 +8,7 @@ export const CHANNELS = {
   printPdf: 'pdf:print',
   ask: 'dialog:ask',
   showFileError: 'dialog:file-error',
+  showContextMenu: 'context-menu:show',
   startup: 'app:startup',
   setSettings: 'settings:set',
   updateSession: 'session:update',

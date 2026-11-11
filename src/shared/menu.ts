@@ -128,3 +128,14 @@ export function commandEnabled(id: AppCommand | MainMenuId, s: MenuState, recent
       return true;
   }
 }
+
+/** CM1: the commands a canvas context menu offers (I6 answers one of them, or null). */
+export const CONTEXT_COMMANDS = [
+  'edit.cut',
+  'edit.copy',
+  'edit.duplicate',
+  'edit.delete',
+  'edit.paste',
+  'edit.select-all',
+] as const satisfies readonly AppCommand[];
+export type ContextCommand = (typeof CONTEXT_COMMANDS)[number];

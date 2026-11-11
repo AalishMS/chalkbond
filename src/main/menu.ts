@@ -1,8 +1,14 @@
 // The native application menu (SPEC-app-shell.md M1–M3): built from the pure model and applied
 // when N1's `menu` or the recent list changes. Every item displays its accelerator but never
 // registers it (M2, A3) and no item has a role (R1); the renderer owns every key.
-import type { Menu as ElectronMenu, MenuItemConstructorOptions } from 'electron';
-import { MENU_STATE_KEYS, type AppCommand, type MenuState } from '../shared/menu';
+import type { BrowserWindow, Menu as ElectronMenu, MenuItemConstructorOptions } from 'electron';
+import {
+  MENU_STATE_KEYS,
+  type AppCommand,
+  type ContextCommand,
+  type MenuState,
+} from '../shared/menu';
+import { canvasContextMenu, textContextMenu } from './model/context-menu-model';
 import {
   menuModel,
   type MenuAction,
@@ -116,5 +122,69 @@ export function createAppMenu(ports: MenuPorts) {
       if (changed) install();
     },
     state: (): MenuState => state,
+  };
+}
+
+export interface ContextMenuPorts {
+  /** `Menu` from electron, read at call time; `popup` is the built menu's (TH4 stubs the prototype). */
+  Menu: Pick<typeof ElectronMenu, 'buildFromTemplate'>;
+  /** The main window: the popup's parent, at the cursor. */
+  window(): BrowserWindow | undefined;
+}
+
+/**
+ * CM1–CM3: the native context menus. `show` pops the canvas menu up at the cursor and resolves with
+ * the chosen command, or null when it was dismissed (Esc, a click elsewhere), a disabled item was
+ * clicked, there is no window, or another context menu is still open. `text` is the text-field
+ * menu for `webContents` `context-menu` (CM3): editable targets only, with Electron's roles.
+ */
+export function createContextMenus(ports: ContextMenuPorts) {
+  let open = false;
+  return {
+    show({ onItem, state }: { onItem: boolean; state: MenuState }): Promise<ContextCommand | null> {
+      const window = ports.window();
+      if (open || window === undefined) return Promise.resolve(null);
+      open = true;
+      return new Promise<ContextCommand | null>((resolve) => {
+        let settled = false;
+        const settle = (value: ContextCommand | null): void => {
+          if (settled) return;
+          settled = true;
+          open = false;
+          resolve(value);
+        };
+        const template = canvasContextMenu(onItem, state).map((node): MenuItemConstructorOptions =>
+          node.kind === 'separator'
+            ? { type: 'separator', registerAccelerator: false }
+            : {
+                id: node.id,
+                label: node.label,
+                accelerator: node.accelerator,
+                registerAccelerator: false,
+                enabled: node.enabled,
+                click: () => {
+                  // MenuItem.click() does not check `enabled` (R19).
+                  if (node.enabled) settle(node.id);
+                },
+              },
+        );
+        ports.Menu.buildFromTemplate(template).popup({
+          window,
+          // Closed: an item's click may still follow the close on some platforms, so null waits a
+          // turn for it.
+          callback: () => setImmediate(() => settle(null)),
+        });
+      });
+    },
+    text(params: { isEditable: boolean }): void {
+      const window = ports.window();
+      if (!params.isEditable || window === undefined) return;
+      const template = textContextMenu().map((node): MenuItemConstructorOptions =>
+        'role' in node
+          ? { role: node.role, label: node.label, registerAccelerator: false }
+          : { type: 'separator', registerAccelerator: false },
+      );
+      ports.Menu.buildFromTemplate(template).popup({ window });
+    },
   };
 }

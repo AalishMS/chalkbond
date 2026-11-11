@@ -4,6 +4,8 @@ import type {
   ChooseSaveRequest,
   ClipboardWriteRequest,
   ClipboardReadResponse,
+  ContextMenuAnswer,
+  ContextMenuRequest,
   FileProblem,
   FileRef,
   PrintPdfRequest,
@@ -33,6 +35,8 @@ export interface ChalkbondApi {
   ask<R extends AskRequest>(request: R): Promise<AskAnswer<R>>;
   /** I5: the F14 error box for `{ problem, name }` (a base name). */
   showFileError(problem: FileProblem, name: string): Promise<void>;
+  /** I6 (CM1): the canvas context menu at the cursor; the chosen command or null. */
+  showContextMenu(request: ContextMenuRequest): Promise<ContextMenuAnswer>;
   startup(): Promise<StartupResponse>;
   /** I8: remembers renderer settings (ST1 style, Export choices); main writes settings.json. */
   setSettings(value: Partial<RendererSettings>): Promise<void>;

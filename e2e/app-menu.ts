@@ -68,3 +68,47 @@ export async function clickMenu(app: ElectronApplication, id: string): Promise<v
   }, id);
   if (!found) throw new Error(`no menu item ${id}`);
 }
+
+// A13 (TH4, TH5): context menus are popped up through `Menu.prototype.popup`, stubbed here.
+export type PopupItem = {
+  id: string;
+  label: string;
+  type: string;
+  role: string | null;
+  enabled: boolean;
+  accelerator: string | null;
+  registerAccelerator: boolean;
+};
+
+/**
+ * Replaces `Menu.prototype.popup`: each popup records its items and takes the next choice (a menu
+ * item id, or null for a dismissed menu), clicked on the next turn before the close callback.
+ */
+export async function stubPopup(app: ElectronApplication, choices: (string | null)[]) {
+  await app.evaluate(({ Menu }, list) => {
+    const g = globalThis as { __popups?: unknown[][] };
+    g.__popups = [];
+    const answers = [...list];
+    Menu.prototype.popup = function popup(this: Electron.Menu, options?: Electron.PopupOptions) {
+      g.__popups?.push(
+        this.items.map((i) => ({
+          id: i.id ?? '',
+          label: i.label,
+          type: i.type,
+          role: i.role ?? null,
+          enabled: i.enabled,
+          accelerator: i.accelerator ?? null,
+          registerAccelerator: i.registerAccelerator,
+        })),
+      );
+      const choice = answers.shift() ?? null;
+      setImmediate(() => {
+        if (choice !== null) this.getMenuItemById(choice)?.click();
+        options?.callback?.();
+      });
+    };
+  }, choices);
+}
+
+export const popups = (app: ElectronApplication): Promise<PopupItem[][]> =>
+  app.evaluate(() => ((globalThis as { __popups?: unknown[][] }).__popups ?? []) as never);

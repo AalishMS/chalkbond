@@ -461,8 +461,8 @@ right-click in the name field → the recorded template has roles `cut`, `copy`,
 `selectAll`.
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass
-- [ ] Shot exists
+- [x] Unit and e2e tests pass (Linux; `Menu.prototype.popup` stubbed: the items Electron received are asserted as data, the native menus' look, A07, stays on the Windows checklist)
+- [x] Shot exists (`out/shots/A13/right-click-selected.png`, compared with A07's left panel)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A13` →
 `A13/right-click-selected.png` (scripted with the popup stubbed to do nothing: benzene and ethanol

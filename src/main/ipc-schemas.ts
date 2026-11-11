@@ -125,3 +125,6 @@ export const setSettingsSchema = z
       .optional(),
   })
   .strict();
+
+// A13 (SPEC-app-shell.md I6, CM1): the canvas context menu's kind and the menu state now.
+export const contextMenuSchema = z.object({ onItem: z.boolean(), state: menuStateSchema }).strict();

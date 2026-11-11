@@ -16,14 +16,29 @@ import { isTextTarget } from './text-target';
 import { createPresetMemory } from './model/preset-memory';
 import { createSession, sessionUpdate } from './model/session';
 import type { ChalkbondApi } from '../../preload/api';
+import { CONTEXT_COMMANDS, type ContextCommand } from '../../shared/menu';
+import type { HostHit } from '../editor';
 import type { RendererSettings, SessionUpdate } from '../../shared/ipc-types';
 
 /** M3: a text target has focus (no document in node tests). */
 const focusedText = (): boolean =>
   typeof document !== 'undefined' && isTextTarget(document.activeElement);
 
+/** CM1: the canvas takes focus (from the name field) before its context menu is asked for. */
+const focusCanvasElement = (): void => {
+  if (typeof document === 'undefined') return;
+  document.querySelector<HTMLElement>('[data-testid="canvas"]')?.focus();
+};
+
+const isContextCommand = (id: string): id is ContextCommand =>
+  (CONTEXT_COMMANDS as readonly string[]).includes(id);
+
 /** Called once before React mounts: effects and StrictMode never own controller lifetime. */
-export async function createWindowHost(main: ChalkbondApi, textFocus = focusedText) {
+export async function createWindowHost(
+  main: ChalkbondApi,
+  textFocus = focusedText,
+  focusCanvas = focusCanvasElement,
+) {
   const startup = await main.startup();
   const clock = (): string => new Date().toISOString();
   // The editor's onCopy must exist before the flow does; it forwards to the flow once made.
@@ -162,6 +177,34 @@ export async function createWindowHost(main: ChalkbondApi, textFocus = focusedTe
     },
     run: (cmd) => controller.run(cmd),
   };
+  /** A `main:event` menu command, re-checked against the state now (R19). */
+  const runCommand = (command: string): boolean => runAppCommand(command, menuState(), actions);
+  let contextOpen = false;
+  /**
+   * CM1, CM2: the editor's `context-menu` event (an unselected item is already selected). The menu
+   * acts on the drawing, so a focused text field gives focus to the canvas first; then I6 with the
+   * state now; the chosen command runs as the Edit item does, re-checked against the state then.
+   * One menu at a time; none while an in-window dialog is open.
+   */
+  const contextMenu = async (event: {
+    readonly target: HostHit | null;
+    readonly screen: { x: number; y: number };
+  }): Promise<void> => {
+    if (contextOpen || modal()) return;
+    if (textFocus()) focusCanvas();
+    contextOpen = true;
+    try {
+      const chosen = await main.showContextMenu({
+        onItem: event.target !== null,
+        state: menuState(),
+      });
+      if (chosen !== null && isContextCommand(chosen)) runCommand(chosen);
+    } catch (error) {
+      main.logError(`Context menu failed: ${String(error)}`);
+    } finally {
+      contextOpen = false;
+    }
+  };
   return {
     commands: [] as string[],
     controller,
@@ -185,8 +228,8 @@ export async function createWindowHost(main: ChalkbondApi, textFocus = focusedTe
       },
     },
     actions,
-    /** A `main:event` menu command, re-checked against the state now (R19). */
-    runCommand: (command: string): boolean => runAppCommand(command, menuState(), actions),
+    runCommand,
+    contextMenu,
     /** ST2: a copy of the renderer settings now. */
     settings: (): RendererSettings => ({ ...settings, export: { ...settings.export } }),
     /** I8: remembers a settings change (here at once; main writes the file). */

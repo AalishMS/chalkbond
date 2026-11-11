@@ -49,9 +49,10 @@ import {
   sessionFileSchema,
   closeOkSchema,
   setSettingsSchema,
+  contextMenuSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
-import { createAppMenu } from './menu';
+import { createAppMenu, createContextMenus } from './menu';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
 
 installWebContentsSecurity();
@@ -250,6 +251,9 @@ void app.whenReady().then(async () => {
     dialogs.showFileError(problem, name),
   );
   ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
+  // CM1–CM3 (A13): the canvas menu on request (I6); the text-field menu from webContents.
+  const contextMenus = createContextMenus({ Menu, window: () => mainWindow });
+  ipc.handle(CHANNELS.showContextMenu, contextMenuSchema, (request) => contextMenus.show(request));
   // I7 with ST2: the renderer's view only (no path, folder, window or recent list).
   ipc.handle(CHANNELS.startup, startupSchema, (): StartupResponse => ({
     settings: rendererSettings(store.get()),
@@ -287,6 +291,8 @@ void app.whenReady().then(async () => {
     const win = createMainWindow(store.get().window);
     mainWindow = win;
     closing = guardClose(win, () => rememberWindow(win));
+    // CM3 (R3): editable targets only; the canvas prevents the DOM event, so it never gets here.
+    win.webContents.on('context-menu', (_event, params) => contextMenus.text(params));
   };
   openWindow();
   app.on('activate', () => {

@@ -1,4 +1,4 @@
-import type { AppCommand, MenuState } from './menu';
+import type { AppCommand, ContextCommand, MenuState } from './menu';
 
 export type LogErrorRequest = { message: string };
 export type MainEvent =
@@ -16,6 +16,7 @@ export interface IpcRequestMap {
   'pdf:print': PrintPdfRequest;
   'dialog:ask': AskRequest;
   'dialog:file-error': FileErrorRequest;
+  'context-menu:show': ContextMenuRequest;
   'log:error': LogErrorRequest;
   'app:startup': Record<string, never>;
   'settings:set': Partial<RendererSettings>;
@@ -83,3 +84,10 @@ export interface FileErrorRequest {
   /** A base name (no `/` or `\`). */
   name: string;
 }
+
+/** I6 (CM1): which canvas menu, and the menu state when it was asked for. */
+export interface ContextMenuRequest {
+  onItem: boolean;
+  state: MenuState;
+}
+export type ContextMenuAnswer = ContextCommand | null;

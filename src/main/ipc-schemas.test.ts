@@ -196,3 +196,41 @@ describe('A11 N1 session update with the menu state', () => {
       bad(schemas.sessionUpdateSchema, v);
   });
 });
+
+describe('A13 I6 context-menu:show', () => {
+  const state = {
+    idle: true,
+    modal: false,
+    textFocus: false,
+    empty: false,
+    hasSelection: true,
+    canUndo: false,
+    canRedo: false,
+    undoLabel: null,
+    redoLabel: null,
+    canCut: true,
+    canDuplicate: true,
+    canDelete: true,
+    canSelectAll: true,
+    canZoomIn: true,
+    canZoomOut: true,
+    preset: 'journal',
+  };
+  it('takes onItem and a full MenuState', () => {
+    ok(schemas.contextMenuSchema, { onItem: true, state });
+    ok(schemas.contextMenuSchema, { onItem: false, state });
+  });
+  it('rejects a missing, extra or mistyped field', () => {
+    const { canDelete: _d, ...partial } = state;
+    for (const v of [
+      {},
+      { onItem: true },
+      { onItem: 'yes', state },
+      { onItem: true, state: partial },
+      { onItem: true, state: { ...state, extra: 1 } },
+      { onItem: true, state, x: 1 },
+      { onItem: true, state, items: [{ role: 'quit' }] },
+    ])
+      bad(schemas.contextMenuSchema, v);
+  });
+});

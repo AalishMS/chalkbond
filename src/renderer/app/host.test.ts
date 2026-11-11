@@ -1,10 +1,10 @@
 // A10 host wiring (SPEC-app-shell.md ST1, ST2, CO1): startup settings, preset tracking through the
 // one controller, loads not stored, New uses the remembered style. Fake preload API.
 import { describe, expect, it, vi } from 'vitest';
-import { emptyDoc, serialize, setStyle, addAtom, type Doc } from '@core/doc-model';
+import { emptyDoc, serialize, setStyle, addAtom, type AtomId, type Doc } from '@core/doc-model';
 import type { ChalkbondApi } from '../../preload/api';
 import type { FileRef, RendererSettings } from '../../shared/ipc-types';
-import { createWindowHost } from './host';
+import { createWindowHost, type WindowHost } from './host';
 
 const NOW = '2026-11-11T09:00:00.000Z';
 const REF: FileRef = { id: '00000000-0000-4000-8000-000000000001', name: 'a.chalk', kind: 'chalk' };
@@ -163,5 +163,139 @@ describe('A12 one in-window dialog at a time (Export, Keyboard shortcuts)', () =
     host.actions.shortcuts();
     expect(host.shortcutsDialog.open()).toBe(false);
     expect(host.runCommand('help.shortcuts')).toBe(false);
+  });
+});
+
+describe('A13 canvas context menu (CM1, CM2; I6)', () => {
+  type Shown = { onItem: boolean; state: { textFocus: boolean; hasSelection: boolean } };
+  function rig(answers: (string | null)[], start: { text: boolean } = { text: false }) {
+    const { main } = fakeMain(DEFAULTS);
+    const shown: Shown[] = [];
+    const pending: ((value: string | null) => void)[] = [];
+    const view = { text: start.text, focused: 0 };
+    Object.assign(main, {
+      showContextMenu: vi.fn(
+        (request: Shown) =>
+          new Promise<string | null>((resolve) => {
+            shown.push(request);
+            if (answers.length > 0) resolve(answers.shift() ?? null);
+            else pending.push(resolve);
+          }),
+      ),
+    });
+    return { main, shown, pending, view };
+  }
+  const ethanol = (): Doc => {
+    let d = setStyle(emptyDoc(NOW), { preset: 'slides' });
+    [d] = addAtom(d, { element: 'C', x: 0, y: 0 });
+    [d] = addAtom(d, { element: 'O', x: 1, y: 0 });
+    return d;
+  };
+  const target = (host: WindowHost) => {
+    const [id] = Object.keys(host.controller.getDoc().atoms) as AtomId[];
+    if (id === undefined) throw new Error('no atom');
+    return { kind: 'atom' as const, id };
+  };
+
+  it('on an item: I6 with onItem and the state now, then the chosen command runs (Delete)', async () => {
+    const r = rig(['edit.delete']);
+    const host = await createWindowHost(r.main, () => r.view.text);
+    host.loadUntitled(ethanol());
+    host.controller.run('select-all');
+    await host.contextMenu({ target: target(host), screen: { x: 1, y: 1 } });
+    expect(r.shown).toEqual([
+      expect.objectContaining({
+        onItem: true,
+        state: expect.objectContaining({ hasSelection: true, textFocus: false }),
+      }),
+    ]);
+    expect(Object.keys(host.controller.getDoc().atoms)).toHaveLength(0);
+  });
+
+  it('empty canvas: onItem false; dismissed (null) changes nothing', async () => {
+    const r = rig([null]);
+    const host = await createWindowHost(r.main, () => r.view.text);
+    host.loadUntitled(ethanol());
+    const before = host.controller.getDoc();
+    await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
+    expect(r.shown[0]?.onItem).toBe(false);
+    expect(host.controller.getDoc()).toBe(before);
+    expect(host.controller.getSelection().atoms.size).toBe(0);
+    expect(host.controller.canRun('undo')).toBe(false);
+  });
+
+  it('name field focused before: the canvas takes focus first, so Delete acts on the drawing', async () => {
+    const r = rig(['edit.delete'], { text: true });
+    const host = await createWindowHost(
+      r.main,
+      () => r.view.text,
+      () => {
+        r.view.focused++;
+        r.view.text = false;
+      },
+    );
+    host.loadUntitled(ethanol());
+    host.controller.run('select-all');
+    await host.contextMenu({ target: target(host), screen: { x: 1, y: 1 } });
+    expect(r.view.focused).toBe(1);
+    expect(r.shown[0]?.state.textFocus).toBe(false);
+    expect(Object.keys(host.controller.getDoc().atoms)).toHaveLength(0);
+  });
+
+  it('the chosen command is re-checked: text focus regained meanwhile → Delete does nothing', async () => {
+    const r = rig([]);
+    const host = await createWindowHost(
+      r.main,
+      () => r.view.text,
+      () => {
+        r.view.text = false;
+      },
+    );
+    host.loadUntitled(ethanol());
+    host.controller.run('select-all');
+    const done = host.contextMenu({ target: target(host), screen: { x: 1, y: 1 } });
+    r.view.text = true;
+    r.pending.shift()?.('edit.delete');
+    await done;
+    expect(Object.keys(host.controller.getDoc().atoms)).toHaveLength(2);
+  });
+
+  it('Paste runs the clipboard flow (CB-P1), the same function as Edit > Paste', async () => {
+    const r = rig(['edit.paste']);
+    const read = vi.fn(() =>
+      Promise.resolve({ drawing: null, text: null, textTooLong: false, image: false }),
+    );
+    Object.assign(r.main, { clipboardRead: read });
+    const host = await createWindowHost(r.main, () => false);
+    await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it('one menu at a time; none while an in-window dialog is open', async () => {
+    const r = rig([]);
+    const host = await createWindowHost(r.main, () => false);
+    host.loadUntitled(ethanol());
+    const first = host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
+    await host.contextMenu({ target: null, screen: { x: 2, y: 2 } });
+    expect(r.shown).toHaveLength(1);
+    r.pending.shift()?.(null);
+    await first;
+    host.actions.shortcuts();
+    await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
+    expect(r.shown).toHaveLength(1);
+  });
+
+  it('an unknown answer is ignored and a failing I6 is logged', async () => {
+    const r = rig(['app.quit']);
+    const host = await createWindowHost(r.main, () => false);
+    host.loadUntitled(ethanol());
+    const before = host.controller.getDoc();
+    await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
+    expect(host.controller.getDoc()).toBe(before);
+    Object.assign(r.main, { showContextMenu: () => Promise.reject(new Error('gone')) });
+    await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
+    expect(vi.mocked(r.main.logError)).toHaveBeenCalledWith(
+      expect.stringContaining('Context menu'),
+    );
   });
 });

@@ -55,7 +55,8 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
     // N1 (title, dirty, menu) follows the editor, focus and dialogs, at most once per frame.
     const invalidate = host.invalidateMenu;
     const stopController = controller.subscribe((event) => {
-      if (event.type !== 'notice' && event.type !== 'context-menu') invalidate();
+      if (event.type === 'context-menu') void host.contextMenu(event);
+      else if (event.type !== 'notice') invalidate();
     });
     // Zoom in / out enable at the ends of the range; the viewport sends no controller event.
     let zoom = controller.store.getState().viewport.zoom;
