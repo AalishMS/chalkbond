@@ -1,14 +1,9 @@
 // One test per row of SPEC-chem-core.md "Verified library facts" (openchemlib 9.25.2), plus the
 // facts found while building the adapter. If an OpenChemLib upgrade changes one of these, the
 // design that rests on it must be revisited — see the spec before "fixing" a test here.
+// The timing fact (aspirin parse + formula) lives in perf.test.ts, the serial perf project.
 import { Molecule } from 'openchemlib';
 import { describe, expect, it } from 'vitest';
-
-declare const performance: { now(): number };
-declare const process: { env: Record<string, string | undefined> };
-
-/** Timings are meaningless under coverage instrumentation (vitest.config.mts sets this). */
-const budget = it.skipIf(process.env['CHALKBOND_COVERAGE'] === '1');
 
 function bondLengths(m: Molecule): number[] {
   const out: number[] = [];
@@ -95,19 +90,6 @@ describe('openchemlib library facts', () => {
 
   it('knows no names: fromText("ethanol") is null', () => {
     expect(Molecule.fromText('ethanol')).toBeNull();
-  });
-
-  budget('parses and computes the formula of aspirin quickly (≈0.4 ms; budget 5 ms median)', () => {
-    const run = () => Molecule.fromSmiles('CC(=O)Oc1ccccc1C(O)=O').getMolecularFormula();
-    for (let i = 0; i < 20; i++) run();
-    const samples = [];
-    for (let i = 0; i < 50; i++) {
-      const t0 = performance.now();
-      run();
-      samples.push(performance.now() - t0);
-    }
-    samples.sort((p, q) => p - q);
-    expect(samples[25]).toBeLessThan(5);
   });
 });
 

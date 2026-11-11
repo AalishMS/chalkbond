@@ -407,14 +407,18 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
   never throws, the cache agrees, formula H = drawn H atoms + Σ AtomInfo H, a fixed count is
   what AtomInfo shows, `toSmiles` never throws, `aromatize` keeps formulas, `kekulize` keeps
   them or refuses.
-- **Library facts:** each row of "Verified library facts" has a test.
+- **Library facts:** each row of "Verified library facts" has a test, in `ocl-facts.test.ts`;
+  the aspirin timing row is timed in `perf.test.ts` (perf project, below), with the same 20
+  warm-up runs, 50 samples and median < 5 ms.
 - **Perf:** `perceive` on a 500-atom single-fragment doc < 16 ms median (one frame);
   `createPerceiver` after a one-atom label change in a 10-fragment doc < 3 ms median;
   `parseSmiles` of a 50-heavy-atom molecule < 20 ms median. (C9) The timing assertions are
   skipped under `--coverage` (instrumentation slows code several-fold); `npm test` enforces
   them. Perf-budget files (`**/perf.test.ts`) are a separate Vitest project that runs after all
   other files, one file at a time: run alongside the parallel workers, the 500-atom median read
-  17–18 ms instead of ~6 ms and failed intermittently (Checkpoint G review).
+  17–18 ms instead of ~6 ms and failed intermittently (Checkpoint G review). The aspirin
+  library-fact timing moved there too (Checkpoint T): beside the parallel unit workers its
+  median read 5.15 ms and 5.26 ms against the 5 ms budget, while the same file alone passed.
 
 ## Success Criteria
 
@@ -435,7 +439,8 @@ OCL's implicit H and free valence (`< 0` → over; not judged when `explicitH` i
 - **Always:** keep OCL behind this module's API; validate dictionary data with Zod; return
   `Result`/`ChemError` for bad user input (never crash on a typo).
 - **Ask first:** adding name sources beyond the dictionary; adding Atom/Bond fields to
-  doc-model; upgrading OpenChemLib across a minor version (re-run the library-fact tests).
+  doc-model; upgrading OpenChemLib across a minor version (re-run the library-fact tests:
+  `ocl-facts.test.ts` and the aspirin timing in `perf.test.ts`).
 - **Never:** network access at runtime; importing `openchemlib` outside chem-core; storing OCL
   data (IDCodes etc.) in the `.chalk` file.
 

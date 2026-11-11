@@ -1,6 +1,8 @@
 // SPEC-chem-core.md perf budgets (medians): perceive on a 500-atom fragment < 16 ms (a frame);
 // cached perceiver after a one-atom label change in a 10-fragment doc < 3 ms; parseSmiles of a
-// 50-heavy-atom molecule < 20 ms.
+// 50-heavy-atom molecule < 20 ms. Also the timing row of "Verified library facts" (aspirin), which
+// is an OpenChemLib fact like those in ocl-facts.test.ts but is timed here, on a quiet CPU.
+import { Molecule } from 'openchemlib';
 import { describe, expect, it } from 'vitest';
 import {
   addBond,
@@ -103,5 +105,21 @@ describe('chem-core performance budgets', () => {
     if (r.ok) expect(Object.keys(r.value.atoms).length).toBeGreaterThanOrEqual(50);
     const ms = time(20, () => parseSmiles(smiles));
     expect(ms, `parseSmiles median ${ms.toFixed(2)} ms`).toBeLessThan(20);
+  });
+});
+
+// SPEC-chem-core.md "Verified library facts" (openchemlib 9.25.2): re-run before upgrading OCL.
+describe('openchemlib library facts (timing)', () => {
+  budget('parses and computes the formula of aspirin quickly (≈0.4 ms; budget 5 ms median)', () => {
+    const run = () => Molecule.fromSmiles('CC(=O)Oc1ccccc1C(O)=O').getMolecularFormula();
+    for (let i = 0; i < 20; i++) run();
+    const samples = [];
+    for (let i = 0; i < 50; i++) {
+      const t0 = performance.now();
+      run();
+      samples.push(performance.now() - t0);
+    }
+    samples.sort((p, q) => p - q);
+    expect(samples[25]).toBeLessThan(5);
   });
 });
