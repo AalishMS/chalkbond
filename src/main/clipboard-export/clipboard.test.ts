@@ -13,7 +13,9 @@ it('validates every field through the central sender check', () => {
     { ...request, png: new Uint8Array(8) },
     { ...request, png: new Uint8Array(64 * 1024 * 1024 + 1) },
     { ...request, svg: 'bad' },
-    { ...request, svg: '<svg' + 'a'.repeat(20 * 1024 * 1024) },
+    { ...request, svg: '<svg' + 'a'.repeat(64 * 1024 * 1024 - 3) },
+    // 32 Mi + 1 characters, but 64 MiB + 2 UTF-8 bytes: the cap counts bytes.
+    { ...request, svg: '<svg' + 'é'.repeat(32 * 1024 * 1024 - 1) },
     { ...request, drawing: '[]' },
     { ...request, drawing: '{é' },
     { ...request, drawing: '{\n}' },
@@ -31,6 +33,16 @@ it('validates every field through the central sender check', () => {
       ),
     ).toThrow();
   expect(clipboardWriteSchema.parse({ ...request, drawing: null }).drawing).toBeNull();
+  // C9: the SVG carrier may be over 20 MiB, up to 64 MiB of UTF-8; the drawing stays at 20 MiB.
+  for (const svg of [
+    '<svg' + 'a'.repeat(20 * 1024 * 1024),
+    '<svg' + 'a'.repeat(64 * 1024 * 1024 - 4),
+  ])
+    expect(clipboardWriteSchema.parse({ ...request, svg }).svg).toBe(svg);
+  expect(
+    clipboardWriteSchema.parse({ ...request, drawing: '{' + 'a'.repeat(20 * 1024 * 1024 - 1) })
+      .drawing,
+  ).toHaveLength(20 * 1024 * 1024);
   expect(() =>
     validateRequest(
       { senderFrame: { ...frame } },

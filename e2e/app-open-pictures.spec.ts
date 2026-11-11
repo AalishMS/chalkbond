@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expect, test, type ElectronApplication } from '@playwright/test';
 import {
+  crc32,
   drawingPayload,
   exportSvg,
   withPdfDrawing,
@@ -85,6 +86,37 @@ for (const [name, make] of pictures) {
     }
   });
 }
+
+/** `png` with an ancillary private chunk of `size` zero bytes after IHDR (a picture over 20 MiB). */
+function padded(png: Uint8Array, size: number): Uint8Array {
+  const chunk = Buffer.alloc(size + 12);
+  chunk.writeUInt32BE(size, 0);
+  chunk.write('flLr', 4, 'latin1');
+  chunk.writeUInt32BE(crc32(chunk.subarray(4, -4)), size + 8);
+  return Buffer.concat([png.subarray(0, 33), chunk, png.subarray(33)]);
+}
+
+test('C9: a 21 MiB PNG made in Chalkbond with a small drawing reopens editable', async () => {
+  const file = join(folder, 'big.png');
+  const data = padded(
+    withPictureChunks(PIXEL, { dpi: 300, payload: drawingPayload(toluene) }),
+    21 * 1024 * 1024,
+  );
+  expect(data.length).toBeGreaterThan(20 * 1024 * 1024);
+  writeFileSync(file, data);
+  const { app, page } = await openApp({
+    launch: { dialogs: [{ canceled: false, filePaths: [file] }] },
+  });
+  try {
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+o');
+    await expect.poll(() => title(app)).toBe('big.png - Chalkbond');
+    expect(serialize(await readDocument(page))).toBe(serialize(toluene));
+    expect((await dialogLog(app)).map((d) => d.method)).toEqual(['showOpenDialog']);
+  } finally {
+    await app.close();
+  }
+});
 
 test('CS4: an opened SVG with a remote image and a script is scanned, never loaded', async () => {
   const file = join(folder, 'trap.svg');

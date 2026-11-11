@@ -1,5 +1,26 @@
-import { pngPixelSize, readSvgDrawing, withPictureChunks } from '@core/clipboard-export';
+import {
+  MAX_PICTURE_BYTES,
+  pngPixelSize,
+  readSvgDrawing,
+  withPictureChunks,
+} from '@core/clipboard-export';
 import type { SvgDocument } from '@core/svg-render';
+
+/**
+ * R1's chunks with Decision C9's cap: `withPictureChunks` as usual; when the result is over `cap`
+ * with a payload, it is rebuilt from `png` without the payload (pHYs kept). A PNG over the cap
+ * even then is returned as it is: the write (C1, C4) refuses it. Callers that need to know whether
+ * the drawing is inside read it back with `readPngDrawing` (the export flow's N-E3).
+ */
+export function withPictureChunksCapped(
+  png: Uint8Array,
+  opts: { dpi: number; payload: string | null },
+  cap: number = MAX_PICTURE_BYTES,
+): Uint8Array {
+  const full = withPictureChunks(png, opts);
+  if (opts.payload === null || full.length <= cap) return full;
+  return withPictureChunks(png, { dpi: opts.dpi, payload: null });
+}
 
 export async function rasterise(svg: SvgDocument, dpi: number, white: boolean) {
   const size = pngPixelSize(svg.width, svg.height, dpi);
@@ -30,7 +51,7 @@ export async function rasterise(svg: SvgDocument, dpi: number, white: boolean) {
       );
     });
     return {
-      png: withPictureChunks(new Uint8Array(await blob.arrayBuffer()), {
+      png: withPictureChunksCapped(new Uint8Array(await blob.arrayBuffer()), {
         dpi: size.dpi,
         payload: readSvgDrawing(svg.svg),
       }),

@@ -218,6 +218,7 @@ Property: `extractDrawing` on arbitrary bytes for every kind never throws.
 **Acceptance criteria:**
 - [x] Exported from `@core/clipboard-export`; tests pass; module ≥ 90 % lines so far
 - [x] `pasteAction` reads no clock and calls `parse` only
+- [x] Correction (2026-11-11, Decision C9 size policy): `exportSvg` (one `renderSvg`) removes only its own metadata when the SVG would pass `MAX_PICTURE_BYTES` (64 MiB UTF-8; the result equals `embed: false`); `extractDrawing` refuses a `.chalk` over 20 MiB and a picture over 64 MiB, the text inside still meets `parse`'s 20 MiB; pure `utf8ByteLength` (surrogates) (`limits.test.ts` with scaled injected limits; real-size production checks in `e2e/picture-limits.spec.ts`)
 
 **Verification:** `npm test -- src/core/clipboard-export`, `npm run check`. No visible change.
 
@@ -246,6 +247,7 @@ drawing and `image: true`.
 
 **Acceptance criteria:**
 - [x] Handler unit tests pass; schemas reject every CS1 case
+- [x] Correction (2026-11-11, Decision C9): C1 takes an SVG up to 64 MiB of UTF-8 (20 MiB + 1 accepted, 64 MiB + 2 bytes in 32 Mi + 3 characters refused); the drawing stays at 20 MiB. `rasterise` adds the chunks through `withPictureChunksCapped`: a payload that alone pushes the PNG past 64 MiB is left out, `pHYs` kept (`rasterise.test.ts` with an injected cap; the 64 MiB case in `e2e/picture-limits.spec.ts`)
 - [ ] `e2e/win/clipboard-ipc.spec.ts` green on Windows; the SEC4 request counter is 0 at the end
 - [ ] `window.chalkbond` exposes the two new functions and nothing else new (SEC5 list updated; bridge e2e pending)
 

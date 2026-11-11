@@ -318,6 +318,7 @@ are unchanged.
 **Acceptance criteria:**
 - [x] Unit and e2e tests pass (SC5 for PNG and SVG, and PDF under PDF-A from the C4 fixture; SC6). The opened SVG with a remote `<image>` and a `<script>` keeps the SEC4 counter at 0 (CS4). Linux only
 - [x] Shot exists (`A9/opened-picture.png`: toluene, nothing selected, Copy enabled)
+- [x] Correction (2026-11-11, clipboard-export C9, SEC7/F14): main reads a `.chalk` up to 20 MiB and a picture up to 64 MiB; a 21 MiB PNG with a small drawing reopens (`files.test.ts`, `file-flows.test.ts`, `e2e/app-open-pictures.spec.ts`); a `.chalk` over 20 MiB and a picture over 64 MiB show the too-large box with the new detail "Drawings can be up to 20 MB. Pictures made in Chalkbond can be up to 64 MB." (`messages.test.ts`, `e2e/app-open-errors.spec.ts`; stubbed box data, the native box on Windows not looked at)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A9` →
 `A9/opened-picture.png` (toluene opened from the PNG at the default zoom; nothing selected; the

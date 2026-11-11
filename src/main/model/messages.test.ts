@@ -13,7 +13,11 @@ const box = (message: string, detail: string) => ({
 describe('fileErrorBox (F14, every row)', () => {
   it.each([
     ['missing', "“ethanol.chalk” can't be found.", 'It may have been moved, renamed or deleted.'],
-    ['too-large', '“ethanol.chalk” is too large to open.', 'Chalkbond opens drawings up to 20 MB.'],
+    [
+      'too-large',
+      '“ethanol.chalk” is too large to open.',
+      'Drawings can be up to 20 MB. Pictures made in Chalkbond can be up to 64 MB.',
+    ],
     [
       'unsupported',
       "Chalkbond can't open “ethanol.chalk”.",

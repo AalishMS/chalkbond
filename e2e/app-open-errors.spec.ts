@@ -1,7 +1,7 @@
 // A9 (SPEC-app-shell.md F3, F14, A10 wording; SC6): files that cannot be opened show the native
 // error box; the current drawing, the session and the file's bytes are unchanged, and no
 // unsaved-changes prompt is shown (the drawing is dirty, so a prompt would appear as a box).
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type ElectronApplication } from '@playwright/test';
@@ -93,6 +93,42 @@ test('SC6: newer, damaged, no drawing and missing files: wording, nothing change
       expect(await title(app), path).toBe('*Untitled - Chalkbond');
     }
     for (const [path, before] of bytes) expect(Buffer.compare(readFileSync(path), before)).toBe(0);
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('C9: a .chalk over 20 MiB and a picture over 64 MiB are too large (F14 wording)', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'chalkbond-open-large-'));
+  const chalk = join(dir, 'big.chalk');
+  const png = join(dir, 'huge.png');
+  writeFileSync(chalk, '');
+  truncateSync(chalk, 20 * 1024 * 1024 + 1);
+  writeFileSync(png, PIXEL);
+  truncateSync(png, 64 * 1024 * 1024 + 1);
+  const detail = 'Drawings can be up to 20 MB. Pictures made in Chalkbond can be up to 64 MB.';
+  const cases: [string, ReturnType<typeof box>][] = [
+    [chalk, box('“big.chalk” is too large to open.', detail)],
+    [png, box('“huge.png” is too large to open.', detail)],
+  ];
+  const { app, page } = await openApp({
+    launch: {
+      dialogs: cases.flatMap(([path]) => [{ canceled: false, filePaths: [path] }, { response: 0 }]),
+    },
+  });
+  try {
+    await page.getByTestId('canvas').focus();
+    const drawing = serialize(await readDocument(page));
+    for (const [i, [path, expected]] of cases.entries()) {
+      await page.keyboard.press('Control+o');
+      await expect.poll(async () => (await dialogLog(app)).length).toBe(2 * i + 2);
+      const log = await dialogLog(app);
+      expect(log[2 * i + 1]?.method, path).toBe('showMessageBox');
+      expect(log[2 * i + 1]?.options, path).toEqual(expected);
+      expect(serialize(await readDocument(page)), path).toBe(drawing);
+      expect(await title(app), path).toBe('Untitled - Chalkbond');
+    }
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });

@@ -88,7 +88,8 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 
 | # | Decision | Reason | Date |
 |---|---|---|---|
-| C7 | C1 accepts drawing: null only when the editable payload exceeds MAX_FILE_BYTES; omit its clipboard entry and retain bitmap / SVG. Non-null remains strict printable ASCII beginning with {. | Approved IPC correction; E1 already requires oversized payload omission; no document schema change | 2026-11-11 |
+| C7 | C1 accepts drawing: null only when the editable payload exceeds MAX_FILE_BYTES (or, Decision C9, when its metadata would push the SVG past MAX_PICTURE_BYTES); omit its clipboard entry and retain bitmap / SVG. Non-null remains strict printable ASCII beginning with {. | Approved IPC correction; E1 already requires oversized payload omission; no document schema change | 2026-11-11 |
+| C9 | Size policy: the editable drawing (`.chalk`, the payload, the clipboard drawing entry, the text found inside a picture) stays at `MAX_FILE_BYTES` (20 MiB, checked by `parse`). A picture carrier (PNG, SVG, PDF file; clipboard PNG and SVG) may be up to `MAX_PICTURE_BYTES` = 64 MiB, the C4 write cap: main reads a `.chalk` up to 20 MiB and a picture up to 64 MiB (app-shell SEC7), `extractDrawing` judges by kind the same way, C1 takes an SVG of up to 64 MiB of actual UTF-8. `exportSvg` stays one `renderSvg`; it embeds when the payload is at most 20 MiB and the final SVG at most 64 MiB UTF-8 bytes, else it removes only its own `<metadata id="chalkbond">` element (the rest byte-identical to `embed: false`). The PNG gets its chunks as usual unless the payload alone pushes it past 64 MiB: then it is rebuilt without the payload, `pHYs` kept. A picture over 64 MiB without the drawing still fails as before; no bound is lifted. F14 too-large detail: "Drawings can be up to 20 MB. Pictures made in Chalkbond can be up to 64 MB." | A Chalkbond picture with a small drawing could be written (64 MiB) but not reopened (20 MiB), and escaping (`\"` → `\&quot;`, 3.5×) let a payload under 20 MiB push the SVG past every carrier cap | 2026-11-11 |
 | C8 | Paste provenance: every `onCopy` call bumps an editor-copy generation synchronously (the editor's in-app clipboard has just changed). Each queued selection or cut copy carries the generation of its `onCopy`; a successful write records it with `lastEditorCopy`. CB-P1 cascades in-app only when, compared after the awaited read, that recorded generation still equals the current one and the payload and `canRun('paste')` conditions hold; otherwise the clipboard's drawing pastes as a fragment. `lastEditorCopy` stays unchanged on failure, a whole copy still sets it to null; no editor API change | A failed copy B (or a copy B made while a paste waits or reads) changes the editor's clipboard but not the system's: comparing payloads alone pasted B when the system held A. Clearing `lastEditorCopy` on failure would miss the queue order | 2026-11-11 |
 | O7 | Positive fractional effective DPI is allowed only when no positive integer meets both raster caps after ceil and min 1. Search integers through floor(upper), upper = min(requestedDpi, 720000/widthPt, 720000/heightPt); if none fits, bisect [0,min(1,upper)] for 64 iterations (stop at an unrepresentable midpoint), retaining the feasible lower endpoint. Never return zero DPI; reduced is true. Keep rounded pHYs even when it is zero. | Approved orchestrator resolution for enormous finite drawings; avoids width × height overflow | 2026-11-11 |
 | O1 | The **Copy** button sits at the right end of the top bar, after Undo/Redo (mock-ups A01, A02): a filled primary button with icon and label; after a copy it reads "Copied" with a check for 2 s; below 1100 px window width it shows the label "Copy" with no icon (never icon-only) and the name field narrows to 204 px (A15b) | The top-right corner is where Office and browsers put "send it on"; a word is self-explanatory, two overlapping sheets are not | 2026-11-10 |
@@ -164,7 +165,7 @@ notice (8 s, the next canvas action, or Esc).
 | N-P5 | Paste: text over 64 KB | info | That text is too long to paste. |
 | N-E1 | Export written | info | Exported esterification.png. *(the file's name)* |
 | N-E2 | Export of a very large drawing (R3) | info | Exported esterification.png. The drawing is very large, so the picture is less sharp than you chose. |
-| N-E3 | Export too large to embed the drawing (payload > `MAX_FILE_BYTES`), or a PDF the embedder refused (PDF-A3) | info | Exported esterification.png. It is too large to open again in Chalkbond, so keep the .chalk file. |
+| N-E3 | Export too large to embed the drawing (payload > `MAX_FILE_BYTES`, or the drawing left out because the carrier would pass `MAX_PICTURE_BYTES`: C9), or a PDF the embedder refused (PDF-A3) | info | Exported esterification.png. It is too large to open again in Chalkbond, so keep the .chalk file. |
 
 Text that is not a compound name or SMILES gets the editor's own N2 / N3 notices. When a copy is
 both N-C2 and N-C5, N-C5 is shown. A notice is the only feedback for an export; a failed export
@@ -259,7 +260,10 @@ pictureDoc(doc: Doc, selection: Selection | null): Doc
 exportSvg(doc: Doc, selection: Selection | null, opts?: { embed?: boolean }): SvgDocument
     // renderSvg(doc, { only: sel && pictureSelection(doc, sel), padding: 0,
     //   metadata: embed !== false && payload.length <= MAX_FILE_BYTES ? payload : undefined })
-    // payload = drawingPayload(pictureDoc(doc, sel))
+    // payload = drawingPayload(pictureDoc(doc, sel)); one renderSvg call. C9: if the metadata was
+    // added and the SVG is over MAX_PICTURE_BYTES UTF-8 bytes, its <metadata id="chalkbond"> line
+    // is removed again (the result is then exactly the embed: false SVG)
+MAX_PICTURE_BYTES = 64 * 1024 * 1024                                     // C9: picture carriers
 RASTER_LIMITS: { readonly maxSide: 10000; readonly maxPixels: 50_000_000 }
 pngPixelSize(widthPt: number, heightPt: number, dpi: number):
     { width: number; height: number; dpi: number; reduced: boolean }      // R3
@@ -310,7 +314,7 @@ check, size limits). Request limits are enforced by the schema.
 
 | Ch. | Channel / preload function | Request | Response | Main does |
 |---|---|---|---|---|
-| C1 | `clipboard:write` / `clipboardWrite` | `{ png: Uint8Array ≤ 64 MB, starts with the PNG signature; svg: string ≤ 20 MB, starts with "<svg"; drawing: string | null (null only when the editable payload exceeds MAX_FILE_BYTES); non-null: ≤ 20 MB, /^\{[\x20-\x7E]*$/ }` | `{ ok: boolean }` | CB-W1 |
+| C1 | `clipboard:write` / `clipboardWrite` | `{ png: Uint8Array ≤ 64 MB, starts with the PNG signature; svg: string ≤ 64 MiB of UTF-8 (C9), starts with "<svg"; drawing: string | null (null only when the editable payload was omitted: over MAX_FILE_BYTES, or its metadata over the C9 carrier cap); non-null: ≤ 20 MB, /^\{[\x20-\x7E]*$/ }` | `{ ok: boolean }` | CB-W1 |
 | C2 | `clipboard:read` / `clipboardRead` | `{}` | `ClipboardContents` | CB-R1 |
 | C3 | `file:choose-save` / `chooseSave` | `{ format: 'chalk' \| 'png' \| 'svg' \| 'pdf', suggestedName: string ≤ 255 }` | `FileRef \| null` | app-shell F8 |
 | C4 | `file:write` / `writeFile` | `{ ref: uuid, data: Uint8Array ≤ 64 MB }` | `{ ok: true } \| { ok: false, problem: WriteProblem }` | app-shell F9, SEC8 |
@@ -325,7 +329,11 @@ check, size limits). Request limits are enforced by the schema.
   the text is loaded as an `Image` from `URL.createObjectURL(new Blob([text], { type:
   'image/svg+xml' }))`, `await img.decode()`; drawn on a `<canvas>` of that size, after a
   `#ffffff` fill when `white`; `canvas.toBlob(…, 'image/png')`; the object URL is revoked in a
-  `finally`; then `withPictureChunks(bytes, { dpi: size.dpi, payload })`.
+  `finally`; then `withPictureChunksCapped(bytes, { dpi: size.dpi, payload })` (C9: as
+  `withPictureChunks`, but when the result with a payload is over `MAX_PICTURE_BYTES` it is rebuilt
+  from the canvas bytes with `payload: null`, `pHYs` kept; a PNG over the cap even then is returned
+  as it is and the write refuses it). The return shape is unchanged: a caller that must know whether
+  the drawing is inside reads the PNG back with `readPngDrawing` (export N-E3). `toBlob` stays.
 - **R2** Fonts: an SVG image uses installed system fonts: Arial on Windows, Liberation Sans on
   Linux, the faces svg-render's metrics are calibrated against. No font is bundled or loaded.
 - **R3** `pngPixelSize`: `px = pt × dpi / 72` per side, `Math.ceil`, at least 1. If a side would
@@ -339,7 +347,9 @@ check, size limits). Request limits are enforced by the schema.
 ### Embedding
 
 - **E1** Payload = `drawingPayload(pictureDoc(doc, selection))`. Limit `MAX_FILE_BYTES` (what
-  `parse` accepts); over it the picture is written without the drawing (N-E3; a copy omits the
+  `parse` accepts); the carrier holding it is limited to `MAX_PICTURE_BYTES` (64 MiB, Decision C9:
+  SVG by its UTF-8 bytes, PNG and PDF by the final file's bytes). Over either limit the picture is
+  written without the drawing (N-E3; a copy omits the
   drawing entry and shows N-C1/N-C2 as usual). Recognition is the envelope itself, checked by
   `parse`.
 - **E2** PNG: `withPictureChunks` walks the chunk list (signature; length, type, data, CRC; a bad
@@ -354,11 +364,13 @@ check, size limits). Request limits are enforced by the schema.
   or double quotes), takes the text between, unescapes `&amp; &lt; &gt; &quot; &apos;` and
   decimal / hex character references, and returns it; anything else → null. The SVG is never
   parsed into a DOM, rendered or loaded as a document.
-- **E4** `extractDrawing(kind, bytes)`: over `MAX_FILE_BYTES` → `too-large`. `chalk`: UTF-8 decode
+- **E4** `extractDrawing(kind, bytes)`: `chalk` over `MAX_FILE_BYTES`, or a picture (`png`, `svg`,
+  `pdf`) over `MAX_PICTURE_BYTES` (C9) → `too-large`. `chalk`: UTF-8 decode
   (strip one BOM); a decode failure → `damaged`. `png`: no PNG signature → `damaged`; no chunk →
   `no-drawing`. `svg`: UTF-8 decode (failure → `damaged`); no metadata → `no-drawing`. `pdf`
   (PDF-A only): no `%PDF-` → `damaged`; `readPdfDrawing` null → `no-drawing`. The text then goes
-  through doc-model `parse` in the caller (app-shell F3), whose codes map to app-shell F14.
+  through doc-model `parse` in the caller (app-shell F3), whose codes map to app-shell F14; so the
+  drawing found inside a picture of up to 64 MiB is still held to `parse`'s 20 MiB (`too-large`).
 - **E5** The clipboard drawing entry carries the same payload.
 
 ### Picture rules
@@ -435,6 +447,11 @@ check, size limits). Request limits are enforced by the schema.
   then PDF-A2 or PDF-B1 → C4.
 - **EX4** Then N-E1 (N-E2 / N-E3 variants), or app-shell's error box for a failed write. Export
   never changes the document, the dirty state, the session's file or the recovery file.
+  C9 obligations (C11, C12): N-E3 is chosen from the bytes actually written, never assumed: PNG
+  `readPngDrawing(png) === null`, SVG `readSvgDrawing(svg) === null`, PDF the embedded file over
+  `MAX_PICTURE_BYTES` (then the printed PDF is written unembedded) or not embedded. Only a picture
+  written with its drawing (and at most 64 MiB) may be described as opening again in Chalkbond; the
+  Export dialog's reopen line keeps its approved wording.
 - **EX5** The exported SVG is byte-identical to `exportSvg(doc, null).svg`.
 
 ### PDF (main `pdf.ts`, rule PD1) and embedding (rule PDF-A or PDF-B)
@@ -470,8 +487,9 @@ check, size limits). Request limits are enforced by the schema.
   `endstream` `endobj`; then `xref` LF `n 1` LF one 20-byte entry `oooooooooo 00000 n` + space +
   LF; then `trailer` `<< /Size n+1 /Root a b R [/Info c d R] [/ID …] /Prev X /ChalkbondDrawing n 0
   R >>` `startxref` LF its offset LF `%%EOF` LF.
-- **PDF-A2** Export PDF: `withPdfDrawing(printed, payload)`; `ok` → write it; not ok, or the
-  payload over `MAX_FILE_BYTES` → write the printed PDF unchanged and show N-E3 (logged).
+- **PDF-A2** Export PDF: `withPdfDrawing(printed, payload)`; `ok` and at most `MAX_PICTURE_BYTES`
+  (C9) → write it; not ok, the payload over `MAX_FILE_BYTES`, or the embedded PDF over
+  `MAX_PICTURE_BYTES` → write the printed PDF unchanged and show N-E3 (logged).
 - **PDF-A3** `readPdfDrawing(pdf)`: last `startxref` → classic table → trailer `/ChalkbondDrawing
   n 0 R` → that section's offset for `n` → `n 0 obj` → direct integer `/Length L` → `stream`,
   EOL, `L` bytes, then `endstream`; returns the bytes as ASCII text, else null. Every offset is

@@ -8,19 +8,21 @@ export const sessionUpdateSchema = z
   .strict();
 
 const maxDrawingBytes = 20 * 1024 * 1024;
+/** clipboard-export Decision C9: a picture carrier (PNG, SVG) may be up to 64 MiB. */
+const maxPictureBytes = 64 * 1024 * 1024;
 export const clipboardWriteSchema = z
   .object({
     png: z
       .instanceof(Uint8Array)
       .refine(
         (bytes) =>
-          bytes.length <= 64 * 1024 * 1024 &&
+          bytes.length <= maxPictureBytes &&
           [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => bytes[index] === byte),
       ),
     svg: z
       .string()
       .startsWith('<svg')
-      .refine((text) => Buffer.byteLength(text, 'utf8') <= maxDrawingBytes),
+      .refine((text) => Buffer.byteLength(text, 'utf8') <= maxPictureBytes),
     drawing: z
       .string()
       .max(maxDrawingBytes)

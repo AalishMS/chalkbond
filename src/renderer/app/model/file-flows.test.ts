@@ -1,7 +1,7 @@
 // F1–F7, F13 (SPEC-app-shell.md "Files"; CO4; R7, R14) over fakes: every prompt answer, the
 // in-progress flag with one pending request, session kinds and the published title.
 import { describe, expect, it, vi } from 'vitest';
-import { exportSvg, withPictureChunks } from '@core/clipboard-export';
+import { exportSvg, MAX_PICTURE_BYTES, withPictureChunks } from '@core/clipboard-export';
 import {
   addAtom,
   emptyDoc,
@@ -601,6 +601,27 @@ describe('A9: F3 for exported pictures (clipboard-export E4) and the F14 mapping
     expect(r.session.kind).toBe('picture');
   });
 
+  it('C9: a picture over 20 MiB with a small drawing inside opens; an oversize drawing is too large', async () => {
+    const doc = golden('toluene');
+    const svg = exportSvg(doc, null).svg.replace(
+      '</svg>',
+      `<!--${'x'.repeat(21 * 1024 * 1024)}--></svg>`,
+    );
+    const big = ref('big.svg');
+    const r = rig({ files: { [big.id]: bytes(enc.encode(svg)) } });
+    await r.flows.openRef(big);
+    expect(serialize(r.controller.getDoc())).toBe(serialize(doc));
+    expect(r.session.kind).toBe('picture');
+
+    // The drawing inside is still held to parse's 20 MiB rule.
+    const huge = `<svg><metadata id="chalkbond">{${' '.repeat(MAX_FILE_BYTES)}}</metadata></svg>`;
+    const file = ref('huge.svg');
+    const h = rig({ files: { [file.id]: bytes(enc.encode(huge)) } });
+    await h.flows.openRef(file);
+    expect(h.calls).toEqual(['read huge.svg', 'error too-large huge.svg']);
+    expect(h.controller.load).not.toHaveBeenCalled();
+  });
+
   it("A6: a picture session's Save goes to Save as with <name>.chalk; the picture is never written", async () => {
     const file = ref('toluene.png');
     const out = ref('toluene.chalk');
@@ -627,7 +648,8 @@ describe('A9: F3 for exported pictures (clipboard-export E4) and the F14 mapping
       ['bad.svg', new Uint8Array([0x3c, 0xff, 0xfe]), 'damaged'],
       ['print.pdf', enc.encode('%PDF-1.4\n%%EOF\n'), 'no-drawing'],
       ['fake.pdf', enc.encode('hello'), 'damaged'],
-      ['huge.png', new Uint8Array(MAX_FILE_BYTES + 1), 'too-large'],
+      ['huge.chalk', new Uint8Array(MAX_FILE_BYTES + 1), 'too-large'],
+      ['huge.png', new Uint8Array(MAX_PICTURE_BYTES + 1), 'too-large'],
     ];
     for (const [name, data, problem] of cases) {
       const file = ref(name);

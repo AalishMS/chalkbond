@@ -9,6 +9,7 @@ import {
   exportFileName,
   drawingPayload,
   exportSvg,
+  MAX_PICTURE_BYTES,
   withPictureChunks,
 } from '../../src/core/clipboard-export';
 const png = Uint8Array.from([
@@ -84,7 +85,9 @@ test('drawing precedence and validated cascade', () => {
 test('all file classifications, fatal UTF8, BOM and errors', () => {
   for (const k of ['chalk', 'png', 'svg', 'pdf'] as const) {
     expect(fileKindOf('A.' + k.toUpperCase())).toBe(k);
-    expect(extractDrawing(k, new Uint8Array(MAX_FILE_BYTES + 1), decode)).toEqual({
+    // Decision C9: a .chalk is limited to MAX_FILE_BYTES, a picture carrier to MAX_PICTURE_BYTES.
+    const limit = k === 'chalk' ? MAX_FILE_BYTES : MAX_PICTURE_BYTES;
+    expect(extractDrawing(k, new Uint8Array(limit + 1), decode)).toEqual({
       ok: false,
       problem: 'too-large',
     });

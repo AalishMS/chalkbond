@@ -4,7 +4,7 @@ import { open, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createFiles, MAX_READ_BYTES, MAX_WRITE_BYTES } from './files';
+import { createFiles, MAX_PICTURE_READ_BYTES, MAX_READ_BYTES, MAX_WRITE_BYTES } from './files';
 import type { FileEntry } from './model/file-refs';
 
 const PNG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0]);
@@ -78,6 +78,30 @@ describe('read (SEC7)', () => {
     await edge.close();
     const read = await files().read(join(dir, 'edge.svg'));
     expect(read.ok && read.bytes.length).toBe(MAX_READ_BYTES);
+  });
+
+  it('pictures (.png, .svg, .pdf) may be up to 64 MiB; a .chalk stays at 20 MiB (C9)', async () => {
+    expect(MAX_PICTURE_READ_BYTES).toBe(64 * 1024 * 1024);
+    const sized = async (name: string, size: number) => {
+      const handle = await open(join(dir, name), 'w');
+      await handle.truncate(size);
+      await handle.close();
+      return files().read(join(dir, name));
+    };
+    expect(await sized('over.chalk', MAX_READ_BYTES + 1)).toEqual({
+      ok: false,
+      problem: 'too-large',
+    });
+    for (const ext of ['png', 'svg', 'pdf']) {
+      const read = await sized(`big.${ext}`, 21 * 1024 * 1024);
+      expect(read.ok && read.bytes.length).toBe(21 * 1024 * 1024);
+      expect(await sized(`huge.${ext}`, MAX_PICTURE_READ_BYTES + 1)).toEqual({
+        ok: false,
+        problem: 'too-large',
+      });
+    }
+    const edge = await sized('edge.png', MAX_PICTURE_READ_BYTES);
+    expect(edge.ok && edge.bytes.length).toBe(MAX_PICTURE_READ_BYTES);
   });
 
   it('a .exe or a name without an Open extension → unsupported, never read', async () => {

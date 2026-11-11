@@ -253,7 +253,7 @@ message / detail built in main from `{ problem, name }` by `src/main/model/messa
 | Problem | Message | Detail |
 |---|---|---|
 | `missing` | “ethanol.chalk” can't be found. | It may have been moved, renamed or deleted. |
-| `too-large` | “ethanol.chalk” is too large to open. | Chalkbond opens drawings up to 20 MB. |
+| `too-large` | “ethanol.chalk” is too large to open. | Drawings can be up to 20 MB. Pictures made in Chalkbond can be up to 64 MB. *(clipboard-export C9; also when the drawing inside a picture is over 20 MB)* |
 | `unsupported` (a drop, F12; or a name typed into Open, F2) | Chalkbond can't open “notes.docx”. | It opens Chalkbond drawings (.chalk) and pictures made in Chalkbond (.png, .svg). *(", .pdf" under PDF-A)* |
 | `no-drawing` | “photo.png” has no Chalkbond drawing inside. | Only pictures exported or copied from Chalkbond can be opened and changed. |
 | `newer-version` | “ethanol.chalk” was made with a newer version of Chalkbond. | Install the newer Chalkbond to open it. The file has not been changed. |
@@ -534,7 +534,7 @@ is sent only when title, dirty or state changed.
 | SEC4 | `webRequest.onBeforeRequest`: cancel every request whose scheme is not `file:`, `data:`, `blob:`, `devtools:` or (unpackaged only) the electron-vite dev server origin and its `ws:`; each cancel is logged and counted | e2e: a `fetch('https://example.com')` rejects and the counter (TH4) becomes 1; every other e2e file asserts the counter is 0 at its end |
 | SEC5 | The preload exposes named functions only, each with a fixed channel; no generic `invoke`, no `ipcRenderer`, no Node objects; it imports at runtime only `electron` and `src/shared/channels` | C7 adds only `clipboardWrite` and `clipboardRead` to the existing `startup`, `updateSession`, `platform`, `logError`, `onMainEvent` bridge. A7 adds `chooseOpen`, `readFile`, `chooseSave`, `writeFile`, `ask`, `showFileError`. A8 adds `sessionFile` and `closeOk`. e2e: `Object.keys(window.chalkbond)` equals the documented list; lint probe |
 | SEC6 | Every handler (via `handle()` in `ipc.ts`) checks `event.senderFrame` is the main window's main frame and its URL is the app's `index.html` (or the dev server when unpackaged); otherwise it rejects and logs | unit tests of `handle()` with fake events: null frame, other frame, other URL, bad payload |
-| SEC7 | Reads only through refs or a validated drop path: `fs.stat` regular file, ≤ `MAX_FILE_BYTES` (20 MB), extension in the Open list | unit tests of `files.ts` in a temp folder (directory, symlink to a directory, 21 MB file, `.exe`) |
+| SEC7 | Reads only through refs or a validated drop path: `fs.stat` regular file, extension in the Open list, a `.chalk` ≤ `MAX_FILE_BYTES` (20 MiB) and a picture (`.png`, `.svg`, `.pdf`) ≤ 64 MiB (clipboard-export C9: what C4 may write; the drawing inside still meets `parse`'s 20 MiB) | unit tests of `files.ts` in a temp folder (directory, symlink to a directory, 21 MB `.chalk`, 21 MB and 64 MiB + 1 pictures, `.exe`) |
 | SEC8 | Writes only to writable refs of the matching kind; the data's signature must match (`{` chalk, PNG signature, `<svg`, `%PDF-`); ≤ 64 MB; atomic (F9); internal files only under `userData` and the OS temp folder | unit tests: picture ref refused, wrong signature refused, temp file removed after a failed rename |
 | SEC9 | The main process imports no `src/core` module and parses no user content beyond size and signature checks | lint probe |
 | SEC10 | The hidden PDF window (clipboard-export PD1, CS6) | clipboard-export CS6 |

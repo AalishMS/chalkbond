@@ -6,8 +6,10 @@ import type { ReadProblem, WriteFileResponse } from '../shared/ipc-types';
 import { kindOfPath, type FileEntry, type FileKind } from './model/file-refs';
 import { readProblem, writeProblem } from './model/write-problem';
 
-/** clipboard-export `MAX_FILE_BYTES`: the largest drawing file main reads (SEC7). */
+/** clipboard-export `MAX_FILE_BYTES`: the largest `.chalk` file main reads (SEC7). */
 export const MAX_READ_BYTES = 20 * 1024 * 1024;
+/** clipboard-export `MAX_PICTURE_BYTES`: the largest picture (.png, .svg, .pdf) main reads (SEC7). */
+export const MAX_PICTURE_READ_BYTES = 64 * 1024 * 1024;
 /** The largest file main writes (SEC8). */
 export const MAX_WRITE_BYTES = 64 * 1024 * 1024;
 /** F9: a rename that meets EBUSY / EPERM (a virus scanner, an indexer) is retried 3 × 100 ms. */
@@ -60,16 +62,21 @@ export function createFiles(options: FilesOptions = {}) {
   }
 
   return {
-    /** SEC7: a regular file (links followed) with an Open extension, at most 20 MB. */
+    /**
+     * SEC7: a regular file (links followed) with an Open extension, at most 20 MiB for a `.chalk`
+     * and 64 MiB for a picture (Decision C9 of clipboard-export).
+     */
     async read(path: string): Promise<ReadResult> {
-      if (kindOfPath(path) === null) return { ok: false, problem: 'unsupported' };
+      const kind = kindOfPath(path);
+      if (kind === null) return { ok: false, problem: 'unsupported' };
+      const max = kind === 'chalk' ? MAX_READ_BYTES : MAX_PICTURE_READ_BYTES;
       try {
         const info = await stat(path);
         if (!info.isFile()) return { ok: false, problem: 'unreadable' };
-        if (info.size > MAX_READ_BYTES) return { ok: false, problem: 'too-large' };
+        if (info.size > max) return { ok: false, problem: 'too-large' };
         const bytes = new Uint8Array(await readFile(path));
         // The file may have grown between stat and read.
-        if (bytes.length > MAX_READ_BYTES) return { ok: false, problem: 'too-large' };
+        if (bytes.length > max) return { ok: false, problem: 'too-large' };
         return { ok: true, bytes };
       } catch (error) {
         log(`Read failed: ${String(error)}`);

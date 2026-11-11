@@ -38,7 +38,10 @@ function fileError(problem: FileProblem, name: string): [string, string] {
     case 'missing':
       return [`${q} can't be found.`, 'It may have been moved, renamed or deleted.'];
     case 'too-large':
-      return [`${q} is too large to open.`, 'Chalkbond opens drawings up to 20 MB.'];
+      return [
+        `${q} is too large to open.`,
+        'Drawings can be up to 20 MB. Pictures made in Chalkbond can be up to 64 MB.',
+      ];
     case 'unsupported':
       return [
         `Chalkbond can't open ${q}.`,
