@@ -44,7 +44,7 @@ export interface ClipboardReadResponse {
   image: boolean;
 }
 
-/** I2 read problems; `unsupported` is a drop's (I3) and never answers I2. */
+/** I2 read problems; `unsupported` is a drop's (I3) or Open's (I1, shown by main), never I2's. */
 export type ReadProblem = 'missing' | 'too-large' | 'unreadable' | 'unsupported';
 export type ReadFileResponse =
   { ok: true; bytes: Uint8Array } | { ok: false; problem: Exclude<ReadProblem, 'unsupported'> };

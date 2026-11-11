@@ -60,8 +60,36 @@ describe('chooseOpen (I1, F2)', () => {
     expect(r.refs.get(ref?.id ?? '')?.writable).toBe(false);
   });
 
-  it('a typed name without an Open extension gives no ref (nothing is read)', async () => {
-    expect(await rig({ open: [join('D', 'notes.docx')] }).dialogs.chooseOpen()).toBeNull();
+  it('a typed name without an Open extension shows the F14 unsupported box and gives no ref', async () => {
+    const r = rig({ open: [join('D', 'Lessons', 'notes.docx')] });
+    expect(await r.dialogs.chooseOpen()).toBeNull();
+    // Main builds the box from the base name only; no ref is registered, nothing is read.
+    expect(r.port.box.mock.calls).toEqual([[fileErrorBox('unsupported', 'notes.docx')]]);
+    expect(fileErrorBox('unsupported', 'notes.docx')).toMatchObject({
+      type: 'error',
+      message: "Chalkbond can't open “notes.docx”.",
+      detail:
+        'It opens Chalkbond drawings (.chalk) and pictures made in Chalkbond (.png, .svg, .pdf).',
+    });
+    expect(r.refs.get('00000000-0000-4000-8000-000000000001')).toBeUndefined();
+  });
+
+  it('a supported name is not judged here: missing or unreadable files answer at I2', async () => {
+    // A name with an Open extension gets a ref and no box; a missing file, a directory or a read
+    // error is reported later by readFile with its own F14 problem (files.test.ts).
+    const r = rig({ open: [join('D', 'gone.chalk')] });
+    expect(await r.dialogs.chooseOpen()).toEqual({
+      id: expect.any(String),
+      name: 'gone.chalk',
+      kind: 'chalk',
+    });
+    expect(r.port.box).not.toHaveBeenCalled();
+  });
+
+  it('a cancelled Open shows no box', async () => {
+    const r = rig();
+    expect(await r.dialogs.chooseOpen()).toBeNull();
+    expect(r.port.box).not.toHaveBeenCalled();
   });
 });
 

@@ -56,7 +56,10 @@ const SAVE_FILTERS: Record<FileRef['kind'], Filter> = {
 
 export function createDialogs({ port, refs, exists, folders }: DialogOptions) {
   return {
-    /** I1: a ref for the chosen file, or null when cancelled (or the name has no Open kind). */
+    /**
+     * I1: a ref for the chosen file, or null when cancelled. A name without an Open extension
+     * (typed `notes.docx`) gets the F14 `unsupported` box, built here from the base name, and null.
+     */
     async chooseOpen(): Promise<FileRef | null> {
       const result = await port.open({
         defaultPath: folders.open(),
@@ -66,7 +69,11 @@ export function createDialogs({ port, refs, exists, folders }: DialogOptions) {
       const path = result.canceled ? undefined : result.filePaths[0];
       if (path === undefined) return null;
       const kind = kindOfPath(path);
-      return kind === null ? null : refs.add(path, kind, 'opened');
+      if (kind === null) {
+        await port.box(fileErrorBox('unsupported', baseName(path)));
+        return null;
+      }
+      return refs.add(path, kind, 'opened');
     },
 
     /** C3 (F8): a writable ref of `format`, or null when cancelled. */

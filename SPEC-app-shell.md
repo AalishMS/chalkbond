@@ -233,7 +233,7 @@ focus) and disarms it; any other keydown also disarms it.
 | Rule | Behaviour |
 |---|---|
 | F1 New | F4; then `controller.load(setStyle(emptyDoc(clock()), { preset: settings.newDrawingStyle }))` (no undo step, not dirty); session Untitled; N4 recovery clear |
-| F2 Open | I1 (filter **Chalkbond drawings** `*.chalk;*.png;*.svg` and, under clipboard-export PDF-A, `*.pdf`; starts in the last open folder, else Documents); cancel → nothing. Then F3 |
+| F2 Open | I1 (filter **Chalkbond drawings** `*.chalk;*.png;*.svg` and, under clipboard-export PDF-A, `*.pdf`; starts in the last open folder, else Documents); cancel → nothing. A name without an Open extension (typed `notes.docx`) → main shows the F14 `unsupported` box built from its base name, I1 answers `null`: the drawing is untouched, no prompt, no ref. Only the name is judged here; a missing file, a directory or a read error with an Open extension is reported by I2 with its own F14 row. Then F3 |
 | F3 Open a ref | I2 → bytes; `fileKindOf(name)`; `extractDrawing(kind, bytes, decodeUtf8)`; `parse`; any failure → I5 error box (F14), the current drawing untouched, no prompt. Success → F4; then `controller.load(doc)`; session = the file (kind `chalk` or `picture`); N2 (recent, last folder); N4. No notice (the title says it) |
 | F4 `confirmDiscard()` | Not dirty → proceed. Dirty → prompt: Save → F5 (cancelled or failed → stop); Don't save → proceed; Cancel → stop |
 | F5 Save | Session is a `.chalk` file with a writable ref → `before = getDoc()`, write `serialize(before)` (C4); else F6. Success: if `getDoc() === before` then `controller.markSaved()` (R7); session file kept; N4; notice "Saved esterification.chalk." |
@@ -253,7 +253,7 @@ message / detail built in main from `{ problem, name }` by `src/main/model/messa
 |---|---|---|
 | `missing` | “ethanol.chalk” can't be found. | It may have been moved, renamed or deleted. |
 | `too-large` | “ethanol.chalk” is too large to open. | Chalkbond opens drawings up to 20 MB. |
-| `unsupported` (drop) | Chalkbond can't open “notes.docx”. | It opens Chalkbond drawings (.chalk) and pictures made in Chalkbond (.png, .svg). *(", .pdf" under PDF-A)* |
+| `unsupported` (a drop, F12; or a name typed into Open, F2) | Chalkbond can't open “notes.docx”. | It opens Chalkbond drawings (.chalk) and pictures made in Chalkbond (.png, .svg). *(", .pdf" under PDF-A)* |
 | `no-drawing` | “photo.png” has no Chalkbond drawing inside. | Only pictures exported or copied from Chalkbond can be opened and changed. |
 | `newer-version` | “ethanol.chalk” was made with a newer version of Chalkbond. | Install the newer Chalkbond to open it. The file has not been changed. |
 | `damaged` (and every other `parse` code, a decode failure) | Chalkbond can't open “ethanol.chalk”. | The file is damaged or is not a Chalkbond drawing. The file has not been changed. |

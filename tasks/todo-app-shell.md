@@ -248,6 +248,7 @@ the I5 schema. `write-problem.test.ts`: each errno. `dialogs` R6 rule as a pure 
 **Acceptance criteria:**
 - [x] Unit tests pass; `src/main/model` ≥ 90 % lines so far
 - [x] No channel returns or accepts a path (schema review in the test: no `path` field except I3, which arrives in A15)
+- [x] Correction (2026-11-11, F2/F14): a name without an Open extension chosen in Open shows the `unsupported` box from main and I1 answers `null`; the drawing is untouched, no prompt (`dialogs.test.ts`, `e2e/app-open-unsupported.spec.ts`)
 
 **Verification:** `npm test -- src/main`, `npm run check`. No visible change (native dialogs; their
 use and stubs are e2e-tested in A8, A9).
