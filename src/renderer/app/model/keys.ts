@@ -1,5 +1,6 @@
 // K1 host keys (SPEC-app-shell.md "Keyboard (host keys)"): the pure decision. Rows are added by
-// the tasks that build their actions; C8 adds Ctrl+C, C9 Ctrl+V (clipboard-export CB-K).
+// the tasks that build their actions; C8 adds Ctrl+C, C9 Ctrl+V (clipboard-export CB-K), A8 the
+// file keys Ctrl+N / O / S / Shift+S.
 
 /** The parts of a `KeyboardEvent` the decision reads. */
 export interface KeyInput {
@@ -17,15 +18,33 @@ export interface HostKeyContext {
   readonly selectionEmpty: boolean;
   /** No gesture runs and no label or text editor is open. */
   readonly idle: boolean;
+  /** An in-window dialog is open: K1 does nothing (the dialog handles its keys). */
+  readonly modal: boolean;
+  /** A file flow (New, Open, Save, Save as, close) is running: file keys do nothing. */
+  readonly fileBusy: boolean;
 }
 
-/** `copy-whole`: CB-C1's whole-drawing branch (an empty drawing gives N-C4); `paste`: CB-P1. */
-export type HostKeyAction = 'copy-whole' | 'paste';
+/**
+ * `copy-whole`: CB-C1's whole-drawing branch (an empty drawing gives N-C4); `paste`: CB-P1;
+ * `new`, `open`, `save`, `save-as`: F1, F2, F5, F6.
+ */
+export type HostKeyAction = 'copy-whole' | 'paste' | 'new' | 'open' | 'save' | 'save-as';
+
+/** Ctrl+<key> (Shift as given) → file action; valid in the name field too, never while busy. */
+function fileKey(key: string, shift: boolean): HostKeyAction | null {
+  if (key === 's') return shift ? 'save-as' : 'save';
+  if (shift) return null;
+  if (key === 'n') return 'new';
+  if (key === 'o') return 'open';
+  return null;
+}
 
 /** The host action for a keydown, or null to let it reach the editor (or the text) unchanged. */
 export function hostKey(e: KeyInput, ctx: HostKeyContext): HostKeyAction | null {
-  if (!e.ctrlKey || e.altKey || e.metaKey) return null;
+  if (!e.ctrlKey || e.altKey || e.metaKey || ctx.modal) return null;
   const key = e.key.toLowerCase();
+  const file = fileKey(key, e.shiftKey);
+  if (file !== null) return ctx.idle && !ctx.fileBusy ? file : null;
   // R4: Ctrl+C in a text target is native text copy; with a selection the editor copies.
   if (key === 'c' && !e.shiftKey && !ctx.textTarget && ctx.selectionEmpty) return 'copy-whole';
   // CB-K: Ctrl+V on a non-text target while idle is the host's paste, never the editor's.

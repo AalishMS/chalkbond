@@ -30,6 +30,10 @@ export interface ChalkbondApi {
   showFileError(problem: FileProblem, name: string): Promise<void>;
   startup(): Promise<StartupResponse>;
   updateSession(value: SessionUpdate): void;
+  /** N2: the session's file (null: Untitled after New); main keeps the folders, never the page. */
+  sessionFile(ref: FileRef | null): void;
+  /** N5: the renderer agreed to close (F13); main closes the window. */
+  closeOk(): void;
   readonly platform: string;
   logError(message: string): void;
   onMainEvent(callback: (event: MainEvent) => void): () => void;

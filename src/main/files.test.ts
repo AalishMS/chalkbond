@@ -20,7 +20,11 @@ afterEach(() => {
 
 const errno = (code: string): NodeJS.ErrnoException =>
   Object.assign(new Error(code), { code }) as NodeJS.ErrnoException;
-const entry = (name: string, kind: FileEntry['kind'], writable = true): FileEntry => ({
+const entry = (
+  name: string,
+  kind: FileEntry['kind'],
+  writable = true,
+): Pick<FileEntry, 'path' | 'kind' | 'writable'> => ({
   path: join(dir, name),
   kind,
   writable,

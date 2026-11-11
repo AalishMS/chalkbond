@@ -24,6 +24,16 @@ describe('createTestHook', () => {
     expect(hook.getDoc()).toEqual(doc);
   });
 
+  it("loads through the host's Untitled load when given one (A8: the session resets too)", () => {
+    const controller = createEditorController({ clock: () => T0 });
+    const loaded: Doc[] = [];
+    const hook = createTestHook(controller, [], (doc) => loaded.push(doc));
+    const doc = ethane();
+    hook.load(doc);
+    expect(loaded).toEqual([doc]);
+    expect(hook.getDoc()).not.toEqual(doc); // the host decides; the controller was not touched
+  });
+
   it('forwards host commands to the controller', () => {
     const { controller, hook } = make();
     hook.run('focus-name-field');

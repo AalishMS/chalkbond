@@ -97,6 +97,11 @@ C5 pure picture ──┴──► C6 pure paste/open ────────�
 - [ ] One manual paste into PowerPoint (first two "Windows checks" items) tried and noted in the commit message
 - [ ] Commit + push
 
+Linux run of Checkpoint T, verified by the orchestrator at `cb3a14b` (2026-11-11): `npm run check`
+exit 0 (3567 tests), isolated `npm run test:e2e` exit 0 (197), C8 (5) and C9 (3) shots inspected
+against A01, A02, A15b and A17. The checkpoint stays open: Windows (`e2e/win/clipboard-*`, C3
+probes, PDF/native frame/Arial, os-input) and the PowerPoint/Office checks are not run.
+
 ### Phase V: export (after app-shell A7–A10)
 - [ ] C10: Export dialog (A08a–c), choices remembered, Ctrl+E
 - [ ] C11: Export PNG and SVG; reopen round trips

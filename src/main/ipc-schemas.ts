@@ -70,3 +70,7 @@ export const fileErrorSchema = z
     name: baseName,
   })
   .strict();
+
+// A8 (SPEC-app-shell.md N2, N5): the session file by ref (null for Untitled) and the close answer.
+export const sessionFileSchema = z.object({ ref: fileRefId.nullable() }).strict();
+export const closeOkSchema = z.object({}).strict();

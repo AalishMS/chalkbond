@@ -10,22 +10,36 @@ import sprite from './shell-icons.svg?raw';
 import './shell-tokens.css';
 
 export function App({ host }: { host: WindowHost }): React.JSX.Element {
-  const { controller, copyFlow } = host;
+  const { controller, copyFlow, fileFlows } = host;
   useEffect(
     () =>
-      installHostKeys(controller, {
+      installHostKeys(controller, fileFlows, {
         'copy-whole': () => {
           void copyFlow.copy();
         },
         paste: () => {
           void copyFlow.paste();
         },
+        new: () => {
+          void fileFlows.newDrawing();
+        },
+        open: () => {
+          void fileFlows.open();
+        },
+        save: () => {
+          void fileFlows.save();
+        },
+        'save-as': () => {
+          void fileFlows.saveAs();
+        },
       }),
-    [controller, copyFlow],
+    [controller, copyFlow, fileFlows],
   );
   useEffect(() => {
     const stopMain = window.chalkbond.onMainEvent((event) => {
       if (event.type === 'command') host.commands.push(event.command);
+      else if (event.type === 'close-requested') void fileFlows.requestClose();
+      else if (event.type === 'open') void fileFlows.openRef(event.ref);
     });
     host.publishSession();
     const stopController = controller.subscribe((event) => {
@@ -35,12 +49,12 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
       stopController();
       stopMain();
     };
-  }, [controller, host]);
+  }, [controller, fileFlows, host]);
   // The e2e test hook (TH2): main loads the page with `?testHooks=1` only for an unpackaged build
   // started with `--chalkbond-test-hooks`. Without the query nothing is defined.
   useEffect(() => {
     if (new URLSearchParams(location.search).get('testHooks') !== '1') return undefined;
-    const hook = createTestHook(controller, host.commands);
+    const hook = createTestHook(controller, host.commands, (doc) => host.loadUntitled(doc));
     Object.defineProperty(window, '__chalkbondTest', {
       value: hook,
       configurable: true,

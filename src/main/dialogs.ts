@@ -1,6 +1,6 @@
 // Native dialogs (SPEC-app-shell.md I1 Open, F8 Save with the R6 extension rule and replace box,
 // I4 questions, I5 file errors). The texts come from model/messages.ts (SEC15); the folders come
-// from injected ports until settings (A10) remembers them.
+// from injected ports (model/session-folders.ts; settings in A10 remember them across runs).
 import { join } from 'node:path';
 import type {
   AskAnswer,
@@ -42,8 +42,11 @@ export interface DialogOptions {
   refs: FileRefs;
   /** Whether a file exists at `path` (R6 replace box). */
   exists(path: string): Promise<boolean>;
-  /** F2: the last open folder, else Documents; F6: the save folder (A8–A10 provide them). */
-  folders: { open(): string; save(): string };
+  /**
+   * F2: the last open folder, else Documents; F6 / export: the folder for a Save dialog of
+   * `format` (`model/session-folders.ts`; A10 persists them).
+   */
+  folders: { open(): string; save(format: FileRef['kind']): string };
 }
 
 /** F8: one filter per format. */
@@ -82,7 +85,7 @@ export function createDialogs({ port, refs, exists, folders }: DialogOptions) {
       suggestedName: string,
     ): Promise<FileRef | null> {
       const result = await port.save({
-        defaultPath: join(folders.save(), suggestedName),
+        defaultPath: join(folders.save(format), suggestedName),
         filters: [SAVE_FILTERS[format]],
       });
       if (result.canceled || !result.filePath) return null;

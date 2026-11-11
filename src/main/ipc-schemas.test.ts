@@ -81,6 +81,20 @@ describe('A7 schemas', () => {
   });
 });
 
+describe('A8 session schemas (N2, N5)', () => {
+  it('N2 session file: a uuid ref or null (New, Untitled), nothing else', () => {
+    ok(schemas.sessionFileSchema, { ref: ID });
+    ok(schemas.sessionFileSchema, { ref: null });
+    for (const v of [{}, { ref: '/x.chalk' }, { ref: ID, path: '/x' }, { ref: 3 }, null])
+      bad(schemas.sessionFileSchema, v);
+  });
+
+  it('N5 close ok: an empty object only', () => {
+    ok(schemas.closeOkSchema, {});
+    for (const v of [{ force: true }, null, 'x']) bad(schemas.closeOkSchema, v);
+  });
+});
+
 /** Every object key in a schema, through unions, nullables and nested objects. */
 function keysOf(schema: ZodType): string[] {
   if (schema instanceof z.ZodObject)
@@ -98,7 +112,7 @@ function keysOf(schema: ZodType): string[] {
 describe('R8: no path crosses the bridge', () => {
   it('no request schema has a path field', () => {
     const all: ZodType[] = Object.values(schemas);
-    expect(all.length).toBeGreaterThanOrEqual(11);
+    expect(all.length).toBeGreaterThanOrEqual(13);
     for (const schema of all) expect(keysOf(schema)).not.toContain('path');
   });
 

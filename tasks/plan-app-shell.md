@@ -81,6 +81,11 @@ A16 icons ─► A17 installer ─► A18 a11y ─► A19 coverage ─► A20 do
 - [ ] Commit + push
 
 ### Phase U: files and settings (after clipboard-export C5–C9)
+Checkpoint T (clipboard-export plan): Linux run, verified by the orchestrator at `cb3a14b` (2026-11-11): `npm run check`
+exit 0 (3567 tests), isolated `npm run test:e2e` exit 0 (197), C8 (5) and C9 (3) shots inspected
+against A01, A02, A15b and A17. The checkpoint stays open: Windows (`e2e/win/clipboard-*`, C3
+probes, PDF/native frame/Arial, os-input) and the PowerPoint/Office checks are not run.
+
 - [ ] A7: Main file I/O, refs, dialogs, messages
 - [ ] A8: Session and file flows: New, Open, Save, Save as, close
 - [ ] A9: Opening exported pictures; file errors

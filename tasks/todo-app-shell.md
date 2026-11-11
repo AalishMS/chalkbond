@@ -280,9 +280,12 @@ prompt; Don't save closes the app; a save into a deleted folder → the stubbed 
 folder no longer exists. Choose another folder." and the title keeps `*`.
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass (SC3; SC4 for New, Open, close)
-- [ ] `src/renderer/app/model` ≥ 90 % lines so far
-- [ ] Shot exists
+- [x] Unit and e2e tests pass (SC3; SC4 for New, Open, close)
+- [x] `src/renderer/app/model` ≥ 90 % lines so far (100 %)
+- [x] Shot exists (`A8/saved.png`, compared with A17's Save row)
+- [x] R14 (spec first): the prompt's Save goes ahead only if the save succeeded and the drawing is
+  clean afterwards; an edit during the write keeps the newer drawing and stops New / Open / close
+  (`file-flows.test.ts`). Linux only; Windows native boxes unverified
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A8` → `A8/saved.png`
 (scripted: scheme, Ctrl+S with the stubbed dialog: hint "Saved esterification.chalk." in

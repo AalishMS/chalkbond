@@ -83,7 +83,10 @@ export function createFiles(options: FilesOptions = {}) {
      * to `<target>.<random>.tmp` in the same folder, are synced, and the temp file is renamed over
      * the target; on any failure the temp file is removed and the target is left as it was.
      */
-    async write(entry: FileEntry, data: Uint8Array): Promise<WriteFileResponse> {
+    async write(
+      entry: Pick<FileEntry, 'path' | 'kind' | 'writable'>,
+      data: Uint8Array,
+    ): Promise<WriteFileResponse> {
       if (!entry.writable || data.length > MAX_WRITE_BYTES || !signatureMatches(entry.kind, data)) {
         throw new Error('Refused write');
       }

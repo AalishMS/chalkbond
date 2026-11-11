@@ -86,6 +86,16 @@ export async function launchApp(
     try {
       await expectNoNetwork(app, expectedBlocked.get(app) ?? 0);
     } finally {
+      // Teardown is not a test of closing: F13 would ask about a dirty drawing (a native box that
+      // nobody answers). The windows are destroyed on the next turn, which skips their `close`
+      // event as a gone renderer does; specs that test F13 close the window themselves.
+      await app
+        .evaluate(({ BrowserWindow }) => {
+          setImmediate(() => {
+            for (const win of BrowserWindow.getAllWindows()) win.destroy();
+          });
+        })
+        .catch(() => undefined);
       await close();
     }
   };

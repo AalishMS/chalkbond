@@ -101,6 +101,7 @@ draft's, kept or amended at review; R-rows are the reviewer's resolutions.
 | R10 | Windows-only e2e specs live in `e2e/win/`, which `playwright.config.ts` ignores on other platforms (`testIgnore`); nothing is skipped | AGENTS.md forbids skipped tests; the project stays green on Linux | 2026-11-10 |
 | R11 | The Windows Jump List (`app.addRecentDocument`) is cut | No user story needs it; the in-app recent list covers reopening | 2026-11-10 |
 | R12 | Shell tokens and icons are lifted into `src/renderer/app/` as their own files (V1), never merged into the editor's `tokens.css` / `icons.svg` | Each lifted file stays a copy of exactly one normative file; the editor's tooling test is untouched | 2026-11-10 |
+| R14 | F4's **Save** answer proceeds with the pending New, Open or close only if the save succeeded **and** the drawing is clean afterwards (`!dirty`). An edit during the write (R7) keeps the newer, dirty drawing and stops the pending action: no replacement, no close, no extra box | An older snapshot reaching disk must never let newer edits be discarded silently | 2026-11-11 |
 | R13 | Draft open questions resolved: Q1 visible (O3); Q2 remembered (O4); Q3 no (O9); Q4 recover (O5); Q5 one-click per user (O6); Q6 en-US (O9); Q7 → R4; Q8 1.0.0 (O6); Q9 yes (O9); Q10 8 (O4) | Recorded so no question stays open | 2026-11-10 |
 
 ---
@@ -235,16 +236,16 @@ focus) and disarms it; any other keydown also disarms it.
 | F1 New | F4; then `controller.load(setStyle(emptyDoc(clock()), { preset: settings.newDrawingStyle }))` (no undo step, not dirty); session Untitled; N4 recovery clear |
 | F2 Open | I1 (filter **Chalkbond drawings** `*.chalk;*.png;*.svg` and, under clipboard-export PDF-A, `*.pdf`; starts in the last open folder, else Documents); cancel → nothing. A name without an Open extension (typed `notes.docx`) → main shows the F14 `unsupported` box built from its base name, I1 answers `null`: the drawing is untouched, no prompt, no ref. Only the name is judged here; a missing file, a directory or a read error with an Open extension is reported by I2 with its own F14 row. Then F3 |
 | F3 Open a ref | I2 → bytes; `fileKindOf(name)`; `extractDrawing(kind, bytes, decodeUtf8)`; `parse`; any failure → I5 error box (F14), the current drawing untouched, no prompt. Success → F4; then `controller.load(doc)`; session = the file (kind `chalk` or `picture`); N2 (recent, last folder); N4. No notice (the title says it) |
-| F4 `confirmDiscard()` | Not dirty → proceed. Dirty → prompt: Save → F5 (cancelled or failed → stop); Don't save → proceed; Cancel → stop |
-| F5 Save | Session is a `.chalk` file with a writable ref → `before = getDoc()`, write `serialize(before)` (C4); else F6. Success: if `getDoc() === before` then `controller.markSaved()` (R7); session file kept; N4; notice "Saved esterification.chalk." |
-| F6 Save as | C3 with `format: 'chalk'`, suggested `<session name without extension>.chalk` or `Untitled.chalk`; folder: the picture's folder for a picture-opened drawing, else the last save folder, else Documents. Then write and F5's success path; the session becomes that file; N2 |
+| F4 `confirmDiscard()` | Not dirty → proceed. Dirty → prompt: Save → F5 (cancelled or failed → stop; succeeded but the drawing changed during the write, so still dirty → stop, R14); Don't save → proceed; Cancel → stop. The prompt names the session as the title does (`esterification`, `toluene.png`, `Untitled`) |
+| F5 Save | Session is a `.chalk` file with a writable ref → `before = getDoc()`, write `serialize(before)` (C4); else F6. Success: if `getDoc() === before` then `controller.markSaved()` and `forcedDirty` cleared (R7); else the drawing stays dirty; session file kept; N4; notice "Saved esterification.chalk." (the file's base name). Failure → I5 with the write problem, still dirty |
+| F6 Save as | C3 with `format: 'chalk'`, suggested `<session name without extension>.chalk` or `Untitled.chalk`; folder: the picture's folder for a picture-opened drawing, else the last save folder, else Documents. Main decides the folder from the session ref it last received on N2 (the renderer sends no folder or path). Cancel or a failed write changes nothing (session, title, dirty). Then write and F5's success path; the session becomes that file (kind `chalk`, writable ref); N2 |
 | F7 Dirty | `dirty = controller.isDirty() \|\| session.forcedDirty`; `forcedDirty` is true only for a recovered drawing until saved. A picture-opened drawing is not dirty until edited |
 | F8 Save dialog | `showSaveDialog(win, { defaultPath, filters: [one filter: "Chalkbond drawing" chalk, "PNG picture" png, "SVG drawing" svg, "PDF document" pdf] })`; Windows asks before overwriting what the teacher typed. R6: the extension is appended when missing; if that changes the path and the file exists, a native box (`type: 'warning'`, message `“x.chalk” already exists.`, detail `Do you want to replace it?`, buttons **Replace** · **Cancel**, `cancelId` 1) asks; Cancel → null |
 | F9 Atomic write | Write `<target>.<random>.tmp` in the same folder, `FileHandle.sync()`, rename over the target (retry 3 × 100 ms on `EBUSY` / `EPERM`), remove the temp file on failure |
 | F10 Recent | ≤ 8 paths, newest first; duplicates (case-insensitive on Windows) move to the top; added on every successful open and save. Label `&n` + base name with `&` doubled; two entries with the same base name get ` — <parent folder name>` (A04). A missing file → F14 "can't be found" and the entry is removed. Clear empties the list |
 | F11 Double-click / second launch | The installer associates `.chalk`. `fileArg(argv)` = the last argument that does not start with `-` and ends in an Open extension (case-insensitive). First launch: the path goes into I7's `open`. `second-instance`: restore if minimized, focus, then `main:event {open}` (or I7's `open` if the renderer has not started; latest wins). The renderer runs F3 when no flow is in progress, else queues it (one pending request, latest wins) |
 | F12 Drag and drop | Files dragged over the window show the drop overlay (A13); dropping runs I3 on the first file with an Open extension through the preload's `openDroppedFile(file)` (SEC14), then F3. None → I5 `unsupported` with the first file's name. Text drags are left to the editor |
-| F13 Close | Window `close` (title-bar ×, Alt+F4, File > Exit) → main prevents it and sends `close-requested`; the renderer runs F4; proceed → N4, N5 → main closes for real. If the renderer is gone (`render-process-gone`) main closes without asking (the recovery file covers it) |
+| F13 Close | Window `close` (title-bar ×, Alt+F4, File > Exit) → main prevents it and sends `close-requested`; the renderer runs F4; proceed → N4, N5 → main closes for real. Main intercepts only once the renderer has sent its first N1 (it listens for `main:event` by then). If the renderer is gone (`render-process-gone`) main closes without asking (the recovery file covers it). A close request while a flow runs waits as the pending request (latest wins, like a pending open) |
 
 **F14 File errors** (native box, `type: 'error'`, title `Chalkbond`, button **OK**; wording A10;
 message / detail built in main from `{ problem, name }` by `src/main/model/messages.ts`):
@@ -500,7 +501,7 @@ validation rejects and is logged). C1–C5 are clipboard-export's (its "IPC chan
 | Ch. | Channel / preload function | Payload | Main does |
 |---|---|---|---|
 | N1 | `session:update` / `updateSession` | `{ title: string ≤ 300, dirty: boolean, menu: MenuState }` | `setTitle`; rebuilds the menu when `menu` changed; remembers `dirty` |
-| N2 | `session:file` / `sessionFile` | `{ ref: uuid }` | recent list (F10), last folder |
+| N2 | `session:file` / `sessionFile` | `{ ref: uuid \| null }` (null: New, an Untitled session) | the session file for F6's folder; last open folder (an opened ref) or last save folder (a Save-as ref); recent list (F10, A15). An unknown id is ignored and logged |
 | N3 | `recovery:write` / `writeRecovery` | `{ text: string ≤ 20 MB starting "{", name: string ≤ 255 }` | RC1, RC6 |
 | N4 | `recovery:clear` / `clearRecovery` | `{}` | RC2, RC6 |
 | N5 | `app:close-ok` / `closeOk` | `{}` | closes the window (F13) |
@@ -531,7 +532,7 @@ is sent only when title, dirty or state changed.
 | SEC2 | `app.on('web-contents-created')` for every webContents: `setWindowOpenHandler(() => ({ action: 'deny' }))`, `will-navigate` and `will-attach-webview` prevented | e2e: `window.open('https://example.com')` leaves one window; `location.href = 'https://example.com'` leaves the URL unchanged |
 | SEC3 | `session.defaultSession` permission request and check handlers deny everything | e2e: `Notification.requestPermission()` is `'denied'`; `getUserMedia` rejects |
 | SEC4 | `webRequest.onBeforeRequest`: cancel every request whose scheme is not `file:`, `data:`, `blob:`, `devtools:` or (unpackaged only) the electron-vite dev server origin and its `ws:`; each cancel is logged and counted | e2e: a `fetch('https://example.com')` rejects and the counter (TH4) becomes 1; every other e2e file asserts the counter is 0 at its end |
-| SEC5 | The preload exposes named functions only, each with a fixed channel; no generic `invoke`, no `ipcRenderer`, no Node objects; it imports at runtime only `electron` and `src/shared/channels` | C7 adds only `clipboardWrite` and `clipboardRead` to the existing `startup`, `updateSession`, `platform`, `logError`, `onMainEvent` bridge. A7 adds `chooseOpen`, `readFile`, `chooseSave`, `writeFile`, `ask`, `showFileError`. e2e: `Object.keys(window.chalkbond)` equals the documented list; lint probe |
+| SEC5 | The preload exposes named functions only, each with a fixed channel; no generic `invoke`, no `ipcRenderer`, no Node objects; it imports at runtime only `electron` and `src/shared/channels` | C7 adds only `clipboardWrite` and `clipboardRead` to the existing `startup`, `updateSession`, `platform`, `logError`, `onMainEvent` bridge. A7 adds `chooseOpen`, `readFile`, `chooseSave`, `writeFile`, `ask`, `showFileError`. A8 adds `sessionFile` and `closeOk`. e2e: `Object.keys(window.chalkbond)` equals the documented list; lint probe |
 | SEC6 | Every handler (via `handle()` in `ipc.ts`) checks `event.senderFrame` is the main window's main frame and its URL is the app's `index.html` (or the dev server when unpackaged); otherwise it rejects and logs | unit tests of `handle()` with fake events: null frame, other frame, other URL, bad payload |
 | SEC7 | Reads only through refs or a validated drop path: `fs.stat` regular file, ≤ `MAX_FILE_BYTES` (20 MB), extension in the Open list | unit tests of `files.ts` in a temp folder (directory, symlink to a directory, 21 MB file, `.exe`) |
 | SEC8 | Writes only to writable refs of the matching kind; the data's signature must match (`{` chalk, PNG signature, `<svg`, `%PDF-`); ≤ 64 MB; atomic (F9); internal files only under `userData` and the OS temp folder | unit tests: picture ref refused, wrong signature refused, temp file removed after a failed rename |
@@ -564,8 +565,11 @@ const controller = createEditorController({
 - **CO3** `subscribe`: `dirty`, `doc` → title, N1, RC1 timer, preset tracking (ST1); `selection`,
   `history`, `busy` → menu state; `context-menu` → I6, then the chosen command.
 - **CO4** `file-flows.ts` implements F1–F13 over injected ports (`main`, `controller`, `notify`,
-  `clock`) with one in-progress flag and one pending open request, so every flow is unit-tested in
-  node with fakes.
+  `clock`) with one in-progress flag and one pending request (an open ref or a close; latest
+  wins), so every flow is unit-tested in node with fakes. While a flow runs, New, Open (dialog),
+  Save and Save as are ignored. Every session change publishes N1 itself (title and dirty are
+  derived after the session changed, not only on editor events). Open validates the bytes before
+  F4; any failure or cancel leaves the drawing and session unchanged.
 - **CO5** Startup: I7 → `recovery` ? RC3 (then RC4) : `open` ? F3 : the empty drawing. The canvas
   has focus afterwards (editor K5).
 

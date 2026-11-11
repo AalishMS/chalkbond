@@ -21,6 +21,7 @@ describe('createFileRefs', () => {
       path: 'C:\\Users\\T\\Documents\\ethanol.chalk',
       kind: 'chalk',
       writable: true,
+      how: 'opened',
     });
     expect(refs.get('00000000-0000-4000-8000-000000000999')).toBeUndefined();
   });

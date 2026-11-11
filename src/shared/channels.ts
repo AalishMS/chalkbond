@@ -9,6 +9,8 @@ export const CHANNELS = {
   showFileError: 'dialog:file-error',
   startup: 'app:startup',
   updateSession: 'session:update',
+  sessionFile: 'session:file',
+  closeOk: 'app:close-ok',
   logError: 'log:error',
   mainEvent: 'main:event',
 } as const;

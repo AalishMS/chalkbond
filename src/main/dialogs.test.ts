@@ -25,7 +25,10 @@ function rig(answers: { open?: string[]; save?: string; box?: number[]; exists?:
     port,
     refs,
     exists,
-    folders: { open: () => join('D', 'Documents'), save: () => join('D', 'Saves') },
+    folders: {
+      open: () => join('D', 'Documents'),
+      save: (format: string) => join('D', format === 'chalk' ? 'Saves' : 'Exports'),
+    },
   });
   return { dialogs, port, refs, exists };
 }
@@ -49,6 +52,7 @@ describe('chooseOpen (I1, F2)', () => {
       path: join('D', 'ethanol.chalk'),
       kind: 'chalk',
       writable: true,
+      how: 'opened',
     });
     const pic = await rig({ open: [join('D', 'Photo.PNG')] }).dialogs.chooseOpen();
     expect(pic?.kind).toBe('png');
@@ -104,7 +108,12 @@ describe('chooseSave (C3, F8)', () => {
       const r = rig();
       expect(await r.dialogs.chooseSave(format, `esterification.${format}`)).toBeNull();
       expect(r.port.save).toHaveBeenCalledWith({
-        defaultPath: join('D', 'Saves', `esterification.${format}`),
+        // The folder port decides per format (A6: a picture session's chalk Save as).
+        defaultPath: join(
+          'D',
+          format === 'chalk' ? 'Saves' : 'Exports',
+          `esterification.${format}`,
+        ),
         filters: [{ name, extensions: [format] }],
       });
     }
@@ -121,6 +130,7 @@ describe('chooseSave (C3, F8)', () => {
       path: join('E', 'esterification.chalk'),
       kind: 'chalk',
       writable: true,
+      how: 'saved',
     });
     expect(r.port.box).not.toHaveBeenCalled(); // Windows already asked about the typed name
   });

@@ -9,6 +9,8 @@ export interface FileEntry {
   readonly path: string;
   readonly kind: FileKind;
   readonly writable: boolean;
+  /** How main handed it out: the Open dialog (or a drop) or the Save dialog. */
+  readonly how: 'opened' | 'saved';
 }
 
 /** The Open kinds (F2), PDF included under clipboard-export PDF-A. */
@@ -39,7 +41,7 @@ export function createFileRefs(newId: () => string) {
   return {
     add(path: string, kind: FileKind, how: 'opened' | 'saved'): FileRef {
       const id = newId();
-      entries.set(id, { path, kind, writable: how === 'saved' || kind === 'chalk' });
+      entries.set(id, { path, kind, writable: how === 'saved' || kind === 'chalk', how });
       return { id, name: baseName(path), kind };
     },
     get(id: string): FileEntry | undefined {

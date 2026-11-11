@@ -40,6 +40,8 @@ type HookedController = Pick<
 export function createTestHook(
   controller: HookedController,
   commands: string[] = [],
+  /** The host's Untitled load (session reset and N1); the plain `controller.load` by default. */
+  load: (doc: Doc) => void = (doc) => controller.load(doc),
 ): DisposableTestHook {
   let heard: EditorEvent[] = [];
   let notices: HeardNotice[] = [];
@@ -52,7 +54,7 @@ export function createTestHook(
   });
   return {
     load: (doc) => {
-      controller.load(doc);
+      load(doc);
     },
     run: (cmd) => controller.run(cmd),
     getDoc: () => controller.getDoc(),

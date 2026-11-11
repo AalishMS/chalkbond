@@ -1,6 +1,7 @@
 // K1 listener (SPEC-app-shell.md "Keyboard (host keys)"): capture phase on `window`, before the
 // editor's own handler; the decision is `model/keys.ts`.
 import type { EditorController } from '../editor';
+import type { FileFlows } from './model/file-flows';
 import { hostKey, type HostKeyAction } from './model/keys';
 
 /** An `input`, `textarea` or `contenteditable` element. */
@@ -14,6 +15,7 @@ function isTextTarget(target: EventTarget | null): boolean {
 
 export function installHostKeys(
   controller: Pick<EditorController, 'getSelection' | 'canRun'>,
+  fileFlows: Pick<FileFlows, 'busy'>,
   actions: Record<HostKeyAction, () => void>,
 ): () => void {
   const listener = (event: KeyboardEvent): void => {
@@ -23,6 +25,8 @@ export function installHostKeys(
       selectionEmpty:
         selection.atoms.size === 0 && selection.bonds.size === 0 && selection.objects.size === 0,
       idle: controller.canRun({ type: 'set-preset', preset: 'slides' }),
+      modal: false, // no in-window dialog until A12
+      fileBusy: fileFlows.busy(),
     });
     if (action === null) return;
     event.preventDefault();

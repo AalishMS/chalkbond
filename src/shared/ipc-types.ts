@@ -16,6 +16,8 @@ export interface IpcRequestMap {
   'log:error': LogErrorRequest;
   'app:startup': Record<string, never>;
   'session:update': SessionUpdate;
+  'session:file': { ref: string | null };
+  'app:close-ok': Record<string, never>;
 }
 export type FileRef = { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' };
 export interface RendererSettings {

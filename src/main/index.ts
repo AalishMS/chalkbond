@@ -6,6 +6,7 @@ import { app, BrowserWindow, Menu, screen, clipboard, ClipboardItem, dialog } fr
 import { createDialogs } from './dialogs';
 import { createFiles } from './files';
 import { createFileRefs } from './model/file-refs';
+import { createSessionFolders } from './model/session-folders';
 import { firstWindowBounds } from './model/window-bounds';
 import type { ReadFileResponse, StartupResponse } from '../shared/ipc-types';
 import { testFlags } from './model/args';
@@ -25,6 +26,8 @@ import {
   fileErrorSchema,
   readFileSchema,
   writeFileSchema,
+  sessionFileSchema,
+  closeOkSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
@@ -129,6 +132,7 @@ void app.whenReady().then(() => {
     return entry;
   };
   const documents = (): string => app.getPath('documents');
+  const folders = createSessionFolders(documents);
   const dialogs = createDialogs({
     port: {
       open: (options) =>
@@ -144,8 +148,8 @@ void app.whenReady().then(() => {
         () => true,
         () => false,
       ),
-    // Last open / save folders arrive with session and settings (A8, A10); Documents until then.
-    folders: { open: documents, save: documents },
+    // N2 decides the folders for this run (A10 persists them).
+    folders: { open: () => folders.openFolder(), save: (format) => folders.saveFolder(format) },
   });
   ipc.handle(CHANNELS.chooseOpen, chooseOpenSchema, () => dialogs.chooseOpen());
   ipc.handle(CHANNELS.readFile, readFileSchema, async ({ ref }): Promise<ReadFileResponse> => {
@@ -174,15 +178,57 @@ void app.whenReady().then(() => {
     open: null,
   }));
   let session: { title: string; dirty: boolean } | undefined;
+  let closing: ReturnType<typeof guardClose> | undefined;
   ipc.on(CHANNELS.updateSession, sessionUpdateSchema, (value) => {
     if (session?.title !== value.title) mainWindow?.setTitle(value.title);
     session = value;
+    closing?.rendererReady();
   });
+  // N2: the session file by ref (null after New). An unknown id is ignored and logged.
+  ipc.on(CHANNELS.sessionFile, sessionFileSchema, ({ ref }) => {
+    if (ref === null) return folders.sessionFile(null);
+    const entry = refs.get(ref);
+    if (entry) folders.sessionFile(entry);
+    else log('files', 'Unknown session file ref');
+  });
+  // N5 (F13): the renderer ran F4 and agreed to close.
+  ipc.on(CHANNELS.closeOk, closeOkSchema, () => closing?.closeOk());
   mainWindow = createMainWindow();
+  closing = guardClose(mainWindow);
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();
+    if (BrowserWindow.getAllWindows().length !== 0) return;
+    mainWindow = createMainWindow();
+    closing = guardClose(mainWindow);
   });
 });
+
+/**
+ * F13: a window close (title-bar ×, Alt+F4, File > Exit) is prevented and handed to the renderer
+ * (`close-requested`), which runs F4 and answers with N5. Main intercepts only once the renderer
+ * has sent its first N1 (it listens for main events by then), and never once the renderer is gone
+ * (`render-process-gone`): then the window closes without asking (the recovery file covers it).
+ */
+function guardClose(win: BrowserWindow) {
+  let ready = false;
+  let allowed = false;
+  win.webContents.on('render-process-gone', () => {
+    allowed = true;
+  });
+  win.on('close', (event) => {
+    if (allowed || !ready || win.webContents.isCrashed()) return;
+    event.preventDefault();
+    win.webContents.send(CHANNELS.mainEvent, { type: 'close-requested' });
+  });
+  return {
+    rendererReady(): void {
+      ready = true;
+    },
+    closeOk(): void {
+      allowed = true;
+      win.close();
+    },
+  };
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
