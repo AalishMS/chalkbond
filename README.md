@@ -19,12 +19,14 @@ Modules and their order are defined in `CAPABILITY-MAP.md`.
 | `chem-core` | OpenChemLib wrapper: valence, formula, SMILES/Molfile, name dictionary | done |
 | `svg-render` | Document to SVG with style presets | done (automated Windows checks passed; Office checklist not yet ticked) |
 | `editor` | Interactive canvas and drawing tools | done (automated Windows checks passed; "Editor" checklist not yet ticked) |
-| `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; automated Windows gates passed; human checks open |
-| `app-shell` | Menus, dialogs, settings, installer | implemented; automated Windows gates passed; human checks and installed size open |
+| `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; automated Windows gates passed; paste and export round trips passed on the development machine; a few human checks open |
+| `app-shell` | Menus, dialogs, settings, installer | implemented; automated Windows gates passed; installed on the development machine; other human checks open |
 
-Version 1.0.0 is prepared. It is not released: the automated Windows gates passed on 2026-11-11 and
-the installer builds, but it has not been installed, and the human checks in
-`docs/windows-checklist.md` (Checkpoint Z) are open.
+Version 1.0.0 is prepared. It is not released: the automated Windows gates passed on 2026-11-11,
+the installer was installed on the development machine, and the paste and export round trips in
+PowerPoint and Word passed there. Still open in `docs/windows-checklist.md` (Checkpoint Z): a `CO₂H`
+label, a chat-app paste, the PDF in Edge and Acrobat Reader and on paper, the rest of "App shell and
+installer", the clean Windows 10 and 11 installs with SmartScreen, and Checkpoints K, E32 and R.
 
 ## The editor
 

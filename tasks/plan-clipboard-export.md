@@ -146,6 +146,8 @@ Windows run of the automated gates of Checkpoint Z, verified by the orchestrator
 
 Human batch 1 (2026-11-11, Windows 11 Pro 26300, development laptop, Office Professional Plus 2016 Click-to-Run Version 2610; performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and files): installed from the setup on the development machine (installed size 347,681,841 bytes, 331.6 MiB, 24 files, written in `SPEC-app-shell.md` I1), and the first five human "Clipboard and export" checks passed (SVG drawing, Graphics Format, in PowerPoint and Word at true size, 8.69 x 1.21 in). Checkpoint Z is not reached: SmartScreen, the clean-account installs, the chat-app paste and every other human check, and Checkpoints K, E32 and R, are open.
 
+Human batch 2 (2026-11-11, same machine, Office and way of working as batch 1; performed by a computer-use agent, verified by the orchestrator against screenshots and the exported files): the restart round trip, the refused PowerPoint picture, the PNG, SVG and PDF exports and their reopening in Chalkbond passed; Word's Insert > Pictures honours the PNG's 300 dpi. Nine of the twelve human "Clipboard and export" checks are ticked; the labels box is reopened (`CO₂H` never drawn). Still open: `CO₂H`, a chat-app paste, the PDF in Edge, Adobe Acrobat Reader and on A4 paper (only pdf.js and xpdf were tried). Checkpoint Z is not reached.
+
 ## Success Criteria Coverage
 
 Swept at C13 (2026-11-11, Linux); the Windows cells updated after the Windows run of 2026-11-11 (note above Phase Y). "Linux" = run and passing on the development machine; "Windows" = run and passing on the Windows machine; "Windows-unrun" = written, not run, box in `docs/windows-checklist.md` section "Clipboard and export" unticked; "human" = needs eyes or Office.
@@ -158,13 +160,13 @@ Swept at C13 (2026-11-11, Linux); the Windows cells updated after the Windows ru
 | 4 | Selection copy payload | C5, C8 | Unit: `src/core/clipboard-export/picture.test.ts`, `copy-flow.test.ts` (Linux). `e2e/win/clipboard-copy.spec.ts` (SC4) passes on Windows (2026-11-11) |
 | 5 | Paste round trips | C9 | `e2e/win/clipboard-paste.spec.ts` passes on Windows (2026-11-11). Linux: paste branches in `copy-flow.test.ts` (N-P1, N-P3 and the rest), `tests/clipboard-export/paste-file.test.ts`, `e2e/clipboard-provenance.spec.ts` |
 | 6 | Paste during copy | C8 (queue), C9 | `copy-flow.test.ts` "queue (CB-Q)" (Linux) |
-| 7 | Export PNG then open | C11 (needs A9) | `e2e/export-png.spec.ts` "SC7" (Linux) |
-| 8 | Export SVG then open | C11 | `e2e/export-svg.spec.ts` "SC8" (Linux) |
-| 9 | Export PDF (and open under PDF-A) | C4, C12 | `e2e/export-pdf.spec.ts` "SC9" (Linux); Acrobat and Edge by eye: checklist (human) |
+| 7 | Export PNG then open | C11 (needs A9) | `e2e/export-png.spec.ts` "SC7" (Linux); Windows by hand, human batch 2 (2026-11-11): reopens editable |
+| 8 | Export SVG then open | C11 | `e2e/export-svg.spec.ts` "SC8" (Linux); Windows by hand, human batch 2 (2026-11-11): reopens editable, identical to the paste in PowerPoint |
+| 9 | Export PDF (and open under PDF-A) | C4, C12 | `e2e/export-pdf.spec.ts` "SC9" (Linux); Acrobat and Edge by eye: checklist (human); human batch 2 (2026-11-11): pdf.js and xpdf read it, it reopens editable in Chalkbond; Edge, Acrobat Reader and A4 still open |
 | 10 | Copy button and dialog states, boxes, keyboard | C8, C10, A18 | `CopyButton.test.tsx`, `ExportDialog.test.tsx`, `e2e/clipboard-ui.spec.ts`, `e2e/export-dialog.spec.ts`, `e2e/app-a11y.spec.ts` (Linux). Shots `e2e/shots/C8.shot.ts`, `C10.shot.ts` compared with the mock-ups by eye at checkpoint V by the orchestrator; the same look on Windows: the orchestrator compared the C8 and C10 shots on 2026-11-11 and they match (`docs/windows-checklist.md`, ticked) |
 | 11 | Atom options fit at 960 with Copy | C1, C8 | `e2e/clipboard-ui.spec.ts` "Copy at 960 × 640 ... the Atom options fit" (Linux) |
 | 12 | Copy ≤ 500 ms | C13 | `e2e/win/clipboard-perf.spec.ts` passes on Windows: median 47.4 ms in the full run, 50.9 ms alone, both in `docs/editor-perf.md` (2026-11-11). Portable `e2e/clipboard-perf.spec.ts` (in-memory transport: encoding and flow only) passes on Linux; it is not Windows clipboard proof |
-| 13 | Windows checks ticked | C13 (section), human | Section "Clipboard and export" added to `docs/windows-checklist.md`, all unticked (human, Windows) |
+| 13 | Windows checks ticked | C13 (section), human | Section "Clipboard and export" added to `docs/windows-checklist.md`, nine of twelve human boxes ticked after batches 1 and 2 (2026-11-11); three open (labels with `CO₂H`, chat app, PDF in Edge and Acrobat Reader) |
 
 ## Screenshot review
 

@@ -507,3 +507,5 @@ C13 worker evidence (2026-11-11, Linux): thresholds added and passed as they sto
 **Scope:** S
 
 C7 worker evidence (2026-11-11): unit red missing implementation, then 3 adapter/schema tests green; npm run check exit 0, 190 files / 3449 tests. Windows IPC spec written, UNRUN Linux. Exception to red-first: Windows probe cannot run here; rasteriser and bridge e2e verification pending C8. Logs /tmp/chalkbond-c7-c8-wX2cOQ/c7-red.log.
+
+Checkpoint Z human batch 2 (2026-11-11, orchestrator-verified, computer-use agent): the restart round trip, the refused PowerPoint picture and the PNG, SVG and PDF exports with their reopening passed on Windows; no box here is ticked by it (the one open box, the bridge e2e, is unrelated). Still open for the module: `CO₂H` label, chat-app paste, PDF in Edge, Adobe Acrobat Reader and on A4.

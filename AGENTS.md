@@ -22,11 +22,12 @@ Version 1.0.0 is prepared in `package.json`; the release is pending Checkpoint Z
 machine (`docs/windows-checklist.md`). Everything was built on Linux; on 2026-11-11 the automated
 Windows gates passed at `956a4a4` (check, e2e with `e2e/win`, os-input, `dist:win`, packaged smoke
 test, shots). The installer was installed on the development machine on 2026-11-11 and the
-installed size is written (`SPEC-app-shell.md` I1). The first five Office paste checks passed
-(SVG drawing in PowerPoint and Word at true size, Office 2016 Click-to-Run Version 2610; run by a
-computer-use agent, verified by the orchestrator). Open: the clean-account installs and
-SmartScreen, the rest of the clipboard and export checks, the rest of "App shell and installer",
-and Checkpoints K, E32 and R.
+installed size is written (`SPEC-app-shell.md` I1). In "Clipboard and export" the paste and export
+round trips passed on the development machine (Office 2016 Click-to-Run Version 2610; run by a
+computer-use agent, verified by the orchestrator): nine of the twelve human boxes are ticked. Open
+there: a `CO₂H` label, a chat-app paste, and the PDF in Edge, in Adobe Acrobat Reader and on paper.
+Open elsewhere: all of "App shell and installer" except the first box, the clean Windows 10 and 11
+installs with SmartScreen, and Checkpoints K, E32 and R. The release is not declared.
 
 ## Workflow
 
@@ -309,16 +310,16 @@ All six modules are implemented. The automated Windows gates (Checkpoint Z steps
 2026-11-11 at `956a4a4`: `npm run test:e2e` including `e2e/win/` (321), `npm run test:e2e:os-input`,
 the C3 clipboard probes (keys decided, Decision R9), `npm run dist:win`, `npm run test:packaged`
 and `npm run shots`. Step 8 is done: installer, unpacked and installed sizes are in
-`SPEC-app-shell.md` I1 (installed on the development machine, 2026-11-11). Step 9 (the human
-sections) is in progress: the first five "Clipboard and export" boxes and the first "App shell and
-installer" box are ticked. What is open: the clean-account installs and SmartScreen, the other
-clipboard and export checks (chat app, round trips, exports), the other "App shell and installer"
-boxes, and Checkpoints K, E32 and R.
+`SPEC-app-shell.md` I1. Step 9 (the human sections) is in progress: nine of the twelve human
+"Clipboard and export" boxes (paste, restart round trip, PNG, SVG and PDF export and reopening, on
+the development machine) and the first "App shell and installer" box are ticked. What is open: a
+`CO₂H` label, a chat-app paste, the PDF in Edge and Acrobat Reader and on paper; the other "App shell
+and installer" boxes; the clean-account installs and SmartScreen; and Checkpoints K, E32 and R.
 Version 1.0.0 is not declared released until they pass.
 
 - Windows gates still open: clean-account installs and SmartScreen, IME, shutdown, display scaling,
-  Office checks for svg-render (Checkpoint K) and the other human checks in the checklist, on
-  Windows 10 and 11.
+  Office checks for svg-render (Checkpoint K), Edge and Acrobat Reader for the PDF export and the
+  other human checks in the checklist, on Windows 10 and 11.
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
   the code and tests. Decisions of later dates supersede older text anywhere (including this file).
 - A bug found in a finished module: add a failing regression test first. A property-test failure
