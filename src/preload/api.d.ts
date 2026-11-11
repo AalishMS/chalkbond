@@ -16,6 +16,7 @@ import type {
   RendererSettings,
   StartupResponse,
   SessionUpdate,
+  WriteRecoveryRequest,
 } from '../shared/ipc-types';
 /** The API the preload script exposes on `window.chalkbond`. Grows as app-shell features land. */
 export interface ChalkbondApi {
@@ -45,6 +46,10 @@ export interface ChalkbondApi {
   sessionFile(ref: FileRef | null): void;
   /** N5: the renderer agreed to close (F13); main closes the window. */
   closeOk(): void;
+  /** N3 (RC1): writes the recovery file (main queues it, RC6). */
+  writeRecovery(value: WriteRecoveryRequest): void;
+  /** N4 (RC2): removes the recovery file (queued after every earlier write). */
+  clearRecovery(): void;
   readonly platform: string;
   logError(message: string): void;
   onMainEvent(callback: (event: MainEvent) => void): () => void;

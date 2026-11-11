@@ -234,3 +234,31 @@ describe('A13 I6 context-menu:show', () => {
       bad(schemas.contextMenuSchema, v);
   });
 });
+
+describe('A14 N3 recovery:write and N4 recovery:clear', () => {
+  it('N3: text starting "{" up to 20 MiB and a base name', () => {
+    ok(schemas.writeRecoverySchema, { text: '{"a":1}', name: 'esterification.chalk' });
+    ok(schemas.writeRecoverySchema, { text: '{', name: 'Untitled' });
+    ok(schemas.writeRecoverySchema, { text: `{${'x'.repeat(20 * 1024 * 1024 - 1)}`, name: 'a' });
+  });
+  it('N3 rejects other text, a path as name, extras', () => {
+    for (const v of [
+      {},
+      { text: '{}' },
+      { text: '[1]', name: 'a' },
+      { text: ' {}', name: 'a' },
+      { text: `{${'x'.repeat(20 * 1024 * 1024)}`, name: 'a' },
+      { text: `{${'é'.repeat(10 * 1024 * 1024)}`, name: 'a' },
+      { text: '{}', name: 'C:\\x\\a.chalk' },
+      { text: '{}', name: '/tmp/a.chalk' },
+      { text: '{}', name: 'x'.repeat(256) },
+      { text: '{}', name: 'a', path: '/tmp' },
+    ])
+      bad(schemas.writeRecoverySchema, v);
+  });
+  it('N4: an empty object only', () => {
+    ok(schemas.clearRecoverySchema, {});
+    bad(schemas.clearRecoverySchema, { all: true });
+    bad(schemas.clearRecoverySchema, null);
+  });
+});

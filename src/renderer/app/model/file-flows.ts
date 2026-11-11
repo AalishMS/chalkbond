@@ -1,4 +1,4 @@
-// File flows (SPEC-app-shell.md "Files" F1–F7, F13; CO4; R7, R14, R17; A6 pictures) over injected
+// File flows (SPEC-app-shell.md "Files" F1–F7, F13; CO4, CO5; R7, R14, R17, R20; A6 pictures; RC2–RC4) over injected
 // ports: DOM-free, no timers. One in-progress flag; one pending request (an open ref or a close, latest wins).
 // Every session change publishes N1 itself, after the session changed.
 import {
@@ -12,12 +12,16 @@ import {
 import { extractDrawing, fileKindOf } from '@core/clipboard-export';
 import type { EditorController } from '../../editor';
 import type {
+  AskAnswer,
+  AskRequest,
   FileProblem,
   FileRef,
   ReadFileResponse,
+  StartupResponse,
   WriteFileResponse,
 } from '../../../shared/ipc-types';
-import { displayName, fileSession, saveAsName, type Session } from './session';
+import type { Recovery } from './recovery';
+import { displayName, fileSession, recoveredSession, saveAsName, type Session } from './session';
 
 /** The preload functions the flows use (`window.chalkbond`). */
 export interface FlowMain {
@@ -25,7 +29,8 @@ export interface FlowMain {
   readFile(ref: FileRef): Promise<ReadFileResponse>;
   chooseSave(format: 'chalk', suggestedName: string): Promise<FileRef | null>;
   writeFile(ref: FileRef, data: Uint8Array): Promise<WriteFileResponse>;
-  ask(request: { kind: 'save-changes'; name: string }): Promise<'save' | 'discard' | 'cancel'>;
+  /** I4: the save prompt (F4) or the recover box (RC3). */
+  ask<R extends AskRequest>(request: R): Promise<AskAnswer<R>>;
   showFileError(problem: FileProblem, name: string): Promise<void>;
   sessionFile(ref: FileRef | null): void;
   closeOk(): void;
@@ -50,9 +55,22 @@ export interface FileFlowOptions {
    * it has closed (at once when none is open). The host's DOM port; never cancels, no timeout.
    */
   finishEditing(): Promise<void>;
+  /** RC2: the recovery file's clears (`model/recovery.ts`). */
+  recovery: RecoveryPort;
 }
 
+/** What the flows tell recovery (RC2): explicit clears, a save's outcome, a recovered drawing. */
+export type RecoveryPort = Pick<Recovery, 'clear' | 'settle' | 'adopt'>;
+
+/** CO5: what I7 handed over: a recovery file main found (unparsed) and a file request (F11). */
+export type Startup = Pick<StartupResponse, 'recovery' | 'open'>;
+
 export interface FileFlows {
+  /**
+   * CO5, RC3, RC4: the recovery offer (a file that does not parse is cleared and logged), then the
+   * file request unless Recover kept the recovered drawing (N-A2). Runs as a flow.
+   */
+  start(startup: Startup): Promise<void>;
   /** F1 (Ctrl+N). Ignored while a flow runs. */
   newDrawing(): Promise<void>;
   /** F2 then F3 (Ctrl+O). Ignored while a flow runs. */
@@ -153,6 +171,8 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
     if (answer === 'cancel') return false;
     const saved = await saveNow();
     await o.finishEditing();
+    // R20: the recovery file is cleared only when the drawing is clean after the write.
+    if (saved) o.recovery.settle();
     return saved && !dirty();
   }
 
@@ -161,7 +181,44 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
     controller.load(doc);
     replaceSession(next);
     main.sessionFile(ref);
+    // RC2: F4 passed and the drawing was replaced: the old recovery file goes.
+    o.recovery.clear();
     o.publish();
+  }
+
+  /**
+   * RC3 Recover: the session first (forcedDirty), then the load, so the drawing is dirty from its
+   * first event and its recovery file is never cleared by it.
+   */
+  function recover(doc: Doc, oldName: string): void {
+    replaceSession(recoveredSession(oldName));
+    controller.load(doc);
+    main.sessionFile(null);
+    o.recovery.adopt();
+    o.publish();
+  }
+
+  async function startNow({ recovery, open }: Startup): Promise<void> {
+    if (recovery !== null) {
+      const parsed = parse(recovery.text);
+      if (!parsed.ok) {
+        // RC3: deleted silently and logged (the code only, never the drawing).
+        o.recovery.clear();
+        main.logError(`Recovery file not used: ${parsed.error.code}`);
+      } else if ((await main.ask({ kind: 'recover' })) === 'recover') {
+        recover(parsed.value, recovery.name);
+        if (open !== null) {
+          controller.notify(
+            'info',
+            `Recovered your unsaved drawing. Save it, then open ${open.name} again.`,
+          );
+        }
+        return;
+      } else {
+        o.recovery.clear();
+      }
+    }
+    if (open !== null) await openNow(open);
   }
 
   /**
@@ -189,11 +246,15 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
     replace(parsed.value, fileSession(ref), ref);
   }
 
+  /** F13: proceed → N4 (RC2), then N5; main closes once the N4 is done. */
   async function closeNow(): Promise<void> {
-    if (await confirmDiscard()) main.closeOk();
+    if (!(await confirmDiscard())) return;
+    o.recovery.clear();
+    main.closeOk();
   }
 
   return {
+    start: (startup) => run(() => startNow(startup)),
     newDrawing: () =>
       running
         ? Promise.resolve()
@@ -222,13 +283,13 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
       running
         ? Promise.resolve()
         : run(async () => {
-            await saveNow();
+            if (await saveNow()) o.recovery.settle();
           }),
     saveAs: () =>
       running
         ? Promise.resolve()
         : run(async () => {
-            await saveAsNow();
+            if (await saveAsNow()) o.recovery.settle();
           }),
     requestClose() {
       if (!running) return run(closeNow);

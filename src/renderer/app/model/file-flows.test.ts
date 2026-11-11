@@ -13,12 +13,14 @@ import {
   type ParseErrorCode,
 } from '@core/doc-model';
 import type {
+  AskRequest,
   FileProblem,
   FileRef,
   ReadFileResponse,
   WriteFileResponse,
 } from '../../../shared/ipc-types';
-import { createFileFlows, parseProblem, type FlowMain } from './file-flows';
+import { createFileFlows, parseProblem, type FlowMain, type RecoveryPort } from './file-flows';
+import { createRecovery } from './recovery';
 import { createSession, sessionUpdate, type Session } from './session';
 
 const NOW = '2026-11-11T09:00:00.000Z';
@@ -87,6 +89,12 @@ interface Script {
   save?: (FileRef | null)[];
   write?: WriteFileResponse | Deferred<WriteFileResponse>;
   answers?: ('save' | 'discard' | 'cancel')[];
+  /** RC2: list the recovery clears among `calls`. */
+  traceRecovery?: boolean;
+  /** RC3: the recover box's answers, in turn ('recover' when none is left). */
+  recover?: ('recover' | 'delete')[];
+  /** A recovery port to use instead of the recording fake (integration with `createRecovery`). */
+  recovery?: RecoveryPort;
   /** F4a: what each `finishEditing` call does (an open editor committing), in turn. */
   finish?: ((controller: ReturnType<typeof fakeController>) => void)[];
 }
@@ -97,6 +105,7 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
   const titles: string[] = [];
   const saves = [...(script.save ?? [])];
   const answers = [...(script.answers ?? [])];
+  const recoverAnswers = [...(script.recover ?? [])];
   const calls: string[] = [];
   const main = {
     chooseOpen: vi.fn(async () => {
@@ -116,7 +125,11 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
       const w = script.write ?? { ok: true };
       return 'promise' in w ? w.promise : w;
     }),
-    ask: vi.fn(async (request: { kind: 'save-changes'; name: string }) => {
+    ask: vi.fn(async (request: AskRequest): Promise<string> => {
+      if (request.kind === 'recover') {
+        calls.push('ask recover');
+        return recoverAnswers.shift() ?? 'recover';
+      }
       calls.push(`ask ${request.name}`);
       return answers.shift() ?? 'cancel';
     }),
@@ -130,7 +143,23 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
       calls.push('closeOk');
     }),
     logError: vi.fn<(message: string) => void>(),
-  } satisfies FlowMain;
+  };
+  const recoveryCalls: string[] = [];
+  const recovery = {
+    clear: vi.fn(() => {
+      recoveryCalls.push('clear');
+      // Only a rig that traces recovery lists it among the calls (older call lists stay as they were).
+      if (script.traceRecovery) calls.push('recovery clear');
+    }),
+    settle: vi.fn(() => {
+      recoveryCalls.push(
+        `settle ${controller.isDirty() || session.forcedDirty ? 'dirty' : 'clean'}`,
+      );
+    }),
+    adopt: vi.fn(() => {
+      recoveryCalls.push('adopt');
+    }),
+  };
   let style: 'slides' | 'journal' = 'slides';
   const finishes = [...(script.finish ?? [])];
   const finishEditing = vi.fn(async () => {
@@ -140,7 +169,9 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
   });
   const flows = createFileFlows({
     finishEditing,
-    main,
+    // The fake answers both I4 kinds with one function (the port's `ask` is generic).
+    main: main as unknown as FlowMain,
+    recovery: script.recovery ?? recovery,
     controller,
     session,
     publish: () => titles.push(sessionUpdate(session, controller.isDirty()).title),
@@ -152,6 +183,8 @@ function rig(script: Script = {}, start: Doc = setStyle(emptyDoc(NOW), { preset:
   return {
     flows,
     finishEditing,
+    recovery,
+    recoveryCalls,
     main,
     controller,
     session,
@@ -824,5 +857,244 @@ describe('F4a: an open label or text editor is finished before F4 decides (R17)'
       // The session is the saved file; N1's '*' follows the editor's dirty event (CO3, host).
       expect(r.session, action).toMatchObject({ kind: 'chalk', name: 'esterification.chalk' });
     }
+  });
+});
+
+describe('A14 RC2: when the flows clear the recovery file', () => {
+  it('New and Open clear only after F4 passed; a cancelled prompt, dialog or bad file keeps it', async () => {
+    const good = ref('ethanol.chalk');
+    const r = rig({
+      traceRecovery: true,
+      answers: ['cancel', 'discard', 'cancel'],
+      open: good,
+      files: { [good.id]: chalkFile(golden('ethanol')) },
+    });
+    r.controller.edit();
+    await r.flows.newDrawing(); // Cancel
+    expect(r.recoveryCalls).toEqual([]);
+    await r.flows.newDrawing(); // Don't save
+    expect(r.calls).toEqual(['ask Untitled', 'ask Untitled', 'sessionFile null', 'recovery clear']);
+    r.controller.edit();
+    await r.flows.open(); // prompt Cancel
+    expect(r.recoveryCalls).toEqual(['clear']);
+    const bad = rig({ traceRecovery: true, open: ref('broken.chalk') });
+    bad.controller.edit();
+    await bad.flows.open(); // missing file: F14
+    const cancelled = rig({ traceRecovery: true, open: null });
+    await cancelled.flows.open();
+    expect([...bad.recoveryCalls, ...cancelled.recoveryCalls]).toEqual([]);
+    const opened = rig({
+      traceRecovery: true,
+      open: good,
+      files: { [good.id]: chalkFile(golden('ethanol')) },
+    });
+    await opened.flows.open();
+    expect(opened.calls.slice(-2)).toEqual(['sessionFile ethanol.chalk', 'recovery clear']);
+  });
+
+  it('Save settles only after a successful write; a cancelled or failed save leaves it alone', async () => {
+    const out = ref('a.chalk');
+    const r = rig({ traceRecovery: true, save: [null, out] });
+    r.controller.edit();
+    await r.flows.save(); // Save as cancelled
+    expect(r.recoveryCalls).toEqual([]);
+    await r.flows.save();
+    expect(r.recoveryCalls).toEqual(['settle clean']);
+    const failed = rig({
+      traceRecovery: true,
+      save: [ref('b.chalk')],
+      write: { ok: false, problem: 'disk-full' },
+    });
+    failed.controller.edit();
+    await failed.flows.save();
+    expect(failed.recoveryCalls).toEqual([]);
+  });
+
+  it("close: Don't save clears, then N5; Cancel neither; R14 still dirty after Save: no clear", async () => {
+    const r = rig({ traceRecovery: true, answers: ['cancel', 'discard'] });
+    r.controller.edit();
+    await r.flows.requestClose();
+    expect(r.calls).toEqual(['ask Untitled']);
+    await r.flows.requestClose();
+    expect(r.calls).toEqual(['ask Untitled', 'ask Untitled', 'recovery clear', 'closeOk']);
+    const write = deferred<WriteFileResponse>();
+    const stale = rig({ traceRecovery: true, answers: ['save'], save: [ref('c.chalk')], write });
+    stale.controller.edit();
+    const closing = stale.flows.requestClose();
+    await vi.waitFor(() => expect(stale.main.writeFile).toHaveBeenCalled());
+    stale.controller.edit();
+    write.resolve({ ok: true });
+    await closing;
+    expect(stale.recoveryCalls).toEqual(['settle dirty']);
+    expect(stale.main.closeOk).not.toHaveBeenCalled();
+  });
+
+  it('a newer edit during the save, already in the recovery file, survives the save (real recovery)', async () => {
+    let now = 0;
+    const due: { at: number; fn: () => void; live: boolean }[] = [];
+    const sent: string[] = [];
+    const holder: { r?: ReturnType<typeof rig> } = {};
+    const recovery = createRecovery({
+      now: () => now,
+      schedule: (fn, ms) => {
+        const entry = { at: now + ms, fn, live: true };
+        due.push(entry);
+        return () => {
+          entry.live = false;
+        };
+      },
+      main: {
+        writeRecovery: ({ text }) => {
+          const parsed = parse(text);
+          sent.push(`write ${parsed.ok ? Object.keys(parsed.value.atoms).length : 'bad'}`);
+        },
+        clearRecovery: () => sent.push('clear'),
+      },
+      dirty: () => holder.r?.flows.dirty() ?? false,
+      doc: () => holder.r?.controller.getDoc(),
+      text: () => serialize(holder.r?.controller.getDoc() ?? emptyDoc(NOW)),
+      name: () => 'Untitled',
+    });
+    const advance = (ms: number) => {
+      now += ms;
+      for (const entry of due) {
+        if (entry.live && entry.at <= now) {
+          entry.live = false;
+          entry.fn();
+        }
+      }
+    };
+    const write = deferred<WriteFileResponse>();
+    const r = rig({ traceRecovery: true, save: [ref('d.chalk')], write, recovery });
+    holder.r = r;
+    const edit = () => {
+      r.controller.edit();
+      recovery.update();
+    };
+    edit();
+    advance(2000);
+    const saving = r.flows.save(); // writes the 1-atom snapshot
+    await vi.waitFor(() => expect(r.main.writeFile).toHaveBeenCalled());
+    edit(); // 2 atoms, newer than the snapshot
+    advance(2000);
+    write.resolve({ ok: true });
+    await saving;
+    recovery.update();
+    advance(20_000);
+    expect(sent).toEqual(['write 1', 'write 2']);
+    expect(r.flows.dirty()).toBe(true);
+  });
+});
+
+describe('A14 RC3 / RC4 startup (CO5)', () => {
+  const text = serialize(golden('toluene'));
+
+  it('Recover: loads the drawing as "Recovered drawing", forcedDirty, adopts the file; Save as suggests the old name', async () => {
+    const out = ref('esterification.chalk');
+    const r = rig({ traceRecovery: true, recover: ['recover'], save: [out] });
+    await r.flows.start({ recovery: { text, name: 'esterification.chalk' }, open: null });
+    expect(r.calls).toEqual(['ask recover', 'sessionFile null']);
+    expect(Object.keys(r.controller.getDoc().atoms)).toHaveLength(7);
+    expect(r.session).toMatchObject({
+      name: 'Recovered drawing',
+      kind: 'recovered',
+      forcedDirty: true,
+      saveName: 'esterification.chalk',
+    });
+    expect(r.flows.dirty()).toBe(true);
+    expect(r.titles.at(-1)).toBe('*Recovered drawing - Chalkbond');
+    expect(r.recoveryCalls).toEqual(['adopt']);
+    await r.flows.save();
+    expect(r.main.chooseSave).toHaveBeenCalledWith('chalk', 'esterification.chalk');
+    expect(r.flows.dirty()).toBe(false);
+    expect(r.recoveryCalls).toEqual(['adopt', 'settle clean']);
+  });
+
+  it('Delete: clears the file, keeps the empty drawing', async () => {
+    const r = rig({ traceRecovery: true, recover: ['delete'] });
+    const before = r.controller.getDoc();
+    await r.flows.start({ recovery: { text, name: 'Untitled' }, open: null });
+    expect(r.calls).toEqual(['ask recover', 'recovery clear']);
+    expect(r.controller.getDoc()).toBe(before);
+    expect(r.session).toEqual(createSession());
+  });
+
+  it('a recovery file that does not parse: cleared and logged (code only), no box', async () => {
+    const r = rig({ traceRecovery: true });
+    await r.flows.start({ recovery: { text: '{"secret": "drawing"', name: 'x' }, open: null });
+    expect(r.calls).toEqual(['recovery clear']);
+    expect(r.main.ask).not.toHaveBeenCalled();
+    expect(r.main.logError).toHaveBeenCalledTimes(1);
+    const message = r.main.logError.mock.calls[0]?.[0] ?? '';
+    expect(message).toMatch(/^Recovery file not used: /);
+    expect(message).not.toContain('secret');
+  });
+
+  it('RC4: with a file request, recovery is offered first; Recover keeps it and shows N-A2', async () => {
+    const file = ref('ethanol.chalk');
+    const r = rig({
+      traceRecovery: true,
+      recover: ['recover'],
+      files: { [file.id]: chalkFile(golden('ethanol')) },
+    });
+    await r.flows.start({ recovery: { text, name: 'Untitled' }, open: file });
+    expect(r.calls).toEqual(['ask recover', 'sessionFile null']);
+    expect(r.main.readFile).not.toHaveBeenCalled();
+    expect(Object.keys(r.controller.getDoc().atoms)).toHaveLength(7);
+    expect(r.controller.notify).toHaveBeenCalledWith(
+      'info',
+      'Recovered your unsaved drawing. Save it, then open ethanol.chalk again.',
+    );
+  });
+
+  it('RC4: Delete, then the file opens through F3 (validated)', async () => {
+    const file = ref('ethanol.chalk');
+    const r = rig({
+      traceRecovery: true,
+      recover: ['delete'],
+      files: { [file.id]: chalkFile(golden('ethanol')) },
+    });
+    await r.flows.start({ recovery: { text, name: 'Untitled' }, open: file });
+    expect(r.calls).toEqual([
+      'ask recover',
+      'recovery clear',
+      'read ethanol.chalk',
+      'sessionFile ethanol.chalk',
+      'recovery clear',
+    ]);
+    expect(r.session).toMatchObject({ kind: 'chalk', name: 'ethanol.chalk' });
+    expect(r.controller.notify).not.toHaveBeenCalled();
+  });
+
+  it('no recovery: the file request opens; nothing at all: nothing loads (a test-hook drawing stays)', async () => {
+    const file = ref('ethanol.chalk');
+    const r = rig({ traceRecovery: true, files: { [file.id]: chalkFile(golden('ethanol')) } });
+    await r.flows.start({ recovery: null, open: file });
+    expect(r.calls).toEqual(['read ethanol.chalk', 'sessionFile ethanol.chalk', 'recovery clear']);
+    const idle = rig({ traceRecovery: true });
+    idle.controller.edit();
+    const drawn = idle.controller.getDoc();
+    await idle.flows.start({ recovery: null, open: null });
+    expect(idle.controller.getDoc()).toBe(drawn);
+    expect(idle.calls).toEqual([]);
+    expect(idle.controller.load).not.toHaveBeenCalled();
+  });
+
+  it('startup runs as a flow: Ctrl+N waits it out (ignored), an open request queues after it', async () => {
+    const answer = deferred<string>();
+    const file = ref('ethanol.chalk');
+    const r = rig({ traceRecovery: true, files: { [file.id]: chalkFile(golden('ethanol')) } });
+    r.main.ask.mockImplementationOnce(() => answer.promise);
+    const starting = r.flows.start({ recovery: { text, name: 'Untitled' }, open: null });
+    await vi.waitFor(() => expect(r.main.ask).toHaveBeenCalled());
+    expect(r.flows.busy()).toBe(true);
+    await r.flows.newDrawing();
+    void r.flows.openRef(file);
+    answer.resolve('recover');
+    await starting;
+    await vi.waitFor(() => expect(r.main.readFile).toHaveBeenCalled());
+    // The scripted answer replaced the recording fake: the box is the first call, then the load.
+    expect(r.main.ask).toHaveBeenNthCalledWith(1, { kind: 'recover' });
+    expect(r.calls.slice(0, 2)).toEqual(['sessionFile null', 'read ethanol.chalk']);
   });
 });

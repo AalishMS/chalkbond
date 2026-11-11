@@ -1,7 +1,7 @@
 import { createCopyFlow, type CopyFlow } from '../clipboard-export/model/copy-flow';
 import { createExportFlow, createExportWriter } from '../clipboard-export/model/export-flow';
 import { rasterise } from '../clipboard-export/rasterise';
-import { emptyDoc, setStyle, type Doc } from '@core/doc-model';
+import { emptyDoc, serialize, setStyle, type Doc } from '@core/doc-model';
 import { createEditorController } from '../editor';
 import { createFinishEditing } from './finish-editing';
 import { createFileFlows } from './model/file-flows';
@@ -14,7 +14,8 @@ import {
 } from './model/menu-state';
 import { isTextTarget } from './text-target';
 import { createPresetMemory } from './model/preset-memory';
-import { createSession, sessionUpdate } from './model/session';
+import { createRecovery } from './model/recovery';
+import { createSession, recoveryName, sessionUpdate } from './model/session';
 import type { ChalkbondApi } from '../../preload/api';
 import { CONTEXT_COMMANDS, type ContextCommand } from '../../shared/menu';
 import type { HostHit } from '../editor';
@@ -92,6 +93,25 @@ export async function createWindowHost(
     notify: (kind: 'info' | 'error', text: string) => controller.notify(kind, text),
   };
   const session = createSession();
+  // RC1, RC2, RC5: the recovery file follows the committed drawing while it is dirty (F7).
+  const recovery = createRecovery({
+    now: () => Date.now(),
+    schedule: (fn, ms) => {
+      const id = setTimeout(fn, ms);
+      return () => clearTimeout(id);
+    },
+    main: {
+      writeRecovery: (value) => main.writeRecovery(value),
+      clearRecovery: () => main.clearRecovery(),
+    },
+    dirty: () => session.forcedDirty || controller.isDirty(),
+    doc: () => controller.getDoc(),
+    text: () => serialize(controller.getDoc()),
+    name: () => recoveryName(session),
+  });
+  controller.subscribe((event) => {
+    if (event.type === 'doc' || event.type === 'dirty') recovery.update();
+  });
   // M1: an in-window dialog is open (Export or Keyboard shortcuts); one at a time.
   let exportOpen = (): boolean => false;
   let shortcutsOpen = false;
@@ -142,6 +162,7 @@ export async function createWindowHost(
     encodeUtf8: (text) => encoder.encode(text),
     // F4a: an open label or text editor is committed before New, Open or close decide.
     finishEditing: createFinishEditing(controller),
+    recovery,
   });
   // EX1, EX2: the Export dialog's choices and the Save dialog (C3); EX3–EX5: the writer writes the
   // snapshot taken at Save… (no dirty, session or recovery change).
@@ -179,6 +200,18 @@ export async function createWindowHost(
   };
   /** A `main:event` menu command, re-checked against the state now (R19). */
   const runCommand = (command: string): boolean => runAppCommand(command, menuState(), actions);
+  let started = false;
+  /**
+   * CO5, RC3, RC4: once, after the window's view is mounted (the recover box has its parent and
+   * the canvas exists): the recovery offer, then the launch's file. The canvas has focus after.
+   */
+  const start = async (): Promise<void> => {
+    if (started) return;
+    started = true;
+    if (startup.recovery === null && startup.open === null) return;
+    await fileFlows.start({ recovery: startup.recovery, open: startup.open });
+    focusCanvas();
+  };
   let contextOpen = false;
   /**
    * CM1, CM2: the editor's `context-menu` event (an unselected item is already selected). The menu
@@ -230,6 +263,9 @@ export async function createWindowHost(
     actions,
     runCommand,
     contextMenu,
+    start,
+    /** RC5 (`main:event {flush-recovery}`): N3 at once when dirty. */
+    flushRecovery: (): void => recovery.flush(),
     /** ST2: a copy of the renderer settings now. */
     settings: (): RendererSettings => ({ ...settings, export: { ...settings.export } }),
     /** I8: remembers a settings change (here at once; main writes the file). */

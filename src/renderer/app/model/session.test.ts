@@ -1,5 +1,13 @@
 import { expect, it } from 'vitest';
-import { createSession, displayName, fileSession, saveAsName, sessionUpdate } from './session';
+import {
+  createSession,
+  displayName,
+  fileSession,
+  recoveredSession,
+  recoveryName,
+  saveAsName,
+  sessionUpdate,
+} from './session';
 it('starts Untitled and derives dirty from the controller or forced recovery flag', () => {
   const session = createSession();
   expect(session).toEqual({ name: 'Untitled', kind: 'untitled', ref: null, forcedDirty: false });
@@ -34,5 +42,31 @@ it('F6: the Save as name is the session name without its extension, plus .chalk'
   );
   expect(saveAsName({ ...createSession(), name: 'Recovered drawing', kind: 'recovered' })).toBe(
     'Recovered drawing.chalk',
+  );
+});
+
+it('RC3: a recovered session suggests its old name in Save as and keeps it in N3', () => {
+  const recovered = recoveredSession('esterification.chalk');
+  expect(recovered).toEqual({
+    name: 'Recovered drawing',
+    kind: 'recovered',
+    ref: null,
+    forcedDirty: true,
+    saveName: 'esterification.chalk',
+  });
+  expect(sessionUpdate(recovered, false)).toEqual({
+    title: '*Recovered drawing - Chalkbond',
+    dirty: true,
+  });
+  expect(saveAsName(recovered)).toBe('esterification.chalk');
+  expect(saveAsName(recoveredSession('toluene.png'))).toBe('toluene.chalk');
+  expect(saveAsName(recoveredSession('Untitled'))).toBe('Untitled.chalk');
+  expect(recoveryName(recovered)).toBe('esterification.chalk');
+  expect(recoveryName(createSession())).toBe('Untitled');
+  expect(recoveryName(fileSession({ id: '2', name: 'toluene.png', kind: 'png' }))).toBe(
+    'toluene.png',
+  );
+  expect(recoveryName({ ...createSession(), name: 'Recovered drawing', kind: 'recovered' })).toBe(
+    'Untitled',
   );
 });

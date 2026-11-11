@@ -50,8 +50,11 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
         host.runCommand(event.command);
       } else if (event.type === 'close-requested') void fileFlows.requestClose();
       else if (event.type === 'open') void fileFlows.openRef(event.ref);
+      else host.flushRecovery();
     });
     host.publishSession();
+    // CO5: the recovery offer and the launch's file, once, now that the view is mounted.
+    void host.start();
     // N1 (title, dirty, menu) follows the editor, focus and dialogs, at most once per frame.
     const invalidate = host.invalidateMenu;
     const stopController = controller.subscribe((event) => {

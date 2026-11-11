@@ -499,9 +499,9 @@ unsaved drawing. Save it, then open ethanol.chalk again." RC5: `win.emit('query-
 after an edit writes the file within 1 s.
 
 **Acceptance criteria:**
-- [ ] Unit and e2e tests pass (SC7)
-- [ ] The recovery file never contains anything after a normal close (e2e: edit, Don't save, file absent)
-- [ ] Shot exists
+- [x] Unit and e2e tests pass (SC7) (Linux; RC5 by a synthetic `query-session-end`, the real Windows shutdown grace is not run)
+- [x] The recovery file never contains anything after a normal close (e2e: edit, Don't save, file absent)
+- [x] Shot exists (`out/shots/A14/recovered.png`, `recovered-with-file.png`, looked at; the N-A2 wording as A17; the box's look, A11, stays on the Windows checklist)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- A14` →
 `A14/recovered.png` (scripted relaunch after a kill with the stub answering Recover: ethanol on the

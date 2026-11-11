@@ -14,6 +14,8 @@ export const CHANNELS = {
   updateSession: 'session:update',
   sessionFile: 'session:file',
   closeOk: 'app:close-ok',
+  writeRecovery: 'recovery:write',
+  clearRecovery: 'recovery:clear',
   logError: 'log:error',
   mainEvent: 'main:event',
 } as const;

@@ -21,6 +21,8 @@ const api: ChalkbondApi = {
   updateSession: (value) => ipcRenderer.send(CHANNELS.updateSession, value),
   sessionFile: (ref) => ipcRenderer.send(CHANNELS.sessionFile, { ref: ref?.id ?? null }),
   closeOk: () => ipcRenderer.send(CHANNELS.closeOk, {}),
+  writeRecovery: (value) => ipcRenderer.send(CHANNELS.writeRecovery, value),
+  clearRecovery: () => ipcRenderer.send(CHANNELS.clearRecovery, {}),
   platform: process.platform,
   logError: (message) => ipcRenderer.send(CHANNELS.logError, { message }),
   onMainEvent: (callback) => {

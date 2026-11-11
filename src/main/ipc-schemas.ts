@@ -128,3 +128,17 @@ export const setSettingsSchema = z
 
 // A13 (SPEC-app-shell.md I6, CM1): the canvas context menu's kind and the menu state now.
 export const contextMenuSchema = z.object({ onItem: z.boolean(), state: menuStateSchema }).strict();
+
+// A14 (SPEC-app-shell.md N3, N4; RC1, RC2): the committed drawing's text (up to 20 MiB of UTF-8,
+// starting "{") and a base name; the clear takes nothing.
+export const writeRecoverySchema = z
+  .object({
+    text: z
+      .string()
+      .max(maxDrawingBytes)
+      .startsWith('{')
+      .refine((text) => Buffer.byteLength(text, 'utf8') <= maxDrawingBytes),
+    name: baseName,
+  })
+  .strict();
+export const clearRecoverySchema = z.object({}).strict();

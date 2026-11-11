@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { testFlags } from './args';
+import { fileArg, testFlags } from './args';
 
 const OFF = { hooks: false, userData: null };
 
@@ -57,5 +57,39 @@ describe('testFlags', () => {
     expect(
       testFlags(['--chalkbond-user-data=/first', '--chalkbond-user-data=/second'], false).userData,
     ).toBe('/first');
+  });
+});
+
+// F11 `fileArg` (implemented early in A14 for RC4's launch with a file; A15 adds second-instance).
+describe('fileArg', () => {
+  it('the last argument that is not a flag and ends in an Open extension, any case', () => {
+    expect(fileArg(['Chalkbond.exe', 'C:\\Users\\T\\ethanol.chalk'])).toBe(
+      'C:\\Users\\T\\ethanol.chalk',
+    );
+    expect(fileArg(['app', '/a/one.chalk', '/b/two.CHALK'])).toBe('/b/two.CHALK');
+    expect(fileArg(['app', '/a/toluene.png'])).toBe('/a/toluene.png');
+    expect(fileArg(['app', '/a/x.svg', '/a/y.pdf'])).toBe('/a/y.pdf');
+  });
+
+  it('flags, Chromium extras, -r preloads, the app folder and other extensions are ignored', () => {
+    expect(
+      fileArg([
+        '/usr/bin/electron',
+        '-r',
+        '/repo/e2e/no-os-mouse.mjs',
+        '/repo',
+        '--chalkbond-test-hooks',
+        '--chalkbond-user-data=/tmp/x.chalk',
+        '--force-device-scale-factor=1',
+        '--no-sandbox',
+        '/tmp/notes.docx',
+      ]),
+    ).toBeNull();
+    expect(fileArg(['app', '--open=/a/b.chalk', '/a/b.chalk.txt', '/a/chalk'])).toBeNull();
+    expect(fileArg([])).toBeNull();
+  });
+
+  it('a path wrapped in double quotes is unwrapped', () => {
+    expect(fileArg(['app', '"C:\\My Drawings\\a b.chalk"'])).toBe('C:\\My Drawings\\a b.chalk');
   });
 });

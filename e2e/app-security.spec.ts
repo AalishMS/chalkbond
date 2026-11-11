@@ -10,6 +10,7 @@ test('named bridge logs errors and denies windows and permissions', async () => 
       'ask',
       'chooseOpen',
       'chooseSave',
+      'clearRecovery',
       'clipboardRead',
       'clipboardWrite',
       'closeOk',
@@ -25,6 +26,7 @@ test('named bridge logs errors and denies windows and permissions', async () => 
       'startup',
       'updateSession',
       'writeFile',
+      'writeRecovery',
     ]);
     expect(await page.evaluate(() => Notification.requestPermission())).toBe('denied');
     const prefs = await app.evaluate(({ BrowserWindow }) => {

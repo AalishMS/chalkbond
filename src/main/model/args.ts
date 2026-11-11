@@ -21,3 +21,20 @@ export function testFlags(argv: readonly string[], isPackaged: boolean): TestFla
   const value = given === undefined ? '' : given.slice(USER_DATA_PREFIX.length);
   return { hooks: argv.includes(HOOKS_FLAG), userData: value === '' ? null : value };
 }
+
+const OPEN_EXTENSION = /\.(chalk|png|svg|pdf)$/i;
+
+/**
+ * F11: the file a launch asks to open: the last argument that does not start with `-` and ends in
+ * an Open extension (any case), with one pair of surrounding double quotes removed; null when none.
+ * (Implemented in A14 for RC4's launch with a file; A15 adds the second-instance path.)
+ */
+export function fileArg(argv: readonly string[]): string | null {
+  for (let i = argv.length - 1; i >= 0; i--) {
+    const raw = argv[i] ?? '';
+    const arg =
+      raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"') ? raw.slice(1, -1) : raw;
+    if (!arg.startsWith('-') && OPEN_EXTENSION.test(arg)) return arg;
+  }
+  return null;
+}

@@ -26,9 +26,12 @@ import {
   type RememberedWindow,
 } from './model/window-bounds';
 import { rendererSettings, withRendererSettings } from './model/settings';
-import { createSettingsStore, type SettingsStore } from './settings-io';
+import { createSettingsStore } from './settings-io';
 import type { ReadFileResponse, StartupResponse } from '../shared/ipc-types';
-import { testFlags } from './model/args';
+import { fileArg, testFlags } from './model/args';
+import { kindOfPath } from './model/file-refs';
+import { guardClose, installQuitFlush } from './lifecycle';
+import { createRecovery } from './recovery';
 
 import { pathToFileURL } from 'node:url';
 import { CHANNELS } from '../shared/channels';
@@ -50,6 +53,8 @@ import {
   closeOkSchema,
   setSettingsSchema,
   contextMenuSchema,
+  writeRecoverySchema,
+  clearRecoverySchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { createAppMenu, createContextMenus } from './menu';
@@ -57,7 +62,6 @@ import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from '
 
 installWebContentsSecurity();
 let mainWindow: BrowserWindow | undefined;
-let settings: SettingsStore | undefined;
 const APP_ID = 'com.chalkbond.app';
 
 function createMainWindow(remembered: RememberedWindow | null): BrowserWindow {
@@ -161,7 +165,6 @@ void app.whenReady().then(async () => {
     file: join(app.getPath('userData'), 'settings.json'),
     log: (message) => log('settings', message),
   });
-  settings = store;
   await store.load();
   installSessionSecurity(
     (message) => log('security', message),
@@ -246,7 +249,14 @@ void app.whenReady().then(async () => {
       log: (message) => log('pdf', message),
     }),
   );
-  ipc.handle(CHANNELS.ask, askSchema, (request) => dialogs.ask(request));
+  ipc.handle(CHANNELS.ask, askSchema, async (request) => {
+    // RC3 at launch: the box waits until its parent window is on screen (shown at first paint).
+    const win = mainWindow;
+    if (request.kind === 'recover' && win && !win.isDestroyed() && !win.isVisible()) {
+      await new Promise<void>((resolve) => win.once('show', () => resolve()));
+    }
+    return dialogs.ask(request);
+  });
   ipc.handle(CHANNELS.showFileError, fileErrorSchema, ({ problem, name }) =>
     dialogs.showFileError(problem, name),
   );
@@ -254,12 +264,35 @@ void app.whenReady().then(async () => {
   // CM1–CM3 (A13): the canvas menu on request (I6); the text-field menu from webContents.
   const contextMenus = createContextMenus({ Menu, window: () => mainWindow });
   ipc.handle(CHANNELS.showContextMenu, contextMenuSchema, (request) => contextMenus.show(request));
-  // I7 with ST2: the renderer's view only (no path, folder, window or recent list).
-  ipc.handle(CHANNELS.startup, startupSchema, (): StartupResponse => ({
-    settings: rendererSettings(store.get()),
-    recovery: null,
-    open: null,
-  }));
+  // Recovery (RC1–RC6): one ordered chain of writes and clears in userData/recovery.
+  const recovery = createRecovery({
+    folder: join(app.getPath('userData'), 'recovery'),
+    log: (message) => log('recovery', message),
+    now: () => new Date().toISOString(),
+  });
+  ipc.on(CHANNELS.writeRecovery, writeRecoverySchema, (value) => void recovery.write(value));
+  ipc.on(CHANNELS.clearRecovery, clearRecoverySchema, () => void recovery.clear());
+  // Quit waits for one flush of settings (a change younger than 500 ms, e.g. the window bounds)
+  // and of the recovery chain.
+  installQuitFlush(app, {
+    pending: () => store.pending() || recovery.busy(),
+    flush: () => Promise.all([store.flush(), recovery.idle()]),
+    log: (message) => log('quit', message),
+  });
+  // F11 (A15 subset, early for RC4): the file on the first launch's command line, handed out once.
+  let startupFile = fileArg(process.argv);
+  // I7 with ST2: the renderer's view only (no path, folder, window or recent list). The recovery
+  // file is checked for size and signature here; the renderer parses it (RC3).
+  ipc.handle(CHANNELS.startup, startupSchema, async (): Promise<StartupResponse> => {
+    const path = startupFile;
+    startupFile = null;
+    const kind = path === null ? null : kindOfPath(path);
+    return {
+      settings: rendererSettings(store.get()),
+      recovery: await recovery.read(),
+      open: path === null || kind === null ? null : refs.add(path, kind, 'opened'),
+    };
+  });
   // I8: a strict partial RendererSettings (preset switches, Export choices).
   ipc.handle(CHANNELS.setSettings, setSettingsSchema, (change) => {
     store.update((s) => withRendererSettings(s, change));
@@ -290,56 +323,16 @@ void app.whenReady().then(async () => {
   const openWindow = (): void => {
     const win = createMainWindow(store.get().window);
     mainWindow = win;
-    closing = guardClose(win, () => rememberWindow(win));
+    closing = guardClose(win, {
+      closing: () => rememberWindow(win),
+      recoveryIdle: () => recovery.idle(),
+    });
     // CM3 (R3): editable targets only; the canvas prevents the DOM event, so it never gets here.
     win.webContents.on('context-menu', (_event, params) => contextMenus.text(params));
   };
   openWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) openWindow();
-  });
-});
-
-/**
- * F13: a window close (title-bar ×, Alt+F4, File > Exit) is prevented and handed to the renderer
- * (`close-requested`), which runs F4 and answers with N5. Main intercepts only once the renderer
- * has sent its first N1 (it listens for main events by then), and never once the renderer is gone
- * (`render-process-gone`): then the window closes without asking (the recovery file covers it).
- * `closing` runs for every close that goes ahead (W2 remembers the bounds then).
- */
-function guardClose(win: BrowserWindow, closing: () => void) {
-  let ready = false;
-  let allowed = false;
-  win.webContents.on('render-process-gone', () => {
-    allowed = true;
-  });
-  win.on('close', (event) => {
-    if (allowed || !ready || win.webContents.isCrashed()) {
-      closing();
-      return;
-    }
-    event.preventDefault();
-    win.webContents.send(CHANNELS.mainEvent, { type: 'close-requested' });
-  });
-  return {
-    rendererReady(): void {
-      ready = true;
-    },
-    closeOk(): void {
-      allowed = true;
-      win.close();
-    },
-  };
-}
-
-// Settings are flushed before quit: a change younger than 500 ms (the window bounds) still lands.
-let flushed = false;
-app.on('will-quit', (event) => {
-  if (flushed || settings === undefined || !settings.pending()) return;
-  event.preventDefault();
-  void settings.flush().finally(() => {
-    flushed = true;
-    app.quit();
   });
 });
 

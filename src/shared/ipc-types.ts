@@ -23,6 +23,8 @@ export interface IpcRequestMap {
   'session:update': SessionUpdate;
   'session:file': { ref: string | null };
   'app:close-ok': Record<string, never>;
+  'recovery:write': WriteRecoveryRequest;
+  'recovery:clear': Record<string, never>;
 }
 export type FileRef = { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' };
 export interface RendererSettings {
@@ -91,3 +93,10 @@ export interface ContextMenuRequest {
   state: MenuState;
 }
 export type ContextMenuAnswer = ContextCommand | null;
+
+/** N3 (RC1): the committed drawing's text and the session's name for `recovery.json`. */
+export interface WriteRecoveryRequest {
+  text: string;
+  /** A base name (no `/` or `\`). */
+  name: string;
+}

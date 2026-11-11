@@ -29,6 +29,8 @@ function fakeMain(settings: RendererSettings, fileText = serialize(drawing('slid
     writeFile: () => Promise.resolve({ ok: true as const }),
     showFileError: () => Promise.resolve(),
     closeOk: vi.fn(),
+    writeRecovery: vi.fn(),
+    clearRecovery: vi.fn(),
     clipboardWrite: () => Promise.resolve({ ok: true }),
     clipboardRead: () =>
       Promise.resolve({ drawing: null, text: null, textTooLong: false, image: false }),
@@ -297,5 +299,71 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
     expect(vi.mocked(r.main.logError)).toHaveBeenCalledWith(
       expect.stringContaining('Context menu'),
     );
+  });
+});
+
+describe('A14 host recovery wiring (RC1, RC3, RC5; CO5)', () => {
+  const recoveryMain = (recovery: { text: string; name: string } | null, answer = 'recover') => {
+    const { main } = fakeMain(DEFAULTS);
+    Object.assign(main, {
+      startup: () => Promise.resolve({ settings: DEFAULTS, recovery, open: null }),
+      ask: vi.fn(() => Promise.resolve(answer)),
+    });
+    return main;
+  };
+
+  it('start offers the recovery once, loads it as Recovered drawing, then focuses the canvas', async () => {
+    const main = recoveryMain({ text: serialize(drawing('journal')), name: 'a.chalk' });
+    const focused = vi.fn();
+    const host = await createWindowHost(main, () => false, focused);
+    await Promise.all([host.start(), host.start()]);
+    expect(main.ask).toHaveBeenCalledTimes(1);
+    expect(Object.keys(host.controller.getDoc().atoms)).toHaveLength(1);
+    expect(host.session).toMatchObject({
+      kind: 'recovered',
+      forcedDirty: true,
+      saveName: 'a.chalk',
+    });
+    expect(vi.mocked(main.updateSession).mock.lastCall?.[0].title).toBe(
+      '*Recovered drawing - Chalkbond',
+    );
+    expect(focused).toHaveBeenCalledTimes(1);
+    expect(main.clearRecovery).not.toHaveBeenCalled();
+  });
+
+  it('a normal launch (no recovery, no file) never loads: a test-hook drawing stays', async () => {
+    const main = recoveryMain(null);
+    const focused = vi.fn();
+    const host = await createWindowHost(main, () => false, focused);
+    host.loadUntitled(drawing('journal'));
+    const loaded = host.controller.getDoc();
+    await host.start();
+    expect(host.controller.getDoc()).toBe(loaded);
+    expect(main.ask).not.toHaveBeenCalled();
+    expect(focused).not.toHaveBeenCalled();
+  });
+
+  it('an edit writes N3 2 s later with the committed drawing; flush writes at once', async () => {
+    vi.useFakeTimers();
+    try {
+      const main = recoveryMain(null);
+      const host = await createWindowHost(main, () => false);
+      host.controller.run({ type: 'insert-text', text: 'ethanol' });
+      expect(main.writeRecovery).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2000);
+      expect(main.writeRecovery).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(main.writeRecovery).mock.lastCall?.[0]).toEqual({
+        text: serialize(host.controller.getDoc()),
+        name: 'Untitled',
+      });
+      host.flushRecovery();
+      expect(main.writeRecovery).toHaveBeenCalledTimes(2);
+      host.controller.run('undo');
+      expect(main.clearRecovery).toHaveBeenCalledTimes(1);
+      host.flushRecovery();
+      expect(main.writeRecovery).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

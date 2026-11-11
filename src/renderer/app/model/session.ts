@@ -10,6 +10,27 @@ export interface Session {
   ref: FileRef | null;
   /** F7: true only for a recovered drawing until it is saved. */
   forcedDirty: boolean;
+  /** RC3: a recovered drawing's old name (`recovery.json`), suggested by Save as. */
+  saveName?: string;
+}
+
+export const RECOVERED_NAME = 'Recovered drawing';
+
+/** RC3 Recover: `Recovered drawing`, dirty until saved, Save as suggesting the old name. */
+export function recoveredSession(oldName: string): Session {
+  return {
+    name: RECOVERED_NAME,
+    kind: 'recovered',
+    ref: null,
+    forcedDirty: true,
+    saveName: oldName,
+  };
+}
+
+/** RC1: the name `recovery.json` keeps (a recovered drawing keeps its old name). */
+export function recoveryName(session: Session): string {
+  if (session.kind === 'recovered') return session.saveName ?? 'Untitled';
+  return session.name;
 }
 
 export function createSession(): Session {
@@ -33,10 +54,9 @@ export function displayName(session: Session): string {
 
 /** F6: the suggested Save as name: the file's name without its extension, plus `.chalk`. */
 export function saveAsName(session: Session): string {
-  const stem =
-    session.kind === 'chalk' || session.kind === 'picture'
-      ? session.name.slice(0, Math.max(session.name.lastIndexOf('.'), 0)) || session.name
-      : session.name;
+  const name = session.kind === 'recovered' ? (session.saveName ?? session.name) : session.name;
+  const named = session.kind !== 'untitled' && /\.(chalk|png|svg|pdf)$/i.test(name);
+  const stem = named ? name.slice(0, Math.max(name.lastIndexOf('.'), 0)) || name : name;
   return `${stem}.chalk`;
 }
 
