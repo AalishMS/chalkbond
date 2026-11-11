@@ -113,5 +113,6 @@ Electron 45.2.3, a real window.
 | Run | Budget | n | Median | Samples |
 |---|---|---|---|---|
 | Windows, real clipboard (alone) | <= 500 ms | 5 | 50.9 ms | 90.6, 57.0, 49.0, 49.3, 50.9 |
+| Windows, real clipboard (inside the full `npm run test:e2e`, orchestrator, 2026-11-11, `956a4a4`) | <= 500 ms | 5 | 47.4 ms | 88.4, 52.9, 46.5, 46.8, 47.4 |
 
 The first sample is the slowest (cold encoder); the median is about a tenth of the budget.

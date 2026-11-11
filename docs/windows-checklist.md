@@ -1,9 +1,10 @@
 # Windows verification checklist
 
-**Checkpoint Z (release) has not been run.** Nothing in this file has been run on Windows for
-version 1.0.0: every command in "Checkpoint Z" is unrun and every box in the sections "Clipboard
-and export" and "App shell and installer" is unticked. The release is not declared until they
-pass.
+**Checkpoint Z (release) is partly run.** The automated steps 1-7 of "Checkpoint Z" ran and passed
+on Windows on 2026-11-11 at `956a4a4`, run and read by the orchestrator. Step 8 is half done (the
+installer and unpacked sizes are written; the installed size is open) and step 9, the human
+sections, is open: the human boxes in "Clipboard and export" and every box in "App shell and
+installer" are unticked. The release is not declared until they pass.
 
 Run on the Windows machine (PowerShell) at each checkpoint. Tick items in the commit that
 records the checkpoint.
@@ -17,13 +18,26 @@ the commit that ticks the boxes.
 2. `npm run check`
 3. `npm run test:e2e` (builds first; includes the Windows-only `e2e/win/` specs)
 4. `npm run test:e2e:os-input` (opt-in; moves the real mouse cursor, do not touch the mouse while it runs)
-5. The C3 clipboard probes P1-P7 and P2b: `e2e/win/clipboard-facts.spec.ts` (inside step 3, or alone with `npx playwright test e2e/win/clipboard-facts.spec.ts` after `npm run build`), as `tasks/todo-clipboard-export.md` C3 and `SPEC-clipboard-export.md` "Testing" describe them. Record the observed results in the spec's "Facts relied on" and in `src/main/clipboard-export/formats.ts` (its keys are still marked UNVERIFIED).
+5. The C3 clipboard probes P1-P7 and P2b: `e2e/win/clipboard-facts.spec.ts` (inside step 3, or alone with `npx playwright test e2e/win/clipboard-facts.spec.ts` after `npm run build`), as `tasks/todo-clipboard-export.md` C3 and `SPEC-clipboard-export.md` "Testing" describe them. Record the observed results in the spec's "Facts relied on" and in `src/main/clipboard-export/formats.ts`.
 6. `npm run dist:win` (needs network once for the NSIS download)
 7. `npm run test:packaged` (against `dist/win-unpacked`)
-8. Write the installer size and the installed size into `SPEC-app-shell.md`, packaging item I1 (both are unmeasured).
+8. Write the installer size and the installed size into `SPEC-app-shell.md`, packaging item I1.
 9. The human sections below ("Clipboard and export" and "App shell and installer"), on Windows 10 and Windows 11.
 
-None of these steps has been run yet.
+State on 2026-11-11, at `956a4a4`, on Windows 11 Pro 26300 (Node 26.3.0, npm 11.16.0, Electron 45.2.3,
+i5-11400H, 16 GB, display at 125 % with a second monitor). Run and read by the orchestrator:
+
+1. `npm ci`: exit 0.
+2. `npm run check`: exit 0, 231 files, 4038 tests.
+3. `npm run test:e2e`: exit 0, 321 passed, 6.9 min, including `e2e/win/`, the font calibration against real Arial, the PDF probes P8 and P9 (outcome PDF-A confirmed on Windows) and the native window specs. Earlier the same day: 308 passed and 13 failed at `b99a6d6`, 319 passed and 1 failed at `85f968a`; the defects are in the `SPEC.md` Decisions Log.
+4. `npm run test:e2e:os-input`: exit 0, 1 passed (the mouse was left alone).
+5. The C3 probes P1-P7 and P2b passed inside step 3. The keys were decided by them (Decision R9 in `SPEC-clipboard-export.md`).
+6. `npm run dist:win`, from a real console window: exit 0; `dist/Chalkbond-1.0.0-setup.exe` 109,915,593 bytes (104.8 MiB), `dist/win-unpacked` 347,499,681 bytes (331.4 MiB, 21 files), `dist/builder-effective-config.yaml` written.
+7. `npm run test:packaged` against `dist/win-unpacked`: exit 0, 7 passed.
+8. Installer and unpacked sizes are written in `SPEC-app-shell.md` I1. The installed size is not measured yet: it comes from the owner's install.
+9. Not started: no human box is ticked.
+
+Also run: `npm run shots` (97 passed, 220 PNGs), compared by eye by the orchestrator (see "Clipboard and export").
 
 ## Checkpoint A — scaffold and tooling
 
@@ -101,11 +115,11 @@ checks above belong to this checkpoint too.
 
 Human-only: Office, other applications, eyes. Run with the installed app and Office 2021.
 
-Automated checks that only run on Windows (not run on Linux; none is ticked):
+Automated checks that only run on Windows (ticked from the orchestrator's run of 2026-11-11):
 
-- [ ] `npm run test:e2e` on Windows passes every `e2e/win/clipboard-*.spec.ts`: probes P1-P7 including P2b (`clipboard-facts`, SC2), the CB-W1 formats, SVG, drawing and 300 dpi PNG (`clipboard-copy`, SC3 and SC4), the paste round trips (`clipboard-paste`, SC5) and the IPC handlers (`clipboard-ipc`). A probe that fails is recorded with its fallback in "Facts relied on" and `formats.ts` (SC2).
-- [ ] `e2e/win/clipboard-perf.spec.ts` passes: copy of the 40-atom scheme reaches the real clipboard in at most 500 ms (median of 5; SC12). Append the measured number to `docs/editor-perf.md` as the Windows row.
-- [ ] Look at the C8 and C10 shots (`npm run shots -- C8`, `npm run shots -- C10`) beside the mock-ups A01, A02, A15b and A08a-c (`node docs/mockups/shell/build.mjs --png out/mockups-shell`): the Copy button states, the Export dialog and its three formats match by eye at 1280x800 and 960x640 (SC10).
+- [x] `npm run test:e2e` on Windows passes every `e2e/win/clipboard-*.spec.ts` (run by the orchestrator, 2026-11-11, `956a4a4`, 321 passed): probes P1-P7 including P2b (`clipboard-facts`, SC2), the CB-W1 formats, SVG, drawing and 300 dpi PNG (`clipboard-copy`, SC3 and SC4), the paste round trips (`clipboard-paste`, SC5) and the IPC handlers (`clipboard-ipc`). A probe that fails is recorded with its fallback in "Facts relied on" and `formats.ts` (SC2). None failed; the keys are decided (Decision R9).
+- [x] `e2e/win/clipboard-perf.spec.ts` passes: copy of the 40-atom scheme reaches the real clipboard in at most 500 ms (median of 5; SC12). Append the measured number to `docs/editor-perf.md` as the Windows row. (Median 47.4 ms in the full run, orchestrator, 2026-11-11; 50.9 ms alone; both rows are in `docs/editor-perf.md`.)
+- [x] Look at the C8 and C10 shots (`npm run shots -- C8`, `npm run shots -- C10`) beside the mock-ups A01, A02, A15b and A08a-c (`node docs/mockups/shell/build.mjs --png out/mockups-shell`): the Copy button states, the Export dialog and its three formats match by eye at 1280x800 and 960x640 (SC10). (Compared by the orchestrator on 2026-11-11 against A01, A02, A15b and A08a-c; they match, and the PDF note differs from A08c only in the PDF-A outcome wording, as the spec provides.)
 
 Human-only checks, with the installed app and Office 2021 (SC13: write down which format Office took, SVG drawing or picture):
 
@@ -124,7 +138,7 @@ Human-only checks, with the installed app and Office 2021 (SC13: write down whic
 
 ## App shell and installer (app-shell, `SPEC-app-shell.md` "Windows checks")
 
-Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 10 and a clean Windows 11 account. Nothing here has been run.
+Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 10 and a clean Windows 11 account. No human has run anything here yet; the automated steps built the installer and smoke-tested the unpacked app.
 
 - [ ] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1).
 - [ ] On a clean Windows 10 and a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).

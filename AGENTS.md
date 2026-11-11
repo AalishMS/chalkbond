@@ -13,14 +13,16 @@ The product spec is `SPEC.md`; the module list is `CAPABILITY-MAP.md`. Module id
 |---|---|---|---|
 | 1 | `doc-model` | none | done |
 | 2 | `chem-core` | doc-model | done |
-| 3 | `svg-render` | doc-model, chem-core | done; Windows Office checks in `docs/windows-checklist.md` still unticked |
+| 3 | `svg-render` | doc-model, chem-core | done; automated Windows checks passed 2026-11-11; Office checks in `docs/windows-checklist.md` still unticked |
 | 4 | `editor` | doc-model, chem-core, svg-render | done; "Editor" checks in `docs/windows-checklist.md` still unticked |
-| 5 | `clipboard-export` | doc-model, svg-render | implemented; Windows acceptance open (`docs/windows-checklist.md`) |
-| 6 | `app-shell` | all | implemented; Windows acceptance open (`docs/windows-checklist.md`) |
+| 5 | `clipboard-export` | doc-model, svg-render | implemented; automated Windows gates passed 2026-11-11; human checks open (`docs/windows-checklist.md`) |
+| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11; human checks and installed size open (`docs/windows-checklist.md`) |
 
 Version 1.0.0 is prepared in `package.json`; the release is pending Checkpoint Z on a Windows
-machine (`docs/windows-checklist.md`). Everything was built and verified on Linux; no installer
-has been built or run on Windows.
+machine (`docs/windows-checklist.md`). Everything was built on Linux; on 2026-11-11 the automated
+Windows gates passed at `956a4a4` (check, e2e with `e2e/win`, os-input, `dist:win`, packaged smoke
+test, shots). The installer has been built but not installed; the human checks and the installed
+size are open.
 
 ## Workflow
 
@@ -292,18 +294,23 @@ Vitest projects (`vitest.config.mts`):
   `query-session-end` / `session-end` events. A real shutdown, a cancelled shutdown and IME are
   Windows checklist items. Windows 11's Notepad does not ask before closing, so it is no test
   subject for a cancelled shutdown.
+- On Windows Playwright starts Electron through a shell, so `app.process()` is the wrapper. A test
+  that must kill the app takes `process.pid` from inside the app (see `drawThenKill`).
+- `e2e/app-settings.spec.ts` launches without `--force-device-scale-factor`, so window sizes there
+  run at the real display scale (125 % on the dev laptop); pixel-exact claims must hold at it.
 
 ## Maintenance
 
-All six modules are implemented and verified on Linux. What is open is Windows acceptance:
-`docs/windows-checklist.md` starts with "Checkpoint Z — release" (the ordered list of commands and
-human checks for the Windows machine) and holds the "Clipboard and export" and "App shell and
-installer" sections, all unticked. Version 1.0.0 is not declared released until they pass.
+All six modules are implemented. The automated Windows gates (Checkpoint Z steps 1-7) passed on
+2026-11-11 at `956a4a4`: `npm run test:e2e` including `e2e/win/` (321), `npm run test:e2e:os-input`,
+the C3 clipboard probes (keys decided, Decision R9), `npm run dist:win`, `npm run test:packaged`
+and `npm run shots`. What is open: `docs/windows-checklist.md` step 8 (the installed size in
+`SPEC-app-shell.md` I1; installer and unpacked sizes are written) and step 9, the human sections
+("Clipboard and export" Office checks, "App shell and installer", Checkpoints K, E32 and R).
+Version 1.0.0 is not declared released until they pass.
 
-- Windows gates still open: `npm run test:e2e` including `e2e/win/`, `npm run test:e2e:os-input`,
-  `npm run dist:win`,
-  `npm run test:packaged` on Windows, the installer and installed sizes in `SPEC-app-shell.md` I1
-  (unmeasured), Office, IME, shutdown and display scaling.
+- Windows gates still open: the installed size, Office, IME, shutdown, display scaling and the
+  other human checks in the checklist, on Windows 10 and 11.
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
   the code and tests. Decisions of later dates supersede older text anywhere (including this file).
 - A bug found in a finished module: add a failing regression test first. A property-test failure

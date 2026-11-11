@@ -17,13 +17,14 @@ Modules and their order are defined in `CAPABILITY-MAP.md`.
 |---|---|---|
 | `doc-model` | Document data, edit transactions, undo/redo, file format | done |
 | `chem-core` | OpenChemLib wrapper: valence, formula, SMILES/Molfile, name dictionary | done |
-| `svg-render` | Document to SVG with style presets | done (Windows Office checklist not yet ticked) |
-| `editor` | Interactive canvas and drawing tools | done (Windows "Editor" checklist not yet ticked) |
-| `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; Windows acceptance open |
-| `app-shell` | Menus, dialogs, settings, installer | implemented; Windows acceptance open |
+| `svg-render` | Document to SVG with style presets | done (automated Windows checks passed; Office checklist not yet ticked) |
+| `editor` | Interactive canvas and drawing tools | done (automated Windows checks passed; "Editor" checklist not yet ticked) |
+| `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; automated Windows gates passed; human checks open |
+| `app-shell` | Menus, dialogs, settings, installer | implemented; automated Windows gates passed; human checks and installed size open |
 
-Version 1.0.0 is prepared. It is not released: the installer has not been built or run on Windows,
-and the checks in `docs/windows-checklist.md` (Checkpoint Z) are all open.
+Version 1.0.0 is prepared. It is not released: the automated Windows gates passed on 2026-11-11 and
+the installer builds, but it has not been installed, and the human checks in
+`docs/windows-checklist.md` (Checkpoint Z) are open.
 
 ## The editor
 
@@ -39,8 +40,8 @@ from `node docs/mockups/editor/build.mjs --png out/mockups`.
 
 ## Install (Windows 10/11 x64)
 
-These steps describe the installer once it has been built (`npm run dist:win`, below). They have
-not been tried on Windows yet.
+These steps describe the installer built by `npm run dist:win` (below). The installer has been
+built on Windows, but these steps have not been tried yet.
 
 1. Copy `Chalkbond-1.0.0-setup.exe` to the computer. No network and no administrator rights are needed.
 2. Run it. The installer is unsigned, so Windows shows "Windows protected your PC": choose

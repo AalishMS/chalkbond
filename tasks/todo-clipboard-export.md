@@ -162,7 +162,7 @@ trip; refusals built by editing a copy of the fixture: `/Type /XRef` at `startxr
 ASCII round-trips; truncations and random bytes never throw (CS3).
 
 **Acceptance criteria:**
-- [ ] `e2e/pdf-facts.spec.ts` green (Windows and Linux)
+- [x] `e2e/pdf-facts.spec.ts` green (Windows and Linux) (Windows: orchestrator, 2026-11-11, inside `npm run test:e2e`, PDF-A confirmed)
 - [x] Under A: `pdf-embed.ts` ≥ 90 % lines, properties pass; under B: the files are gone and no reference to them remains (`npm run check` green)
 - [x] The spec has exactly one outcome paragraph, a Facts row for P8/P9 with what was observed, and the Decisions row
 
@@ -251,7 +251,7 @@ drawing and `image: true`.
 **Acceptance criteria:**
 - [x] Handler unit tests pass; schemas reject every CS1 case
 - [x] Correction (2026-11-11, Decision C9): C1 takes an SVG up to 64 MiB of UTF-8 (20 MiB + 1 accepted, 64 MiB + 2 bytes in 32 Mi + 3 characters refused); the drawing stays at 20 MiB. `rasterise` adds the chunks through `withPictureChunksCapped`: a payload that alone pushes the PNG past 64 MiB is left out, `pHYs` kept (`rasterise.test.ts` with an injected cap; the 64 MiB case in `e2e/picture-limits.spec.ts`)
-- [ ] `e2e/win/clipboard-ipc.spec.ts` green on Windows; the SEC4 request counter is 0 at the end
+- [x] `e2e/win/clipboard-ipc.spec.ts` green on Windows; the SEC4 request counter is 0 at the end (orchestrator, 2026-11-11)
 - [ ] `window.chalkbond` exposes the two new functions and nothing else new (SEC5 list updated; bridge e2e pending)
 
 **Verification:** `npm test -- src/main`, `npm run build`, `npx playwright test e2e/win/clipboard-ipc.spec.ts`, `npm run check`. No visible change (rasterise is exercised by C8 and C11).
@@ -291,7 +291,7 @@ after Redo's right edge, its right edge at 1268; at 960×640 it is ≥ 56 wide, 
 
 **Acceptance criteria:**
 - [x] Flow, markup and keys tests pass; `src/renderer/clipboard-export/model` ≥ 90 % lines so far
-- [ ] `e2e/win/clipboard-copy.spec.ts` and `e2e/clipboard-ui.spec.ts` green (SC3, SC4, SC11, the box parts of SC10) — `clipboard-ui` green on Linux (its "UI success" group stubs main's `clipboard.write`); the Windows spec is written and not yet run
+- [x] `e2e/win/clipboard-copy.spec.ts` and `e2e/clipboard-ui.spec.ts` green (SC3, SC4, SC11, the box parts of SC10) — `clipboard-ui` green on Linux (its "UI success" group stubs main's `clipboard.write`); the Windows spec passed in the orchestrator's run of 2026-11-11
 - [x] Shots exist and look as described below (Linux; transport stubbed, not clipboard proof)
 
 **Verification:** `npm run check`, `npm run test:e2e`, `npm run shots -- C8` →
@@ -329,7 +329,7 @@ and leaves the document unchanged (SC6's queue order is the flow test).
 
 **Acceptance criteria:**
 - [x] Flow and keys tests pass
-- [ ] `e2e/win/clipboard-paste.spec.ts` green: every round trip above — written, not yet run (Windows only)
+- [x] `e2e/win/clipboard-paste.spec.ts` green: every round trip above (Windows only; orchestrator, 2026-11-11)
 - [x] Correction (2026-11-11, Decision C8 paste provenance): after copy A, a failed copy B (write not ok, write throws, rasteriser throws), a paste queued before a later `onCopy` B, or an `onCopy` B during the paste's read → Ctrl+V pastes the clipboard's A as a fragment, never the in-app B; repeated own-copy pastes still cascade (`copy-flow.test.ts` "paste provenance"; portable `e2e/clipboard-provenance.spec.ts` with a failing write in the memory stub: transport stub, not Windows clipboard proof)
 - [x] Shots exist and look as described (Linux; main's clipboard is the in-memory store of
   `e2e/stub-clipboard-memory.mjs` behind the real adapter and flow: UI/model success, not clipboard proof)
@@ -487,7 +487,7 @@ export" with the spec's "Windows checks", unticked. Sweep SC1–SC13 into the pl
 
 **Acceptance criteria:**
 - [x] `npm test -- --coverage` passes the new thresholds
-- [ ] `e2e/win/clipboard-perf.spec.ts` green; `docs/editor-perf.md` has the row
+- [x] `e2e/win/clipboard-perf.spec.ts` green; `docs/editor-perf.md` has the row (median 47.4 ms in the full run, 50.9 ms alone; orchestrator, 2026-11-11)
 - [x] Checklist section added, unticked; plan SC table ticked where proven
 
 Prepared early (2026-11-11, Decision C11, not ticked): `e2e/win/clipboard-perf.spec.ts` is written

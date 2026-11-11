@@ -77,8 +77,8 @@ A16 icons ─► A17 installer ─► A18 a11y ─► A19 coverage ─► A20 do
 - [ ] A6: Host skeleton: controller ownership, title, window size and minimum
 
 ### Checkpoint S — foundations
-- [ ] `npm run check` green; `npm run test:e2e` green (editor suite on the hook, no fiber code left)
-- [ ] `e2e/app-security.spec.ts` green; SEC4 counter 0 at the end of every e2e file
+- [x] `npm run check` green; `npm run test:e2e` green (editor suite on the hook, no fiber code left)
+- [x] `e2e/app-security.spec.ts` green; SEC4 counter 0 at the end of every e2e file
 - [ ] Commit + push
 
 ### Phase U: files and settings (after clipboard-export C5–C9)
@@ -93,7 +93,7 @@ probes, PDF/native frame/Arial, os-input) and the PowerPoint/Office checks are n
 - [ ] A10: Settings and window memory
 
 ### Checkpoint U — files round-trip
-- [ ] `npm run check` green; `e2e/app-files.spec.ts`, `app-open-pictures.spec.ts`, `app-open-errors.spec.ts`, `app-settings.spec.ts` green
+- [x] `npm run check` green; `e2e/app-files.spec.ts`, `app-open-pictures.spec.ts`, `app-open-errors.spec.ts`, `app-settings.spec.ts` green
 - [ ] Commit + push
 
 Linux run of Checkpoint U, verified by the orchestrator at `c9f4861` (2026-11-11): `npm run check`
@@ -114,7 +114,7 @@ are not run, and no Windows box is ticked.
 - [ ] A13: Context menus (CM1–CM3)
 
 ### Checkpoint W — every command reachable
-- [ ] `npm run check` green; `e2e/app-menus.spec.ts`, `app-keys.spec.ts`, `app-context-menus.spec.ts` green
+- [x] `npm run check` green; `e2e/app-menus.spec.ts`, `app-keys.spec.ts`, `app-context-menus.spec.ts` green
 - [ ] Shots of A12 compared with the A12 mock-up; menus looked at by hand once against A04–A07
 - [ ] Commit + push
 
@@ -135,8 +135,10 @@ Checkpoint Y so far, Linux (2026-11-11): at `7d96ea0` `npm run check` exit 0 (40
 - [ ] A15: Recent files, single instance, drag and drop
 
 ### Checkpoint X — nothing is lost
-- [ ] `npm run check` green; `e2e/app-recovery.spec.ts`, `app-instance.spec.ts`, `app-recent.spec.ts`, `app-drop.spec.ts` green
+- [x] `npm run check` green; `e2e/app-recovery.spec.ts`, `app-instance.spec.ts`, `app-recent.spec.ts`, `app-drop.spec.ts` green
 - [ ] Commit + push
+
+Windows run of the automated gates of Checkpoint Z, verified by the orchestrator at `956a4a4` (2026-11-11, Windows 11 Pro 26300, Node 26.3.0, Electron 45.2.3, display at 125 %): `npm ci` exit 0; `npm run check` exit 0 (231 files, 4038 tests); `npm run test:e2e` exit 0 (321 passed, 6.9 min, including `e2e/win/`; earlier the same day 308 passed / 13 failed at `b99a6d6` and 319 passed / 1 failed at `85f968a`, defects in the `SPEC.md` Decisions Log); `npm run test:e2e:os-input` exit 0 (1); `npm run dist:win` exit 0 (installer 109,915,593 bytes, 104.8 MiB; `dist/win-unpacked` 347,499,681 bytes, 331.4 MiB); `npm run test:packaged` exit 0 (7); `npm run shots` 97 passed (220 PNGs), compared by eye against the mock-ups. The C3 probes P1-P7 and P2b and `e2e/pdf-facts.spec.ts` P8/P9 passed inside the e2e run; copy median 47.4 ms (`e2e/win/clipboard-perf.spec.ts`). Checkpoint Z is not reached: the installed size, Office, IME, shutdown, display scaling and every other human check are open.
 
 ### Phase Y: release (with clipboard-export C13)
 - [ ] A16: App and file icons
@@ -153,7 +155,7 @@ Checkpoint Y so far, Linux (2026-11-11): at `7d96ea0` `npm run check` exit 0 (40
 
 ## Success Criteria Coverage
 
-Swept at A20 (2026-11-11, Linux). "Linux" = run and passing on the development machine; "Windows-unrun" = written, not run here; "human" = needs eyes, Office or a Windows machine, box in `docs/windows-checklist.md` section "App shell and installer" unticked.
+Swept at A20 (2026-11-11, Linux); the Windows cells updated after the Windows run of 2026-11-11 (note above). "Linux" = run and passing on the development machine; "Windows" = run and passing on the Windows machine; "Windows-unrun" = written, not run; "human" = needs eyes, Office or a Windows machine, box in `docs/windows-checklist.md` section "App shell and installer" unticked.
 
 | SC | Criterion (short) | Tasks | Proof and status |
 |---|---|---|---|
@@ -163,14 +165,14 @@ Swept at A20 (2026-11-11, Linux). "Linux" = run and passing on the development m
 | 4 | Prompt on New, Open, second instance, close | A8, A15 | `e2e/app-files.spec.ts`, `e2e/app-instance.spec.ts`, `src/renderer/app/model/file-flows.test.ts` with stubbed boxes (Linux). Real title-bar ×, Alt+F4, File > Exit: checklist (human) |
 | 5 | Exported PNG / SVG (PDF under A) reopen; Save goes to Save as | A9, C11, C12 | `e2e/app-open-pictures.spec.ts`, `e2e/export-png.spec.ts`, `e2e/export-svg.spec.ts`, `e2e/export-pdf.spec.ts` (Linux) |
 | 6 | Newer and damaged files: wording, nothing changed | A9 | `e2e/app-open-errors.spec.ts`, `src/main/model/messages.test.ts` (Linux) |
-| 7 | Recovery after a kill | A14 | `e2e/app-recovery.spec.ts` (Linux, process kill). Real power cut and Windows shutdown (R24, R25): checklist (human, Windows-unrun) |
+| 7 | Recovery after a kill | A14 | `e2e/app-recovery.spec.ts` (Linux, process kill). On Windows the e2e kills the Electron main process by the pid read inside the app (`b04b84c`; Windows). Real power cut and Windows shutdown (R24, R25): checklist (human, open) |
 | 8 | Second launch opens in the first window | A15 | `e2e/app-instance.spec.ts` (Linux). Explorer double-click and the `.chalk` association: checklist (human) |
-| 9 | Test hook only with the flag, unpackaged; no fiber code | A2, A17 | `src/main/model/args.test.ts`, `src/renderer/app/model/test-hook.test.ts`, `e2e/app-test-hook.spec.ts`, packaged smoke `e2e/packaged/app.packaged.ts` (Linux against `dist/linux-unpacked`; the Windows run is Windows-unrun) |
+| 9 | Test hook only with the flag, unpackaged; no fiber code | A2, A17 | `src/main/model/args.test.ts`, `src/renderer/app/model/test-hook.test.ts`, `e2e/app-test-hook.spec.ts`, packaged smoke `e2e/packaged/app.packaged.ts` (Linux against `dist/linux-unpacked`; Windows against `dist/win-unpacked`, 7 passed, 2026-11-11) |
 | 10 | No request leaves the app; permissions denied | A3 (counter checked by every e2e file from then on) | `e2e/app-security.spec.ts`, `tests/tooling/app-security.test.ts` (Linux) |
 | 11 | Handlers reject bad payloads and other frames | A3, every channel task | `src/main/ipc.test.ts`, `src/main/ipc-schemas.test.ts` (Linux) |
-| 12 | Content minimum 960×640; rail fits with the menu bar | A6, A11 | `e2e/app-window.spec.ts` (Linux). The Windows native frame: `e2e/win/app-window-memory.spec.ts` and the display-scaling checklist item (Windows-unrun, human) |
-| 13 | Icons; installer builds; packaged app launches | A16, A17 | `tests/tooling/app-icons.test.ts`, `tests/tooling/app-notices.test.ts` (Linux); `npm run test:packaged` against `dist/linux-unpacked` (Linux development check). `npm run dist:win` and the Windows packaged run: Windows-unrun |
-| 14 | Shots match mock-ups; Windows checks ticked | every UI task; A20 (checklist), human | Shots `e2e/shots/A4`, `A6`, `A8`–`A15`, `A18`, `C8`–`C12` compared by eye by the orchestrator at each checkpoint (Linux). The Windows checks are in the checklist section "App shell and installer", all unticked (human, Windows-unrun) |
+| 12 | Content minimum 960×640; rail fits with the menu bar | A6, A11 | `e2e/app-window.spec.ts` (Linux). The Windows native frame: `e2e/app-window.spec.ts` and `e2e/win/app-window-memory.spec.ts` pass on Windows (2026-11-11), and `e2e/app-settings.spec.ts` W1 checks the first-launch content at the real 125 % scale (`533a77d`, `52de9e5`). The display-scaling checklist item stays (human, open) |
+| 13 | Icons; installer builds; packaged app launches | A16, A17 | `tests/tooling/app-icons.test.ts`, `tests/tooling/app-notices.test.ts` (Linux); `npm run test:packaged` against `dist/linux-unpacked` (Linux development check). `npm run dist:win` (exit 0, installer 104.8 MiB) and the Windows packaged run (7 passed): Windows, 2026-11-11. The installed size is open |
+| 14 | Shots match mock-ups; Windows checks ticked | every UI task; A20 (checklist), human | Shots `e2e/shots/A4`, `A6`, `A8`–`A15`, `A18`, `C8`–`C12` compared by eye by the orchestrator at each checkpoint (Linux). On Windows the shots were compared by eye by the orchestrator on 2026-11-11 (C8, C10, A15 and others, they match). The Windows checks are in the checklist section "App shell and installer", all unticked (human, open) |
 
 ## Screenshot review
 

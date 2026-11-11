@@ -673,7 +673,7 @@ and `icon.png`. A check of `dist/builder-effective-config.yaml`: `nsis.oneClick:
 `electronLanguages: [en-US]`.
 
 **Acceptance criteria:**
-- [ ] `npm run dist:win` succeeds on Windows; `dist/Chalkbond-1.0.0-setup.exe` (version bumped in A20) exists and is between 50 and 200 MB
+- [x] `npm run dist:win` succeeds on Windows; `dist/Chalkbond-1.0.0-setup.exe` (version bumped in A20) exists and is between 50 and 200 MB (orchestrator, 2026-11-11: exit 0, 104.8 MiB)
 - [ ] `npm run test:packaged` green; the effective-config check passes; sizes written in the spec
 - [ ] No install was needed for any of the above (installing is the checklist's job)
 - Linux results (development checks, not the Windows gates above; no Windows machine here):
