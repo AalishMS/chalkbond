@@ -507,6 +507,122 @@ describe('paste shares the copy queue (CB-Q, SC6)', () => {
   });
 });
 
+/** Adds acetic acid (4 heavy atoms) and selects everything: copy B differs from ethanol (A). */
+function selectBoth(r: Rig): void {
+  r.controller.run({ type: 'insert-text', text: 'acetic acid' });
+  r.controller.run('select-all');
+}
+/** A paste-sub of `drawing` exactly as CB-P1 builds it. */
+function fragmentOf(drawing: string | null): unknown {
+  const action = pasteAction(clip({ drawing }), null, false);
+  if (action.kind !== 'fragment') throw new Error('not a fragment');
+  return { type: 'paste-sub', sub: action.sub };
+}
+
+describe('paste provenance (CB-P1, Decision C8: the editor-copy generation)', () => {
+  it.each([
+    ['the write answers not ok', (r: Rig) => r.write.mockResolvedValueOnce({ ok: false })],
+    ['the write throws', (r: Rig) => r.write.mockRejectedValueOnce(new Error('ipc'))],
+    ['the rasteriser throws', (r: Rig) => r.rasterise.mockRejectedValueOnce(new Error('decode'))],
+  ])(
+    'after copy A, a failed copy B (%s), Ctrl+V pastes A from the clipboard, not B',
+    async (_, fail) => {
+      const r = rig('ethanol');
+      r.controller.run('select-all');
+      await r.flow.copy();
+      const a = r.flow.lastEditorCopy();
+      expect(a).not.toBeNull();
+      selectBoth(r);
+      fail(r);
+      await r.flow.copy();
+      expect(r.notify).toHaveBeenLastCalledWith('error', NOTICES.failed);
+      expect(r.flow.lastEditorCopy()).toBe(a); // CB-C2: unchanged on failure
+      expect(r.writes.at(-1)?.drawing).toBe(a); // the system clipboard still holds A
+      r.run.mockClear();
+      const before = atoms(r);
+      await r.flow.paste();
+      expect(r.run).not.toHaveBeenCalledWith('paste');
+      expect(r.run).toHaveBeenCalledWith(fragmentOf(a));
+      expect(atoms(r)).toBe(before + 3); // A (ethanol), not B (7 atoms)
+    },
+  );
+
+  it('a paste queued before a later selection copy B pastes the clipboard it reads (A)', async () => {
+    const r = rig('ethanol');
+    r.controller.run('select-all');
+    await r.flow.copy();
+    const a = r.flow.lastEditorCopy();
+    selectBoth(r);
+    r.run.mockClear();
+    const before = atoms(r);
+    const pasting = r.flow.paste();
+    r.controller.run('copy'); // onCopy B now; its write is queued after the paste
+    await pasting;
+    expect(r.read).toHaveBeenCalledTimes(1);
+    expect(r.run).not.toHaveBeenCalledWith('paste');
+    expect(r.run).toHaveBeenCalledWith(fragmentOf(a));
+    expect(atoms(r)).toBe(before + 3);
+    await r.flow.whenIdle();
+    expect(r.writes.at(-1)?.drawing).not.toBe(a); // B was written after the paste
+  });
+
+  it('a selection copy B made while the paste reads the clipboard stops the in-app cascade', async () => {
+    const r = rig('ethanol');
+    r.controller.run('select-all');
+    await r.flow.copy();
+    const a = r.flow.lastEditorCopy();
+    selectBoth(r);
+    let finish: () => void = () => {};
+    r.read.mockImplementationOnce(
+      () =>
+        new Promise<ClipboardReadResponse>((resolve) => {
+          finish = () => resolve(clip({ drawing: a, image: true }));
+        }),
+    );
+    r.run.mockClear();
+    const before = atoms(r);
+    const pasting = r.flow.paste();
+    await vi.waitFor(() => expect(r.read).toHaveBeenCalled());
+    r.controller.run('copy'); // onCopy B during the read
+    finish();
+    await pasting;
+    expect(r.run).not.toHaveBeenCalledWith('paste');
+    expect(r.run).toHaveBeenCalledWith(fragmentOf(a));
+    expect(atoms(r)).toBe(before + 3);
+  });
+
+  it('repeated pastes of the own last copy keep cascading, also after a later successful copy', async () => {
+    const r = rig('ethanol');
+    r.controller.run('select-all');
+    await r.flow.copy();
+    r.run.mockClear();
+    await r.flow.paste();
+    await r.flow.paste();
+    expect(r.run.mock.calls).toEqual([['paste'], ['paste']]);
+    expect(atoms(r)).toBe(9);
+    selectBoth(r);
+    await r.flow.copy();
+    r.run.mockClear();
+    await r.flow.paste();
+    expect(r.run.mock.calls).toEqual([['paste']]);
+    expect(atoms(r)).toBe(9 + 4 + 13);
+  });
+
+  it('after a failed copy B, a successful copy C cascades again', async () => {
+    const r = rig('ethanol');
+    r.controller.run('select-all');
+    await r.flow.copy();
+    selectBoth(r);
+    r.write.mockResolvedValueOnce({ ok: false });
+    await r.flow.copy();
+    await r.flow.copy();
+    expect(r.flow.lastEditorCopy()).toBe(r.writes.at(-1)?.drawing);
+    r.run.mockClear();
+    await r.flow.paste();
+    expect(r.run.mock.calls).toEqual([['paste']]);
+  });
+});
+
 describe('onCopy (the stable editor hook)', () => {
   it('tells copy from cut by whether the editor document changed', async () => {
     const r = rig('ethanol');

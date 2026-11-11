@@ -95,6 +95,12 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
   const { controller } = ports;
   let tail: Promise<unknown> = Promise.resolve();
   let last: string | null = null;
+  /**
+   * Decision C8: bumped by every `onCopy` (the editor's in-app clipboard has just changed);
+   * `lastGeneration` is the generation of the copy whose successful write set `last`.
+   */
+  let generation = 0;
+  let lastGeneration = -1;
   let copied = false;
   let cancelTimer: (() => void) | null = null;
   const listeners = new Set<() => void>();
@@ -122,8 +128,16 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
     changed();
   }
 
-  /** CB-C2: one exportSvg; its embedded payload is the drawing entry (null when over the limit). */
-  function copyPicture(doc: Doc, selection: Selection | null, what: What): Promise<void> {
+  /**
+   * CB-C2: one exportSvg; its embedded payload is the drawing entry (null when over the limit).
+   * `copyGeneration` is the editor-copy generation of the `onCopy` behind a selection or cut copy.
+   */
+  function copyPicture(
+    doc: Doc,
+    selection: Selection | null,
+    what: What,
+    copyGeneration: number,
+  ): Promise<void> {
     return enqueue(async () => {
       try {
         const svg = exportSvg(doc, selection);
@@ -132,6 +146,7 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
         const result = await ports.write({ png: raster.png, svg: svg.svg, drawing });
         if (!result.ok) throw new Error('clipboard write failed');
         last = what === 'whole' ? null : drawing;
+        lastGeneration = copyGeneration;
         showCopied();
         controller.notify('info', raster.reduced ? NOTICES.reduced : NOTICES[what]);
       } catch {
@@ -149,15 +164,18 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
       }
       const selection = controller.getSelection();
       if (isEmptySelection(selection)) {
-        await copyPicture(doc, null, 'whole');
+        await copyPicture(doc, null, 'whole', generation);
         return;
       }
       controller.run('copy'); // the editor calls onCopy, which queues the picture
       await tail;
     },
     onCopy(_sub, doc, selection) {
-      // The editor calls onCopy after its own copy or cut: a cut has changed the document.
-      return copyPicture(doc, selection, controller.getDoc() === doc ? 'selection' : 'cut');
+      // The editor calls onCopy after its own copy or cut, which has just replaced its in-app
+      // clipboard (C8); a cut has changed the document.
+      generation += 1;
+      const what = controller.getDoc() === doc ? 'selection' : 'cut';
+      return copyPicture(doc, selection, what, generation);
     },
     async paste() {
       if (!idle()) return;
@@ -166,7 +184,10 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
         const contents = await ports.read().catch(() => NOTHING);
         // Re-checked after the read: a commit must never land in a gesture or text session.
         if (!idle()) return;
-        const action = pasteAction(contents, last, controller.canRun('paste'));
+        // C8, after the read: cascade only while the editor's clipboard is the copy that reached
+        // the system clipboard (no failed or still-queued onCopy since).
+        const own = lastGeneration === generation;
+        const action = pasteAction(contents, last, own && controller.canRun('paste'));
         switch (action.kind) {
           case 'in-app':
             controller.run('paste');

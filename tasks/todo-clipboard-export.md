@@ -325,6 +325,7 @@ and leaves the document unchanged (SC6's queue order is the flow test).
 **Acceptance criteria:**
 - [x] Flow and keys tests pass
 - [ ] `e2e/win/clipboard-paste.spec.ts` green: every round trip above — written, not yet run (Windows only)
+- [x] Correction (2026-11-11, Decision C8 paste provenance): after copy A, a failed copy B (write not ok, write throws, rasteriser throws), a paste queued before a later `onCopy` B, or an `onCopy` B during the paste's read → Ctrl+V pastes the clipboard's A as a fragment, never the in-app B; repeated own-copy pastes still cascade (`copy-flow.test.ts` "paste provenance"; portable `e2e/clipboard-provenance.spec.ts` with a failing write in the memory stub: transport stub, not Windows clipboard proof)
 - [x] Shots exist and look as described (Linux; main's clipboard is the in-memory store of
   `e2e/stub-clipboard-memory.mjs` behind the real adapter and flow: UI/model success, not clipboard proof)
 

@@ -89,6 +89,7 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 | # | Decision | Reason | Date |
 |---|---|---|---|
 | C7 | C1 accepts drawing: null only when the editable payload exceeds MAX_FILE_BYTES; omit its clipboard entry and retain bitmap / SVG. Non-null remains strict printable ASCII beginning with {. | Approved IPC correction; E1 already requires oversized payload omission; no document schema change | 2026-11-11 |
+| C8 | Paste provenance: every `onCopy` call bumps an editor-copy generation synchronously (the editor's in-app clipboard has just changed). Each queued selection or cut copy carries the generation of its `onCopy`; a successful write records it with `lastEditorCopy`. CB-P1 cascades in-app only when, compared after the awaited read, that recorded generation still equals the current one and the payload and `canRun('paste')` conditions hold; otherwise the clipboard's drawing pastes as a fragment. `lastEditorCopy` stays unchanged on failure, a whole copy still sets it to null; no editor API change | A failed copy B (or a copy B made while a paste waits or reads) changes the editor's clipboard but not the system's: comparing payloads alone pasted B when the system held A. Clearing `lastEditorCopy` on failure would miss the queue order | 2026-11-11 |
 | O7 | Positive fractional effective DPI is allowed only when no positive integer meets both raster caps after ceil and min 1. Search integers through floor(upper), upper = min(requestedDpi, 720000/widthPt, 720000/heightPt); if none fits, bisect [0,min(1,upper)] for 64 iterations (stop at an unrepresentable midpoint), retaining the feasible lower endpoint. Never return zero DPI; reduced is true. Keep rounded pHYs even when it is zero. | Approved orchestrator resolution for enormous finite drawings; avoids width × height overflow | 2026-11-11 |
 | O1 | The **Copy** button sits at the right end of the top bar, after Undo/Redo (mock-ups A01, A02): a filled primary button with icon and label; after a copy it reads "Copied" with a check for 2 s; below 1100 px window width it shows the label "Copy" with no icon (never icon-only) and the name field narrows to 204 px (A15b) | The top-right corner is where Office and browsers put "send it on"; a word is self-explanatory, two overlapping sheets are not | 2026-11-10 |
 | O2 | Ctrl+C, the Copy button and Edit > Copy copy the selection, or the whole drawing when nothing is selected, writing the picture formats and the editable drawing in one clipboard write. PNG transparent, tight, 300 dpi; SVG written too. Paste reads the system clipboard and follows the editor's cascade rule when the content is the editor's own last copy. Plain text pastes as a name or SMILES through the name-insert path | One shortcut for PowerPoint, Word and Chalkbond; the teacher never chooses a format | 2026-11-10 |
@@ -398,14 +399,19 @@ check, size limits). Request limits are enforced by the schema.
   300, false)`; payload computed once and reused for the SVG metadata and the drawing entry; C1.
   Success: the Copy button shows "Copied" for 2 s (a new copy restarts the 2 s); notice N-C1 /
   N-C2 / N-C3 (N-C5 if reduced); `lastEditorCopy = payload` when the copy came through `onCopy`,
-  else null. Failure: N-C6, `lastEditorCopy` unchanged.
+  else null. Failure: N-C6, `lastEditorCopy` unchanged. Provenance (Decision C8): each `onCopy`
+  call increments the editor-copy generation synchronously, before its picture job is queued; a
+  successful selection or cut write records the generation of its own `onCopy` beside
+  `lastEditorCopy`.
 - **CB-C3** Cut: `controller.run('cut')`; `onCopy` receives the document before the cut, so the
   picture shows what was removed; N-C3.
 - **CB-Q** Clipboard jobs (copy, cut, paste) run one at a time in order (a promise queue in
   `copy-flow.ts`): a paste pressed while a copy is rasterising waits and then reads the new
   clipboard.
 - **CB-P1** Paste (renderer, editor idle): C2, then `pasteAction(clip, lastEditorCopy,
-  controller.canRun('paste'))`:
+  inAppReady)` with `inAppReady = controller.canRun('paste')` and, checked after the awaited read,
+  the generation recorded with `lastEditorCopy` equal to the current editor-copy generation
+  (Decision C8: the editor's in-app clipboard still holds what the system clipboard holds):
   1. `drawing` non-null: `parse(drawing)`: `newer-version` → `newer` (N-P3); other failure →
      `damaged` (N-P4); ok, `drawing === lastEditorCopy` and `inAppReady` → `in-app` (editor CB1
      cascade, +1 BLU right and down); otherwise `fragment` with `extract(doc, everything(doc))`

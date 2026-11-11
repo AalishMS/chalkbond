@@ -1,11 +1,16 @@
 // UI/model-success shots only (e2e/shots/C9.shot.ts), never Windows clipboard verification: main's
 // clipboard becomes a deterministic in-memory store behind the real adapter, flow and rasteriser.
 // Production never loads this; launch.ts preloads it for `clipboardMemory`. A test sets contents
-// in main with `globalThis.__chalkbondClipboardStub.set(entries, text)`.
+// in main with `globalThis.__chalkbondClipboardStub.set(entries, text)`; `failNextWrite()` makes
+// the next write reject (as a refused system write) and leaves the contents as they were.
 import { clipboard, ClipboardItem } from 'electron';
 
-const state = { items: [], text: '' };
+const state = { items: [], text: '', failNext: false };
 clipboard.write = async (items) => {
+  if (state.failNext) {
+    state.failNext = false;
+    throw new Error('stubbed write failure');
+  }
   state.items = [...items];
   state.text = '';
 };
@@ -23,5 +28,8 @@ globalThis.__chalkbondClipboardStub = {
     }
     state.items = Object.keys(blobs).length > 0 ? [new ClipboardItem(blobs)] : [];
     state.text = text;
+  },
+  failNextWrite() {
+    state.failNext = true;
   },
 };
