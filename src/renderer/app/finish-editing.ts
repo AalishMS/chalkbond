@@ -38,3 +38,52 @@ export function createFinishEditing(
       if (el && editing()) el.dispatchEvent(new Event('blur'));
     });
 }
+
+/**
+ * R25: tracks an IME composition through the DOM events `compositionstart` / `compositionend`
+ * (heard in the capture phase on `target`, the document, whatever the box does with them). Without a target it is never
+ * composing. The editor module is not asked.
+ */
+export function trackComposition(
+  target: Pick<EventTarget, 'addEventListener'> | undefined = typeof document === 'undefined'
+    ? undefined
+    : document,
+): () => boolean {
+  let composing = false;
+  // Capture phase: it sees the event even when it does not bubble (a synthetic one in e2e).
+  target?.addEventListener(
+    'compositionstart',
+    () => {
+      composing = true;
+    },
+    true,
+  );
+  target?.addEventListener(
+    'compositionend',
+    () => {
+      composing = false;
+    },
+    true,
+  );
+  return () => composing;
+}
+
+/**
+ * R25: the shutdown flush's finish. An open label or text editor is committed through the same
+ * blur as a click elsewhere, synchronously, and nothing is awaited or subscribed. During an IME
+ * composition the editor is not touched (its draft is not recoverable). If the editor stays open
+ * the function simply returns.
+ */
+export function createFinishEditingNow(
+  controller: Pick<EditorController, 'canRun'>,
+  composing: () => boolean,
+  box: () => EditorBox | null = findBox,
+): () => void {
+  return () => {
+    if (controller.canRun('focus-name-field') || composing()) return;
+    const el = box();
+    el?.blur();
+    // A page without focus delivers no blur event: run the box's own blur handler directly.
+    if (el && !controller.canRun('focus-name-field')) el.dispatchEvent(new Event('blur'));
+  };
+}

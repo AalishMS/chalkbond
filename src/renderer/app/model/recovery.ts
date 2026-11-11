@@ -23,6 +23,11 @@ export interface RecoveryOptions {
   text(): string;
   /** The name for `recovery.json` (`recoveryName(session)`). */
   name(): string;
+  /**
+   * R25: runs at the start of `flush` (not while suspended), before the write; the host finishes an
+   * open label or text editor here so its text is in the committed drawing. Synchronous.
+   */
+  beforeFlush?(): void;
 }
 
 export interface Recovery {
@@ -99,6 +104,7 @@ export function createRecovery(o: RecoveryOptions): Recovery {
     },
     flush() {
       if (suspended) return;
+      o.beforeFlush?.();
       timer.cancel();
       write();
     },

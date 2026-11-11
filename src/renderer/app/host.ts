@@ -3,7 +3,7 @@ import { createExportFlow, createExportWriter } from '../clipboard-export/model/
 import { rasterise } from '../clipboard-export/rasterise';
 import { emptyDoc, serialize, setStyle, type Doc } from '@core/doc-model';
 import { createEditorController } from '../editor';
-import { createFinishEditing } from './finish-editing';
+import { createFinishEditing, createFinishEditingNow, trackComposition } from './finish-editing';
 import { createFileFlows } from './model/file-flows';
 import {
   createMenuScheduler,
@@ -108,6 +108,8 @@ export async function createWindowHost(
     doc: () => controller.getDoc(),
     text: () => serialize(controller.getDoc()),
     name: () => recoveryName(session),
+    // R25: an open label or text editor is finished before the shutdown flush writes.
+    beforeFlush: createFinishEditingNow(controller, trackComposition()),
   });
   // RC7 (R23): last run's file must survive until the startup offer is answered (resumed by it).
   if (startup.recovery !== null) recovery.suspend();

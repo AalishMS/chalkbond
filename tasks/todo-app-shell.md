@@ -545,6 +545,39 @@ spec's "Windows checks".
 
 **Scope:** S
 
+## A14b: An open label or text draft at shutdown (R25)
+
+**Description:** `flush-recovery` (RC5) finishes an open label or text editor through its normal
+commit path before N3 is sent, unless recovery is suspended (RC7) or an IME composition is in
+progress (then the editor is not touched). Host code only: a non-waiting `finishEditingNow` and a
+composition tracker in `finish-editing.ts`, wired as the recovery model's `beforeFlush`. The editor
+module and `SPEC-editor.md` are unchanged.
+
+**Tests first:** `finish-editing.test.ts`: an open editor is committed synchronously (blur, then the
+dispatched `blur` fallback), no subscription is left; composing: the box is not blurred and nothing
+subscribes; no editor: no-op; the composition tracker follows `compositionstart` / `compositionend`.
+`recovery.test.ts`: `beforeFlush` runs before the write; suspended: neither. `host.test.ts`:
+`flushRecovery` finishes before N3. `e2e/app-recovery.spec.ts`: a label typed, synthetic
+`query-session-end` → within 1 s the recovery file contains the label and the editor is closed;
+with a simulated composition → the file is written within 1 s without the draft, the box is still
+open, and a later `compositionend` behaves as it does without a shutdown.
+
+**Acceptance criteria:**
+- [x] Unit and e2e tests pass (Linux; synthetic `query-session-end`)
+- [x] `e2e/app-draft-close.spec.ts` and `e2e/app-files.spec.ts` still pass
+- [x] `npm run check` and `npm run test:e2e` green
+- [ ] A real shutdown with a typed label, and with an IME composition under way, behaves as R25 says (Windows)
+
+**Verification:** `npm run check`; `npx electron-vite build`, then
+`npx playwright test --project=e2e e2e/app-recovery.spec.ts e2e/app-draft-close.spec.ts e2e/app-files.spec.ts`;
+`npm run test:e2e`.
+
+**Dependencies:** A14a
+
+**Files:** `SPEC-app-shell.md`, `SPEC.md`, `src/renderer/app/{finish-editing.ts,finish-editing.test.ts,host.ts,host.test.ts,model/recovery.ts,model/recovery.test.ts}`, `e2e/app-recovery.spec.ts`, `tasks/*`
+
+**Scope:** S
+
 ## A15: Recent files, single instance, drag and drop
 
 **Description:** `model/recent.ts` (F10) and the Open recent submenu with Clear; missing entries

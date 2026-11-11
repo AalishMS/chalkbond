@@ -233,3 +233,51 @@ describe('RC7: suspended while the startup offer is unanswered (R23)', () => {
     expect(r.sent).toEqual(['write {"v":1} Untitled']);
   });
 });
+
+describe('recovery (R25 beforeFlush)', () => {
+  function rigWith(beforeFlush: () => void) {
+    const sent: string[] = [];
+    const state = { doc: { v: 0 }, dirty: true };
+    const recovery = createRecovery({
+      now: () => 0,
+      schedule: () => () => undefined,
+      main: {
+        writeRecovery: () => sent.push('write'),
+        clearRecovery: () => sent.push('clear'),
+      },
+      dirty: () => state.dirty,
+      doc: () => state.doc,
+      text: () => 'text',
+      name: () => 'Untitled',
+      beforeFlush: () => {
+        sent.push('before');
+        beforeFlush();
+      },
+    });
+    return { sent, state, recovery };
+  }
+
+  it('runs before the write, and the write sees what it committed', () => {
+    const r = rigWith(() => {
+      r.state.dirty = true;
+    });
+    r.recovery.flush();
+    expect(r.sent).toEqual(['before', 'write']);
+  });
+
+  it('a flush while suspended runs neither the finish nor the write', () => {
+    const r = rigWith(() => undefined);
+    r.recovery.suspend();
+    r.recovery.flush();
+    expect(r.sent).toEqual([]);
+  });
+
+  it('a clean drawing: the finish still runs (it may make the drawing dirty), then the write if dirty', () => {
+    const r = rigWith(() => {
+      r.state.dirty = true;
+    });
+    r.state.dirty = false;
+    r.recovery.flush();
+    expect(r.sent).toEqual(['before', 'write']);
+  });
+});

@@ -5,10 +5,17 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { expect, test, type ElectronApplication } from '@playwright/test';
-import { parse, serialize, type Doc } from '../src/core/doc-model';
+import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
+import { parse, serialize, type AtomId, type Doc } from '../src/core/doc-model';
 import { dialogLog } from './export-steps';
-import { expectNoNetwork, goldenDoc, heardNotices, insertName, readDocument } from './harness';
+import {
+  canvasPoint,
+  expectNoNetwork,
+  goldenDoc,
+  heardNotices,
+  insertName,
+  readDocument,
+} from './harness';
 import { launchSecondInstance } from './launch';
 import { menuItems } from './app-menu';
 import {
@@ -187,6 +194,86 @@ test('RC5, R24: query-session-end then session-end, then the close: no prompt, t
   // Windows then closes the window: no prompt (no box is scripted), no clear.
   await closeWindowForReal(app);
   expect(existsSync(recoveryFile(userData))).toBe(true);
+});
+
+/** The label editor on the oxygen of an inserted ethanol (hover, Enter), `text` typed, unfinished. */
+async function openLabelEditor(page: Page, text: string): Promise<void> {
+  const doc = await readDocument(page);
+  const o = Object.keys(doc.atoms).find((id) => doc.atoms[id as AtomId]?.element === 'O');
+  const at = await canvasPoint(page, doc.atoms[o as AtomId] as { x: number; y: number });
+  await page.getByTestId('canvas').focus();
+  await page.mouse.move(at.x, at.y);
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('textbox-edit')).toBeFocused();
+  if (text !== '') await page.keyboard.type(text);
+}
+
+test('RC5, R25: a label typed but not confirmed is finished by the shutdown flush and is in the recovery file within 1 s', async () => {
+  const { app, page } = await launchIn(userData, { dialogs: [] });
+  await insertName(page, 'ethanol');
+  await openLabelEditor(page, 'Cl');
+  expect(await emitQuerySessionEnd(app)).toBe(false);
+  await expect
+    .poll(
+      () => (existsSync(recoveryFile(userData)) ? elements(fileDoc(recoveryFile(userData))) : []),
+      {
+        timeout: 1000,
+      },
+    )
+    .toEqual(['C', 'C', 'Cl']);
+  await expect(page.getByTestId('textbox-edit')).toHaveCount(0);
+  expect(elements(await readDocument(page))).toEqual(['C', 'C', 'Cl']);
+  await app.close();
+});
+
+/**
+ * An IME composition under way (DOM only, as in app-draft-close.spec.ts), optionally with a
+ * synthetic `query-session-end`; then `compositionend`, then a click elsewhere (blur). Returns what
+ * was observed at each step.
+ */
+async function composeThen(page: Page, app: ElectronApplication, shutdown: boolean) {
+  await openLabelEditor(page, '');
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="textbox-edit"]') as HTMLElement;
+    el.dispatchEvent(new CompositionEvent('compositionstart', { data: '' }));
+    el.textContent = 'Br';
+  });
+  if (shutdown) {
+    expect(await emitQuerySessionEnd(app)).toBe(false);
+    await expect.poll(() => existsSync(recoveryFile(userData)), { timeout: 1000 }).toBe(true);
+    // The committed drawing only: the draft is not recoverable (R25).
+    expect(elements(fileDoc(recoveryFile(userData)))).toEqual(['C', 'C', 'O']);
+  }
+  const edit = page.getByTestId('textbox-edit');
+  const open = async (): Promise<[number, string | null]> => {
+    const n = await edit.count();
+    return [n, n === 0 ? null : await edit.textContent()];
+  };
+  const at = { composing: await open(), document: elements(await readDocument(page)) };
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="textbox-edit"]') as HTMLElement;
+    el.dispatchEvent(new CompositionEvent('compositionend', { data: 'Br' }));
+  });
+  const afterEnd = { box: await open(), document: elements(await readDocument(page)) };
+  await edit.evaluate((el) => (el as HTMLElement).blur());
+  await expect(edit).toHaveCount(0);
+  return { at, afterEnd, committed: elements(await readDocument(page)) };
+}
+
+test('RC5, R25: during an IME composition the flush writes the committed drawing at once, leaves the editor alone, and compositionend behaves as without a shutdown', async () => {
+  const first = await launchIn(userData, { dialogs: [] });
+  await insertName(first.page, 'ethanol');
+  const withShutdown = await composeThen(first.page, first.app, true);
+  await first.app.close();
+  rmSync(userData, { recursive: true, force: true });
+  mkdirSync(userData, { recursive: true });
+  const second = await launchIn(userData, { dialogs: [] });
+  await insertName(second.page, 'ethanol');
+  const without = await composeThen(second.page, second.app, false);
+  await second.app.close();
+  expect(withShutdown.at.composing).toEqual([1, 'Br']);
+  expect(withShutdown.at.document).toEqual(['C', 'C', 'O']);
+  expect(withShutdown).toEqual(without);
 });
 
 test("RC2: a normal close after Don't save leaves no recovery file", async () => {
