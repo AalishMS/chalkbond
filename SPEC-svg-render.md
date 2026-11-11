@@ -448,7 +448,7 @@ bracket/text boxes (measured width plus 0.05 em overhang each side × the ink bo
 union of `extents`; `padding` is added only in `toSvg`. Extents therefore **contain all ink as
 the browser renders it** and are exact for every non-text primitive; around text they are loose
 by at most 0.19 em (0.21 bold) above the cap height, 0.21 em below the baseline and 0.05 em at each side. An atom with no ink (a bare skeleton vertex) has no extents entry; its
-position still contributes via its bonds.
+position still contributes via its bonds. A zero-length bond (both end atoms at one point) draws nothing, so unlabelled end atoms joined only by it have no ink and no extents entry; a caption on them is still placed at their position and its box is the only ink.
 
 ## Determinism
 

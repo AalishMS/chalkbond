@@ -206,18 +206,33 @@ describe('property 5: bounds', () => {
    *   (which doc-model's bounds count) need not be ink;
    * - a hash bond draws its rungs at the centres of `count` equal slices, so its ink stops short
    *   of the end atoms by up to half a rung spacing minus half the line width (0.002 pt for the
-   *   shortest bond, 6.012 pt, in the regression below; seed 901270341).
+   *   shortest bond, 6.012 pt, in the regression below; seed 901270341);
+   * - a caption whose target atom has no ink (no label, no satellite and no bond that drew
+   *   anything, e.g. only a zero-length bond): doc-model's bounds count the atom's point, but the
+   *   caption sits below ink that is not there (seed -1130545056). The scene's `extents` say
+   *   which atoms have ink.
    */
   function expectContainsDrawn(doc: Doc, scene: Scene): void {
     const b = scene.bounds;
     if (!b) return;
     const drawn = (prefix: string) =>
       scene.parts.filter((x) => x.key.startsWith(prefix)).map((x) => x.key.slice(prefix.length));
+    const hasInk = (id: AtomId): boolean =>
+      `atom:${id}` in scene.extents ||
+      Object.values(doc.bonds).some(
+        (bond) => (bond.a1 === id || bond.a2 === id) && `bond:${bond.id}` in scene.extents,
+      );
+    const captionOnInk = (id: ObjectId): boolean => {
+      const o = doc.objects[id];
+      return o?.type !== 'caption' || o.target.every(hasInk);
+    };
     const sel: Selection = {
       atoms: new Set(drawn('atom:') as AtomId[]),
       bonds: new Set((drawn('bond:') as BondId[]).filter((id) => doc.bonds[id]?.stereo !== 'hash')),
       objects: new Set(
-        (drawn('obj:') as ObjectId[]).filter((id) => doc.objects[id]?.type !== 'callout'),
+        (drawn('obj:') as ObjectId[]).filter(
+          (id) => doc.objects[id]?.type !== 'callout' && captionOnInk(id),
+        ),
       ),
     };
     const inner = docBounds(doc, sel);
@@ -235,6 +250,18 @@ describe('property 5: bounds', () => {
     const [d2, to] = addAtom(d1, { x: 0, y: -0.15030000000000007 });
     const [doc] = addBond(d2, from, to, { stereo: 'hash' });
     expectContainsDrawn(doc, render(doc));
+  });
+
+  it('contains the drawn items for a caption on atoms joined by a zero-length bond (seed -1130545056)', () => {
+    // Two unlabelled carbons at one point, a zero-length bond (no ink) and a caption on the first:
+    // the only ink is the caption, half a bond length below the target point.
+    const [d1, a1] = addAtom(emptyDoc(NOW), { x: 0, y: 0 });
+    const [d2, a3] = addAtom(d1, { x: 0, y: 0 });
+    const [d3] = addBond(d2, a1, a3);
+    const [doc] = addObject(d3, { type: 'caption', runs: [{ text: 'H' }], target: [a1] });
+    const scene = render(doc);
+    expect(Object.keys(scene.extents)).toEqual([`obj:${Object.keys(doc.objects)[0]}`]);
+    expectContainsDrawn(doc, scene);
   });
 
   it('equals the union of extents and contains the drawn items', { timeout: TIMEOUT }, () => {
