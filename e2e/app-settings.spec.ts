@@ -183,6 +183,22 @@ test('ST2: startup and I8 carry no path; I8 rejects a folder and stores Export c
   }
 });
 
+test('W1: a first launch has a content area of exactly 1280 x 800 at the display scale', async () => {
+  // No size argument and no forced scale factor: the display's own scaling (125 % on a laptop)
+  // rounds the native frame to whole DIPs, so the frame measured at creation can be a DIP too wide.
+  const { app } = await launchWith(userData);
+  try {
+    const state = await app.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows()[0];
+      return win && { content: win.getContentSize(), maximized: win.isMaximized() };
+    });
+    // A work area that cannot hold 1280 x 800 content is maximized instead (W1): nothing to size.
+    if (state?.maximized === false) expect(state.content).toEqual([1280, 800]);
+  } finally {
+    await closeForReal(app);
+  }
+});
+
 test('W2: a malformed stored window (fractional, beyond int32) starts usable at the W1 place', async () => {
   let { app } = await launchWith(userData);
   const first = await windowState(app);

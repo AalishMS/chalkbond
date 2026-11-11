@@ -107,6 +107,9 @@ function createMainWindow(remembered: RememberedWindow | null): BrowserWindow {
   const { maximized, ...bounds } =
     restored ?? firstWindowBounds(screen.getPrimaryDisplay().workArea, frame);
   win.setBounds(bounds);
+  // W1: a fractional display scale rounds the measured frame up to whole DIPs, so the content of
+  // a W1 window is 1 DIP larger than 1280 x 800. Asking for the content size again is exact.
+  if (restored === null && !maximized) win.setContentSize(1280, 800);
   // Maximize after the bounds, so un-maximizing gives the remembered normal bounds back.
   if (maximized) win.maximize();
   win.once('ready-to-show', () => win.show());
