@@ -575,8 +575,8 @@ signatures); the committed `build/icon.ico` and `build/chalk-file.ico` list size
 40, 48, 64, 256, every entry a PNG whose IHDR matches its size; `build/icon.png` is 256 × 256.
 
 **Acceptance criteria:**
-- [ ] Tooling test passes; `npm run icons` reproduces the committed files byte for byte on the same machine
-- [ ] `out/icons/` PNGs look like A16 (tile `#2f6e60`, chalk-white glyph; small sizes without the ring)
+- [x] Tooling test passes; `npm run icons` reproduces the committed files byte for byte on the same machine (Linux, two runs, sha256 equal)
+- [x] `out/icons/` PNGs look like A16 (tile `#2f6e60`, chalk-white glyph; small sizes without the ring) (app-256, app-16, file-48 looked at; 40 px uses the regular source per IC1/IC3, the A16 sheet draws no 40)
 
 **Verification:** `npm run icons`, `npm run check`; open `out/icons/app-256.png`,
 `app-16.png`, `file-48.png` next to `out/mockups-shell/A16-icons.png`. No in-app shot (icons are

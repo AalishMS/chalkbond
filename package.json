@@ -20,6 +20,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "golden:sheet": "node scripts/golden-sheet.mjs",
+    "icons": "node scripts/build-icons.mjs",
     "test:e2e": "electron-vite build && playwright test --project=e2e",
     "test:e2e:os-input": "electron-vite build && playwright test --project=os-input",
     "shots": "electron-vite build && playwright test --project=shots",
