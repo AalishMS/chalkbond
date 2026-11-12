@@ -1,5 +1,5 @@
 import { MAX_FILE_BYTES, type Doc, type Selection } from '../doc-model';
-import { renderSvg, type SvgDocument } from '../svg-render';
+import { renderSvg, resolveStyle, type SvgDocument } from '../svg-render';
 import { drawingPayload, pictureDoc, pictureSelection } from './payload';
 export const RASTER_LIMITS = { maxSide: 10000, maxPixels: 50_000_000 } as const;
 /**
@@ -41,10 +41,23 @@ function withoutMetadata(svg: string): string {
   return svg.slice(0, start + 1) + svg.slice(end + METADATA_CLOSE.length);
 }
 
+/** R10: the clipboard bitmap's margin on each side, as a fraction of the bond length. */
+export const CLIPBOARD_MARGIN = 0.25;
+
+/** R10: the margin of the clipboard bitmap in pt (Slides 10, Handout 3.6). */
+export function clipboardBitmapPadding(doc: Doc): number {
+  return CLIPBOARD_MARGIN * resolveStyle(doc.style).bondLength;
+}
+
+/**
+ * The picture SVG. `padding` (pt, default 0 = ink-tight) is used only for the clipboard bitmap's
+ * source (R10). With `embed: false` the drawing payload is not computed at all (SC12: the
+ * bitmap's second call must not serialise the document again).
+ */
 export function exportSvg(
   doc: Doc,
   selection: Selection | null,
-  opts?: { embed?: boolean },
+  opts?: { embed?: boolean; padding?: number },
 ): SvgDocument {
   return exportSvgWithin(doc, selection, opts, {
     payload: MAX_FILE_BYTES,
@@ -61,14 +74,15 @@ export function exportSvg(
 export function exportSvgWithin(
   doc: Doc,
   selection: Selection | null,
-  opts: { embed?: boolean } | undefined,
+  opts: { embed?: boolean; padding?: number } | undefined,
   limits: { readonly payload: number; readonly picture: number },
 ): SvgDocument {
-  const payload = drawingPayload(pictureDoc(doc, selection));
-  const embed = opts?.embed !== false && payload.length <= limits.payload;
+  const wantsEmbed = opts?.embed !== false;
+  const payload = wantsEmbed ? drawingPayload(pictureDoc(doc, selection)) : '';
+  const embed = wantsEmbed && payload.length <= limits.payload;
   const rendered = renderSvg(doc, {
     ...(selection ? { only: pictureSelection(doc, selection) } : {}),
-    padding: 0,
+    padding: opts?.padding ?? 0,
     ...(embed ? { metadata: payload } : {}),
   });
   if (!embed || utf8ByteLength(rendered.svg, limits.picture) <= limits.picture) return rendered;

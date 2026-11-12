@@ -358,16 +358,16 @@ a PNG-to-RGBA helper if none exists. `rasterise.test.ts`, `model/export-flow.tes
 `e2e/export-*.spec.ts`: run **unchanged** (proof that Export did not change).
 
 **Acceptance criteria:**
-- [ ] unit and flow tests pass; export tests pass unedited
-- [ ] on Windows `e2e/win/clipboard-copy.spec.ts` passes with the new size and pixels (run by the orchestrator if the worker is on Linux; say so)
-- [ ] SC12's copy budget (≤ 500 ms) still met by `e2e/clipboard-perf.spec.ts`; budget not raised
-- [ ] `src/core/clipboard-export` and `src/renderer/clipboard-export/model` ≥ 90 % lines
+- [x] unit and flow tests pass; export tests pass unedited (`rasterise.test.ts`, `export-flow.test.ts`, `e2e/export-*.spec.ts` ran without edits, 2026-11-12)
+- [x] on Windows `e2e/win/clipboard-copy.spec.ts` passes with the new size and pixels (run on the development machine, Windows 11, 2026-11-12: 5 passed, SC14 for Slides and Handout)
+- [x] SC12's copy budget (≤ 500 ms) still met by `e2e/clipboard-perf.spec.ts` (median 34.4 ms) and `e2e/win/clipboard-perf.spec.ts` (median 69.1 ms, Windows clipboard); budget not raised
+- [x] `src/core/clipboard-export` and `src/renderer/clipboard-export/model` ≥ 90 % lines (`npm test -- --coverage`: every threshold met)
 
 **Verification:** `npx vitest run --project unit src/core/clipboard-export src/renderer/clipboard-export`, `npm run test:e2e -- e2e/clipboard-perf.spec.ts e2e/clipboard-ui.spec.ts e2e/export-png.spec.ts` (and on Windows `e2e/win/clipboard-copy.spec.ts`), then `npm run check`
 
 **Dependencies:** None (independent of F1 and F2)
 
-**Files:** `src/core/clipboard-export/{picture.ts,index.ts,picture.test.ts}`,
+**Files:** `src/core/clipboard-export/{picture.ts,index.ts,picture.test.ts,picture-embed.test.ts}`,
 `src/renderer/clipboard-export/model/{copy-flow.ts,copy-flow.test.ts}`,
 `e2e/win/{clipboard-copy.spec.ts,windows-clipboard.ts}`
 

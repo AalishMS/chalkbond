@@ -1,6 +1,12 @@
 // The clipboard flow (SPEC-clipboard-export.md CB-C1–CB-C3 copy, CB-P1 paste, the CB-Q queue and
 // notices N-C1–N-C6, N-P1–N-P5) over injected ports: DOM-free, no timers of its own.
-import { exportSvg, pasteAction, readSvgDrawing, type PasteAction } from '@core/clipboard-export';
+import {
+  clipboardBitmapPadding,
+  exportSvg,
+  pasteAction,
+  readSvgDrawing,
+  type PasteAction,
+} from '@core/clipboard-export';
 import type { Doc, Selection, SubDoc } from '@core/doc-model';
 import type { SvgDocument } from '@core/svg-render';
 import type { EditorController } from '../../editor';
@@ -8,7 +14,7 @@ import type { ClipboardReadResponse, ClipboardWriteRequest } from '../../../shar
 
 /** How long the Copy button reads "Copied" after a successful copy (a new copy restarts it). */
 export const COPIED_MS = 2000;
-/** Clipboard pictures are 300 dpi, transparent (X3). */
+/** Clipboard pictures are 300 dpi (X3); the SVG entry is transparent, the bitmap white (R10). */
 const CLIPBOARD_DPI = 300;
 
 /** Notice texts, exactly as mock-up A17 (O6). */
@@ -130,6 +136,7 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
 
   /**
    * CB-C2: one exportSvg; its embedded payload is the drawing entry (null when over the limit).
+   * The bitmap is a second, unembedded exportSvg with the R10 margin, rasterised on white.
    * `copyGeneration` is the editor-copy generation of the `onCopy` behind a selection or cut copy.
    */
   function copyPicture(
@@ -142,7 +149,11 @@ export function createCopyFlow(ports: CopyPorts): CopyFlow {
       try {
         const svg = exportSvg(doc, selection);
         const drawing = readSvgDrawing(svg.svg);
-        const raster = await ports.rasterise(svg, CLIPBOARD_DPI, false);
+        const bitmapSvg = exportSvg(doc, selection, {
+          embed: false,
+          padding: clipboardBitmapPadding(doc),
+        });
+        const raster = await ports.rasterise(bitmapSvg, CLIPBOARD_DPI, true);
         const result = await ports.write({ png: raster.png, svg: svg.svg, drawing });
         if (!result.ok) throw new Error('clipboard write failed');
         last = what === 'whole' ? null : drawing;

@@ -610,9 +610,10 @@ assertion is deleted or weakened, each old expectation is replaced by the new ru
 
 | File | Change |
 |---|---|
+| `src/core/clipboard-export/picture-embed.test.ts` (new) | `exportSvg` with `embed: false` never calls `drawingPayload` (SC12), the default calls it once |
 | `src/core/clipboard-export/picture.test.ts` | add: `exportSvg` with `padding` (equals `renderSvg` with that padding; default 0 unchanged); `clipboardBitmapPadding` for Slides, Handout and a `bondLength` override |
 | `src/core/clipboard-export/payload.test.ts` (or wherever `pictureDoc` is tested) | add: `pictureDoc` copies `style.formula`; a skeletal selection's payload equals the pre-F2 bytes |
-| `src/renderer/clipboard-export/model/copy-flow.test.ts` | the expectation `rasterise(svg, 300, false)` becomes `rasterise(exportSvg(doc, sel, { embed: false, padding: clipboardBitmapPadding(doc) }), 300, true)`; the SVG entry and the drawing entry keep their expectations (tight SVG, payload from it) |
+| `src/renderer/clipboard-export/model/copy-flow.test.ts` | the expectation `rasterise(svg, 300, false)` becomes `rasterise(exportSvg(doc, sel, { embed: false, padding: clipboardBitmapPadding(doc) }), 300, true)`; the "computes the payload once" test's `exportSvg` call count becomes 2 (the second call is the unembedded, padded one) and it still asserts `drawingPayload` is not called by the flow; the SVG entry and the drawing entry keep their expectations (tight SVG, payload from it); a new test pins a selection copy's second call |
 | `e2e/win/clipboard-copy.spec.ts` | SC3's PNG size becomes the padded SVG's `ceil(w·300/72) × ceil(h·300/72)` (SC3's exact formula); add SC14's pixel checks (opaque white corners, all alpha 255, toluene ink box `m` from each edge within 2 px, ink defined in SC14); the SVG stream assertion stays as it is |
 | `e2e/win/windows-clipboard.ts` | a helper that decodes the native PNG to RGBA in the page (Image + canvas), if none exists |
 | `e2e/clipboard-ui.spec.ts`, `e2e/clipboard-perf.spec.ts`, `e2e/clipboard-provenance.spec.ts`, `e2e/win/clipboard-perf.spec.ts`, `e2e/shots/C8.shot.ts`, `e2e/shots/C9.shot.ts` | run unchanged; change only an assertion that pins the old bitmap size or transparency (none known on 2026-11-12). SC12's 500 ms budget is unchanged: the second `renderSvg` must fit in it |

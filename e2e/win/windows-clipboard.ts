@@ -180,3 +180,37 @@ export function pngSize(png: Uint8Array): { width: number; height: number } {
   const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
   return { width: view.getUint32(16), height: view.getUint32(20) };
 }
+
+export interface DecodedPng {
+  width: number;
+  height: number;
+  /** `width * height * 4` bytes, row by row, R G B A. */
+  rgba: Buffer;
+}
+
+/** Decodes a PNG to RGBA inside the app's page (`createImageBitmap` and a canvas). */
+export async function decodePng(app: ElectronApplication, png: Uint8Array): Promise<DecodedPng> {
+  const page = await app.firstWindow();
+  const base64 = Buffer.from(png).toString('base64');
+  const decoded = await page.evaluate(async (b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('no canvas');
+    ctx.drawImage(bitmap, 0, 0);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let binary = '';
+    for (let i = 0; i < data.length; i += 0x8000) {
+      binary += String.fromCharCode(...data.subarray(i, i + 0x8000));
+    }
+    return { width: canvas.width, height: canvas.height, base64: btoa(binary) };
+  }, base64);
+  return {
+    width: decoded.width,
+    height: decoded.height,
+    rgba: Buffer.from(decoded.base64, 'base64'),
+  };
+}

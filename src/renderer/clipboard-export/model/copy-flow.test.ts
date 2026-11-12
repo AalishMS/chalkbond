@@ -2,6 +2,7 @@
 // fake ports and a real editor controller.
 import { describe, expect, it, vi } from 'vitest';
 import {
+  clipboardBitmapPadding,
   drawingPayload,
   exportSvg,
   pasteAction,
@@ -132,17 +133,48 @@ describe('copy (CB-C1)', () => {
     expect(r.flow.copied()).toBe(true);
   });
 
-  it('computes the payload once: one exportSvg, reused for the PNG, the SVG and the drawing', async () => {
+  it('computes the payload once: the SVG entry and the drawing come from the first exportSvg, the PNG from a second, unembedded, padded one (R10)', async () => {
     const r = rig('ethanol');
+    r.controller.store.dispatch({ type: 'set-selection', selection: emptySelection() });
+    const doc = r.controller.getDoc();
     vi.mocked(exportSvg).mockClear();
     vi.mocked(drawingPayload).mockClear();
     await r.flow.copy();
-    expect(exportSvg).toHaveBeenCalledTimes(1);
+    expect(exportSvg).toHaveBeenCalledTimes(2);
     expect(drawingPayload).not.toHaveBeenCalled();
+    expect(exportSvg).toHaveBeenNthCalledWith(1, doc, null);
+    expect(exportSvg).toHaveBeenNthCalledWith(2, doc, null, {
+      embed: false,
+      padding: clipboardBitmapPadding(doc),
+    });
     const svg = vi.mocked(exportSvg).mock.results[0]?.value as ReturnType<typeof exportSvg>;
-    expect(r.rasterise).toHaveBeenCalledWith(svg, 300, false);
+    const bitmapSvg = vi.mocked(exportSvg).mock.results[1]?.value as ReturnType<typeof exportSvg>;
+    expect(bitmapSvg.svg).not.toContain('<metadata');
+    expect(bitmapSvg.width).toBeGreaterThan(svg.width);
+    expect(r.rasterise).toHaveBeenCalledTimes(1);
+    expect(r.rasterise).toHaveBeenCalledWith(bitmapSvg, 300, true);
     expect(r.writes[0]?.svg).toBe(svg.svg);
     expect(r.writes[0]?.drawing).toBe(readSvgDrawing(svg.svg));
+  });
+
+  it('a selection copy pads the same way: the bitmap is the selection, unembedded, padded, on white', async () => {
+    const r = rig('ethanol');
+    const doc = r.controller.getDoc();
+    const atom = Object.keys(doc.atoms)[0] as never;
+    r.controller.store.dispatch({
+      type: 'set-selection',
+      selection: { ...emptySelection(), atoms: new Set([atom]) },
+    });
+    const selection = r.controller.getSelection();
+    vi.mocked(exportSvg).mockClear();
+    await r.flow.copy();
+    expect(exportSvg).toHaveBeenNthCalledWith(1, doc, selection);
+    expect(exportSvg).toHaveBeenNthCalledWith(2, doc, selection, {
+      embed: false,
+      padding: clipboardBitmapPadding(doc),
+    });
+    const bitmapSvg = vi.mocked(exportSvg).mock.results[1]?.value as ReturnType<typeof exportSvg>;
+    expect(r.rasterise).toHaveBeenCalledWith(bitmapSvg, 300, true);
   });
 
   it('copies a selection through the editor (onCopy): N-C1 and lastEditorCopy = payload', async () => {
