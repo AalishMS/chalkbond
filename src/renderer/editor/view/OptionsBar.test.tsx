@@ -98,6 +98,13 @@ describe('selection actions bar', () => {
     expect(html.match(/aria-disabled="true"/g)).toHaveLength(6);
   });
 
+  it('the Tidy tooltip chip reads Ctrl+Shift+R (R59), Clean up and Kekulé keep theirs', () => {
+    const html = render('select');
+    expect(html).toContain('data-tip="Tidy reaction" data-tip-key="Ctrl+Shift+R"');
+    expect(html).not.toContain('Ctrl+Shift+T');
+    expect(html).toContain('data-tip="Clean up" data-tip-key="Ctrl+Shift+L"');
+  });
+
   it('enables what the scope allows', () => {
     const html = render(
       'select',

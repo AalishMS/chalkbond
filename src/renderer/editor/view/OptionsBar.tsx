@@ -153,7 +153,7 @@ function SelectionBar({
         label="Tidy reaction"
         state={a.tidy}
         roving={roving}
-        shortcut="Ctrl+Shift+T"
+        shortcut="Ctrl+Shift+R"
         onPress={() => dispatch({ type: 'tidy' })}
       />
       <Separator />

@@ -101,7 +101,7 @@ test('E28 tidy without an arrow', async () => {
     const doc = await insert(page, 'ethanol');
     await loadDocument(page, doc);
     await page.getByTestId('canvas').focus();
-    await page.keyboard.press('Control+Shift+t');
+    await page.keyboard.press('Control+Shift+r');
     await page.waitForTimeout(200);
     await shot(page, 'E28', 'tidy-no-arrow-notice');
   } finally {

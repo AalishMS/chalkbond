@@ -71,7 +71,7 @@ export const SHORTCUTS: readonly ShortcutSection[] = [
       row(['Ctrl+F'], 'Type a compound name'),
       row(['Ctrl+Shift+L'], 'Clean up'),
       row(['Ctrl+Shift+K'], 'Show Kekulé or circle'),
-      row(['Ctrl+Shift+T'], 'Tidy reaction'),
+      row(['Ctrl+Shift+R'], 'Tidy reaction'),
     ],
   },
   {
@@ -80,7 +80,6 @@ export const SHORTCUTS: readonly ShortcutSection[] = [
       row(['Ctrl+='], 'Zoom in'),
       row(['Ctrl+−'], 'Zoom out'),
       row(['Ctrl+0'], 'Fit drawing'),
-      row(['Ctrl+1'], 'Zoom to 100%'),
       row(['Space+drag'], 'Move around the drawing'),
     ],
   },

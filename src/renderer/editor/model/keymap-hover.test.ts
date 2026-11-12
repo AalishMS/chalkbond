@@ -13,14 +13,14 @@ const key = (k: string, over: Partial<KeyInfo> = {}): KeyInfo => ({
 });
 
 describe('K1 Ctrl+Shift rows', () => {
-  it('Ctrl+Shift+K toggles Kekule, Ctrl+Shift+L cleans up, Ctrl+Shift+T tidies the reaction', () => {
+  it('Ctrl+Shift+K toggles Kekule, Ctrl+Shift+L cleans up, Ctrl+Shift+R tidies the reaction', () => {
     expect(globalCommand(key('K', { shiftKey: true }), 'all')).toBe('toggle-kekulé');
     expect(globalCommand(key('L', { shiftKey: true }), 'all')).toBe('clean-up');
-    expect(globalCommand(key('T', { shiftKey: true }), 'all')).toBe('tidy-reaction');
+    expect(globalCommand(key('R', { shiftKey: true }), 'all')).toBe('tidy-reaction');
   });
 
   it('they need Ctrl and Shift together, and are left to the host in canvas-only mode', () => {
-    for (const k of ['k', 'l', 't']) {
+    for (const k of ['k', 'l', 'r']) {
       expect(globalCommand(key(k), 'all')).toBeNull();
       expect(globalCommand(key(k, { ctrlKey: false, shiftKey: true }), 'all')).toBeNull();
       expect(globalCommand(key(k, { shiftKey: true }), 'canvas-only')).toBeNull();

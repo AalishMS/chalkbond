@@ -68,7 +68,7 @@ describe('action, history and status tooltips', () => {
     expect(HISTORY_TIPS.undo).toEqual({ title: 'Undo', key: 'Ctrl+Z' });
     expect(HISTORY_TIPS.redo).toEqual({ title: 'Redo', key: 'Ctrl+Y' });
     expect(STATUS_TIPS.zoomFit).toEqual({ title: 'Zoom to fit', key: 'Ctrl+0' });
-    expect(STATUS_TIPS.zoomReset).toEqual({ title: 'Zoom to 100%', key: 'Ctrl+1' });
+    expect(STATUS_TIPS.zoomReset).toEqual({ title: 'Zoom to 100%' });
     expect(STATUS_TIPS.zoomOut.title).toBe('Zoom out');
     expect(STATUS_TIPS.zoomIn.title).toBe('Zoom in');
   });

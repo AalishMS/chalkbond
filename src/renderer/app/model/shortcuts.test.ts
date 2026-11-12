@@ -100,13 +100,12 @@ describe('SHORTCUTS', () => {
         ['Ctrl+F', 'Type a compound name'],
         ['Ctrl+Shift+L', 'Clean up'],
         ['Ctrl+Shift+K', 'Show Kekulé or circle'],
-        ['Ctrl+Shift+T', 'Tidy reaction'],
+        ['Ctrl+Shift+R', 'Tidy reaction'],
       ],
       View: [
         ['Ctrl+=', 'Zoom in'],
         ['Ctrl+−', 'Zoom out'],
         ['Ctrl+0', 'Fit drawing'],
-        ['Ctrl+1', 'Zoom to 100%'],
         ['Space+drag', 'Move around the drawing'],
       ],
       Files: [
@@ -267,11 +266,10 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
       'Ctrl+F': 'focus-name-field',
       'Ctrl+Shift+L': 'clean-up',
       'Ctrl+Shift+K': 'toggle-kekulé',
-      'Ctrl+Shift+T': 'tidy-reaction',
+      'Ctrl+Shift+R': 'tidy-reaction',
       'Ctrl+=': 'zoom-in',
       'Ctrl+−': 'zoom-out',
       'Ctrl+0': 'zoom-fit',
-      'Ctrl+1': 'zoom-reset',
     });
     // Ctrl+C with nothing selected is the host's whole-drawing copy (the row says so).
     expect(hostKey(input('Ctrl+C'), NOW_CONTEXT)).toBe('copy-whole');
@@ -333,10 +331,9 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
       'Ctrl+=',
       'Ctrl+−',
       'Ctrl+0',
-      'Ctrl+1',
       'Ctrl+Shift+K',
       'Ctrl+Shift+L',
-      'Ctrl+Shift+T',
+      'Ctrl+Shift+R',
       '←',
       '↑',
       '→',

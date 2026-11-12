@@ -100,6 +100,14 @@ describe('controls carry their tooltip content', () => {
     expect(html.match(/data-tip-side="above"/g)).toHaveLength(4);
   });
 
+  it('the zoom readout tooltip has a title and no key chip (R59)', () => {
+    const html = renderToStaticMarkup(
+      <StatusBar tool="bond" preset="slides" zoom={1.5} dispatch={noop} />,
+    );
+    expect(html).toMatch(/data-tip="Zoom to 100%"(?! data-tip-key)/);
+    expect(html).not.toContain('data-tip-key="Ctrl+1"');
+  });
+
   it('the editor mounts no bubble until a tooltip is wanted', () => {
     const html = renderToStaticMarkup(<Editor controller={controller()} />);
     expect(html).not.toContain('role="tooltip"');

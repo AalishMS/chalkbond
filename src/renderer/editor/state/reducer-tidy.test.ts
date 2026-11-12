@@ -76,7 +76,7 @@ describe('Tidy reaction in the editor (TR1-TR6, V5)', () => {
   });
 });
 
-describe('the tidy command (Ctrl+Shift+T)', () => {
+describe('the tidy command (Ctrl+Shift+R)', () => {
   it('runs from the host and the keyboard command, and says so when there is no arrow', () => {
     const c = createEditorController({
       clock: () => T0,

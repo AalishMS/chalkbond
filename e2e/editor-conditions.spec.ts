@@ -221,7 +221,7 @@ test('Tidy reaction: a hand-placed esterification becomes one tidy line (TR1-TR6
     const back = await readDocument(page);
     expect(JSON.stringify(back.atoms)).toBe(JSON.stringify(messy.atoms));
     expect(JSON.stringify(back.objects)).toBe(JSON.stringify(messy.objects));
-    await page.keyboard.press('Control+Shift+t');
+    await page.keyboard.press('Control+Shift+r');
     const again = await readDocument(page);
     expect(JSON.stringify(again.objects)).toBe(JSON.stringify(after.objects));
   } finally {
@@ -233,7 +233,7 @@ test('Tidy reaction with no arrow says so and changes nothing; the shortcut work
   const { app, page } = await openApp();
   try {
     await insert(page, 'ethanol');
-    await page.keyboard.press('Control+Shift+t');
+    await page.keyboard.press('Control+Shift+r');
     await expect(page.getByTestId('statusbar').getByRole('status')).toHaveText(
       'Nothing to tidy: draw an arrow between the molecules first.',
     );

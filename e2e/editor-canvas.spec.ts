@@ -108,7 +108,7 @@ test('a loaded document is mounted in paint order, centred, with 80 px bonds', a
   }
 });
 
-test('zoom keys and buttons step through the V1 steps; the readout and Ctrl+1 go to 100 % (R49), fit to the default', async () => {
+test('zoom keys and buttons step through the V1 steps; the readout goes to 100 % (R49) and Ctrl+1 does nothing in the editor (R59), fit to the default', async () => {
   const { app, page } = await openApp();
   try {
     await page.getByTestId('canvas').waitFor();
@@ -127,7 +127,12 @@ test('zoom keys and buttons step through the V1 steps; the readout and Ctrl+1 go
     expect((await content(page)).k).toBeCloseTo(4 / 3, 6);
     await page.keyboard.press('Control+-');
     await expect(readout(page)).toHaveText('90%');
+    // R59: Ctrl+1 and Ctrl+Shift+0 belong to nobody in the editor; the zoom stays where it is.
     await page.keyboard.press('Control+1');
+    await page.keyboard.press('Control+Shift+0');
+    await expect(readout(page)).toHaveText('90%');
+    expect((await content(page)).k).toBeCloseTo((0.9 * 4) / 3, 6);
+    await readout(page).click();
     await expect(readout(page)).toHaveText('100%');
     expect((await content(page)).k).toBeCloseTo(4 / 3, 6);
     await page.keyboard.press('Control+-');

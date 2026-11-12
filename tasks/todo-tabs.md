@@ -154,11 +154,11 @@ Ctrl+2-9, Ctrl+T, Ctrl+W, Ctrl+Tab, Ctrl+PageUp / PageDown are `null`, Ctrl+Shif
 The e2e keymap files for `app-keys.spec.ts` are TB26's (they test the host).
 
 **Acceptance criteria:**
-- [ ] The keymap table above holds, and the hover keys 1-3 (R5) are unchanged
-- [ ] Tidy reaction runs on Ctrl+Shift+R from the canvas; its tooltip and chip say so
-- [ ] The zoom readout's name and tooltip carry no key; it still runs `zoom-reset`
-- [ ] No editor mock-up, token or icon file is edited; `editor-tokens.test.ts` passes
-- [ ] Editor coverage stays >= 70 %
+- [x] The keymap table above holds, and the hover keys 1-3 (R5) are unchanged
+- [x] Tidy reaction runs on Ctrl+Shift+R from the canvas; its tooltip and chip say so
+- [x] The zoom readout's name and tooltip carry no key; it still runs `zoom-reset`
+- [x] No editor mock-up, token or icon file is edited; `editor-tokens.test.ts` passes
+- [x] Editor coverage stays >= 70 %
 
 **Verification:** `npm test -- src/renderer/editor`, `npx playwright test --project=e2e e2e/editor-canvas.spec.ts e2e/editor-reaction.spec.ts` (builds first; Windows), then `npm run check`.
 

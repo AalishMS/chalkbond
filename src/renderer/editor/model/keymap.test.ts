@@ -73,15 +73,41 @@ describe('K1 zoom keys', () => {
     expect(globalCommand(key('_', { shiftKey: true }), 'all')).toBe('zoom-out');
   });
 
-  it('Ctrl+0 fits and Ctrl+1 resets', () => {
+  it('Ctrl+0 fits; Zoom to 100% has no key (R59: Ctrl+1 and Ctrl+Shift+0 do nothing)', () => {
     expect(globalCommand(key('0'), 'all')).toBe('zoom-fit');
-    expect(globalCommand(key('1'), 'all')).toBe('zoom-reset');
+    expect(globalCommand(key('1'), 'all')).toBeNull();
+    expect(globalCommand(key(')', { shiftKey: true }), 'all')).toBeNull();
+    expect(globalCommand(key('0', { shiftKey: true }), 'all')).toBeNull();
+    for (const k of ['0', '1', ')']) {
+      expect(globalCommand(key(k, { shiftKey: true }), 'all'), k).not.toBe('zoom-reset');
+    }
   });
 
   it('are left to the host in canvas-only mode and need Ctrl alone', () => {
     expect(globalCommand(key('='), 'canvas-only')).toBeNull();
     expect(globalCommand(key('0', { ctrlKey: false }), 'all')).toBeNull();
     expect(globalCommand(key('0', { altKey: true }), 'all')).toBeNull();
+  });
+});
+
+describe('R59 keys left to the host (app-shell K1, K2)', () => {
+  it('Ctrl+1 ... Ctrl+9, Ctrl+T, Ctrl+W, Ctrl+Tab, Ctrl+PageUp and Ctrl+PageDown are null', () => {
+    for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9']) {
+      expect(globalCommand(key(k), 'all'), k).toBeNull();
+    }
+    for (const k of ['t', 'T', 'w', 'W', 'Tab', 'PageUp', 'PageDown']) {
+      expect(globalCommand(key(k), 'all'), k).toBeNull();
+      expect(globalCommand(key(k, { shiftKey: true }), 'all'), `Shift+${k}`).toBeNull();
+    }
+  });
+
+  it('Ctrl+Shift+T no longer tidies; Ctrl+Shift+R does (K1)', () => {
+    expect(globalCommand(key('T', { shiftKey: true }), 'all')).toBeNull();
+    expect(globalCommand(key('t', { shiftKey: true }), 'all')).toBeNull();
+    expect(globalCommand(key('R', { shiftKey: true }), 'all')).toBe('tidy-reaction');
+    expect(globalCommand(key('r', { shiftKey: true }), 'all')).toBe('tidy-reaction');
+    expect(globalCommand(key('r'), 'all')).toBeNull();
+    expect(globalCommand(key('R', { shiftKey: true }), 'canvas-only')).toBeNull();
   });
 });
 
@@ -203,8 +229,8 @@ describe('R50 number keys', () => {
     }
   });
 
-  it('Ctrl+1 and Ctrl+0 stay zoom; Ctrl, Alt or Meta make hoverKeys ignore a digit', () => {
-    expect(globalCommand(key('1'), 'all')).toBe('zoom-reset');
+  it('Ctrl+0 stays zoom to fit, Ctrl+1 is the host`s; Ctrl, Alt or Meta make hoverKeys ignore a digit', () => {
+    expect(globalCommand(key('1'), 'all')).toBeNull();
     expect(globalCommand(key('0'), 'all')).toBe('zoom-fit');
     for (const over of [{ ctrlKey: true }, { altKey: true }, { metaKey: true }]) {
       for (const d of DIGITS) expect(hoverKeys(plain(d, over), null, 'bond')).toBeNull();

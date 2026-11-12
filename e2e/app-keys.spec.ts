@@ -57,8 +57,10 @@ test('K1: every host key reaches its action with the menu installed', async () =
     await page.keyboard.press('Control+v');
     await expect.poll(() => atoms(page)).toBe(2 * total);
 
-    // The editor's own Ctrl rows still work: Ctrl+1 is Zoom to 100% (R18), Ctrl+0 fits.
-    await page.keyboard.press('Control+1');
+    // The editor's own Ctrl rows still work: the readout is Zoom to 100% (R49; Ctrl+1 is no
+    // longer its key, R59), Ctrl+= zooms in.
+    await page.getByTestId('zoom-reset').click();
+    await page.getByTestId('canvas').focus();
     await expect(page.getByTestId('zoom-reset')).toHaveText('100%');
     await page.keyboard.press('Control+=');
     await expect(page.getByTestId('zoom-reset')).toHaveText('125%');

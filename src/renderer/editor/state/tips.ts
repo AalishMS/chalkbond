@@ -66,7 +66,7 @@ export const HISTORY_EMPTY_HELP = {
 
 export const STATUS_TIPS = {
   zoomOut: { title: 'Zoom out', key: 'Ctrl+−' },
-  zoomReset: { title: 'Zoom to 100%', key: 'Ctrl+1' },
+  zoomReset: { title: 'Zoom to 100%' },
   zoomIn: { title: 'Zoom in', key: 'Ctrl+=' },
   zoomFit: { title: 'Zoom to fit', key: 'Ctrl+0' },
 } as const satisfies Record<string, TipContent>;

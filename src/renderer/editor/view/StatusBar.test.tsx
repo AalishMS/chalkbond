@@ -71,7 +71,7 @@ describe('StatusBar markup', () => {
 
   it('has the zoom cluster: the 150% default readout labelled "Zoom to 100%" (R49)', () => {
     const html = render('bond');
-    expect(html).toContain('aria-label="Zoom to 100% (Ctrl+1)"');
+    expect(html).toContain('aria-label="Zoom to 100%"');
     expect(html).not.toContain('Reset zoom');
     expect(html).toContain('>150%</button>');
     for (const label of ['Zoom out (Ctrl+−)', 'Zoom in (Ctrl+=)', 'Zoom to fit (Ctrl+0)']) {

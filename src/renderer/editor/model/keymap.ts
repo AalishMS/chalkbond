@@ -40,7 +40,7 @@ export function globalCommand(e: KeyInfo, shortcuts: 'all' | 'canvas-only'): Edi
   if (key === 'f' && !e.shiftKey) return 'focus-name-field';
   if (e.shiftKey && key === 'k') return 'toggle-kekulé';
   if (e.shiftKey && key === 'l') return 'clean-up';
-  if (e.shiftKey && key === 't') return 'tidy-reaction';
+  if (e.shiftKey && key === 'r') return 'tidy-reaction';
   if (key === 'a' && !e.shiftKey) return 'select-all';
   if (key === 'c' && !e.shiftKey) return 'copy';
   if (key === 'x' && !e.shiftKey) return 'cut';
@@ -50,7 +50,8 @@ export function globalCommand(e: KeyInfo, shortcuts: 'all' | 'canvas-only'): Edi
   if (key === '=' || key === '+') return 'zoom-in';
   if (key === '-' || key === '_') return 'zoom-out';
   if (!e.shiftKey && key === '0') return 'zoom-fit';
-  if (!e.shiftKey && key === '1') return 'zoom-reset';
+  // R59: Ctrl+1 ... Ctrl+9, Ctrl+T, Ctrl+Shift+T, Ctrl+W, Ctrl+Tab and Ctrl+PageUp / PageDown are
+  // the host's, and Zoom to 100% (`zoom-reset`) has no key.
   return null;
 }
 

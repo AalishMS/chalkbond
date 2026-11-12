@@ -580,7 +580,7 @@ test('keyboard only: every selection action runs from its shortcut or its button
     await page.keyboard.press('Delete');
     expect(Object.keys((await readDocument(page)).atoms)).toHaveLength(6);
     // The Tidy shortcut runs with nothing to tidy and says so.
-    await page.keyboard.press('Control+Shift+T');
+    await page.keyboard.press('Control+Shift+R');
     await expect(page.getByRole('status')).toContainText('Nothing to tidy');
   } finally {
     await app.close();
@@ -623,6 +623,22 @@ test('rail badges: each digit sits inside its unchanged 56 x 48 button and is no
     }
     await expect(page.getByTestId('tool-bond')).toHaveAttribute('aria-label', 'Bond');
     await expect(page.getByTestId('tool-plus')).toHaveAttribute('aria-keyshortcuts', '8 Plus');
+  } finally {
+    await app.close();
+  }
+});
+
+test('R59: the zoom readout is named "Zoom to 100%" with no key; Tidy reaction shows Ctrl+Shift+R', async () => {
+  const { app, page } = await openApp();
+  try {
+    const readout = page.getByTestId('zoom-reset');
+    await expect(readout).toHaveAttribute('aria-label', 'Zoom to 100%');
+    await expect(readout).toHaveAttribute('data-tip', 'Zoom to 100%');
+    await expect(readout).not.toHaveAttribute('data-tip-key', /.*/);
+    await page.getByTestId('tool-select').click();
+    const tidy = page.getByTestId('act-tidy');
+    await expect(tidy).toHaveAttribute('data-tip', 'Tidy reaction');
+    await expect(tidy).toHaveAttribute('data-tip-key', 'Ctrl+Shift+R');
   } finally {
     await app.close();
   }
