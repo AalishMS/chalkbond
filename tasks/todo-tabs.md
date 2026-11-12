@@ -196,10 +196,10 @@ covers markup and CSS with unit tests and a Playwright component-level probe. De
 and write it in the commit.
 
 **Acceptance criteria:**
-- [ ] The three optional props exist and the layout without them is pixel-identical (existing `editor-layout.spec.ts` and shots `E5`-`E9` unchanged)
-- [ ] With a 33 px strip the 960x640 rail rule holds (SC12 of app-shell stays satisfiable)
-- [ ] K4's order is tested with both slots
-- [ ] No raw colour or px other than 1 px in `editor.css` (`editor-tokens.test.ts` passes)
+- [x] The three optional props exist and the layout without them is pixel-identical (existing `editor-layout.spec.ts` and shots `E5`-`E9` unchanged)
+- [x] With a 33 px strip the 960x640 rail rule holds (SC12 of app-shell stays satisfiable)
+- [x] K4's order is tested with both slots
+- [x] No raw colour or px other than 1 px in `editor.css` (`editor-tokens.test.ts` passes)
 
 **Verification:** `npm test -- src/renderer/editor tests/tooling/editor-tokens.test.ts`, `npx playwright test --project=e2e e2e/editor-layout.spec.ts e2e/editor-keyboard.spec.ts e2e/editor-a11y.spec.ts`, then `npm run check`.
 

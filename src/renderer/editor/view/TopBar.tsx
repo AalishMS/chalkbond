@@ -9,6 +9,8 @@ import { OptionsBar } from './OptionsBar';
 import { tipProps } from './Tooltip';
 
 interface TopBarProps {
+  /** Host slot (R56): the first child, before the name field. */
+  menu?: React.ReactNode;
   actions?: React.ReactNode;
   state: EditorState;
   scope: SelectionScope;
@@ -42,8 +44,9 @@ function HistoryButton(props: {
   );
 }
 
-/** Name field, divider, tool options, Undo and Redo. */
+/** Host menu, name field, divider, tool options, Undo and Redo, host actions. */
 export function TopBar({
+  menu,
   actions,
   state,
   scope,
@@ -54,9 +57,14 @@ export function TopBar({
 }: TopBarProps): React.JSX.Element {
   return (
     <header
-      className={actions === undefined ? 'topbar' : 'topbar has-actions'}
+      className={[
+        'topbar',
+        ...(actions === undefined ? [] : ['has-actions']),
+        ...(menu === undefined ? [] : ['has-menu']),
+      ].join(' ')}
       data-testid="topbar"
     >
+      {menu}
       <NameField field={state.nameField} rows={rows} dispatch={dispatch} />
       <div className="divider-v" role="separator" />
       <OptionsBar state={state} scope={scope} dispatch={dispatch} />

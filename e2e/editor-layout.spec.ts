@@ -411,3 +411,96 @@ for (const size of [
     }
   });
 }
+
+// ---- R56: the `tabs` host slot ---------------------------------------------------------------
+//
+// The editor is only ever mounted by the app, which does not pass `tabs` until TB20. So this is a
+// component-level probe of the CSS contract: it gives the live editor the DOM the React markup
+// gives it with `tabs` (the `has-tabs` class, a `tabs-slot` between the rail and the canvas and
+// the canvas inside a `canvas-panel`; the markup itself is pinned by `Editor.test.tsx`) and
+// measures the boxes. The real strip and its e2e are TB24 and TB27.
+
+const STRIP_H = 33;
+
+async function giveTabsSlot(page: Page): Promise<void> {
+  await page.evaluate((h) => {
+    const root = document.querySelector('.editor');
+    const canvas = root?.querySelector('[data-testid="canvas"]');
+    if (!root || !canvas) throw new Error('no editor');
+    root.classList.add('has-tabs');
+    const slot = document.createElement('div');
+    slot.className = 'tabs-slot';
+    slot.setAttribute('data-testid', 'tabs-slot');
+    slot.style.height = `${h}px`;
+    const panel = document.createElement('div');
+    panel.className = 'canvas-panel';
+    panel.setAttribute('data-testid', 'canvas-panel');
+    panel.setAttribute('role', 'tabpanel');
+    root.insertBefore(slot, canvas);
+    root.insertBefore(panel, canvas);
+    panel.appendChild(canvas);
+  }, STRIP_H);
+}
+
+for (const size of [
+  [1280, 800],
+  [960, 640],
+] as const satisfies readonly Size[]) {
+  test(`tabs slot at ${size[0]}x${size[1]}: strip above the canvas, rail unchanged, viewport follows`, async () => {
+    const { app, page } = await openApp({ size: [...size] });
+    try {
+      const w = size[0];
+      const railBefore = await box(page.getByTestId('rail'));
+      const canvasBefore = await box(page.getByTestId('canvas'));
+      await giveTabsSlot(page);
+
+      const rail = await box(page.getByTestId('rail'));
+      const strip = await box(page.getByTestId('tabs-slot'));
+      const canvas = await box(page.getByTestId('canvas'));
+      const panel = await box(page.getByTestId('canvas-panel'));
+      const top = await box(page.getByTestId('topbar'));
+      const status = await box(page.getByTestId('statusbar'));
+
+      // The rail keeps its place and height (the strip is not above it).
+      near(rail.x, railBefore.x);
+      near(rail.y, railBefore.y);
+      near(rail.width, railBefore.width);
+      near(rail.height, railBefore.height);
+      // The strip: directly under the top bar's line, right of the rail, the column's width,
+      // the height of its content.
+      near(strip.x, 65);
+      near(strip.y, top.y + top.height);
+      near(strip.width, w - 65);
+      near(strip.height, STRIP_H);
+      // The canvas fills the rest of the column: the panel and the canvas have the same box.
+      near(canvas.x, 65);
+      near(canvas.y, strip.y + strip.height);
+      near(canvas.width, w - 65);
+      near(canvas.height, canvasBefore.height - STRIP_H);
+      near(canvas.y + canvas.height, status.y);
+      near(panel.x, canvas.x);
+      near(panel.y, canvas.y);
+      near(panel.width, canvas.width);
+      near(panel.height, canvas.height);
+
+      // The last rail tool (Text) is still fully visible, so the rail needs no scrolling.
+      const text = await box(page.getByTestId('tool-text'));
+      expect(text.y + text.height).toBeLessThanOrEqual(rail.y + rail.height);
+      const scrolls = await page
+        .getByTestId('rail')
+        .evaluate((el) => el.scrollHeight > el.clientHeight);
+      expect(scrolls).toBe(false);
+
+      // The viewport follows the canvas: the editor's viewport size (the overlay's width and
+      // height attributes) becomes the canvas's, the column minus the strip.
+      await expect
+        .poll(async () => {
+          const o = page.getByTestId('overlay');
+          return [Number(await o.getAttribute('width')), Number(await o.getAttribute('height'))];
+        })
+        .toEqual([Math.round(canvas.width), Math.round(canvas.height)]);
+    } finally {
+      await app.close();
+    }
+  });
+}

@@ -200,3 +200,92 @@ it('passes host actions through to the top bar before the rail', () => {
     html.indexOf('data-testid="rail"'),
   );
 });
+
+describe('host slots menu and tabs (R56, K4)', () => {
+  const render = (props: Partial<React.ComponentProps<typeof Editor>> = {}): string =>
+    renderToStaticMarkup(
+      <Editor
+        controller={createEditorController({ clock: () => '2026-01-01T00:00:00.000Z' })}
+        {...props}
+      />,
+    );
+  const at = (html: string, needle: string): number => {
+    const i = html.indexOf(needle);
+    expect(i, needle).toBeGreaterThanOrEqual(0);
+    return i;
+  };
+
+  it('without the slots the markup has no slot, panel, role or modifier class', () => {
+    const html = render();
+    expect(html).toContain('<div class="editor">');
+    for (const part of ['has-tabs', 'has-menu', 'tabs-slot', 'canvas-panel', 'tabpanel']) {
+      expect(html, part).not.toContain(part);
+    }
+    // The label alone changes nothing: it only belongs to a panel.
+    expect(render({ tabPanelLabelledBy: 'tablist' })).toBe(html);
+  });
+
+  it('menu is the first child of the top bar, before the name field', () => {
+    const html = render({ menu: <button data-testid="host-menu">Menu</button> });
+    expect(html).toContain('<header class="topbar has-menu" data-testid="topbar">');
+    expect(html).toContain('data-testid="topbar"><button data-testid="host-menu">Menu</button>');
+    expect(at(html, 'data-testid="host-menu"')).toBeLessThan(at(html, 'class="namefield'));
+    expect(html).not.toContain('has-tabs');
+  });
+
+  it('with menu and actions the top bar carries both modifiers', () => {
+    const html = render({ menu: <i />, actions: <b /> });
+    expect(html).toContain('<header class="topbar has-actions has-menu" data-testid="topbar">');
+  });
+
+  it('tabs sit between the rail and the canvas, which becomes the tab panel', () => {
+    const html = render({
+      tabs: <div role="tablist" id="strip" />,
+      tabPanelLabelledBy: 'strip',
+    });
+    expect(html).toContain('<div class="editor has-tabs">');
+    expect(html).toContain('data-testid="tabs-slot"><div role="tablist" id="strip"></div></div>');
+    expect(html).toMatch(
+      /<div class="canvas-panel" data-testid="canvas-panel" role="tabpanel" aria-labelledby="strip"><main[^>]*data-testid="canvas"/,
+    );
+    expect(at(html, 'data-testid="topbar"')).toBeLessThan(at(html, 'data-testid="rail"'));
+    expect(at(html, 'data-testid="rail"')).toBeLessThan(at(html, 'data-testid="tabs-slot"'));
+    expect(at(html, 'data-testid="tabs-slot"')).toBeLessThan(
+      at(html, 'data-testid="canvas-panel"'),
+    );
+    expect(at(html, 'data-testid="canvas-panel"')).toBeLessThan(
+      at(html, 'data-testid="statusbar"'),
+    );
+    // Only one tab panel, and the role belongs to nothing else.
+    expect(html.match(/role="tabpanel"/g)).toHaveLength(1);
+  });
+
+  it('tabs without a label give a panel with no aria-labelledby', () => {
+    const html = render({ tabs: <span /> });
+    expect(html).toContain('<div class="canvas-panel" data-testid="canvas-panel" role="tabpanel">');
+    expect(html).not.toContain('aria-labelledby');
+  });
+
+  it('K4: menu, name field, options, Undo, Redo, actions, rail, tabs, canvas in DOM order', () => {
+    const html = render({
+      menu: <button data-testid="host-menu" />,
+      actions: <button data-testid="host-copy" />,
+      tabs: <button data-testid="host-tab" />,
+    });
+    const order = [
+      'data-testid="host-menu"',
+      'data-testid="namefield-input"',
+      'data-testid="options"',
+      'data-testid="undo"',
+      'data-testid="redo"',
+      'data-testid="host-copy"',
+      'data-testid="tool-select"',
+      'data-testid="tool-text"',
+      'data-testid="host-tab"',
+      'data-testid="canvas"',
+    ].map((needle) => at(html, needle));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // DOM order is the tab order: nothing takes a positive tabindex.
+    expect(html).not.toMatch(/tabindex="[1-9]/);
+  });
+});

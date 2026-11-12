@@ -337,6 +337,40 @@
   display: none;
 }
 
+/*
+ * R56: a host `tabs` slot. The strip joins the canvas column and the rail runs down both rows, so
+ * the rail keeps its place and height. The row is as tall as the host's content; the canvas
+ * (inside its tab panel) loses that height and its viewport follows. `has-tabs` and the top bar's
+ * `has-menu` are also the hooks for the host's own CSS: below 1100 px the host narrows the option
+ * buttons to its `--option-btn-compact` (A21) with `.editor.has-tabs .btn-opt`; that token is the
+ * shell's, so the rule is not here.
+ */
+.editor.has-tabs {
+  grid-template-areas:
+    'top top'
+    'rail tabs'
+    'rail canvas'
+    'status status';
+  grid-template-rows: calc(var(--topbar-h) + 1px) auto 1fr calc(var(--statusbar-h) + 1px);
+}
+
+.tabs-slot {
+  grid-area: tabs;
+  min-width: 0;
+}
+
+.canvas-panel {
+  grid-area: canvas;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas-panel > .canvas {
+  flex: 1;
+  min-width: 0;
+}
+
 .canvas {
   position: relative;
   grid-area: canvas;

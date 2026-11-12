@@ -58,3 +58,24 @@ it('renders optional host actions last after history, preserving DOM tab order',
   expect(bare).not.toContain('has-actions');
   expect(bare).not.toContain('topbar-actions');
 });
+
+it('renders the optional host menu first, before the name field, and says so on the header', () => {
+  const withMenu = renderToStaticMarkup(
+    <TopBar
+      menu={<button>Menu</button>}
+      state={initialState()}
+      scope={EMPTY_SCOPE}
+      canUndo={false}
+      canRedo={false}
+      rows={[]}
+      dispatch={() => undefined}
+    />,
+  );
+  expect(withMenu).toMatch(
+    /^<header class="topbar has-menu" data-testid="topbar"><button>Menu<\/button>/,
+  );
+  expect(withMenu.indexOf('<button>Menu</button>')).toBeLessThan(withMenu.indexOf('namefield'));
+  const bare = render(false, false);
+  expect(bare).toMatch(/^<header class="topbar" data-testid="topbar"><label class="namefield"/);
+  expect(bare).not.toContain('has-menu');
+});

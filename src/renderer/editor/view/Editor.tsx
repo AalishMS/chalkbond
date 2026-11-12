@@ -38,9 +38,19 @@ const isCanvas = (target: EventTarget): boolean =>
 const isNameField = (target: EventTarget): boolean =>
   target instanceof HTMLElement && target.dataset['testid'] === 'namefield-input';
 
-interface EditorProps {
+/** The props of `Editor`. The three host slots are optional; without them the layout is unchanged. */
+export interface EditorProps {
   /** Host controls after Redo; host supplies --namefield-compact (204px). */
   actions?: React.ReactNode;
+  /** R56: the first child of the top bar, before the name field (the host's menu button). */
+  menu?: React.ReactNode;
+  /**
+   * R56: the top of the canvas column, right of the rail, full column width, as tall as its
+   * content. The canvas then becomes a `tabpanel` labelled by `tabPanelLabelledBy`.
+   */
+  tabs?: React.ReactNode;
+  /** The id of the element that names the tab panel; used only with `tabs`. */
+  tabPanelLabelledBy?: string;
   controller: EditorController;
 }
 
@@ -48,7 +58,13 @@ interface EditorProps {
  * The editor window grid: top bar, tool rail, canvas, status bar. The icon sprite is injected
  * inline once: an external sprite does not load from file:// in Chromium.
  */
-export function Editor({ controller, actions }: EditorProps): React.JSX.Element {
+export function Editor({
+  controller,
+  actions,
+  menu,
+  tabs,
+  tabPanelLabelledBy,
+}: EditorProps): React.JSX.Element {
   const root = useRef<HTMLDivElement>(null);
   const state = useEditorState(controller.store);
   useEffect(() => {
@@ -120,16 +136,26 @@ export function Editor({ controller, actions }: EditorProps): React.JSX.Element 
     () => selectionScope(doc, perception, state.selection),
     [doc, perception, state.selection],
   );
+  const canvas = (
+    <Canvas controller={controller}>
+      {state.editing === null && emptyStateVisible(doc, state.gesture, state.preview) && (
+        <EmptyState dispatch={dispatch} />
+      )}
+      <LabelEditor controller={controller} state={state} dispatch={dispatch} onClosed={boxClosed} />
+      <TextEditor controller={controller} state={state} dispatch={dispatch} onClosed={boxClosed} />
+    </Canvas>
+  );
   return (
     <div
       ref={root}
-      className="editor"
+      className={tabs === undefined ? 'editor' : 'editor has-tabs'}
       onKeyDown={onKeyDown}
       onFocus={(e) => setNameFocused(isNameField(e.target))}
       onBlur={() => setNameFocused(false)}
     >
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <TopBar
+        menu={menu}
         actions={actions}
         state={state}
         scope={scope}
@@ -139,23 +165,23 @@ export function Editor({ controller, actions }: EditorProps): React.JSX.Element 
         dispatch={dispatch}
       />
       <ToolRail state={state} dispatch={dispatch} />
-      <Canvas controller={controller}>
-        {state.editing === null && emptyStateVisible(doc, state.gesture, state.preview) && (
-          <EmptyState dispatch={dispatch} />
-        )}
-        <LabelEditor
-          controller={controller}
-          state={state}
-          dispatch={dispatch}
-          onClosed={boxClosed}
-        />
-        <TextEditor
-          controller={controller}
-          state={state}
-          dispatch={dispatch}
-          onClosed={boxClosed}
-        />
-      </Canvas>
+      {tabs !== undefined && (
+        <div className="tabs-slot" data-testid="tabs-slot">
+          {tabs}
+        </div>
+      )}
+      {tabs === undefined ? (
+        canvas
+      ) : (
+        <div
+          className="canvas-panel"
+          data-testid="canvas-panel"
+          role="tabpanel"
+          aria-labelledby={tabPanelLabelledBy}
+        >
+          {canvas}
+        </div>
+      )}
       <StatusBar
         tool={state.tool}
         preset={doc.style.preset}
