@@ -19,6 +19,7 @@ const ready: MenuState = {
   canSelectAll: true,
   canZoomIn: true,
   canZoomOut: true,
+  canReopenTab: true,
   preset: 'slides',
 };
 const blank: MenuState = {
@@ -36,6 +37,7 @@ const blank: MenuState = {
   canSelectAll: false,
   canZoomIn: false,
   canZoomOut: false,
+  canReopenTab: false,
 };
 
 describe('commandEnabled', () => {
@@ -46,6 +48,8 @@ describe('commandEnabled', () => {
       'file.save',
       'file.save-as',
       'file.export',
+      'file.reopen-tab',
+      'file.close-tab',
       'edit.undo',
       'edit.redo',
       'edit.cut',
@@ -84,6 +88,9 @@ describe('commandEnabled', () => {
       ['file.save-as', { idle: false }],
       ['file.export', { idle: false }],
       ['file.export', { empty: true }],
+      ['file.reopen-tab', { idle: false }],
+      ['file.reopen-tab', { canReopenTab: false }],
+      ['file.close-tab', { idle: false }],
       ['edit.undo', { canUndo: false }],
       ['edit.redo', { canRedo: false }],
       ['edit.cut', { canCut: false }],
@@ -107,6 +114,13 @@ describe('commandEnabled', () => {
       expect(commandEnabled(id, blank), id).toBe(true);
     for (const id of APP_COMMANDS.filter((c) => c !== 'view.zoom-fit' && c !== 'view.zoom-reset'))
       expect(commandEnabled(id, blank), id).toBe(false);
+  });
+
+  it('R47, M6: Close tab needs idle only; Reopen closed tab also needs the reopen list', () => {
+    const idle = { ...ready, empty: true, canReopenTab: false };
+    expect(commandEnabled('file.close-tab', idle)).toBe(true);
+    expect(commandEnabled('file.reopen-tab', idle)).toBe(false);
+    expect(commandEnabled('file.reopen-tab', { ...idle, canReopenTab: true })).toBe(true);
   });
 
   it('enables Open recent and Clear only when idle with a non-empty list', () => {

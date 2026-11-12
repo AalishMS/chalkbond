@@ -1,16 +1,13 @@
-// The native application menu (SPEC-app-shell.md M1–M3): built from the pure model and applied
-// when N1's `menu` or the recent list changes. Every item displays its accelerator but never
-// registers it (M2, A3) and no item has a role (R1); the renderer owns every key.
+// The native popups (SPEC-app-shell.md M1–M5, R32): the ☰ menu (I9), the canvas menu (I6) and the
+// tab menu (I10), built from the pure models when asked for and shown with `Menu.popup`. There is
+// no application menu. Every item displays its accelerator but never registers it (M2, A3) and no
+// item has a role (R1); the renderer owns every key.
 import type { BrowserWindow, Menu as ElectronMenu, MenuItemConstructorOptions } from 'electron';
-import {
-  MENU_STATE_KEYS,
-  type AppCommand,
-  type ContextCommand,
-  type MenuState,
-} from '../shared/menu';
+import type { AppCommand, ContextCommand, MenuState } from '../shared/menu';
 import { canvasContextMenu, textContextMenu } from './model/context-menu-model';
 import {
   menuModel,
+  RECENT_MAX,
   type MenuAction,
   type MenuNode,
   type TextMethod,
@@ -30,121 +27,18 @@ type PopupNode<Id extends string> =
     }
   | { readonly kind: 'separator' };
 
-export interface MenuPorts {
-  /** `Menu` from electron, read at call time (TH4: a test may stub its methods). */
-  Menu: Pick<typeof ElectronMenu, 'buildFromTemplate' | 'setApplicationMenu'>;
-  /** A renderer command (`main:event {type: 'command'}`). */
-  command(command: AppCommand): void;
+/** What the ☰ menu's items that main runs itself do (M4): text, Exit, About, Open recent. */
+export interface AppMenuPorts {
   /** M3: a `webContents` text method on the focused page. */
   text(method: TextMethod): void;
   exit(): void;
   about(): void;
-  /** Open recent (F10, R21): the path captured when the clicked entry's menu was built. */
+  /** Open recent (F10, R21): the path captured when the popup was built. */
   openRecent(path: string): void;
   /** Open recent > Clear recently opened. */
   clearRecent(): void;
-}
-
-/** The state before the first N1: nothing runs yet but Exit, About, Fit and Zoom to 100%. */
-export const INITIAL_MENU_STATE: MenuState = {
-  idle: false,
-  modal: false,
-  textFocus: false,
-  empty: true,
-  hasSelection: false,
-  canUndo: false,
-  canRedo: false,
-  undoLabel: null,
-  redoLabel: null,
-  canCut: false,
-  canDuplicate: false,
-  canDelete: false,
-  canSelectAll: false,
-  canZoomIn: false,
-  canZoomOut: false,
-  preset: 'slides',
-};
-
-function same(a: MenuState, b: MenuState): boolean {
-  return MENU_STATE_KEYS.every((key) => a[key] === b[key]);
-}
-
-export function createAppMenu(ports: MenuPorts) {
-  let state = INITIAL_MENU_STATE;
-  let recent: readonly RecentEntry[] = [];
-  let built = false;
-
-  /** `entries`: the recent list this menu was built from (R21: never the list at click time). */
-  const run = (action: MenuAction, entries: readonly RecentEntry[]): void => {
-    switch (action.kind) {
-      case 'command':
-        return ports.command(action.command);
-      case 'text':
-        return ports.text(action.method);
-      case 'exit':
-        return ports.exit();
-      case 'about':
-        return ports.about();
-      case 'recent': {
-        const entry = entries[action.index];
-        return entry === undefined ? undefined : ports.openRecent(entry.path);
-      }
-      case 'recent-clear':
-        return ports.clearRecent();
-      case 'none':
-        return undefined;
-    }
-  };
-
-  const item = (node: MenuNode, entries: readonly RecentEntry[]): MenuItemConstructorOptions => {
-    if (node.kind === 'separator') return { type: 'separator', registerAccelerator: false };
-    return {
-      id: node.id,
-      label: node.label,
-      ...(node.accelerator === undefined ? {} : { accelerator: node.accelerator }),
-      registerAccelerator: false,
-      enabled: node.enabled,
-      ...(node.radio ? { type: 'radio' as const, checked: node.checked ?? false } : {}),
-      ...(node.submenu ? { submenu: node.submenu.map((n) => item(n, entries)) } : {}),
-      click: () => {
-        // A click on an item built disabled is ignored (MenuItem.click() does not check it). A
-        // radio flips itself natively: rebuild from the model, which N1 then updates.
-        if (node.radio) setImmediate(() => install());
-        if (node.enabled) run(node.action, entries);
-      },
-    };
-  };
-
-  const top = (menu: TopMenu, entries: readonly RecentEntry[]): MenuItemConstructorOptions => ({
-    id: menu.id,
-    label: menu.label,
-    registerAccelerator: false,
-    submenu: menu.submenu.map((n) => item(n, entries)),
-  });
-
-  const install = (): void => {
-    const entries = recent;
-    const labels = entries.map((e) => e.label);
-    ports.Menu.setApplicationMenu(
-      ports.Menu.buildFromTemplate(menuModel(state, labels).map((m) => top(m, entries))),
-    );
-    built = true;
-  };
-
-  return {
-    /** Applies N1's state (and the recent list, F10); rebuilds only when something changed. */
-    apply(next: MenuState, nextRecent: readonly RecentEntry[] = recent): void {
-      const changed =
-        !built ||
-        !same(state, next) ||
-        nextRecent.length !== recent.length ||
-        nextRecent.some((e, i) => e.label !== recent[i]?.label || e.path !== recent[i]?.path);
-      state = next;
-      recent = nextRecent;
-      if (changed) install();
-    },
-    state: (): MenuState => state,
-  };
+  /** The recent list now (paths stay in main); the popup captures it when it is built. */
+  recent(): readonly RecentEntry[];
 }
 
 export interface ContextMenuPorts {
@@ -152,50 +46,40 @@ export interface ContextMenuPorts {
   Menu: Pick<typeof ElectronMenu, 'buildFromTemplate'>;
   /** The main window: the popup's parent, at the cursor. */
   window(): BrowserWindow | undefined;
+  app: AppMenuPorts;
 }
 
 /**
- * CM1–CM3: the native context menus. `show` pops the canvas menu up at the cursor and resolves with
+ * I9 (M4), CM1–CM3: the native popups. `show` pops the canvas menu up at the cursor and resolves with
  * the chosen command, or null when it was dismissed (Esc, a click elsewhere), a disabled item was
  * clicked, there is no window, or another context menu is still open. `text` is the text-field
  * menu for `webContents` `context-menu` (CM3): editable targets only, with Electron's roles.
  */
 export function createContextMenus(ports: ContextMenuPorts) {
-  // M5: one popup at a time, shared by the canvas (CM1) and the tab (T15) menus.
+  // M5: one popup at a time, shared by the ☰ (I9), canvas (CM1) and tab (T15) menus.
   let open = false;
 
-  /** Pops `nodes` up on the main window (at the cursor, or at `at`); the chosen id, else null. */
-  const popupMenu = <Id extends string>(
-    nodes: readonly PopupNode<Id>[],
+  /**
+   * Pops the template `build` makes up on the main window (at the cursor, or at `at`). `build` gets
+   * `settle`, which an item's click calls with its answer; the answer is null when the menu was
+   * dismissed, there is no window, or another popup is still open.
+   */
+  const popupTemplate = <Answer>(
+    build: (settle: (answer: Answer | null) => void) => MenuItemConstructorOptions[],
     at: { x: number; y: number } | null,
-  ): Promise<Id | null> => {
+  ): Promise<Answer | null> => {
     const window = ports.window();
     if (open || window === undefined) return Promise.resolve(null);
     open = true;
-    return new Promise<Id | null>((resolve) => {
+    return new Promise<Answer | null>((resolve) => {
       let settled = false;
-      const settle = (value: Id | null): void => {
+      const settle = (value: Answer | null): void => {
         if (settled) return;
         settled = true;
         open = false;
         resolve(value);
       };
-      const template = nodes.map((node): MenuItemConstructorOptions =>
-        node.kind === 'separator'
-          ? { type: 'separator', registerAccelerator: false }
-          : {
-              id: node.id,
-              label: node.label,
-              accelerator: node.accelerator,
-              registerAccelerator: false,
-              enabled: node.enabled,
-              click: () => {
-                // MenuItem.click() does not check `enabled` (R19).
-                if (node.enabled) settle(node.id);
-              },
-            },
-      );
-      ports.Menu.buildFromTemplate(template).popup({
+      ports.Menu.buildFromTemplate(build(settle)).popup({
         window,
         ...(at === null
           ? {}
@@ -207,7 +91,112 @@ export function createContextMenus(ports: ContextMenuPorts) {
     });
   };
 
+  /** Pops a flat list of nodes up; the chosen id, else null. */
+  const popupMenu = <Id extends string>(
+    nodes: readonly PopupNode<Id>[],
+    at: { x: number; y: number } | null,
+  ): Promise<Id | null> =>
+    popupTemplate<Id>(
+      (settle) =>
+        nodes.map((node): MenuItemConstructorOptions =>
+          node.kind === 'separator'
+            ? { type: 'separator', registerAccelerator: false }
+            : {
+                id: node.id,
+                label: node.label,
+                accelerator: node.accelerator,
+                registerAccelerator: false,
+                enabled: node.enabled,
+                click: () => {
+                  // MenuItem.click() does not check `enabled` (R19).
+                  if (node.enabled) settle(node.id);
+                },
+              },
+        ),
+      at,
+    );
+
+  /** One node of a ☰ submenu; `entries` is the recent list the popup was built from (R21). */
+  const appItem = (
+    node: MenuNode,
+    entries: readonly RecentEntry[],
+    settle: (command: AppCommand | null) => void,
+  ): MenuItemConstructorOptions => {
+    if (node.kind === 'separator') return { type: 'separator', registerAccelerator: false };
+    const run = (action: MenuAction): void => {
+      switch (action.kind) {
+        case 'command':
+          return settle(action.command);
+        case 'text':
+          return ports.app.text(action.method);
+        case 'exit':
+          return ports.app.exit();
+        case 'about':
+          return ports.app.about();
+        case 'recent': {
+          const entry = entries[action.index];
+          return entry === undefined ? undefined : ports.app.openRecent(entry.path);
+        }
+        case 'recent-clear':
+          return ports.app.clearRecent();
+        case 'none':
+          return undefined;
+      }
+    };
+    return {
+      id: node.id,
+      label: node.label,
+      ...(node.accelerator === undefined ? {} : { accelerator: node.accelerator }),
+      registerAccelerator: false,
+      enabled: node.enabled,
+      ...(node.radio ? { type: 'radio' as const, checked: node.checked ?? false } : {}),
+      ...(node.submenu ? { submenu: node.submenu.map((n) => appItem(n, entries, settle)) } : {}),
+      // MenuItem.click() does not check `enabled` (R19). Items main runs itself answer null.
+      click: () => {
+        if (node.enabled) run(node.action);
+      },
+    };
+  };
+
+  const appTop = (
+    menu: TopMenu,
+    entries: readonly RecentEntry[],
+    settle: (command: AppCommand | null) => void,
+  ): MenuItemConstructorOptions => ({
+    id: menu.id,
+    label: menu.label,
+    registerAccelerator: false,
+    submenu: menu.submenu.map((n) => appItem(n, entries, settle)),
+  });
+
   return {
+    /**
+     * I9 (M4): the four submenus File, Edit, View and Help as one popup at (x, y) in content CSS
+     * px, clamped to the content size. A renderer command resolves with its id (the renderer runs
+     * it); text, Exit, About and the recent items run here and resolve null, as does a dismissal.
+     */
+    showApp({
+      state,
+      x,
+      y,
+    }: {
+      state: MenuState;
+      x: number;
+      y: number;
+    }): Promise<AppCommand | null> {
+      const window = ports.window();
+      if (window === undefined) return Promise.resolve(null);
+      const [width = 0, height = 0] = window.getContentSize();
+      const entries = ports.app.recent().slice(0, RECENT_MAX);
+      const menus = menuModel(
+        state,
+        entries.map((entry) => entry.label),
+      );
+      return popupTemplate<AppCommand>(
+        (settle) => menus.map((menu) => appTop(menu, entries, settle)),
+        { x: Math.min(Math.max(x, 0), width), y: Math.min(Math.max(y, 0), height) },
+      );
+    },
     show({ onItem, state }: { onItem: boolean; state: MenuState }): Promise<ContextCommand | null> {
       return popupMenu(canvasContextMenu(onItem, state), null);
     },

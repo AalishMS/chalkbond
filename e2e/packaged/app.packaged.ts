@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { clickMenu } from '../app-menu';
+import { clickMenu, menuItems } from '../app-menu';
 import { launchApp } from '../launch';
 
 const ROOT = resolve(__dirname, '../..');
@@ -65,10 +65,11 @@ test('SEC12: no test hook exists although the flag was passed', async () => {
   ).toBe(true);
 });
 
-test('the application menu has File, Edit, View and Help', async () => {
-  const labels = await app.evaluate(({ Menu }) =>
-    (Menu.getApplicationMenu()?.items ?? []).map((item) => item.label),
-  );
+test('there is no application menu; the ☰ popup has File, Edit, View and Help', async () => {
+  expect(await app.evaluate(({ Menu }) => Menu.getApplicationMenu())).toBeNull();
+  const labels = (await menuItems(app))
+    .filter((item) => ['file', 'edit', 'view', 'help'].includes(item.id))
+    .map((item) => item.label);
   expect(labels).toEqual(['&File', '&Edit', '&View', '&Help']);
 });
 

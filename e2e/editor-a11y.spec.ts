@@ -192,7 +192,11 @@ test('Tab from the last control wraps to the first; Shift+Tab from the first wra
   try {
     await page.getByTestId('zoom-fit').focus();
     await page.keyboard.press('Tab');
+    // The host's ☰ button (the editor's `menu` slot, R56) is the first control of the top bar.
+    expect(await focused(page)).toBe('app-menu');
+    await page.keyboard.press('Tab');
     expect(await focused(page)).toBe('namefield-input');
+    await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Shift+Tab');
     expect(await focused(page)).toBe('zoom-fit');
   } finally {
@@ -381,7 +385,9 @@ test('every control has an accessible name that starts with its tooltip name', a
     await page.keyboard.press('Escape');
     // The editor's own controls: the tab strip in its `tabs` slot is the host's, named by T2 / T16
     // (`Close <label> (Ctrl+W)`, asserted in TabStrip.test.tsx; TB27 adds its e2e).
-    const editorButtons = '.editor button[data-testid]:not([data-testid="tabs-slot"] *)';
+    // The ☰ button is the host's too: named "Menu" (M4, A19), its tooltip adds the keys.
+    const editorButtons =
+      '.editor button[data-testid]:not([data-testid="tabs-slot"] *):not([data-testid="app-menu"])';
     const controls = await page.locator(editorButtons).evaluateAll((els) =>
       els.map((e) => ({
         id: e.getAttribute('data-testid') as string,

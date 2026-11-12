@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import { clickEnabled, clickMenu, menuItem, menuItems } from './app-menu';
+import { clickEnabled, menuItem, popups, stubPopup } from './app-menu';
 import { loadScheme } from './fixtures';
 import { heardCommands, openApp } from './harness';
 
@@ -15,6 +15,15 @@ const dialogLog = async (app: ElectronApplication): Promise<DialogLog> =>
   (await app.evaluate(
     () => (globalThis as { __chalkbondDialogLog?: DialogLog }).__chalkbondDialogLog ?? [],
   )) as DialogLog;
+
+/** M4: with a dialog open the ☰ button, Alt and F10 open no popup. */
+async function expectNoPopup(app: ElectronApplication, page: Page): Promise<void> {
+  await stubPopup(app, ['file.export']);
+  await page.getByTestId('app-menu').dispatchEvent('click');
+  await page.keyboard.press('F10');
+  await page.waitForTimeout(100);
+  expect(await popups(app)).toHaveLength(0);
+}
 
 /** build/icon.png's size from its IHDR chunk. */
 function iconSize(): { width: number; height: number } {
@@ -169,13 +178,12 @@ test('Help > Keyboard shortcuts opens it; while open the menu is disabled and ho
     await clickEnabled(app, 'help.shortcuts');
     await expect(dialog(page)).toBeVisible();
     expect(await heardCommands(page)).toContain('help.shortcuts');
-    await expect
-      .poll(async () => (await menuItems(app)).filter((i) => i.id.includes('.') && i.enabled))
-      .toEqual([]);
-    // No overlapping dialogs or host actions: Ctrl+E, F1 and a stale menu click are ignored.
+    // M4, V3: the ☰ button is disabled and opens nothing (a press, Alt and F10 are ignored).
+    await expect(page.getByTestId('app-menu')).toHaveAttribute('aria-disabled', 'true');
+    await expectNoPopup(app, page);
+    // No overlapping dialogs or host actions: Ctrl+E and F1 are ignored.
     await page.keyboard.press('Control+e');
     await page.keyboard.press('F1');
-    await clickMenu(app, 'file.export');
     await expect(page.getByTestId('export-dialog')).toHaveCount(0);
     await expect(dialog(page)).toHaveCount(1);
     await page.keyboard.press('Escape');
@@ -187,7 +195,7 @@ test('Help > Keyboard shortcuts opens it; while open the menu is disabled and ho
     await page.keyboard.press('Control+e');
     await expect(page.getByTestId('export-dialog')).toBeVisible();
     await page.keyboard.press('F1');
-    await clickMenu(app, 'help.shortcuts');
+    await expectNoPopup(app, page);
     await expect(dialog(page)).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('export-dialog')).toHaveCount(0);

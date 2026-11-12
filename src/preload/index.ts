@@ -24,6 +24,7 @@ const api: ChalkbondApi = {
     ),
   showContextMenu: (request) => ipcRenderer.invoke(CHANNELS.showContextMenu, request),
   showTabMenu: (request) => ipcRenderer.invoke(CHANNELS.showTabMenu, request),
+  showAppMenu: (request) => ipcRenderer.invoke(CHANNELS.showAppMenu, request),
   startup: () => ipcRenderer.invoke(CHANNELS.startup, {}),
   setSettings: (value) => ipcRenderer.invoke(CHANNELS.setSettings, value),
   updateSession: (value) => ipcRenderer.send(CHANNELS.updateSession, value),

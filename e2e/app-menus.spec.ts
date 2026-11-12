@@ -1,7 +1,17 @@
-// A11 (SPEC-app-shell.md M1–M3; SC2): the native application menu with the built app. Every item
-// displays its shortcut and registers none, has no role, and runs its command when clicked by id.
+// A11, A19 (SPEC-app-shell.md M1-M5, R32, R46, R47, SC2, SC16): there is no application menu; the
+// ☰ button, Alt and F10 open one native popup of File, Edit, View and Help. Every item displays its
+// shortcut and registers none, has no role, and runs its command when chosen by id through the
+// stubbed `Menu.prototype.popup`.
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import { clickEnabled, clickMenu, menuItem, menuItems } from './app-menu';
+import {
+  clickEnabled,
+  clickMenu,
+  menuItem,
+  menuItems,
+  popupPoints,
+  popups,
+  stubPopup,
+} from './app-menu';
 import { loadScheme } from './fixtures';
 import {
   expectNoNetwork,
@@ -16,6 +26,7 @@ const atoms = async (page: Page): Promise<number> =>
   Object.keys((await readDocument(page)).atoms).length;
 const preset = async (page: Page): Promise<string> => (await readDocument(page)).style.preset;
 const readout = (page: Page) => page.getByTestId('zoom-reset');
+const button = (page: Page) => page.getByTestId('app-menu');
 type DialogLog = { method: string; options: Record<string, unknown> }[];
 const dialogLog = async (app: ElectronApplication): Promise<DialogLog> =>
   (await app.evaluate(
@@ -30,6 +41,8 @@ const APPLICATION_IDS = [
   'file.save',
   'file.save-as',
   'file.export',
+  'file.reopen-tab',
+  'file.close-tab',
   'file.exit',
   'edit.undo',
   'edit.redo',
@@ -49,28 +62,168 @@ const APPLICATION_IDS = [
   'help.about',
 ];
 
-test('M2/R1: the menu bar is ours, every item registers no accelerator and has no role', async () => {
+/**
+ * Holds the next popup open until `release()` (a native menu stays up until a choice or Esc), so a
+ * test can look at the page meanwhile. `popups` still records the tree.
+ */
+async function holdPopup(app: ElectronApplication): Promise<() => Promise<void>> {
+  await app.evaluate(({ Menu }) => {
+    const g = globalThis as { __popups?: unknown[]; __release?: () => void };
+    g.__popups = [];
+    Menu.prototype.popup = function popup(options?: Electron.PopupOptions) {
+      g.__popups?.push([]);
+      g.__release = () => options?.callback?.();
+    } as never;
+  });
+  return () =>
+    app.evaluate(() => {
+      (globalThis as { __release?: () => void }).__release?.();
+    });
+}
+
+test('SC16/W4/R32: no application menu and no menu bar; the ☰ is the top bar’s first child', async () => {
   const { app, page } = await openApp();
   try {
     await page.getByTestId('canvas').waitFor();
-    const items = await menuItems(app);
     expect(
-      items.filter((i) => ['file', 'edit', 'view', 'help'].includes(i.id)).map((i) => i.label),
-    ).toEqual(['&File', '&Edit', '&View', '&Help']);
+      await app.evaluate(({ Menu, BrowserWindow }) => ({
+        menu: Menu.getApplicationMenu(),
+        bar: BrowserWindow.getAllWindows()[0]?.isMenuBarVisible(),
+      })),
+    ).toEqual({ menu: null, bar: false });
+    // M4: the first child of the top bar, before the name field.
+    const first = page.getByTestId('topbar').locator(':scope > *').first();
+    await expect(first).toHaveAttribute('data-testid', 'app-menu');
+    await expect(page.getByRole('button', { name: 'Menu', exact: true })).toHaveCount(1);
+    await expect(button(page)).toHaveAttribute('aria-label', 'Menu');
+    await expect(button(page)).toHaveAttribute('aria-haspopup', 'menu');
+    await expect(button(page)).toHaveAttribute('aria-expanded', 'false');
+    expect(await page.getByTestId('topbar').evaluate((el) => el.className)).toContain('has-menu');
+    const [menu, field] = await Promise.all([
+      button(page).boundingBox(),
+      page.getByTestId('namefield-input').boundingBox(),
+    ]);
+    if (!menu || !field) throw new Error('no boxes');
+    expect(menu.x).toBeLessThan(field.x);
+    expect(menu.width).toBeGreaterThanOrEqual(24);
+    expect(menu.height).toBeGreaterThanOrEqual(24);
+    // A19: the tooltip text (the app's tooltip host reads these attributes).
+    await expect(button(page)).toHaveAttribute('data-ui-tip', 'Menu (Alt or F10)');
+    await expectNoNetwork(app);
+  } finally {
+    await app.close();
+  }
+});
+
+test('M2/R1/M4: the popup has File, Edit, View and Help; every item registers no accelerator and has no role', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('canvas').waitFor();
+    await stubPopup(app, [null]);
+    await button(page).click(); // a real press: it opens the popup and keeps the focus where it was
+    await expect.poll(async () => (await popups(app)).length).toBe(1);
+    const tree = (await popups(app))[0] ?? [];
+    expect(tree.map((m) => m.label)).toEqual(['&File', '&Edit', '&View', '&Help']);
+    const items = await menuItems(app);
     expect(items.map((i) => i.id).filter((id) => id.includes('.'))).toEqual(APPLICATION_IDS);
     for (const item of items) {
       expect(item.registerAccelerator, item.id || item.label).toBe(false);
       expect(item.role, item.id).toBeNull();
     }
-    expect((await menuItem(app, 'view.zoom-reset')).label).toBe('Zoom to &100%');
-    expect((await menuItem(app, 'view.zoom-reset')).accelerator).toBe('CmdOrCtrl+1');
-    expect((await menuItem(app, 'help.shortcuts')).accelerator).toBe('F1');
-    // The window keeps its menu bar visible (W4).
-    expect(
-      await app.evaluate(({ BrowserWindow }) =>
-        BrowserWindow.getAllWindows()[0]?.isMenuBarVisible(),
-      ),
-    ).toBe(true);
+    // R47, A19: the File rows; R46: Zoom to 100% has no key, and no row shows Ctrl+1.
+    const row = async (id: string) => {
+      const item = await menuItem(app, id);
+      return [item.label, item.accelerator];
+    };
+    expect(await row('file.new')).toEqual(['&New tab', 'CmdOrCtrl+T']);
+    expect(await row('file.reopen-tab')).toEqual(['Reopen closed &tab', 'CmdOrCtrl+Shift+T']);
+    expect(await row('file.close-tab')).toEqual(['&Close tab', 'CmdOrCtrl+W']);
+    expect(await row('view.zoom-reset')).toEqual(['Zoom to &100%', null]);
+    expect((await menuItems(app)).filter((i) => i.accelerator === 'CmdOrCtrl+1')).toEqual([]);
+    expect(await row('help.shortcuts')).toEqual(['&Keyboard shortcuts', 'F1']);
+    // Reopen closed tab has nothing to bring back yet; Close tab needs only an idle editor.
+    expect(await menuItem(app, 'file.reopen-tab')).toMatchObject({ enabled: false });
+    expect(await menuItem(app, 'file.close-tab')).toMatchObject({ enabled: true });
+  } finally {
+    await app.close();
+  }
+});
+
+test('M4: the popup opens at the button’s bottom-left corner; aria-expanded follows it; a second request is ignored (M5)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('canvas').waitFor();
+    const release = await holdPopup(app);
+    await button(page).click();
+    await expect(button(page)).toHaveAttribute('aria-expanded', 'true');
+    // M5: a second press, F10 and a right-click on the canvas open nothing while one is open.
+    await button(page).dispatchEvent('click');
+    await page.keyboard.press('F10');
+    await page.getByTestId('canvas').click({ button: 'right', position: { x: 300, y: 300 } });
+    await page.waitForTimeout(100);
+    expect(await popups(app)).toHaveLength(1);
+    await release();
+    await expect(button(page)).toHaveAttribute('aria-expanded', 'false');
+    // The corner (content CSS px, rounded) was sent with the request.
+    await stubPopup(app, [null]);
+    await button(page).click();
+    await expect.poll(async () => (await popups(app)).length).toBe(1);
+    const box = await button(page).boundingBox();
+    if (!box) throw new Error('no button');
+    const [at] = await popupPoints(app);
+    expect(at?.x).toBe(Math.round(box.x));
+    expect(at?.y).toBe(Math.round(box.y + box.height));
+  } finally {
+    await app.close();
+  }
+});
+
+test('K1/K3: the button, F10 and a lone Alt open the popup; Alt+click and Alt+Shift do not', async () => {
+  const { app, page } = await openApp();
+  try {
+    await loadScheme(page);
+    await page.getByTestId('canvas').focus();
+    await stubPopup(app, []);
+    await button(page).click();
+    await expect.poll(async () => (await popups(app)).length).toBe(1);
+    await page.keyboard.press('F10');
+    await expect.poll(async () => (await popups(app)).length).toBe(2);
+    await page.keyboard.press('Alt');
+    await expect.poll(async () => (await popups(app)).length).toBe(3);
+    // Enter and Space on the focused button.
+    await button(page).focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => (await popups(app)).length).toBe(4);
+    await page.keyboard.press('Space');
+    await expect.poll(async () => (await popups(app)).length).toBe(5);
+    // Alt+Shift (a language switch) and Alt+Tab-like chords open nothing.
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.down('Alt');
+    await page.keyboard.press('Shift');
+    await page.keyboard.up('Alt');
+    await page.waitForTimeout(100);
+    expect(await popups(app)).toHaveLength(5);
+    // The popup did not take the focus from the canvas.
+    await expect(page.getByTestId('canvas')).toBeFocused();
+  } finally {
+    await app.close();
+  }
+});
+
+test('K5/M4: a press on the button leaves the focus where it was (canvas, name field)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await loadScheme(page);
+    await stubPopup(app, []);
+    await page.getByTestId('canvas').focus();
+    await button(page).click();
+    await expect.poll(async () => (await popups(app)).length).toBe(1);
+    await expect(page.getByTestId('canvas')).toBeFocused();
+    const input = page.getByTestId('namefield-input');
+    await input.click();
+    await button(page).click();
+    await expect.poll(async () => (await popups(app)).length).toBe(2);
+    await expect(input).toBeFocused();
   } finally {
     await app.close();
   }
@@ -121,7 +274,7 @@ test('SC2: Edit and View items run their commands; labels and enabled states fol
     await clickEnabled(app, 'edit.paste');
     await expect.poll(() => atoms(page)).toBe(2 * total);
 
-    // View: zoom steps, Zoom to 100% (R18), fit; the style radios.
+    // View: zoom steps, Zoom to 100% (R18, R46: no key), fit; the style radios.
     await clickEnabled(app, 'view.zoom-reset');
     await expect(readout(page)).toHaveText('100%');
     await clickEnabled(app, 'view.zoom-in');
@@ -151,12 +304,13 @@ test('SC2: Edit and View items run their commands; labels and enabled states fol
     expect(await heardCommands(page)).toEqual(
       expect.arrayContaining(['edit.select-all', 'view.zoom-reset', 'view.style-handout']),
     );
+    await expectNoNetwork(app);
   } finally {
     await app.close();
   }
 });
 
-test('SC2: File items run New (a new tab), Open, Save, Save as, Export and Exit (no box) with scripted dialogs', async () => {
+test('SC2/R47: File items run New tab, Open, Save, Save as, Export, Close tab, Reopen closed tab and Exit (no box) with scripted dialogs', async () => {
   const { app, page } = await openApp({
     launch: {
       dialogs: [
@@ -187,10 +341,19 @@ test('SC2: File items run New (a new tab), Open, Save, Save as, Export and Exit 
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('export-dialog')).toHaveCount(0);
 
-    // T7 (TB20): New adds a tab and asks nothing.
+    // T7 (TB20): New tab adds a tab and asks nothing.
     await clickEnabled(app, 'file.new');
     await expect.poll(() => atoms(page)).toBe(0);
     expect((await readTabs(page)).map((t) => t.label)).toEqual(['Untitled', 'Untitled 2']);
+    expect(await dialogLog(app)).toHaveLength(3);
+
+    // R47: Close tab closes the active (empty) tab at once; Reopen closed tab brings it back.
+    expect(await menuItem(app, 'file.reopen-tab')).toMatchObject({ enabled: false });
+    await clickEnabled(app, 'file.close-tab');
+    await expect.poll(async () => (await readTabs(page)).length).toBe(1);
+    await expect.poll(async () => (await menuItem(app, 'file.reopen-tab')).enabled).toBe(true);
+    await clickEnabled(app, 'file.reopen-tab');
+    await expect.poll(async () => (await readTabs(page)).length).toBe(2);
     expect(await dialogLog(app)).toHaveLength(3);
 
     // R35: Exit never asks; the drawings are kept by the session store.
@@ -205,26 +368,60 @@ test('SC2: File items run New (a new tab), Open, Save, Save as, Export and Exit 
   }
 });
 
-test('M1 modal: while the Export dialog is open every item is disabled and clicks do nothing', async () => {
+test('M1 modal: while the Export dialog is open the button is disabled, opens nothing, and a popup built for it disables every item', async () => {
   const { app, page } = await openApp();
   try {
     await loadScheme(page);
     await page.keyboard.press('Control+e');
     await expect(page.getByTestId('export-dialog')).toBeVisible();
-    await expect
-      .poll(async () => (await menuItems(app)).filter((i) => i.id.includes('.') && i.enabled))
-      .toEqual([]);
+    await expect(button(page)).toHaveAttribute('aria-disabled', 'true');
+    await stubPopup(app, ['edit.select-all']);
+    await button(page).dispatchEvent('click');
+    await page.keyboard.press('F10');
+    await page.waitForTimeout(100);
+    expect(await popups(app)).toHaveLength(0);
+
+    // I9 asked for directly with a modal state: every item is disabled and a click does nothing.
     const before = await readDocument(page);
     const zoom = await readout(page).innerText();
-    await clickMenu(app, 'edit.select-all');
-    await clickMenu(app, 'view.zoom-reset');
-    await clickMenu(app, 'file.exit');
+    const answer = await page.evaluate(() =>
+      window.chalkbond.showAppMenu({
+        state: {
+          idle: true,
+          modal: true,
+          textFocus: false,
+          empty: false,
+          hasSelection: false,
+          canUndo: true,
+          canRedo: true,
+          undoLabel: null,
+          redoLabel: null,
+          canCut: true,
+          canDuplicate: true,
+          canDelete: true,
+          canSelectAll: true,
+          canZoomIn: true,
+          canZoomOut: true,
+          canReopenTab: true,
+          preset: 'slides',
+        },
+        x: 10,
+        y: 10,
+      }),
+    );
+    expect(answer).toBeNull();
+    const [tree] = await popups(app);
+    const flat = (nodes: typeof tree): NonNullable<typeof tree> =>
+      (nodes ?? []).flatMap((n) => [n, ...flat(n.submenu)]);
+    const items = flat(tree).filter((i) => i.id.includes('.'));
+    expect(items.length).toBeGreaterThan(20);
+    for (const item of items) expect(item.enabled, item.id).toBe(false);
     expect(await readSelection(page)).toEqual({ atoms: [], bonds: [], objects: [] });
     expect(await readDocument(page)).toEqual(before);
     await expect(readout(page)).toHaveText(zoom);
-    expect(zoom).not.toBe('100%');
     await expect(page.getByTestId('export-dialog')).toBeVisible();
     await page.keyboard.press('Escape');
+    await expect(button(page)).not.toHaveAttribute('aria-disabled', 'true');
     await expect.poll(async () => (await menuItem(app, 'edit.select-all')).enabled).toBe(true);
   } finally {
     await app.close();
@@ -286,6 +483,8 @@ test('the label editor open: file items and Keyboard shortcuts are disabled (idl
       'file.open',
       'file.save-as',
       'file.export',
+      'file.close-tab',
+      'file.reopen-tab',
       'help.shortcuts',
       'view.style-slides',
     ])

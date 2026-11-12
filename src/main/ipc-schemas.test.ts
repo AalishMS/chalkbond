@@ -230,7 +230,25 @@ describe('A10 I8 settings:set', () => {
   });
 });
 
-describe('A11 N1 session update with the menu state', () => {
+describe('N1 session update (R32: the title only)', () => {
+  it('takes a title of at most 300 characters', () => {
+    ok(schemas.sessionUpdateSchema, { title: '*Untitled - Chalkbond' });
+    ok(schemas.sessionUpdateSchema, { title: 'x'.repeat(300) });
+  });
+
+  it('rejects a missing, extra or mistyped field (no menu, no dirty)', () => {
+    for (const v of [
+      {},
+      { title: 3 },
+      { title: 'x'.repeat(301) },
+      { title: 'x', dirty: false },
+      { title: 'x', menu: {} },
+    ])
+      bad(schemas.sessionUpdateSchema, v);
+  });
+});
+
+describe('I9 app-menu:show (M4, R32)', () => {
   const menu = {
     idle: true,
     modal: false,
@@ -247,29 +265,40 @@ describe('A11 N1 session update with the menu state', () => {
     canSelectAll: true,
     canZoomIn: true,
     canZoomOut: true,
+    canReopenTab: true,
     preset: 'slides',
   };
-  const update = { title: '*Untitled - Chalkbond', dirty: true, menu };
 
-  it('takes a title, dirty and every MenuState field', () => {
-    ok(schemas.sessionUpdateSchema, update);
-    ok(schemas.sessionUpdateSchema, { ...update, menu: { ...menu, preset: 'journal' } });
+  it('takes a full MenuState and finite content coordinates', () => {
+    ok(schemas.appMenuSchema, { state: menu, x: 8, y: 44 });
+    ok(schemas.appMenuSchema, {
+      state: { ...menu, preset: 'journal', undoLabel: null },
+      x: 0.5,
+      y: -1,
+    });
   });
 
-  it('rejects a missing, extra or mistyped field', () => {
+  it('rejects a missing, extra or mistyped field and bad coordinates', () => {
     const { idle: _idle, ...noIdle } = menu;
+    const { canReopenTab: _reopen, ...noReopen } = menu;
     for (const v of [
-      { title: 'x', dirty: false },
-      { ...update, extra: 1 },
-      { ...update, menu: noIdle },
-      { ...update, menu: { ...menu, extra: true } },
-      { ...update, menu: { ...menu, modal: 'no' } },
-      { ...update, menu: { ...menu, preset: 'poster' } },
-      { ...update, menu: { ...menu, undoLabel: 3 } },
-      { ...update, menu: { ...menu, undoLabel: 'x'.repeat(201) } },
-      { ...update, title: 'x'.repeat(301) },
+      {},
+      { state: menu },
+      { state: menu, x: 1 },
+      { state: menu, x: '1', y: 2 },
+      { state: menu, x: NaN, y: 2 },
+      { state: menu, x: 1, y: Infinity },
+      { state: menu, x: -Infinity, y: 2 },
+      { state: noIdle, x: 1, y: 2 },
+      { state: noReopen, x: 1, y: 2 },
+      { state: { ...menu, extra: true }, x: 1, y: 2 },
+      { state: { ...menu, modal: 'no' }, x: 1, y: 2 },
+      { state: { ...menu, preset: 'poster' }, x: 1, y: 2 },
+      { state: { ...menu, undoLabel: 3 }, x: 1, y: 2 },
+      { state: { ...menu, undoLabel: 'x'.repeat(201) }, x: 1, y: 2 },
+      { state: menu, x: 1, y: 2, items: [{ role: 'quit' }] },
     ])
-      bad(schemas.sessionUpdateSchema, v);
+      bad(schemas.appMenuSchema, v);
   });
 });
 
@@ -290,6 +319,7 @@ describe('A13 I6 context-menu:show', () => {
     canSelectAll: true,
     canZoomIn: true,
     canZoomOut: true,
+    canReopenTab: false,
     preset: 'journal',
   };
   it('takes onItem and a full MenuState', () => {

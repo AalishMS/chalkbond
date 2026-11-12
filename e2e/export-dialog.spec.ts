@@ -118,6 +118,8 @@ test('Enter = Save…: the Save dialog suggests Untitled.png; cancelled, nothing
   try {
     await loadDocument(page, goldenDoc('toluene'));
     const before = serialize(await readDocument(page));
+    // N1 follows the loaded drawing within a frame: an Untitled tab with content is unsaved.
+    await expect.poll(() => windowTitle(app)).toBe('*Untitled - Chalkbond');
     const title = await windowTitle(app);
     await openExport(page);
     await page.keyboard.press('Enter');

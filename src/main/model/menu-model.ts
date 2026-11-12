@@ -1,5 +1,6 @@
-// The application menu as data (SPEC-app-shell.md M1–M3): `(MenuState, recent) → menus`. Pure;
-// `menu.ts` turns it into an Electron template (every item `registerAccelerator: false`, no role).
+// The ☰ menu's trees as data (SPEC-app-shell.md M1–M4; R32: there is no menu bar any more):
+// `(MenuState, recent) → menus`. Pure; `menu.ts` turns it into the submenus of one native popup
+// (every item `registerAccelerator: false`, no role).
 import {
   commandEnabled,
   type AppCommand,
@@ -104,7 +105,7 @@ export function menuModel(state: MenuState, recent: readonly string[]): TopMenu[
       id: 'file',
       label: '&File',
       submenu: [
-        command('file.new', '&New', 'CmdOrCtrl+N'),
+        command('file.new', '&New tab', 'CmdOrCtrl+T'),
         command('file.open', '&Open…', 'CmdOrCtrl+O'),
         {
           kind: 'item',
@@ -119,6 +120,9 @@ export function menuModel(state: MenuState, recent: readonly string[]): TopMenu[
         command('file.save-as', 'Save &as…', 'CmdOrCtrl+Shift+S'),
         SEPARATOR,
         command('file.export', '&Export…', 'CmdOrCtrl+E'),
+        SEPARATOR,
+        command('file.reopen-tab', 'Reopen closed &tab', 'CmdOrCtrl+Shift+T'),
+        command('file.close-tab', '&Close tab', 'CmdOrCtrl+W'),
         SEPARATOR,
         {
           kind: 'item',
@@ -165,7 +169,7 @@ export function menuModel(state: MenuState, recent: readonly string[]): TopMenu[
         command('view.zoom-in', 'Zoom &in', 'CmdOrCtrl+='),
         command('view.zoom-out', 'Zoom &out', 'CmdOrCtrl+-'),
         command('view.zoom-fit', '&Fit drawing', 'CmdOrCtrl+0'),
-        command('view.zoom-reset', 'Zoom to &100%', 'CmdOrCtrl+1'),
+        command('view.zoom-reset', 'Zoom to &100%'),
         SEPARATOR,
         radio('view.style-slides', '&Slides style', state.preset === 'slides'),
         radio('view.style-handout', '&Handout style', state.preset === 'journal'),

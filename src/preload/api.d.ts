@@ -29,6 +29,8 @@ import type {
   MainEvent,
   RendererSettings,
   StartupResponse,
+  AppMenuAnswer,
+  AppMenuRequest,
   TabMenuAnswer,
   TabMenuRequest,
   SessionUpdate,
@@ -66,10 +68,13 @@ export interface ChalkbondApi {
   showContextMenu(request: ContextMenuRequest): Promise<ContextMenuAnswer>;
   /** I10 (T15, CM4): the tab menu at the cursor (`at` null) or at a point; the chosen item or null. */
   showTabMenu(request: TabMenuRequest): Promise<TabMenuAnswer>;
+  /** I9 (M4, R32): the ☰ menu's four submenus as one popup at (x, y) in content CSS px; a command to run or null. */
+  showAppMenu(request: AppMenuRequest): Promise<AppMenuAnswer>;
   /** I7: settings, the restored session (SS7) and the launch's file (a ref or `{ focus }`). */
   startup(): Promise<StartupResponse>;
   /** I8: remembers renderer settings (ST1 style, Export choices); main writes settings.json. */
   setSettings(value: Partial<RendererSettings>): Promise<void>;
+  /** N1: the window title (W3). */
   updateSession(value: SessionUpdate): void;
   /** N2: the session's file (null: Untitled after New); main keeps the folders, never the page. */
   sessionFile(ref: FileRef | null): void;

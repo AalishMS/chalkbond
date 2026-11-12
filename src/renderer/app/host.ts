@@ -8,7 +8,6 @@ import {
   createMenuScheduler,
   deriveMenuState,
   runAppCommand,
-  sameMenuState,
   type AppActions,
 } from './model/menu-state';
 import { isTextTarget } from './text-target';
@@ -154,7 +153,21 @@ export async function createWindowHost(
     for (const listener of [...shortcutsListeners]) listener();
   };
   const modal = (): boolean => exportOpen() || shortcutsOpen;
-  const menuState = () => deriveMenuState(controller, { textFocus: textFocus(), modal: modal() });
+  // M4: the ☰ button follows the popup (`aria-expanded`) and the dialogs (disabled while one is open).
+  let appMenuOpen = false;
+  const appMenuListeners = new Set<() => void>();
+  const appMenuChanged = (): void => {
+    for (const listener of [...appMenuListeners]) listener();
+  };
+  // R40: Ctrl+Shift+T and the menus' Reopen closed tab need an entry in the reopen list; the flows
+  // below own the list, so the menu state reads it late.
+  const reopenable: { now: () => boolean } = { now: () => false };
+  const menuState = () =>
+    deriveMenuState(controller, {
+      textFocus: textFocus(),
+      modal: modal(),
+      canReopenTab: reopenable.now(),
+    });
 
   // ---- tabs, flows and the write schedule ----------------------------------------------------
 
@@ -223,6 +236,7 @@ export async function createWindowHost(
     changed: () => later.changed(),
   });
   const canReopen = (): boolean => flows.state().list.closed.length > 0;
+  reopenable.now = canReopen;
 
   // The strip's view and W3's title follow the flows' state (markers need the SHA-256: async).
   let view: TabsView = {
@@ -270,19 +284,10 @@ export async function createWindowHost(
   };
 
   let sent: SessionUpdate | undefined;
-  /** N1 (W3's title, the menu) for the view now; sent only when one of them changed. */
+  /** N1 (W3's title; there is no menu to follow since R32) for the view now; sent when it changed. */
   const publishSession = (): void => {
-    const update: SessionUpdate = {
-      title: view.title,
-      dirty: view.title.startsWith('*'),
-      menu: menuState(),
-    };
-    if (
-      sent?.title === update.title &&
-      sent.dirty === update.dirty &&
-      sameMenuState(sent.menu, update.menu)
-    )
-      return;
+    const update: SessionUpdate = { title: view.title };
+    if (sent?.title === update.title) return;
     main.updateSession(update);
     sent = update;
   };
@@ -323,8 +328,11 @@ export async function createWindowHost(
 
   /** What a menu command does: the functions the keys and buttons call (M1). */
   const actions: AppActions = {
-    // T7: a new tab (the menu's New item until TB26 renames it).
+    // T7: a new tab (File > New tab, Ctrl+T, Ctrl+N).
     newDrawing: () => void flows.newTab(),
+    // R47: File > Reopen closed tab (T12) and File > Close tab (T8, the active tab).
+    reopenTab: () => void flows.reopen(),
+    closeTab: () => void flows.close(flows.state().list.active),
     open: () => void flows.open(),
     save: () => void flows.save(),
     saveAs: () => void flows.saveAs(),
@@ -372,6 +380,7 @@ export async function createWindowHost(
     for (const request of held.splice(0)) void flows.request(request);
   };
   const dialogChanged = (): void => {
+    appMenuChanged();
     releaseHeld();
     idleChanged();
   };
@@ -436,6 +445,51 @@ export async function createWindowHost(
     if (chosen === 'new-tab') await flows.newTab();
     else if (chosen === 'close') await flows.close(tabId);
     else if (chosen === 'reopen') await flows.reopen();
+  };
+  // ---- the ☰ menu (M4, R32) ---------------------------------------------------------------
+
+  /** The button's bottom-left corner in content CSS px (the page is never zoomed). */
+  const appMenuAnchor = (): { x: number; y: number } => {
+    if (typeof document === 'undefined') return { x: 0, y: 0 };
+    const rect = document
+      .querySelector<HTMLElement>('[data-testid="app-menu"]')
+      ?.getBoundingClientRect();
+    return rect === undefined ? { x: 0, y: 0 } : { x: rect.left, y: rect.bottom };
+  };
+  /**
+   * M4: a press of the ☰ button, Alt or F10. I9 with the state now and the anchor; the chosen
+   * command runs as a menu command always did, re-checked against the state then (R19); Open
+   * recent, Exit, About and the text items ran in main. Focus is where it was before. One popup
+   * at a time (M5), none while an in-window dialog is open.
+   */
+  const appMenu = async (): Promise<void> => {
+    if (menuOpen || modal()) return;
+    const before = typeof document === 'undefined' ? null : document.activeElement;
+    menuOpen = true;
+    appMenuOpen = true;
+    appMenuChanged();
+    let chosen: Awaited<ReturnType<ChalkbondApi['showAppMenu']>> = null;
+    try {
+      chosen = await main.showAppMenu({ state: menuState(), ...appMenuAnchor() });
+    } catch (error) {
+      main.logError(`Menu failed: ${String(error)}`);
+    } finally {
+      menuOpen = false;
+      appMenuOpen = false;
+      appMenuChanged();
+    }
+    if (
+      typeof document !== 'undefined' &&
+      before instanceof HTMLElement &&
+      before !== document.body &&
+      before.isConnected &&
+      document.activeElement !== before
+    )
+      before.focus();
+    if (chosen !== null) {
+      commands.push(chosen);
+      runCommand(chosen);
+    }
   };
   /** `main:event {open}` (F10, F11): T17 now, queued while a flow runs, held while a dialog is open. */
   const openRequested = async (ref: FileRef): Promise<void> => {
@@ -525,9 +579,10 @@ export async function createWindowHost(
     'tab-7': toTab((l) => byNumber(l, 7)),
     'tab-8': toTab((l) => byNumber(l, 8)),
     'reopen-tab': () => void flows.reopen(),
-    // M4, K3: TB26 opens the ☰ menu here; until then the request is only counted (test hook).
+    // M4, K3: F10 and a lone Alt open the ☰ menu (the hook counts the requests).
     menu: () => {
       menuRequests++;
+      void appMenu();
     },
   };
   /** TH2 seams for the tabs (`readTabs`, `activateTab`). */
@@ -596,6 +651,15 @@ export async function createWindowHost(
     },
     hostActions,
     hookTabs,
+    /** M4: the ☰ button's press, and what it shows (`aria-expanded`; disabled while `modal()`). */
+    appMenu: {
+      open: appMenu,
+      isOpen: (): boolean => appMenuOpen,
+      subscribe(listener: () => void): () => void {
+        appMenuListeners.add(listener);
+        return () => appMenuListeners.delete(listener);
+      },
+    },
     /** Ctrl+Shift+T and the tab menu's Reopen: the reopen list is non-empty (R40). */
     canReopen,
     actions,

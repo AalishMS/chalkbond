@@ -10,6 +10,7 @@ import type { CopyFlow } from '../clipboard-export/model/copy-flow';
 import { Editor, type EditorController } from '../editor';
 import { installHostKeys } from './host-keys';
 import { TabStrip, tabDomId } from './TabStrip';
+import { MenuButton } from './MenuButton';
 import { createTestHook } from './model/test-hook';
 
 import type { WindowHost } from './host';
@@ -108,6 +109,8 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
     () => <CopyAction controller={controller} copyFlow={copyFlow} />,
     [controller, copyFlow],
   );
+  // R32, R56: the ☰ button in the editor's `menu` slot; it re-renders itself, not the editor.
+  const menu = useMemo(() => <MenuButton host={host} />, [host]);
   // R31, R56: the strip in the editor's `tabs` slot; it re-renders itself, not the editor.
   const tabs = useMemo(() => <HostTabs host={host} />, [host]);
   return (
@@ -115,6 +118,7 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
       <Editor
         controller={controller}
+        menu={menu}
         actions={actions}
         tabs={tabs}
         tabPanelLabelledBy={tabDomId(activeId)}

@@ -86,11 +86,12 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
       'zoom-in',
       'zoom-fit',
     ]);
-    // Wrap-around: name field, the options bar (one stop: the selected option), Undo, Redo,
+    // Wrap-around: the host's ☰ button (the `menu` slot), name field, the options bar (one stop: the selected option), Undo, Redo,
     // the host's actions (app-shell: Copy), the rail (one stop: the active tool), the host's tab
     // strip in the `tabs` slot (editor R56, app-shell T16: the active tab, then the + button), the
     // canvas.
-    expect(await tab(page, 9)).toEqual([
+    expect(await tab(page, 10)).toEqual([
+      'app-menu',
       'namefield-input',
       'opt-single',
       'undo',

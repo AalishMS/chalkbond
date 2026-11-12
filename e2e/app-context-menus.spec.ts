@@ -3,7 +3,7 @@
 // (or none: Esc); Playwright cannot see a native menu.
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 import type { Doc } from '../src/core/doc-model';
-import { popups, stubPopup, type PopupItem } from './app-menu';
+import { menuItem, popups, stubPopup, type PopupItem } from './app-menu';
 import {
   canvasPoint,
   expectNoNetwork,
@@ -47,10 +47,9 @@ async function emptyPoint(page: Page) {
   return { x: box.x + 60, y: box.y + box.height - 60 };
 }
 
+// The ☰ popup's Undo row (the application menu is gone, R32); it replaces the popup stub.
 const canUndo = async (app: ElectronApplication): Promise<boolean> =>
-  app.evaluate(
-    ({ Menu }) => Menu.getApplicationMenu()?.getMenuItemById('edit.undo')?.enabled ?? false,
-  );
+  (await menuItem(app, 'edit.undo')).enabled;
 
 test('CM1: right-click an unselected ethanol atom selects ethanol first; the item menu; Delete removes it', async () => {
   const { app, page } = await openApp();

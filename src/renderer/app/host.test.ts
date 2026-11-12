@@ -39,6 +39,7 @@ function rig(settings: RendererSettings = DEFAULTS, startup: Partial<StartupResp
   const updateSession = vi.fn<ChalkbondApi['updateSession']>();
   const ask = vi.fn(() => Promise.resolve('discard'));
   const showTabMenu = vi.fn<ChalkbondApi['showTabMenu']>(() => Promise.resolve(null));
+  const showAppMenu = vi.fn<ChalkbondApi['showAppMenu']>(() => Promise.resolve(null));
   const openDroppedFile = vi.fn<ChalkbondApi['openDroppedFile']>();
   const closeOk = vi.fn();
   const main = {
@@ -53,6 +54,7 @@ function rig(settings: RendererSettings = DEFAULTS, startup: Partial<StartupResp
     updateSession,
     ask,
     showTabMenu,
+    showAppMenu,
     openDroppedFile,
     showContextMenu: vi.fn(() => Promise.resolve(null)),
     sessionFile: vi.fn(),
@@ -64,7 +66,17 @@ function rig(settings: RendererSettings = DEFAULTS, startup: Partial<StartupResp
     platform: 'linux',
     onMainEvent: () => () => undefined,
   } as unknown as ChalkbondApi;
-  return { h, main, setSettings, updateSession, ask, showTabMenu, openDroppedFile, closeOk };
+  return {
+    h,
+    main,
+    setSettings,
+    updateSession,
+    ask,
+    showTabMenu,
+    showAppMenu,
+    openDroppedFile,
+    closeOk,
+  };
 }
 
 /** A host over `rig`, started (SS7), the canvas focus counted. */
@@ -142,27 +154,23 @@ describe('A10 host settings', () => {
   });
 });
 
-describe('A11 host menu (N1 menu state, commands re-checked)', () => {
-  it('N1 carries the menu state and is sent again only when title, dirty or menu changed', async () => {
+describe('A11 host menu (commands re-checked), R32 N1 title only', () => {
+  it('N1 carries the title only and is sent again only when it changed (R32)', async () => {
     const r = rig();
-    let text = false;
-    const { host } = await started(r, () => text);
+    const { host } = await started(r);
     await host.refresh();
     const sent = r.updateSession.mock.calls.length;
-    expect(r.updateSession.mock.lastCall?.[0]).toMatchObject({
-      title: 'Untitled - Chalkbond',
-      dirty: false,
-      menu: { idle: true, empty: true, textFocus: false, modal: false, preset: 'slides' },
-    });
+    expect(r.updateSession.mock.lastCall?.[0]).toEqual({ title: 'Untitled - Chalkbond' });
     host.publishSession();
     expect(r.updateSession).toHaveBeenCalledTimes(sent);
-    text = true;
-    host.publishSession();
-    expect(r.updateSession).toHaveBeenCalledTimes(sent + 1);
-    expect(r.updateSession.mock.lastCall?.[0].menu.textFocus).toBe(true);
-    host.loadIntoActive(drawing('slides'));
+    host.controller.run({ type: 'insert-text', text: 'ethanol' });
     await host.refresh();
-    expect(r.updateSession.mock.lastCall?.[0].menu.empty).toBe(false);
+    expect(r.updateSession).toHaveBeenCalledTimes(sent + 1);
+    expect(r.updateSession.mock.lastCall?.[0]).toEqual({ title: '*Untitled - Chalkbond' });
+    // A change the menu used to follow (selection, zoom, focus) sends nothing now.
+    host.controller.run('select-all');
+    await host.refresh();
+    expect(r.updateSession).toHaveBeenCalledTimes(sent + 1);
   });
 
   it('runs a menu command only when the state now allows it', async () => {
@@ -214,7 +222,6 @@ describe('W3, N1: the title follows the active tab and F7 unsaved', () => {
     host.controller.run({ type: 'insert-text', text: 'ethanol' });
     await host.refresh();
     expect(lastTitle(r)).toBe('*Untitled - Chalkbond');
-    expect(r.updateSession.mock.lastCall?.[0].dirty).toBe(true);
     await host.openRequested(r.h.file('esterification.chalk', drawing('slides', 2)));
     await settled(host);
     await host.refresh();
@@ -507,6 +514,88 @@ describe('TB20 host actions (K1 tab keys, the strip, the tab menu)', () => {
     host.actions.shortcuts();
     await host.tabs.menu(activeId(host), null);
     expect(r.showTabMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('M4 (I9): the ☰ press sends the state now; the chosen command runs, re-checked, and is heard', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.loadIntoActive(drawing('slides'));
+    r.showAppMenu.mockResolvedValueOnce('edit.select-all');
+    await host.appMenu.open();
+    const request = r.showAppMenu.mock.lastCall?.[0];
+    expect(request).toMatchObject({
+      x: 0,
+      y: 0,
+      state: { idle: true, empty: false, modal: false, canReopenTab: false },
+    });
+    expect(host.controller.getSelection().atoms.size).toBe(1);
+    expect(host.commands).toEqual(['edit.select-all']);
+    expect(host.appMenu.isOpen()).toBe(false);
+  });
+
+  it('M4: aria-expanded follows the popup; the listeners hear it open and close', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    const seen: boolean[] = [];
+    host.appMenu.subscribe(() => seen.push(host.appMenu.isOpen()));
+    let answer: (command: null) => void = () => undefined;
+    r.showAppMenu.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    const opening = host.appMenu.open();
+    expect(host.appMenu.isOpen()).toBe(true);
+    answer(null);
+    await opening;
+    expect(seen).toEqual([true, false]);
+  });
+
+  it('M5: a second press while the popup is open, a tab menu or a dialog sends nothing', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    let answer: (command: null) => void = () => undefined;
+    r.showAppMenu.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    const first = host.appMenu.open();
+    await host.appMenu.open();
+    await host.tabs.menu(activeId(host), null);
+    expect(r.showAppMenu).toHaveBeenCalledTimes(1);
+    expect(r.showTabMenu).not.toHaveBeenCalled();
+    answer(null);
+    await first;
+    host.actions.shortcuts();
+    await host.appMenu.open();
+    expect(r.showAppMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('M4: Alt and F10 (hostActions.menu) open the popup and are counted for the test hook', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.hostActions.menu?.();
+    await vi.waitFor(() => expect(r.showAppMenu).toHaveBeenCalledTimes(1));
+    expect(host.hookTabs.menuRequests()).toBe(1);
+  });
+
+  it('M6: canReopenTab follows the reopen list; File > Close tab and Reopen closed tab run (R47)', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    await host.tabs.newTab();
+    await host.appMenu.open();
+    expect(r.showAppMenu.mock.lastCall?.[0].state.canReopenTab).toBe(false);
+    expect(host.runCommand('file.reopen-tab')).toBe(false);
+    expect(host.runCommand('file.close-tab')).toBe(true);
+    await vi.waitFor(() => expect(tabIds(host)).toHaveLength(1));
+    await host.appMenu.open();
+    expect(r.showAppMenu.mock.lastCall?.[0].state.canReopenTab).toBe(true);
+    expect(host.runCommand('file.reopen-tab')).toBe(true);
+    await vi.waitFor(() => expect(tabIds(host)).toHaveLength(2));
+  });
+
+  it('a failing popup is logged and leaves the button usable', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    r.showAppMenu.mockRejectedValueOnce(new Error('gone'));
+    await host.appMenu.open();
+    expect(r.h.errors).toContainEqual(expect.stringContaining('Menu failed'));
+    expect(host.appMenu.isOpen()).toBe(false);
+    await host.appMenu.open();
+    expect(r.showAppMenu).toHaveBeenCalledTimes(2);
   });
 
   it('Export suggests the active tab name; an untitled tab has none', async () => {

@@ -8,7 +8,6 @@ import {
   createMenuScheduler,
   deriveMenuState,
   runAppCommand,
-  sameMenuState,
   type AppActions,
   type MenuController,
 } from './menu-state';
@@ -44,7 +43,7 @@ function fakeController(
 describe('deriveMenuState', () => {
   it('reads every field from the controller, the focus and the dialog', () => {
     const c = fakeController({ selected: true, undo: 'Add bond' });
-    expect(deriveMenuState(c, { textFocus: false, modal: false })).toEqual({
+    expect(deriveMenuState(c, { textFocus: false, modal: false, canReopenTab: false })).toEqual({
       idle: true,
       modal: false,
       textFocus: false,
@@ -60,10 +59,11 @@ describe('deriveMenuState', () => {
       canSelectAll: true,
       canZoomIn: true,
       canZoomOut: true,
+      canReopenTab: false,
       preset: 'slides',
     } satisfies MenuState);
-    const s = deriveMenuState(c, { textFocus: true, modal: true });
-    expect([s.textFocus, s.modal]).toEqual([true, true]);
+    const s = deriveMenuState(c, { textFocus: true, modal: true, canReopenTab: true });
+    expect([s.textFocus, s.modal, s.canReopenTab]).toEqual([true, true, true]);
   });
 
   it('maps each flag to its own editor command', () => {
@@ -81,32 +81,27 @@ describe('deriveMenuState', () => {
     for (const [flag, command] of flags) {
       const key = JSON.stringify(command);
       const c = fakeController({ allowed: (cmd) => JSON.stringify(cmd) !== key });
-      const s = deriveMenuState(c, { textFocus: false, modal: false });
+      const s = deriveMenuState(c, { textFocus: false, modal: false, canReopenTab: false });
       for (const [other] of flags) expect(s[other], `${flag} → ${other}`).toBe(other !== flag);
     }
   });
 
   it('an empty drawing, nothing selected, the Handout preset', () => {
     const doc = setStyle(emptyDoc(NOW), { preset: 'journal' });
-    const s = deriveMenuState(fakeController({ doc }), { textFocus: false, modal: false });
+    const s = deriveMenuState(fakeController({ doc }), {
+      textFocus: false,
+      modal: false,
+      canReopenTab: false,
+    });
     expect([s.empty, s.hasSelection, s.preset]).toEqual([true, false, 'journal']);
     const objects = { ...emptyDoc(NOW), objects: { o1: {} } } as unknown as Doc;
     expect(
-      deriveMenuState(fakeController({ doc: objects }), { textFocus: false, modal: false }).empty,
+      deriveMenuState(fakeController({ doc: objects }), {
+        textFocus: false,
+        modal: false,
+        canReopenTab: false,
+      }).empty,
     ).toBe(false);
-  });
-});
-
-describe('sameMenuState', () => {
-  it('compares every field', () => {
-    const a = deriveMenuState(fakeController(), { textFocus: false, modal: false });
-    expect(sameMenuState(a, { ...a })).toBe(true);
-    expect(sameMenuState(undefined, a)).toBe(false);
-    for (const key of Object.keys(a) as (keyof MenuState)[]) {
-      const value = a[key];
-      const changed = typeof value === 'boolean' ? !value : value === 'slides' ? 'journal' : 'x';
-      expect(sameMenuState(a, { ...a, [key]: changed }), key).toBe(false);
-    }
   });
 });
 
@@ -160,6 +155,7 @@ describe('runAppCommand', () => {
   const ready = deriveMenuState(fakeController({ selected: true }), {
     textFocus: false,
     modal: false,
+    canReopenTab: true,
   });
   const actions = () => {
     const log: unknown[] = [];
@@ -169,6 +165,8 @@ describe('runAppCommand', () => {
       save: () => log.push('save'),
       saveAs: () => log.push('save-as'),
       exportDialog: () => log.push('export'),
+      reopenTab: () => log.push('reopen-tab'),
+      closeTab: () => log.push('close-tab'),
       copy: () => log.push('copy'),
       paste: () => log.push('paste'),
       shortcuts: () => log.push('shortcuts'),
@@ -184,6 +182,8 @@ describe('runAppCommand', () => {
       'file.save': 'save',
       'file.save-as': 'save-as',
       'file.export': 'export',
+      'file.reopen-tab': 'reopen-tab',
+      'file.close-tab': 'close-tab',
       'edit.undo': 'undo',
       'edit.redo': 'redo',
       'edit.cut': 'cut',
@@ -205,6 +205,13 @@ describe('runAppCommand', () => {
       expect(runAppCommand(command, ready, a), command).toBe(true);
       expect(log, command).toEqual([expected[command]]);
     }
+  });
+
+  it('R47: Reopen closed tab does nothing without a closed tab to bring back', () => {
+    const { a, log } = actions();
+    expect(runAppCommand('file.reopen-tab', { ...ready, canReopenTab: false }, a)).toBe(false);
+    expect(runAppCommand('file.close-tab', { ...ready, canReopenTab: false }, a)).toBe(true);
+    expect(log).toEqual(['close-tab']);
   });
 
   it('re-checks the current state: a disabled or modal command does nothing', () => {

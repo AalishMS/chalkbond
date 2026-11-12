@@ -1126,10 +1126,10 @@ disabled while modal); a main test that a second popup request while one is open
 above are the RED step.
 
 **Acceptance criteria:**
-- [ ] The ☰ popup model shows every M1 row with its accelerator text, `registerAccelerator: false` and no `role`; no application menu is set (SC16)
-- [ ] Alt alone, F10 and the button open it; Alt+click, Alt+Tab and Alt+Shift do not (TB22's table drives it)
-- [ ] The rewritten e2e specs are green on Windows; `npm run test:e2e` is green
-- [ ] `src/main/model` coverage >= 90 % lines
+- [x] The ☰ popup model shows every M1 row with its accelerator text, `registerAccelerator: false` and no `role`; no application menu is set (SC16)
+- [x] Alt alone, F10 and the button open it; Alt+click, Alt+Tab and Alt+Shift do not (TB22's table drives it)
+- [x] The rewritten e2e specs are green on Windows; `npm run test:e2e` is green
+- [x] `src/main/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/main src/shared src/renderer/app`, `npm run test:e2e` (Windows), then `npm run check`.
 

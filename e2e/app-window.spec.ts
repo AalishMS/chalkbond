@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openApp } from './harness';
+import { expectNoNetwork, openApp } from './harness';
 
 test('startup defaults, native title, minimum content, and isolated editor zoom', async () => {
   const { app, page } = await openApp();
@@ -54,6 +54,41 @@ test('startup defaults, native title, minimum content, and isolated editor zoom'
         BrowserWindow.getAllWindows()[0]?.webContents.getZoomFactor(),
       ),
     ).toBe(1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('W6/R32: no menu bar; content 960 x 640 keeps the rail’s last button visible', async () => {
+  const { app, page } = await openApp({ size: [960, 640] });
+  try {
+    await page.getByTestId('canvas').waitFor();
+    const measured = await app.evaluate(({ BrowserWindow, Menu }) => {
+      const win = BrowserWindow.getAllWindows()[0];
+      win?.unmaximize();
+      win?.setContentSize(960, 640);
+      return {
+        content: win?.getContentSize(),
+        outer: win?.getSize(),
+        bar: win?.isMenuBarVisible(),
+        menu: Menu.getApplicationMenu(),
+      };
+    });
+    console.info('W6 outer window', JSON.stringify(measured));
+    expect(measured.content).toEqual([960, 640]);
+    expect(measured.bar).toBe(false);
+    expect(measured.menu).toBeNull();
+    // The frame is the title bar and the borders only (A21: 960 x 671 at 100 % display scale; the
+    // development laptop runs at 125 %): never room for a title bar and a menu bar as well.
+    const extra = (measured.outer?.[1] ?? 0) - 640;
+    expect(extra).toBeGreaterThanOrEqual(24);
+    // The rail's last button is fully inside the rail (no row of chrome took its room).
+    await page.waitForFunction(() => window.innerWidth >= 960 && window.innerHeight >= 640);
+    const text = await page.getByTestId('tool-text').boundingBox();
+    const rail = await page.getByTestId('rail').boundingBox();
+    if (!text || !rail) throw new Error('no rail');
+    expect(text.y + text.height).toBeLessThanOrEqual(rail.y + rail.height);
+    await expectNoNetwork(app);
   } finally {
     await app.close();
   }

@@ -1,5 +1,7 @@
-// Native application menu seams for e2e (SPEC-app-shell.md TH4, TH5): items are read and clicked
-// by id through `Menu.getApplicationMenu()`; Playwright cannot see the native menu itself.
+// Native menu seams for e2e (SPEC-app-shell.md TH4, TH5, R32): there is no application menu, so
+// the ☰ menu is read and clicked through the stubbed `Menu.prototype.popup`: the ☰ button's click
+// is dispatched (no mouse move, no focus change), the popup records its items (submenus included)
+// and answers with the next choice. Playwright cannot see the native menu itself.
 import { expect, type ElectronApplication } from '@playwright/test';
 
 export interface MenuItemData {
@@ -10,37 +12,33 @@ export interface MenuItemData {
   accelerator: string | null;
   registerAccelerator: boolean;
   role: string | null;
+  type: string;
 }
 
-/** Every item of the application menu, depth first (menus, separators and submenus included). */
+const flatten = (items: readonly PopupItem[]): PopupItem[] =>
+  items.flatMap((item) => [item, ...flatten(item.submenu ?? [])]);
+
+/**
+ * Opens the ☰ menu once (dismissed) and returns every item, depth first (menus, separators and
+ * submenus included). The button must be enabled: while a dialog is open it opens nothing and this
+ * times out.
+ */
 export async function menuItems(app: ElectronApplication): Promise<MenuItemData[]> {
-  return app.evaluate(({ Menu }) => {
-    const out: {
-      id: string;
-      label: string;
-      enabled: boolean;
-      checked: boolean;
-      accelerator: string | null;
-      registerAccelerator: boolean;
-      role: string | null;
-    }[] = [];
-    const walk = (menu: Electron.Menu | null | undefined): void => {
-      for (const item of menu?.items ?? []) {
-        out.push({
-          id: item.id ?? '',
-          label: item.label,
-          enabled: item.enabled,
-          checked: item.checked,
-          accelerator: item.accelerator ?? null,
-          registerAccelerator: item.registerAccelerator,
-          role: item.role ?? null,
-        });
-        walk(item.submenu);
-      }
-    };
-    walk(Menu.getApplicationMenu());
-    return out;
-  });
+  const page = await app.firstWindow();
+  await stubPopup(app, [null]);
+  await page.getByTestId('app-menu').dispatchEvent('click');
+  await expect.poll(async () => (await popups(app)).length, { message: 'the ☰ popup' }).toBe(1);
+  const [tree] = await popups(app);
+  return flatten(tree ?? []).map((i) => ({
+    id: i.id,
+    label: i.label,
+    enabled: i.enabled,
+    checked: i.checked,
+    accelerator: i.accelerator,
+    registerAccelerator: i.registerAccelerator,
+    role: i.role,
+    type: i.type,
+  }));
 }
 
 export async function menuItem(app: ElectronApplication, id: string): Promise<MenuItemData> {
@@ -50,26 +48,31 @@ export async function menuItem(app: ElectronApplication, id: string): Promise<Me
 }
 
 /**
- * Waits until the item is enabled in the rebuilt menu (N1 follows the page within a frame), then
- * clicks it: main ignores a click on an item built disabled (R19), as a real menu would.
+ * Waits until the item is enabled in the ☰ popup built from the page's state now, then chooses
+ * it: main ignores a click on an item built disabled (R19), as a real menu would.
  */
 export async function clickEnabled(app: ElectronApplication, id: string): Promise<void> {
   await expect.poll(async () => (await menuItem(app, id)).enabled, { message: id }).toBe(true);
   await clickMenu(app, id);
 }
 
-/** Clicks an application menu item as the user would (`MenuItem.click()`, TH4). */
+/**
+ * Opens the ☰ menu and chooses the item by id (`MenuItem.click()`, TH4); the click happens on the
+ * next turn, before the close callback. The command runs asynchronously: poll its effect.
+ */
 export async function clickMenu(app: ElectronApplication, id: string): Promise<void> {
-  const found = await app.evaluate(({ Menu }, itemId) => {
-    const item = Menu.getApplicationMenu()?.getMenuItemById(itemId);
-    if (!item) return false;
-    item.click();
-    return true;
-  }, id);
+  const page = await app.firstWindow();
+  await stubPopup(app, [id]);
+  await page.getByTestId('app-menu').dispatchEvent('click');
+  await expect
+    .poll(async () => (await popups(app)).length, { message: `the ☰ popup for ${id}` })
+    .toBe(1);
+  const found = flatten((await popups(app))[0] ?? []).some((i) => i.id === id);
   if (!found) throw new Error(`no menu item ${id}`);
 }
 
-// A13 (TH4, TH5): context menus are popped up through `Menu.prototype.popup`, stubbed here.
+// A13 (TH4, TH5): the ☰ (I9), canvas (I6) and tab (I10) menus are popped up through
+// `Menu.prototype.popup`, stubbed here.
 export type PopupItem = {
   id: string;
   label: string;
@@ -78,29 +81,37 @@ export type PopupItem = {
   enabled: boolean;
   accelerator: string | null;
   registerAccelerator: boolean;
+  checked: boolean;
+  /** Present on a submenu holder (the ☰ popup's File, Edit, View, Help and Open recent). */
+  submenu?: PopupItem[];
 };
 
 /**
- * Replaces `Menu.prototype.popup`: each popup records its items and takes the next choice (a menu
- * item id, or null for a dismissed menu), clicked on the next turn before the close callback.
+ * Replaces `Menu.prototype.popup`: each popup records its items (submenus nested) and takes the
+ * next choice (a menu item id anywhere in the tree, or null for a dismissed menu), clicked on the
+ * next turn before the close callback.
  */
 export async function stubPopup(app: ElectronApplication, choices: (string | null)[]) {
   await app.evaluate(({ Menu }, list) => {
-    const g = globalThis as { __popups?: unknown[][] };
+    const g = globalThis as { __popups?: unknown[][]; __popupAt?: unknown[] };
     g.__popups = [];
+    g.__popupAt = [];
     const answers = [...list];
+    const record = (items: readonly Electron.MenuItem[]): unknown[] =>
+      items.map((i) => ({
+        id: i.id ?? '',
+        label: i.label,
+        type: i.type,
+        role: i.role ?? null,
+        enabled: i.enabled,
+        accelerator: i.accelerator ?? null,
+        registerAccelerator: i.registerAccelerator,
+        checked: i.checked,
+        ...(i.submenu ? { submenu: record(i.submenu.items) } : {}),
+      }));
     Menu.prototype.popup = function popup(this: Electron.Menu, options?: Electron.PopupOptions) {
-      g.__popups?.push(
-        this.items.map((i) => ({
-          id: i.id ?? '',
-          label: i.label,
-          type: i.type,
-          role: i.role ?? null,
-          enabled: i.enabled,
-          accelerator: i.accelerator ?? null,
-          registerAccelerator: i.registerAccelerator,
-        })),
-      );
+      g.__popups?.push(record(this.items));
+      g.__popupAt?.push({ x: options?.x ?? null, y: options?.y ?? null });
       const choice = answers.shift() ?? null;
       setImmediate(() => {
         if (choice !== null) this.getMenuItemById(choice)?.click();
@@ -112,3 +123,9 @@ export async function stubPopup(app: ElectronApplication, choices: (string | nul
 
 export const popups = (app: ElectronApplication): Promise<PopupItem[][]> =>
   app.evaluate(() => ((globalThis as { __popups?: unknown[][] }).__popups ?? []) as never);
+
+/** Where each popup was asked to appear (content px; null: at the cursor). */
+export const popupPoints = (
+  app: ElectronApplication,
+): Promise<{ x: number | null; y: number | null }[]> =>
+  app.evaluate(() => ((globalThis as { __popupAt?: unknown[] }).__popupAt ?? []) as never);

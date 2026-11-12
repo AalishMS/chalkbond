@@ -66,6 +66,7 @@ import {
   setSettingsSchema,
   contextMenuSchema,
   tabMenuSchema,
+  appMenuSchema,
   writeRecoverySchema,
   clearRecoverySchema,
   fileDroppedSchema,
@@ -79,7 +80,7 @@ import {
   damagedTabRecordSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
-import { createAppMenu, createContextMenus } from './menu';
+import { createContextMenus } from './menu';
 import { DEV_ORIGIN, installSessionSecurity, installWebContentsSecurity } from './security';
 
 installWebContentsSecurity();
@@ -188,22 +189,10 @@ if (!app.requestSingleInstanceLock()) {
 async function startApp(): Promise<void> {
   const log = createLogger(app.getPath('userData'));
   logRequest = (message) => log('open', message);
-  // M1–M3 (O3): our menu replaces Electron's default, whose registered accelerators (Ctrl+0,
-  // Ctrl+=) would zoom the page and steal editor keys. Installed before the window exists, so W6
-  // measures the frame with the menu bar in it.
-  const appMenu = createAppMenu({
-    Menu,
-    command: (command) =>
-      mainWindow?.webContents.send(CHANNELS.mainEvent, { type: 'command', command }),
-    text: (method) => mainWindow?.webContents[method](),
-    exit: () => mainWindow?.close(),
-    about: () => void about.show(),
-    // F10, R21: the path captured when the clicked menu was built; it waits in the open queue
-    // (R37) and then opens by T17 in the renderer.
-    openRecent: (path) => openRequests.request(path),
-    clearRecent: () => recent.clear(),
-  });
-  appMenu.apply(appMenu.state());
+  // R32, W4: there is no application menu: the ☰ button opens the same trees as one native popup
+  // (I9). Electron's default menu would register Ctrl+0, Ctrl+= and friends and steal editor keys,
+  // and a menu bar would take a row of the window; none is wanted. Cleared before the window exists.
+  Menu.setApplicationMenu(null);
   // AB1: the icon and the licence notices ship in resources/ (I1) or sit in build/ (dev).
   const about = createAbout({
     box: (options) =>
@@ -222,16 +211,15 @@ async function startApp(): Promise<void> {
     log: (message) => log('settings', message),
   });
   await store.load();
-  // F10: the recent list (paths stay here); every change is stored and rebuilds the menu.
+  // F10: the recent list (paths stay here); every change is stored. The ☰ popup reads it when it
+  // is built.
   const recent = createRecent({
     initial: store.get().recent,
     caseInsensitive: process.platform === 'win32',
     changed: (list) => {
       store.update((s) => ({ ...s, recent: [...list] }));
-      appMenu.apply(appMenu.state(), recent.entries());
     },
   });
-  appMenu.apply(appMenu.state(), recent.entries());
   installSessionSecurity(
     (message) => log('security', message),
     () => {
@@ -500,8 +488,23 @@ async function startApp(): Promise<void> {
   ipc.handle(CHANNELS.showFileError, fileErrorSchema, (request) => dialogs.showFileError(request));
   ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
   // CM1–CM3 (A13): the canvas menu on request (I6); the text-field menu from webContents.
-  const contextMenus = createContextMenus({ Menu, window: () => mainWindow });
+  const contextMenus = createContextMenus({
+    Menu,
+    window: () => mainWindow,
+    app: {
+      text: (method) => mainWindow?.webContents[method](),
+      exit: () => mainWindow?.close(),
+      about: () => void about.show(),
+      // F10, R21: the path captured when the popup was built; it waits in the open queue (R37)
+      // and then opens by T17 in the renderer.
+      openRecent: (path) => openRequests.request(path),
+      clearRecent: () => recent.clear(),
+      recent: () => recent.entries(),
+    },
+  });
   ipc.handle(CHANNELS.showContextMenu, contextMenuSchema, (request) => contextMenus.show(request));
+  // I9 (M4, R32): the ☰ menu shares the popup slot with CM1 and T15 (M5).
+  ipc.handle(CHANNELS.showAppMenu, appMenuSchema, (request) => contextMenus.showApp(request));
   // I10 (T15, CM4): the tab menu shares the popup slot with CM1 (M5); the tab strip asks for it.
   ipc.handle(CHANNELS.showTabMenu, tabMenuSchema, (request) => contextMenus.showTab(request));
   // Recovery (RC1–RC6): one ordered chain of writes and clears in userData/recovery.
@@ -555,12 +558,11 @@ async function startApp(): Promise<void> {
   ipc.handle(CHANNELS.setSettings, setSettingsSchema, (change) => {
     store.update((s) => withRendererSettings(s, change));
   });
-  let session: { title: string; dirty: boolean } | undefined;
+  let shownTitle: string | undefined;
   let closing: ReturnType<typeof guardClose> | undefined;
   ipc.on(CHANNELS.updateSession, sessionUpdateSchema, (value) => {
-    if (session?.title !== value.title) mainWindow?.setTitle(value.title);
-    session = { title: value.title, dirty: value.dirty };
-    appMenu.apply(value.menu);
+    if (shownTitle !== value.title) mainWindow?.setTitle(value.title);
+    shownTitle = value.title;
     closing?.rendererReady();
     openRequests.listening();
   });

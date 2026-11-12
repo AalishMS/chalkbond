@@ -1,12 +1,12 @@
-// A11 shot (tasks/todo-app-shell.md): 960×640 content with the native menu bar present. The page
-// shows all ten rail buttons; the native menu bar is outside the shot (its look is on the Windows
-// checklist, A04–A06).
+// A11 shot (tasks/todo-app-shell.md): 960×640 content. The page shows all ten rail buttons and the
+// ☰ button (A19, A21; R32: there is no menu bar any more; the popup is native and outside the shot,
+// its look is on the Windows checklist).
 import { expect, test } from '@playwright/test';
 import { menuItem } from '../app-menu';
 import { loadScheme } from '../fixtures';
 import { openApp, shot } from '../harness';
 
-test('A11 menu-960: the scheme at the minimum content size with the menu installed', async () => {
+test('A11 menu-960: the scheme at the minimum content size with the ☰ button', async () => {
   const { app, page } = await openApp({ size: [960, 640] });
   try {
     await loadScheme(page);

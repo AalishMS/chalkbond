@@ -22,6 +22,8 @@ export interface MenuState {
   canSelectAll: boolean;
   canZoomIn: boolean;
   canZoomOut: boolean;
+  /** R40: the closed-tab list has an entry, so Reopen closed tab does something (M6). */
+  canReopenTab: boolean;
   preset: 'slides' | 'journal';
 }
 
@@ -41,6 +43,7 @@ export const MENU_STATE_KEYS = [
   'canSelectAll',
   'canZoomIn',
   'canZoomOut',
+  'canReopenTab',
   'preset',
 ] as const satisfies readonly (keyof MenuState)[];
 
@@ -51,6 +54,8 @@ export const APP_COMMANDS = [
   'file.save',
   'file.save-as',
   'file.export',
+  'file.reopen-tab',
+  'file.close-tab',
   'edit.undo',
   'edit.redo',
   'edit.cut',
@@ -94,11 +99,14 @@ export function commandEnabled(id: AppCommand | MainMenuId, s: MenuState, recent
     case 'file.open':
     case 'file.save':
     case 'file.save-as':
+    case 'file.close-tab':
     case 'edit.paste':
     case 'view.style-slides':
     case 'view.style-handout':
     case 'help.shortcuts':
       return s.idle;
+    case 'file.reopen-tab':
+      return s.idle && s.canReopenTab;
     case 'file.recent':
     case 'file.recent.clear':
       return s.idle && recent > 0;

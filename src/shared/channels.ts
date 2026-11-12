@@ -11,6 +11,7 @@ export const CHANNELS = {
   showFileError: 'dialog:file-error',
   showContextMenu: 'context-menu:show',
   showTabMenu: 'tab-menu:show',
+  showAppMenu: 'app-menu:show',
   startup: 'app:startup',
   setSettings: 'settings:set',
   updateSession: 'session:update',

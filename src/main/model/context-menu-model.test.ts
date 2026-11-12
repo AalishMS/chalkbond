@@ -20,6 +20,7 @@ const idle: MenuState = {
   canSelectAll: true,
   canZoomIn: true,
   canZoomOut: true,
+  canReopenTab: false,
   preset: 'slides',
 };
 

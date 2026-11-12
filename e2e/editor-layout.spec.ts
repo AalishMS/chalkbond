@@ -280,7 +280,18 @@ test('option buttons are 28x32 below 1100 px with the tab strip (A21) and 2 px a
 async function checkTopAndStatus(page: Page, [w]: Size): Promise<void> {
   // Without host actions the original editor clamp and positions stay unchanged.
   const field = await box(page.getByTestId('namefield'));
-  near(field.x, 12);
+  // The host's ☰ button (editor R56 `menu` slot, A19): 32 x 32 at the left edge, 8 px before the
+  // name field.
+  const hasMenu = (await page.getByTestId('app-menu').count()) > 0;
+  if (hasMenu) {
+    await expect(page.getByTestId('topbar')).toHaveClass(/has-menu/);
+    const menu = await box(page.getByTestId('app-menu'));
+    near(menu.x, 12);
+    near(menu.y, 8);
+    near(menu.width, 32);
+    near(menu.height, 32);
+    near(field.x - (menu.x + menu.width), 8);
+  } else near(field.x, 12);
   near(field.height, 32);
   const hasActions = (await page.getByTestId('topbar-actions').count()) > 0;
   if (hasActions) {

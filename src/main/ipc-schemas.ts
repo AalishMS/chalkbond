@@ -22,12 +22,12 @@ const menuStateSchema = z
     canSelectAll: z.boolean(),
     canZoomIn: z.boolean(),
     canZoomOut: z.boolean(),
+    canReopenTab: z.boolean(),
     preset: z.enum(['slides', 'journal']),
   })
   .strict();
-export const sessionUpdateSchema = z
-  .object({ title: z.string().max(300), dirty: z.boolean(), menu: menuStateSchema })
-  .strict();
+/** N1 (2026-11-12): the window title only (no application menu to rebuild, R32). */
+export const sessionUpdateSchema = z.object({ title: z.string().max(300) }).strict();
 
 const maxDrawingBytes = 20 * 1024 * 1024;
 /** clipboard-export Decision C9: a picture carrier (PNG, SVG) may be up to 64 MiB. */
@@ -144,6 +144,12 @@ export const tabMenuSchema = z
     state: z.object({ canReopenTab: z.boolean() }).strict(),
     at: z.object({ x: z.number(), y: z.number() }).strict().nullable(),
   })
+  .strict();
+
+// I9 (SPEC-app-shell.md M4, R32): the menu state now and the ☰ button's bottom-left corner
+// (content CSS px; main clamps it to the content size).
+export const appMenuSchema = z
+  .object({ state: menuStateSchema, x: z.number().finite(), y: z.number().finite() })
   .strict();
 
 // A8 (SPEC-app-shell.md N2, N5): the session file by ref (null for Untitled) and the close answer.

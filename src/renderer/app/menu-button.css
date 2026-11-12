@@ -1,0 +1,14 @@
+/*
+ * The ☰ button (SPEC-app-shell.md M4; mock-up A19, copied from `docs/mockups/shell/shell.css`
+ * "Menu button"). Tokens only. The button is the editor's `.btn.btn-top` (32 x 32) in the editor's
+ * top bar slot; the narrower option buttons below 1100 px are in `tab-strip.css` (A21).
+ */
+
+.btn-menu {
+  margin-right: var(--space-3);
+}
+
+/* Open: the button stays pressed while its native popup is shown. */
+.btn-menu[aria-expanded='true'] {
+  background: var(--pressed-bg);
+}

@@ -20,6 +20,7 @@ const ready: MenuState = {
   canSelectAll: true,
   canZoomIn: true,
   canZoomOut: true,
+  canReopenTab: true,
   preset: 'slides',
 };
 
@@ -52,6 +53,9 @@ describe('menuModel', () => {
         '—',
         'file.export',
         '—',
+        'file.reopen-tab',
+        'file.close-tab',
+        '—',
         'file.exit',
       ],
       [
@@ -83,13 +87,15 @@ describe('menuModel', () => {
     const menus = menuModel(ready, []);
     const rows = Object.fromEntries(menuItems(menus).map((n) => [n.id, row(n)]));
     expect(rows).toEqual({
-      'file.new': ['&New', 'CmdOrCtrl+N', true],
+      'file.new': ['&New tab', 'CmdOrCtrl+T', true],
       'file.open': ['&Open…', 'CmdOrCtrl+O', true],
       'file.recent': ['Open &recent', null, false],
       'file.recent.clear': ['&Clear recently opened', null, false],
       'file.save': ['&Save', 'CmdOrCtrl+S', true],
       'file.save-as': ['Save &as…', 'CmdOrCtrl+Shift+S', true],
       'file.export': ['&Export…', 'CmdOrCtrl+E', true],
+      'file.reopen-tab': ['Reopen closed &tab', 'CmdOrCtrl+Shift+T', true],
+      'file.close-tab': ['&Close tab', 'CmdOrCtrl+W', true],
       'file.exit': ['E&xit', 'Alt+F4', true],
       'edit.undo': ['&Undo add bond', 'CmdOrCtrl+Z', true],
       'edit.redo': ['&Redo change element', 'CmdOrCtrl+Y', true],
@@ -102,12 +108,28 @@ describe('menuModel', () => {
       'view.zoom-in': ['Zoom &in', 'CmdOrCtrl+=', true],
       'view.zoom-out': ['Zoom &out', 'CmdOrCtrl+-', true],
       'view.zoom-fit': ['&Fit drawing', 'CmdOrCtrl+0', true],
-      'view.zoom-reset': ['Zoom to &100%', 'CmdOrCtrl+1', true],
+      'view.zoom-reset': ['Zoom to &100%', null, true],
       'view.style-slides': ['&Slides style', null, true],
       'view.style-handout': ['&Handout style', null, true],
       'help.shortcuts': ['&Keyboard shortcuts', 'F1', true],
       'help.about': ['&About Chalkbond', null, true],
     });
+  });
+
+  it('R46: no row carries CmdOrCtrl+1 (it is tab 1); Zoom to 100% has no accelerator at all', () => {
+    const items = menuItems(menuModel(ready, []));
+    expect(items.filter((i) => i.accelerator === 'CmdOrCtrl+1')).toEqual([]);
+    expect(byId(menuModel(ready, []), 'view.zoom-reset')).not.toHaveProperty('accelerator');
+  });
+
+  it('R47, M6: Reopen closed tab needs the reopen list; Close tab needs idle only', () => {
+    const none = menuModel({ ...ready, canReopenTab: false }, []);
+    expect(byId(none, 'file.reopen-tab').enabled).toBe(false);
+    expect(byId(none, 'file.close-tab').enabled).toBe(true);
+    const busy = menuModel({ ...ready, idle: false }, []);
+    expect(byId(busy, 'file.reopen-tab').enabled).toBe(false);
+    expect(byId(busy, 'file.close-tab').enabled).toBe(false);
+    expect(byId(busy, 'file.exit').enabled).toBe(true);
   });
 
   it('routes every renderer row as a command and Exit, About, recent to main', () => {

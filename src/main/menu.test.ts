@@ -1,179 +1,47 @@
-// menu.ts with a fake `Menu` (SPEC-app-shell.md M1–M3, TH5): the template Electron receives.
-import { describe, expect, it, vi } from 'vitest';
+// menu.ts with a fake `Menu` (SPEC-app-shell.md M1–M5, R32, TH5): the popups Electron receives.
+import { describe, expect, it } from 'vitest';
 import type { MenuItemConstructorOptions } from 'electron';
 import type { MenuState } from '../shared/menu';
-import {
-  createAppMenu,
-  createContextMenus,
-  INITIAL_MENU_STATE,
-  type ContextMenuPorts,
-  type MenuPorts,
-} from './menu';
+import { createContextMenus, type ContextMenuPorts } from './menu';
+import type { RecentEntry } from './model/recent';
 
 type Template = MenuItemConstructorOptions[];
 const ready: MenuState = {
-  ...INITIAL_MENU_STATE,
   idle: true,
+  modal: false,
+  textFocus: false,
   empty: false,
   hasSelection: true,
   canUndo: true,
   canRedo: true,
+  undoLabel: null,
+  redoLabel: null,
   canCut: true,
   canDuplicate: true,
   canDelete: true,
   canSelectAll: true,
   canZoomIn: true,
   canZoomOut: true,
+  canReopenTab: true,
+  preset: 'slides',
 };
-
-function setup() {
-  const templates: Template[] = [];
-  const calls: unknown[] = [];
-  const ports: MenuPorts = {
-    Menu: {
-      buildFromTemplate: (template: Template) => {
-        templates.push(template);
-        return { template } as never;
-      },
-      setApplicationMenu: vi.fn(),
-    },
-    command: (command) => calls.push(['command', command]),
-    text: (method) => calls.push(['text', method]),
-    exit: () => calls.push(['exit']),
-    about: () => calls.push(['about']),
-    openRecent: (path) => calls.push(['open-recent', path]),
-    clearRecent: () => calls.push(['clear-recent']),
-  };
-  return { menu: createAppMenu(ports), ports, templates, calls };
-}
-
-function flat(template: Template): MenuItemConstructorOptions[] {
-  return template.flatMap((item) => [
-    item,
-    ...(Array.isArray(item.submenu) ? flat(item.submenu) : []),
-  ]);
-}
-const find = (template: Template | undefined, id: string) => {
-  const item = flat(template ?? []).find((i) => i.id === id);
-  if (!item?.click) throw new Error(`no ${id}`);
-  return item as MenuItemConstructorOptions & { click: () => void };
-};
-
-describe('createAppMenu', () => {
-  it('M2/R1: every item, separators and menus included, registerAccelerator false, no role', () => {
-    const { menu, templates, ports } = setup();
-    menu.apply(ready, [{ label: 'a.chalk — Grade 11', path: '/g11/a.chalk' }]);
-    const template = templates[0] ?? [];
-    expect(ports.Menu.setApplicationMenu).toHaveBeenCalledTimes(1);
-    const items = flat(template);
-    expect(items.length).toBeGreaterThan(30);
-    for (const item of items) {
-      expect(item.registerAccelerator, item.id ?? item.type).toBe(false);
-      expect(item.role, item.id).toBeUndefined();
-    }
-    expect(template.map((m) => m.label)).toEqual(['&File', '&Edit', '&View', '&Help']);
-    expect(find(template, 'edit.undo').accelerator).toBe('CmdOrCtrl+Z');
-    expect(find(template, 'view.style-slides')).toMatchObject({ type: 'radio', checked: true });
-  });
-
-  it('routes clicks: renderer commands, text methods, Exit, About, recent', () => {
-    const { menu, templates, calls } = setup();
-    menu.apply(ready, [{ label: 'a.chalk — X', path: '/x/a.chalk' }]);
-    for (const id of ['file.save', 'file.exit', 'help.about', 'file.recent.0', 'file.recent.clear'])
-      find(templates.at(-1), id).click();
-    menu.apply({ ...ready, textFocus: true });
-    find(templates.at(-1), 'edit.copy').click();
-    find(templates.at(-1), 'edit.select-all').click();
-    expect(calls).toEqual([
-      ['command', 'file.save'],
-      ['exit'],
-      ['about'],
-      ['open-recent', '/x/a.chalk'],
-      ['clear-recent'],
-      ['text', 'copy'],
-      ['text', 'selectAll'],
-    ]);
-  });
-
-  it('R21: a recent click opens the path captured when its menu was built, not a later list', () => {
-    const { menu, templates, calls } = setup();
-    menu.apply(ready, [
-      { label: 'a.chalk', path: '/one/a.chalk' },
-      { label: 'b.chalk', path: '/one/b.chalk' },
-    ]);
-    const stale = find(templates.at(-1), 'file.recent.1');
-    // The list reorders (an open elsewhere) before the stale item is clicked.
-    menu.apply(ready, [
-      { label: 'b.chalk', path: '/one/b.chalk' },
-      { label: 'a.chalk', path: '/one/a.chalk' },
-    ]);
-    stale.click();
-    find(templates.at(-1), 'file.recent.1').click();
-    expect(calls).toEqual([
-      ['open-recent', '/one/b.chalk'],
-      ['open-recent', '/one/a.chalk'],
-    ]);
-  });
-
-  it('a recent entry built disabled (not idle) is ignored when clicked', () => {
-    const { menu, templates, calls } = setup();
-    menu.apply({ ...ready, idle: false }, [{ label: 'a.chalk', path: '/a.chalk' }]);
-    find(templates.at(-1), 'file.recent.0').click();
-    find(templates.at(-1), 'file.recent.clear').click();
-    expect(calls).toEqual([]);
-  });
-
-  it('ignores a click on an item built disabled (MenuItem.click does not check)', () => {
-    const { menu, templates, calls } = setup();
-    menu.apply({ ...ready, modal: true });
-    for (const id of ['file.save', 'file.exit', 'help.about', 'edit.copy'])
-      find(templates.at(-1), id).click();
-    expect(calls).toEqual([]);
-  });
-
-  it('rebuilds only when the state or the recent list changed', () => {
-    const { menu, templates } = setup();
-    menu.apply(ready);
-    menu.apply({ ...ready });
-    expect(templates).toHaveLength(1);
-    menu.apply({ ...ready, undoLabel: 'Add bond' });
-    expect(templates).toHaveLength(2);
-    menu.apply({ ...ready, undoLabel: 'Add bond' }, [{ label: 'x', path: '/x' }]);
-    expect(templates).toHaveLength(3);
-    menu.apply({ ...ready, undoLabel: 'Add bond' }, [{ label: 'x', path: '/x' }]);
-    expect(templates).toHaveLength(3);
-    // Same label, another file: the click must open the new path, so the menu is rebuilt.
-    menu.apply({ ...ready, undoLabel: 'Add bond' }, [{ label: 'x', path: '/y/x' }]);
-    expect(templates).toHaveLength(4);
-    expect(menu.state().undoLabel).toBe('Add bond');
-  });
-
-  it('a radio click rebuilds from the model (the native flip is undone until N1)', async () => {
-    const { menu, templates, calls } = setup();
-    menu.apply(ready);
-    find(templates.at(-1), 'view.style-handout').click();
-    expect(calls).toEqual([['command', 'view.style-handout']]);
-    await new Promise((resolve) => setImmediate(resolve));
-    expect(templates).toHaveLength(2);
-    expect(find(templates.at(-1), 'view.style-slides').checked).toBe(true);
-  });
-
-  it('the initial state enables only Exit, About, Fit and Zoom to 100%', () => {
-    const { menu, templates } = setup();
-    menu.apply(INITIAL_MENU_STATE);
-    const enabled = flat(templates[0] ?? [])
-      .filter((i) => i.id?.includes('.') && i.enabled)
-      .map((i) => i.id);
-    expect(enabled).toEqual(['file.exit', 'view.zoom-fit', 'view.zoom-reset', 'help.about']);
-  });
-});
 
 // CM1–CM3 (A13): the popup Electron receives, the chosen command or null, at most one at a time.
 type Popup = { template: Template; options: { window?: unknown; callback?: () => void } };
-function contextSetup() {
+function contextSetup(initialRecent: RecentEntry[] = []) {
   const popups: Popup[] = [];
-  const win = { id: 'main-window' };
+  const calls: unknown[] = [];
+  const recent = { list: initialRecent };
+  const win = { id: 'main-window', getContentSize: () => [960, 640] };
   const ports: ContextMenuPorts = {
+    app: {
+      text: (method) => calls.push(['text', method]),
+      exit: () => calls.push(['exit']),
+      about: () => calls.push(['about']),
+      openRecent: (path) => calls.push(['open-recent', path]),
+      clearRecent: () => calls.push(['clear-recent']),
+      recent: () => recent.list,
+    },
     Menu: {
       buildFromTemplate: (template: Template) => {
         const popup: Popup = { template, options: {} };
@@ -187,14 +55,189 @@ function contextSetup() {
     },
     window: () => win as never,
   };
+  const find = (nodes: Template, id: string): MenuItemConstructorOptions | undefined => {
+    for (const item of nodes) {
+      if (item.id === id) return item;
+      const inner = Array.isArray(item.submenu) ? find(item.submenu, id) : undefined;
+      if (inner) return inner;
+    }
+    return undefined;
+  };
   const click = (popup: Popup | undefined, id: string) => {
-    const item = popup?.template.find((i) => i.id === id);
+    const item = find(popup?.template ?? [], id);
     if (!item?.click) throw new Error(`no ${id}`);
     (item.click as () => void)();
   };
   const close = (popup: Popup | undefined) => popup?.options.callback?.();
-  return { menus: createContextMenus(ports), popups, win, click, close };
+  return {
+    menus: createContextMenus(ports),
+    popups,
+    win,
+    click,
+    close,
+    calls,
+    recent,
+    find,
+    ports,
+  };
 }
+
+function flat(template: Template): MenuItemConstructorOptions[] {
+  return template.flatMap((item) => [
+    item,
+    ...(Array.isArray(item.submenu) ? flat(item.submenu) : []),
+  ]);
+}
+
+describe('createContextMenus ☰ menu (I9, M1, M2, M4, M5)', () => {
+  const at = (state: MenuState = ready, x = 8, y = 44) => ({ state, x, y });
+
+  it('SC16/M2/R1: one popup of four submenus; every item registers no accelerator and has no role', () => {
+    const { menus, popups, win } = contextSetup([
+      { label: 'a.chalk — Grade 11', path: '/g/a.chalk' },
+    ]);
+    void menus.showApp(at());
+    const popup = popups[0];
+    expect(popups).toHaveLength(1);
+    expect(popup?.options.window).toBe(win);
+    expect(popup?.template.map((m) => m.label)).toEqual(['&File', '&Edit', '&View', '&Help']);
+    const items = flat(popup?.template ?? []);
+    expect(items.length).toBeGreaterThan(30);
+    for (const item of items) {
+      expect(item.registerAccelerator, item.id ?? item.type).toBe(false);
+      expect(item.role, item.id).toBeUndefined();
+    }
+    const byId = (id: string) => items.find((i) => i.id === id);
+    expect(byId('file.new')).toMatchObject({ label: '&New tab', accelerator: 'CmdOrCtrl+T' });
+    expect(byId('file.reopen-tab')).toMatchObject({ accelerator: 'CmdOrCtrl+Shift+T' });
+    expect(byId('file.close-tab')).toMatchObject({ accelerator: 'CmdOrCtrl+W' });
+    expect(byId('view.zoom-reset')).not.toHaveProperty('accelerator');
+    expect(byId('view.style-slides')).toMatchObject({ type: 'radio', checked: true });
+    expect(byId('file.recent.0')?.label).toBe('&1 a.chalk — Grade 11');
+  });
+
+  it('pops up at the point given, rounded', async () => {
+    const { menus, popups, close } = contextSetup();
+    const first = menus.showApp(at(ready, 8.4, 43.6));
+    expect(popups[0]?.options).toMatchObject({ x: 8, y: 44 });
+    close(popups[0]);
+    await first;
+  });
+
+  it('clamps x and y to [0, content size]', async () => {
+    const { menus, popups, close } = contextSetup();
+    const first = menus.showApp(at(ready, -20, 5000));
+    expect(popups[0]?.options).toMatchObject({ x: 0, y: 640 });
+    close(popups[0]);
+    await first;
+    const second = menus.showApp(at(ready, 4000, -1));
+    expect(popups[1]?.options).toMatchObject({ x: 960, y: 0 });
+    close(popups[1]);
+    await second;
+  });
+
+  it('a renderer command resolves with its id; the renderer runs it', async () => {
+    const { menus, popups, click, close, calls } = contextSetup();
+    const chosen = menus.showApp(at());
+    click(popups[0], 'file.close-tab');
+    close(popups[0]);
+    await expect(chosen).resolves.toBe('file.close-tab');
+    expect(calls).toEqual([]);
+  });
+
+  it('items main runs itself (Exit, About, text, recent, Clear) run here and answer null', async () => {
+    const { menus, popups, click, close, calls } = contextSetup([
+      { label: 'x', path: '/x/a.chalk' },
+    ]);
+    const runOne = async (state: MenuState, id: string) => {
+      const answer = menus.showApp(at(state));
+      const popup = popups.at(-1);
+      click(popup, id);
+      close(popup);
+      await expect(answer).resolves.toBeNull();
+    };
+    for (const id of ['file.exit', 'help.about', 'file.recent.0', 'file.recent.clear'])
+      await runOne(ready, id);
+    await runOne({ ...ready, textFocus: true }, 'edit.copy');
+    await runOne({ ...ready, textFocus: true }, 'edit.select-all');
+    expect(calls).toEqual([
+      ['exit'],
+      ['about'],
+      ['open-recent', '/x/a.chalk'],
+      ['clear-recent'],
+      ['text', 'copy'],
+      ['text', 'selectAll'],
+    ]);
+  });
+
+  it('R21: a recent click opens the path captured when the popup was built', async () => {
+    const { menus, popups, click, close, calls, recent } = contextSetup([
+      { label: 'a', path: '/one/a.chalk' },
+      { label: 'b', path: '/one/b.chalk' },
+    ]);
+    const answer = menus.showApp(at());
+    recent.list = [{ label: 'b', path: '/one/b.chalk' }];
+    click(popups[0], 'file.recent.1');
+    close(popups[0]);
+    await answer;
+    expect(calls).toEqual([['open-recent', '/one/b.chalk']]);
+  });
+
+  it('at most eight recent entries are listed (O4)', () => {
+    const many = Array.from({ length: 11 }, (_, i) => ({ label: `d${i}`, path: `/d${i}` }));
+    const { menus, popups } = contextSetup(many);
+    void menus.showApp(at());
+    const ids = flat(popups[0]?.template ?? []).map((i) => i.id);
+    expect(ids).toContain('file.recent.7');
+    expect(ids).not.toContain('file.recent.8');
+  });
+
+  it('M1/R19: an item built disabled is ignored when clicked; a modal state disables all', async () => {
+    const { menus, popups, click, close, calls } = contextSetup();
+    const answer = menus.showApp(at({ ...ready, modal: true }));
+    for (const id of ['file.save', 'file.exit', 'help.about', 'edit.copy', 'file.close-tab'])
+      click(popups[0], id);
+    close(popups[0]);
+    await expect(answer).resolves.toBeNull();
+    expect(calls).toEqual([]);
+    for (const item of flat(popups[0]?.template ?? []).filter((i) => i.id?.includes('.')))
+      expect(item.enabled, item.id).toBe(false);
+  });
+
+  it('dismissed (Esc, a click elsewhere) answers null', async () => {
+    const { menus, popups, close } = contextSetup();
+    const dismissed = menus.showApp(at());
+    close(popups[0]);
+    await expect(dismissed).resolves.toBeNull();
+  });
+
+  it('M5: a second popup request while the ☰ popup is open is ignored, in every direction', async () => {
+    const { menus, popups, click, close } = contextSetup();
+    const first = menus.showApp(at());
+    await expect(menus.showApp(at())).resolves.toBeNull();
+    await expect(menus.show({ onItem: true, state: ready })).resolves.toBeNull();
+    await expect(menus.showTab({ state: { canReopenTab: true }, at: null })).resolves.toBeNull();
+    expect(popups).toHaveLength(1);
+    click(popups[0], 'file.new');
+    close(popups[0]);
+    await expect(first).resolves.toBe('file.new');
+    // Closed: the canvas menu is allowed again, and then blocks the ☰ popup.
+    void menus.show({ onItem: true, state: ready });
+    await expect(menus.showApp(at())).resolves.toBeNull();
+    expect(popups).toHaveLength(2);
+  });
+
+  it('no window: null and no popup', async () => {
+    const { popups, ports } = contextSetup();
+    const menus = createContextMenus({
+      ...ports,
+      Menu: { buildFromTemplate: () => ({ popup: () => popups.push({} as Popup) }) as never },
+      window: () => undefined,
+    });
+    await expect(menus.showApp(at())).resolves.toBeNull();
+    expect(popups).toHaveLength(0);
+  });
+});
 
 describe('createContextMenus (CM1, CM2)', () => {
   it('pops the item menu up on the window: ids, labels, no role, no registered accelerator', async () => {
@@ -256,6 +299,7 @@ describe('createContextMenus (CM1, CM2)', () => {
     const menus = createContextMenus({
       Menu: { buildFromTemplate: () => ({ popup: () => popups.push({} as Popup) }) as never },
       window: () => undefined,
+      app: contextSetup().ports.app,
     });
     await expect(menus.show({ onItem: true, state: ready })).resolves.toBeNull();
     expect(popups).toHaveLength(0);
@@ -349,6 +393,7 @@ describe('createContextMenus tab menu (T15, CM4, M5)', () => {
     const menus = createContextMenus({
       Menu: { buildFromTemplate: () => ({ popup: () => popups.push({} as Popup) }) as never },
       window: () => undefined,
+      app: contextSetup().ports.app,
     });
     await expect(menus.showTab(tab(true))).resolves.toBeNull();
     expect(popups).toHaveLength(0);

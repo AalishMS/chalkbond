@@ -60,11 +60,11 @@ export function saveAsName(session: Session): string {
   return `${stem}.chalk`;
 }
 
-/** N1's title and dirty (the host adds the menu state). */
+/** W3's title and whether it is marked dirty. */
 export function sessionUpdate(
   session: Session,
   controllerDirty: boolean,
-): Omit<SessionUpdate, 'menu'> {
+): SessionUpdate & { dirty: boolean } {
   const dirty = session.forcedDirty || controllerDirty;
   return { title: windowTitle(session.name, dirty), dirty };
 }

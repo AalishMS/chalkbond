@@ -1,11 +1,12 @@
-// A11 (SPEC-app-shell.md K1–K3, W6; SC12): host keys with the native menu installed. The menu
-// registers no accelerator, so every key reaches the page: K1 for the host, the rest for the
-// editor or the focused text field.
+// A11 (SPEC-app-shell.md K1–K3, W6; SC12): host keys. No menu registers an accelerator (there is no
+// application menu, R32), so every key reaches the page: K1 for the host, the rest for the editor
+// or the focused text field.
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import { menuItem } from './app-menu';
+import { menuItem, popups, stubPopup } from './app-menu';
 import { loadScheme } from './fixtures';
 import {
   canvasPoint,
+  expectNoNetwork,
   menuRequests,
   openApp,
   readDocument,
@@ -70,12 +71,26 @@ test('K1: every host key reaches its action with the menu installed', async () =
     await expect(page.getByTestId('zoom-reset')).toHaveText('100%');
     await page.keyboard.press('Control+=');
     await expect(page.getByTestId('zoom-reset')).toHaveText('125%');
+    // R46: Ctrl+1 is tab 1 (here the only tab), never Zoom to 100%: the readout stays at 125%.
+    await page.keyboard.press('Control+1');
+    await page.waitForTimeout(100);
+    await expect(page.getByTestId('zoom-reset')).toHaveText('125%');
+    expect((await readTabs(page)).map((t) => t.active)).toEqual([true]);
 
     // T7 (R36): Ctrl+N is a new tab; nothing is asked.
     await page.keyboard.press('Control+n');
     await expect.poll(() => atoms(page)).toBe(0);
     expect((await readTabs(page)).map((t) => t.label)).toEqual(['Untitled', 'Untitled 2']);
     expect(await dialogLog(app)).toHaveLength(3);
+    // R36, R46: Ctrl+1 goes to tab 1, Ctrl+2 back to tab 2; the zoom readout is no key's target.
+    await page.keyboard.press('Control+1');
+    await expect
+      .poll(async () => (await readTabs(page)).map((t) => t.active))
+      .toEqual([true, false]);
+    await page.keyboard.press('Control+2');
+    await expect
+      .poll(async () => (await readTabs(page)).map((t) => t.active))
+      .toEqual([false, true]);
   } finally {
     await app.close();
   }
@@ -120,10 +135,12 @@ test('text targets keep their keys: Ctrl+A and Ctrl+V in the name field stay the
   }
 });
 
-test('K3 (R32): after an Alt+click the Alt key-up is consumed and opens nothing; a lone Alt and F10 ask for the menu', async () => {
+test('K3 (R32): after an Alt+click the Alt key-up is consumed and opens nothing; a lone Alt and F10 open the ☰ popup', async () => {
   const { app, page } = await openApp();
   try {
     await loadScheme(page);
+    await stubPopup(app, []);
+    const opened = async (): Promise<number> => (await popups(app)).length;
     await page.evaluate(() => {
       const log: boolean[] = [];
       (window as { __altUps?: boolean[] }).__altUps = log;
@@ -141,16 +158,18 @@ test('K3 (R32): after an Alt+click the Alt key-up is consumed and opens nothing;
     await page.keyboard.up('Alt');
     await expect.poll(ups).toEqual([true]);
     expect(await menuRequests(page)).toBe(0);
+    expect(await opened()).toBe(0);
     // Editor Decision 6: Alt+click picked one atom; the next key goes to the editor.
     expect((await readSelection(page)).atoms).toHaveLength(1);
     await page.mouse.move(5, 5); // off the atom: B is then the Bond tool, not bromine
     await page.keyboard.press('b');
     await expect(page.getByTestId('tool-bond')).toHaveAttribute('aria-pressed', 'true');
 
-    // K3: a lone Alt asks for the menu on its key-up (prevented); TB26 opens the ☰ menu there.
+    // K3: a lone Alt opens the ☰ popup on its key-up (prevented).
     await page.keyboard.press('Alt');
     await expect.poll(ups).toEqual([true, true]);
     await expect.poll(() => menuRequests(page)).toBe(1);
+    await expect.poll(opened).toBe(1);
     // Alt+click, then another key before Alt goes up: disarmed, Alt-up not consumed.
     await page.getByTestId('tool-select').click();
     await page.keyboard.down('Alt');
@@ -159,16 +178,19 @@ test('K3 (R32): after an Alt+click the Alt key-up is consumed and opens nothing;
     await page.keyboard.up('Alt');
     await expect.poll(ups).toEqual([true, true, false]);
     expect(await menuRequests(page)).toBe(1);
-    // K1, M4: F10 alone asks for the menu too.
+    expect(await opened()).toBe(1);
+    // K1, M4: F10 alone opens it too.
     await page.getByTestId('canvas').focus();
     await page.keyboard.press('F10');
     await expect.poll(() => menuRequests(page)).toBe(2);
+    await expect.poll(opened).toBe(2);
+    await expectNoNetwork(app);
   } finally {
     await app.close();
   }
 });
 
-test('SC12/W6: at 960×640 content with the menu bar the rail’s Text button is fully visible', async () => {
+test('SC12/W6/R32: at 960×640 content there is no menu bar and the rail’s Text button is fully visible', async () => {
   const { app, page } = await openApp({ size: [960, 640] });
   try {
     await page.getByTestId('canvas').waitFor();
@@ -176,8 +198,8 @@ test('SC12/W6: at 960×640 content with the menu bar the rail’s Text button is
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()[0]?.isMenuBarVisible(),
       ),
-    ).toBe(true);
-    // The window cannot be made smaller than 960×640 content (W6; the menu bar is frame).
+    ).toBe(false);
+    // The window cannot be made smaller than 960×640 content (W6).
     const content = await app.evaluate(({ BrowserWindow }) => {
       const win = BrowserWindow.getAllWindows()[0];
       win?.setSize(200, 200);

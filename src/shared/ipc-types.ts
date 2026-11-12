@@ -27,6 +27,7 @@ export interface IpcRequestMap {
   'dialog:file-error': FileErrorRequest;
   'context-menu:show': ContextMenuRequest;
   'tab-menu:show': TabMenuRequest;
+  'app-menu:show': AppMenuRequest;
   'log:error': LogErrorRequest;
   'app:startup': Record<string, never>;
   'settings:set': Partial<RendererSettings>;
@@ -66,11 +67,9 @@ export interface StartupSession {
   tabs: SessionTab[];
   active: string;
 }
+/** N1 (2026-11-12): the window title only; there is no application menu to rebuild (R32). */
 export interface SessionUpdate {
   title: string;
-  dirty: boolean;
-  /** A11: the menu's state; main rebuilds the menu when it changed. */
-  menu: MenuState;
 }
 
 export interface ClipboardWriteRequest {
@@ -142,6 +141,15 @@ export type FileErrorRequest =
   | { problem: FileProblem; name: string }
   | { context: 'auto-save'; problem: AutoSaveProblem; name: string }
   | { context: 'keep'; problem: KeepProblem; name: string };
+
+/** I9 (M4): the ☰ menu's state now and the button's bottom-left corner in content CSS px. */
+export interface AppMenuRequest {
+  state: MenuState;
+  x: number;
+  y: number;
+}
+/** I9: a renderer command to run, or null (dismissed, or an item main ran itself). */
+export type AppMenuAnswer = AppCommand | null;
 
 /** I10 (T15): the tab menu's items; only the answer leaves main. */
 export interface TabMenuState {

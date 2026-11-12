@@ -1,11 +1,10 @@
-// The renderer side of the native menu (SPEC-app-shell.md "Process split and IPC", M1, R19):
+// The renderer side of the ☰ menu (SPEC-app-shell.md "Process split and IPC", M1, M4, R19):
 // MenuState from the controller, focus and dialogs; a once-per-frame scheduler; and the dispatcher
 // that re-checks a menu command against the current state before it runs.
 import {
   APP_COMMANDS,
   commandEnabled,
   isTextEditCommand,
-  MENU_STATE_KEYS,
   type AppCommand,
   type MenuState,
 } from '../../../shared/menu';
@@ -25,7 +24,12 @@ function hasKeys(record: object): boolean {
 
 export function deriveMenuState(
   c: MenuController,
-  view: { readonly textFocus: boolean; readonly modal: boolean },
+  view: {
+    readonly textFocus: boolean;
+    readonly modal: boolean;
+    /** R40: the closed-tab list has an entry (M6). */
+    readonly canReopenTab: boolean;
+  },
 ): MenuState {
   const doc = c.getDoc();
   const selection = c.getSelection();
@@ -45,12 +49,9 @@ export function deriveMenuState(
     canSelectAll: c.canRun('select-all'),
     canZoomIn: c.canRun('zoom-in'),
     canZoomOut: c.canRun('zoom-out'),
+    canReopenTab: view.canReopenTab,
     preset: doc.style.preset,
   };
-}
-
-export function sameMenuState(a: MenuState | undefined, b: MenuState): boolean {
-  return a !== undefined && MENU_STATE_KEYS.every((key) => a[key] === b[key]);
 }
 
 /** Calls `publish` at most once per animation frame, however often `invalidate` is called. */
@@ -83,6 +84,10 @@ export interface AppActions {
   save(): void;
   saveAs(): void;
   exportDialog(): void;
+  /** R47, T12: File > Reopen closed tab. */
+  reopenTab(): void;
+  /** R47, T8: File > Close tab, the active tab. */
+  closeTab(): void;
   /** CB-C1: the selection, or the whole drawing when nothing is selected. */
   copy(): void;
   /** CB-P1. */
@@ -103,6 +108,8 @@ const ACTIONS: Readonly<Record<AppCommand, (a: AppActions) => void>> = {
   'file.save': (a) => a.save(),
   'file.save-as': (a) => a.saveAs(),
   'file.export': (a) => a.exportDialog(),
+  'file.reopen-tab': (a) => a.reopenTab(),
+  'file.close-tab': (a) => a.closeTab(),
   'edit.undo': run('undo'),
   'edit.redo': run('redo'),
   'edit.cut': run('cut'),
