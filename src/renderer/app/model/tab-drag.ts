@@ -74,15 +74,25 @@ export function makeRoom(slots: readonly Slot[], from: number, to: number): numb
 
 /**
  * T13: the centre x of the 2 px accent line that shows the drop position: in the gap before the
- * first other tab when `to` is 0, else in the gap after the other tab that will precede it.
+ * first other tab when `to` is 0, else in the gap after the other tab that will precede it. Kept
+ * inside the tabs (1 px from either end): a line poking out of the tab list would widen its scroll
+ * width by a pixel or two at the ends, which shows the scroll buttons, shrinks the tabs, and so
+ * hides the buttons again, an endless update loop.
  */
 export function dropLineX(slots: readonly Slot[], from: number, to: number): number {
   const others = slots.filter((_, i) => i !== from);
   const half = gapOf(slots) / 2;
   const before = others[to - 1];
-  if (before !== undefined) return before.left + before.width + half;
-  const first = others[0] ?? slots[0];
-  return first === undefined ? 0 : first.left - half;
+  const gap = (): number => {
+    if (before !== undefined) return before.left + before.width + half;
+    const first = others[0] ?? slots[0];
+    return first === undefined ? 0 : first.left - half;
+  };
+  const x = gap();
+  const start = slots[0];
+  const end = slots[slots.length - 1];
+  if (start === undefined || end === undefined) return x;
+  return Math.min(Math.max(x, start.left + 1), end.left + end.width - 1);
 }
 
 /** What can end a drag without a drop (T13). */

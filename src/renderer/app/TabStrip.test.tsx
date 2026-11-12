@@ -6,6 +6,7 @@ import {
   ScrollButton,
   stripKey,
   tabDomId,
+  tabClickAction,
   tabHelp,
   tabMenuKeyAction,
   tabMenuMouseAction,
@@ -310,5 +311,22 @@ describe('the tab panel link', () => {
   it('tabDomId is stable and distinct per tab', () => {
     expect(tabDomId('a')).toBe(tabDomId('a'));
     expect(tabDomId('a')).not.toBe(tabDomId('b'));
+  });
+});
+
+describe('activation source (T11, TB27)', () => {
+  it('a click on a tab is a pointer activation: the host gives the canvas focus after it', () => {
+    const calls: [string, boolean][] = [];
+    tabClickAction({ current: false }, 'b', (id, pointer) => calls.push([id, pointer]));
+    expect(calls).toEqual([['b', true]]);
+  });
+  it('the click that follows a drop activates nothing, once', () => {
+    const calls: [string, boolean][] = [];
+    const dragged = { current: true };
+    tabClickAction(dragged, 'b', (id, pointer) => calls.push([id, pointer]));
+    expect(calls).toEqual([]);
+    expect(dragged.current).toBe(false);
+    tabClickAction(dragged, 'b', (id, pointer) => calls.push([id, pointer]));
+    expect(calls).toEqual([['b', true]]);
   });
 });

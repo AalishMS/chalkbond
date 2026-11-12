@@ -379,6 +379,27 @@ describe('SS6 (c): the per-tab record flag', () => {
   });
 });
 
+describe('SS6 / T6: the strip follows the record flag', () => {
+  it('a failed record write refreshes the strip (the warning marker), the next success refreshes it again', async () => {
+    const h = createTabFlowHarness();
+    const f = await started(h);
+    draw(h);
+    h.override('writeTabRecord', async () => ({ ok: false, problem: 'disk-full' }));
+    const before = h.changes();
+    await f.write({ record: true, index: false });
+    expect(f.state().meta['tab-1']?.recordFailed).toBe(true);
+    expect(h.changes()).toBeGreaterThan(before);
+    // A second failure changes nothing visible: no extra refresh.
+    const failed = h.changes();
+    await f.write({ record: true, index: false });
+    expect(h.changes()).toBe(failed);
+    h.override('writeTabRecord', async () => ({ ok: true }));
+    await f.write({ record: true, index: false });
+    expect(f.state().meta['tab-1']?.recordFailed).toBe(false);
+    expect(h.changes()).toBeGreaterThan(failed);
+  });
+});
+
 describe('T13 reorder (TB20: the strip drags, the flows own the list)', () => {
   it('moves a tab, keeps the active tab and reports the change', async () => {
     const h = createTabFlowHarness();

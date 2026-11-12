@@ -46,12 +46,15 @@ export interface TabStripProps {
   readonly tabs: readonly TabView[];
   /** The active tab; it holds the strip's one tab stop. */
   readonly activeId: string;
-  /** A click on a tab, or Enter or Space on a focused one. */
-  onActivate(id: string): void;
+  /**
+   * A click on a tab (`pointer` true: the host gives the canvas focus after, T11), or Enter or
+   * Space on a focused one (`pointer` false: focus stays where it is).
+   */
+  onActivate(id: string, pointer: boolean): void;
   /** The cross, or a middle-click on a tab. */
   onClose(id: string): void;
-  /** The + button, and a double-click on the empty strip (T13). */
-  onNew(): void;
+  /** The + button, and a double-click on the empty strip (T13): both are mouse actions. */
+  onNew(pointer: boolean): void;
   /**
    * T13: a drag dropped tab `from` at index `to` (both indexes of `tabs`, `from !== to`), the
    * arguments of the model's `move`. Never called for a cancelled drag.
@@ -74,6 +77,24 @@ export function tabName(tab: TabView): string {
   if (tab.marker === 'unavailable') return `${tab.label}, couldn't save`;
   if (tab.marker === 'unkept') return `${tab.label}, couldn't keep`;
   return tab.label;
+}
+
+/**
+ * T11: a click on tab `id` activates it as a mouse action; the click that follows a drop
+ * (`justDragged`, cleared here) activates nothing. The source is told here, not by a flag set in
+ * the capture phase: a microtask checkpoint runs between the capture and bubble listeners of a real
+ * click, so a flag reset by a microtask is gone before the bubble handler reads it.
+ */
+export function tabClickAction(
+  justDragged: { current: boolean },
+  id: string,
+  onActivate: TabStripProps['onActivate'],
+): void {
+  if (justDragged.current) {
+    justDragged.current = false;
+    return;
+  }
+  onActivate(id, true);
 }
 
 /** T15 (CM4): a right-click on tab `id` asks for the menu at the cursor. */
@@ -412,7 +433,7 @@ export function TabStrip({
     if (action === null) return;
     e.preventDefault();
     if ('focus' in action) items[action.focus]?.focus();
-    else if (id !== undefined) onActivate(id);
+    else if (id !== undefined) onActivate(id, false);
   };
 
   return (
@@ -423,7 +444,7 @@ export function TabStrip({
       // T13: a double-click on the empty strip is a new tab.
       onDoubleClick={(e) => {
         const on = e.target instanceof Element ? e.target : null;
-        if (on?.closest('.tab, .tab-add, .tab-scroll, .tooltip') === null) onNew();
+        if (on?.closest('.tab, .tab-add, .tab-scroll, .tooltip') === null) onNew(true);
       }}
     >
       {shown.left && <ScrollButton side="left" onPress={() => scrollBy('left')} />}
@@ -458,13 +479,7 @@ export function TabStrip({
                     : { transform: `translateX(${shift}px)` }
               }
               {...tipAttrs({ title: tab.label, help: tabHelp(tab) }, 'below')}
-              onClick={() => {
-                if (justDraggedRef.current) {
-                  justDraggedRef.current = false;
-                  return;
-                }
-                onActivate(tab.id);
-              }}
+              onClick={() => tabClickAction(justDraggedRef, tab.id, onActivate)}
               onPointerDown={(e) => onTabPress(index, tab.id, e)}
               onContextMenu={(e) => {
                 if (swallowMenuRef.current) {
@@ -523,7 +538,7 @@ export function TabStrip({
         aria-label="New tab (Ctrl+T)"
         data-testid="tab-add"
         {...tipAttrs(NEW_TIP, 'below')}
-        onClick={onNew}
+        onClick={() => onNew(true)}
       >
         <svg className="icon icon-20" aria-hidden="true">
           <use href="#add" />

@@ -114,19 +114,31 @@ describe('makeRoom: who shifts, and by how much', () => {
 });
 
 describe('dropLineX: the centre of the 2 px accent line, in the gap between the others', () => {
-  it('at the front it sits before the first other tab', () => {
-    expect(dropLineX(slots, 2, 0)).toBe(-2);
+  it('at the front it sits before the first other tab, inside the tabs', () => {
+    // the gap's centre is at -2; the 2 px line is kept inside the content (from x = 1, 0 to 2)
+    expect(dropLineX(slots, 2, 0)).toBe(1);
   });
   it('in the middle it sits after the tab it follows', () => {
     // the others, with tab 0 lifted: 104.., 208.., 312..; index 1 is after the first of them
     expect(dropLineX(slots, 0, 1)).toBe(206);
   });
   it('at the end it sits after the last other tab', () => {
-    expect(dropLineX(slots, 0, 3)).toBe(414);
     expect(dropLineX(slots, 3, 3)).toBe(310);
   });
+  it('never pokes out of the tabs: the line stays inside the content, so it adds no overflow', () => {
+    // the gap's centre would be 414 (the content ends at 412): the 2 px line ends at 412
+    expect(dropLineX(slots, 0, 3)).toBe(411);
+    const last = slots[slots.length - 1] as Slot;
+    for (let from = 0; from < slots.length; from += 1) {
+      for (let to = 0; to < slots.length; to += 1) {
+        const x = dropLineX(slots, from, to);
+        expect(x - 1, `${from}->${to}`).toBeGreaterThanOrEqual(0);
+        expect(x + 1, `${from}->${to}`).toBeLessThanOrEqual(last.left + last.width);
+      }
+    }
+  });
   it('a single tab has its own slot', () => {
-    expect(dropLineX([{ left: 10, width: 100 }], 0, 0)).toBe(10);
+    expect(dropLineX([{ left: 10, width: 100 }], 0, 0)).toBe(11);
   });
 });
 

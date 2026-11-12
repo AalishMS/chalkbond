@@ -199,6 +199,16 @@
   transition: transform var(--motion-pan);
 }
 
+/*
+ * The divider sits 3 px outside its tab. Hidden while reordering: a lifted or shifted tab that ends
+ * at the content's right edge would otherwise push the scroll width past the client width, which
+ * shows the scroll buttons, shrinks the tabs, removes the overflow and hides the buttons again,
+ * round and round (an endless update loop).
+ */
+.tabs.is-reordering .tab::after {
+  display: none;
+}
+
 .tab.is-dragging {
   z-index: 3;
   box-shadow: var(--shadow-2);

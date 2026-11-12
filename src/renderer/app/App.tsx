@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { CopyButton, type CopyDisabledReason } from '../clipboard-export/CopyButton';
 import { ExportDialog } from '../clipboard-export/ExportDialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
@@ -143,33 +143,18 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
 /**
  * The tab strip over the host's view (T2-T6) and callbacks (T7, T8, T11, T13, T15). T11's focus
  * rule: after a mouse click on a tab (or the + button) the canvas takes focus; after a key it stays
- * where it was. A click is told from Enter or Space by the click event that carries it.
+ * where it was. The strip says which one it was (`pointer`).
  */
 function HostTabs({ host }: { host: WindowHost }): React.JSX.Element {
   const view = useSyncExternalStore(host.tabsView.subscribe, host.tabsView.get);
-  const clicked = useRef(false);
-  const byClick = (): boolean => {
-    const was = clicked.current;
-    clicked.current = false;
-    return was;
-  };
   return (
-    <div
-      className="app-tabs"
-      onClickCapture={() => {
-        clicked.current = true;
-        // Reset once the click has been dispatched (the × stops its propagation).
-        queueMicrotask(() => {
-          clicked.current = false;
-        });
-      }}
-    >
+    <div className="app-tabs">
       <TabStrip
         tabs={view.tabs}
         activeId={view.activeId}
-        onActivate={(id) => void host.tabs.activate(id, byClick())}
+        onActivate={(id, pointer) => void host.tabs.activate(id, pointer)}
         onClose={(id) => void host.tabs.close(id)}
-        onNew={() => void host.tabs.newTab(byClick())}
+        onNew={(pointer) => void host.tabs.newTab(pointer)}
         onMove={(from, to) => host.tabs.move(from, to)}
         onTabMenu={(id, at) => void host.tabs.menu(id, at)}
       />

@@ -263,6 +263,8 @@ export function tabKeys(page: Page): Promise<string[]> {
  * returns its id.
  */
 export async function openTab(page: Page): Promise<string> {
+  // A freshly launched window may not have drawn its first tab yet.
+  await expect(page.getByTestId('tab').first()).toBeVisible();
   const before = await tabKeys(page);
   await page.getByTestId('tab-add').click();
   await expect.poll(async () => (await tabKeys(page)).length).toBe(before.length + 1);

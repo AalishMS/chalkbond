@@ -82,6 +82,13 @@ describe('tab-strip.css reorder and overflow (TB25: T13, T14)', () => {
   it('the strip is the offset parent of the tabs (the drag measures offsetLeft)', () => {
     expect(css).toMatch(/\.tabs\s*{[^}]*position:\s*relative/);
   });
+  it('hides the dividers while reordering: a shifted tab at the far end must not overflow the strip', () => {
+    // The divider is 3 px outside its tab. A lifted or shifted tab that ends at the content's right
+    // edge would push the scroll width past the client width, the scroll buttons would appear, the
+    // tabs shrink, the overflow vanish and the buttons go again: an endless update loop that took
+    // the whole window down (found by e2e/app-tabs.spec.ts, T13).
+    expect(css).toMatch(/\.tabs\.is-reordering \.tab::after\s*{[^}]*display:\s*none/);
+  });
   it('the scroll buttons are the A18 size', () => {
     expect(css).toMatch(
       /\.tab-scroll\s*{[^}]*width:\s*var\(--tab-scroll-w\)[^}]*height:\s*var\(--tab-add\)/,

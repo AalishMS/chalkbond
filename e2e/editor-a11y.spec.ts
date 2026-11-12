@@ -16,7 +16,7 @@ const xs = (d: Doc): number[] => Object.values(d.atoms).map((a) => a.x);
 
 /** Selectors of every control that takes focus. */
 const CONTROLS =
-  '.editor button, .editor input, .editor [role="radio"], .editor [role="combobox"], .editor [role="option"]';
+  '.editor button, .editor input, .editor [role="radio"], .editor [role="combobox"], .editor [role="option"], .editor [role="tab"]';
 
 // ---- SC5: a keyboard-only walkthrough ------------------------------------------------------
 
@@ -383,11 +383,9 @@ test('every control has an accessible name that starts with its tooltip name', a
     expect(unnamed).toEqual([]);
 
     await page.keyboard.press('Escape');
-    // The editor's own controls: the tab strip in its `tabs` slot is the host's, named by T2 / T16
-    // (`Close <label> (Ctrl+W)`, asserted in TabStrip.test.tsx; TB27 adds its e2e).
-    // The ☰ button is the host's too: named "Menu" (M4, A19), its tooltip adds the keys.
-    const editorButtons =
-      '.editor button[data-testid]:not([data-testid="tabs-slot"] *):not([data-testid="app-menu"])';
+    // Every control with a test id, the tab strip's and the ☰ button included (T2, T16, A18, M4):
+    // the strip holds one tab, so each id names one element.
+    const editorButtons = '.editor button[data-testid], .editor [role="tab"][data-testid]';
     const controls = await page.locator(editorButtons).evaluateAll((els) =>
       els.map((e) => ({
         id: e.getAttribute('data-testid') as string,
@@ -402,13 +400,13 @@ test('every control has an accessible name that starts with its tooltip name', a
       const tip = tooltip(page);
       const shown = await tip
         .first()
-        .waitFor({ timeout: iconOnly ? 2000 : 400 })
+        .waitFor({ timeout: iconOnly || id === 'tab' ? 2000 : 400 })
         .then(
           () => true,
           () => false,
         );
-      // Every icon-only control explains itself on keyboard focus.
-      if (iconOnly) expect(shown, `${id} has a tooltip`).toBe(true);
+      // Every icon-only control explains itself on keyboard focus, and so does a tab.
+      if (iconOnly || id === 'tab') expect(shown, `${id} has a tooltip`).toBe(true);
       if (!shown) continue;
       tipped++;
       const title = (await tip.locator('.tooltip-title span').textContent()) ?? '';
@@ -422,6 +420,24 @@ test('every control has an accessible name that starts with its tooltip name', a
           'aria-keyshortcuts',
           chips.join(' ').replace('+', 'Plus'),
         );
+      }
+      if (id === 'tab-close') {
+        // T2, A18: the tooltip is the general "Close tab" with its key; the accessible name says
+        // which tab (`Close <label> (Ctrl+W)`), so a screen-reader user hears what the cross closes.
+        // It starts with the tooltip's verb and carries the same key.
+        const key = (await tip.locator('kbd').allTextContents()).join('');
+        expect(title).toBe('Close tab');
+        expect(name).toBe(
+          `Close ${(await page.getByTestId('tab').locator('.tab-title').textContent()) ?? ''} (Ctrl+W)`,
+        );
+        expect(key.replace(/\s|\+/g, '')).toBe('CtrlW');
+        continue;
+      }
+      if (id === 'app-menu') {
+        // M4, A19: the accessible name is "Menu"; the tooltip title adds the keys that open it.
+        expect(name).toBe('Menu');
+        expect(title).toBe('Menu (Alt or F10)');
+        continue;
       }
       expect(
         name.toLowerCase().includes(title.toLowerCase()),
@@ -487,7 +503,11 @@ test('every pointer target is at least 24 x 24 CSS px, at the sizes the spec lis
     await expect(page.getByTestId('name-chip').first()).toBeVisible();
     await page.keyboard.press('Escape');
     const boxes = await page.evaluate(() =>
-      [...document.querySelectorAll('.editor button, .editor [role="option"]')]
+      [
+        ...document.querySelectorAll(
+          '.editor button, .editor [role="option"], .editor [role="tab"]',
+        ),
+      ]
         .map((el) => {
           const r = el.getBoundingClientRect();
           return {

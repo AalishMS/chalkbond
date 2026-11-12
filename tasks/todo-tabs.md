@@ -1168,8 +1168,8 @@ Untitled with content. The window close shows no box with no unkept tab (SC19; t
 `readDocument` / `readTabs` read through the TB20 seams.
 
 **Acceptance criteria:**
-- [ ] Every item above is asserted; the file ends with `blockedRequests === 0`
-- [ ] No fixed sleeps longer than the debounce under test (use the hook to read state)
+- [x] Every item above is asserted; the file ends with `blockedRequests === 0` (every test asserts it before it closes the app; 2026-11-12, `e2e/app-tabs.spec.ts`, 23 tests)
+- [x] No fixed sleeps longer than the debounce under test (use the hook to read state)
 
 **Verification:** `npx playwright test --project=e2e e2e/app-tabs.spec.ts` (builds first), then `npm run check`.
 

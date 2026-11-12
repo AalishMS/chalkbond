@@ -337,7 +337,10 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
       main.logError(`Tab record write failed: ${String(error)}`);
       response = { ok: false, problem: 'write-failed' };
     }
+    const was = metaOf(tab.id).recordFailed;
     await closer.recordWritten(tab, state, response);
+    // T6: the warning marker follows the flag, so the strip and the index are refreshed at once.
+    if (metaOf(tab.id).recordFailed !== was) o.changed();
   }
 
   async function writeIndex(): Promise<void> {
