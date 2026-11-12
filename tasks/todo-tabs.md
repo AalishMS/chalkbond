@@ -14,6 +14,41 @@ tests, see them fail (RED) for the reason given, then write the code. Do not pus
 "R n", "T n", "AS n", "SS n" are rows of the specs named above; "item (n)" is the fix-round test
 list in `SPEC-app-shell.md` "Testing".
 
+## Checkpoint 2026-11-12 (paused here; continue from this note)
+
+**State:** `main` at the commit that adds this note; `npm run check` green on a quiet machine (260
+files, 5500 tests). Not pushed. **Done (28 of 35):** TB1-TB20, TB22-TB27, TB29, TB30, plus fixes:
+svg-render Decision 16 oracle (seed 3343550), T8 "an unreadable record keeps the tab", a flaky
+SEC8 cleanup in `session-store.test.ts`. Tabs, auto-save, restore and the ☰ menu are live in the app.
+**Full `npm run test:e2e` has not been re-run since TB26, TB27, TB29 and TB30 were merged together**
+(each ran its own specs; TB26's full run was 340 passed / 9 failed before its fixes) — run it first.
+
+**Next, in order:** TB21 (retire the recovery code; dead now: `fileFlows`, `session`, the renderer's
+recovery code, `session.ts` `sessionUpdate`, N2, N3, N4, main's `recovery` wiring) -> TB28 (e2e
+session restore; builds on `app-session.spec.ts`, `session-steps.ts`) -> TB31 (perf) and TB32 (shots:
+look at A14 and `out/shots/A11/menu-960.png`; the ☰ popup's look is in no shot) and TB33 (Windows
+checklist) -> TB34 (AGENTS.md and specs) -> TB35 (gates on a quiet machine: check, full e2e,
+e2e/win, os-input, `dist:win`, `test:packaged`, shots).
+
+**Spec text owed to TB34** (built differently; record "as built"): TH2 helpers are `readTabs()`,
+`activateTab(id)`, `menuRequests()` (no `history()`); F6's Save-as folder comes from the active tab's
+binding in main (`activeBinding`), no N2; I7 always answers `recovery: null`; M4 tooltip = title
+"Menu (Alt or F10)" + help "File, Edit, View and Help.", `aria-expanded` always rendered; W4
+`autoHideMenuBar: false` still set; W6 at 125 % a 960×640 content is a 978×687 window; R37/R22 queue:
+one request in delivery + 20 waiting, so a burst of 22 opens 21 and drops the 22nd (a drop of 22
+files opens 21); T13 "a right press cancels a drag" is untested (Chromium sends no `pointerdown` for
+a chorded right press); a NumLock-off Ctrl+Numpad digit is PageUp/Down by `key`.
+
+**Open decisions for the owner:** (1) `src/renderer/editor/model/tidy.prop.test.ts` (~1 s alone, same
+as before the tabs work) times out at the 5 s default only while other agents load the machine;
+similar property suites set an explicit timeout, the bar forbids raising one without approval.
+(2) The open-request limit: keep "20 waiting" (a drop of 22 opens 21) or cap a drop at 20 files.
+
+**How the work was run:** one agent per task in its own git worktree (`.claude/worktrees/`, ignored;
+`node_modules` as a junction to the main checkout's), one commit per task on its branch, then
+cherry-picked onto `main` by the orchestrator, conflicts resolved there, `npm run check` re-run.
+Stale worktrees under `.claude/worktrees/` can be removed with `git worktree remove`.
+
 **Must not change in any task:** existing goldens (never `npm test -- -u`), committed `.chalk`
 fixtures, perf budgets and timeouts, coverage thresholds in `vitest.config.mts`, any property's
 `numRuns`, the normative mock-up files and their lifted copies (except TB1, which syncs them). No
