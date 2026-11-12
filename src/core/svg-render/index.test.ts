@@ -11,6 +11,8 @@ describe('public entry', () => {
       'resolveStyle',
       'bluToPt',
       'ptToBlu',
+      'isLabelled',
+      'ringAtoms',
     ] as const) {
       expect(typeof api[name]).toBe('function');
     }

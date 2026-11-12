@@ -124,10 +124,10 @@ equals the oracle's skeletal render (`numRuns` as property 2). `index.test.ts`: 
 gains `ringAtoms`. `golden.test.ts` is **not** edited: it must pass byte for byte.
 
 **Acceptance criteria:**
-- [ ] every golden committed before F2 passes with no `-u`
-- [ ] structural carbons outside rings are labelled by the existing rules; ring carbons, labelled and non-carbon atoms unchanged
-- [ ] `ringAtoms` passes every case of "Ring atoms"; the oracle test and property pass
-- [ ] properties 1–7 pass with `formula` in the generator; perf structural variants meet the existing budgets
+- [x] every golden committed before F2 passes with no `-u`
+- [x] structural carbons outside rings are labelled by the existing rules; ring carbons, labelled and non-carbon atoms unchanged
+- [x] `ringAtoms` passes every case of "Ring atoms"; the oracle test and property pass
+- [x] properties 1–7 pass with `formula` in the generator; perf structural variants meet the existing budgets
 - [ ] svg-render ≥ 90 % lines; the ESLint determinism block untouched
 
 **Verification:** `npx vitest run --project unit src/core/svg-render`, `npx vitest run --project perf src/core/svg-render/perf.test.ts`, then `npm run check`

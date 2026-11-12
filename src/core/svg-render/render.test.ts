@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { perceive } from '../chem-core';
 import {
   addObject,
+  setStyle,
   type Atom,
   type AtomId,
   type BondId,
@@ -13,17 +14,21 @@ import {
 } from '../doc-model';
 import { kitchenSinkDoc } from '../doc-model/__fixtures__/kitchen-sink';
 import { mechanismDoc, twoStepReactionDoc } from '../doc-model/__fixtures__/schemes';
+import { goldenScenes } from './__fixtures__/golden-scenes';
 import { inkScan } from './__fixtures__/ink-scan';
 import { polygonPoints, textElements } from './__fixtures__/markup';
 import {
   aceticAcid,
   benzene,
   ethanol,
+  hexagon,
   molecule,
   naphthalene,
   stereoCentre,
+  type BondSpec,
   type Molecule,
 } from './__fixtures__/molecules';
+import { structuralOracle } from './__fixtures__/structural-oracle';
 import { checkXml } from './__fixtures__/xml-check';
 import { ADVANCE_REGULAR } from './font-metrics';
 import { render } from './render';
@@ -1136,5 +1141,98 @@ describe('render: nitro group', () => {
     const [a, b] = line!.pts as [Point, Point];
     // Between two labels the visible part of a 40 pt bond is about 6 pt (before: 0).
     expect(norm(b.x - a.x, b.y - a.y)).toBeGreaterThan(4);
+  });
+});
+
+describe('structural formula display (Decisions 15 and 16, rule only; no factor yet)', () => {
+  const structural = (doc: Doc): Doc => setStyle(doc, { formula: 'structural' });
+  const skeletal = (doc: Doc): Doc => setStyle(doc, { formula: 'skeletal' });
+  const byKey = (scene: Scene): Map<string, string> =>
+    new Map(scene.parts.map((p) => [p.key, p.svg]));
+  const atomKeys = (scene: Scene) => keys(scene).filter((k) => k.startsWith('atom:'));
+
+  function toluene(): Molecule {
+    return molecule(
+      [...hexagon(), { x: 0, y: -2 }],
+      [...Array.from({ length: 6 }, (_, i): BondSpec => [i, (i + 1) % 6, { order: 1.5 }]), [0, 6]],
+    );
+  }
+
+  it('ethanol: both carbons are written CH2 and CH3, the O part is as in skeletal mode', () => {
+    const m = ethanol(true); // the neighbours of the first carbon are on its left: `CH3`, not `H3C`
+    const sk = byKey(render(m.doc));
+    const st = byKey(render(structural(m.doc)));
+    expect(textOf(st.get(`atom:${m.atoms[0]}`)!)).toBe('CH3');
+    expect(textOf(st.get(`atom:${m.atoms[1]}`)!)).toBe('CH2');
+    expect(sk.has(`atom:${m.atoms[0]}`)).toBe(false);
+    expect(st.get(`atom:${m.atoms[2]}`)).toBe(sk.get(`atom:${m.atoms[2]}`));
+  });
+
+  it('benzene: no atom part, ring and bond parts as in skeletal mode', () => {
+    const m = benzene();
+    const sk = render(m.doc);
+    const st = render(structural(m.doc));
+    expect(atomKeys(st)).toEqual([]);
+    expect(st.parts.filter((p) => p.key.startsWith('ring:'))).toHaveLength(1);
+    expect(st.parts).toEqual(sk.parts);
+  });
+
+  it('toluene: exactly one atom part, the methyl CH3', () => {
+    const m = toluene();
+    const st = render(structural(m.doc));
+    expect(atomKeys(st)).toEqual([`atom:${m.atoms[6]}`]);
+    expect(textOf(byKey(st).get(`atom:${m.atoms[6]}`)!)).toBe('CH3');
+  });
+
+  it('a subset that holds part of a ring keeps those ring carbons unwritten', () => {
+    const m = toluene();
+    const some = m.atoms.slice(0, 3);
+    const scene = render(structural(m.doc), {
+      only: only(some, m.bonds.slice(0, 2)),
+    });
+    expect(atomKeys(scene)).toEqual([]);
+    expect(keys(scene).filter((k) => k.startsWith('bond:'))).toHaveLength(2);
+  });
+
+  it('a lone carbon, a labelled ring carbon and a ring heteroatom are as in skeletal mode', () => {
+    const m = molecule(
+      [...hexagon(), { x: 4, y: 0 }],
+      Array.from({ length: 6 }, (_, i): BondSpec => [i, (i + 1) % 6]),
+    );
+    const labelled = {
+      ...m.doc,
+      atoms: {
+        ...m.doc.atoms,
+        [m.atoms[1] as AtomId]: { ...m.doc.atoms[m.atoms[1] as AtomId]!, element: 'N' },
+        [m.atoms[2] as AtomId]: { ...m.doc.atoms[m.atoms[2] as AtomId]!, label: 'Ph' },
+      },
+    } as Doc;
+    const sk = byKey(render(labelled));
+    const st = byKey(render(structural(labelled)));
+    expect([...st.keys()].sort()).toEqual([...sk.keys()].sort());
+    for (const [k, v] of sk) expect(st.get(k), k).toBe(v);
+  });
+
+  describe('against the skeletal document, committed inputs', () => {
+    const docs: { name: string; doc: Doc; only?: Selection }[] = goldenScenes();
+
+    it.each(docs.map((d) => [d.name, d] as const))(
+      '%s: render(setStyle(doc, skeletal)) equals render(doc)',
+      (_name, d) => {
+        expect(render(skeletal(d.doc), { only: d.only })).toEqual(render(d.doc, { only: d.only }));
+      },
+    );
+
+    it.each(docs.map((d) => [d.name, d] as const))(
+      '%s: structural equals the oracle, part for part',
+      (_name, d) => {
+        const st = render(structural(d.doc), { only: d.only });
+        const oracle = render(structuralOracle(d.doc), { only: d.only });
+        expect(keys(st)).toEqual(keys(oracle));
+        for (const [i, part] of st.parts.entries()) expect(part.svg).toBe(oracle.parts[i]!.svg);
+        expect(st.extents).toEqual(oracle.extents);
+        expect(st.bounds).toEqual(oracle.bounds);
+      },
+    );
   });
 });

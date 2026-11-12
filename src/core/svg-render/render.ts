@@ -24,6 +24,7 @@ import { circledRings, ringCircle } from './circles';
 import { rectUnion, unionAll } from './geom';
 import { drawObject, type ObjectContext } from './objects';
 import { sortedIds } from './order';
+import { ringAtoms } from './ring-atoms';
 import { ringCentroid, ringsByBond } from './rings';
 import { layoutSatellites } from './satellites';
 import { bluToPt, resolveStyle } from './style';
@@ -108,6 +109,9 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
     return out;
   };
 
+  const formula = doc.style.formula ?? 'skeletal';
+  const ring = formula === 'structural' ? ringAtoms(doc) : new Set<AtomId>();
+
   const perception = atomIds.length > 0 ? (opts.perception ?? perceive(doc)) : null;
 
   // Labels of every atom (layout sees every neighbour, drawn or not); notices only for those drawn.
@@ -117,7 +121,7 @@ export function render(doc: Doc, opts: RenderOptions = {}): Scene {
     const atom = doc.atoms[id];
     const position = pos.get(id);
     if (!atom || !position) continue;
-    if (!isLabelled(atom, adjacency.get(id)?.length ?? 0)) continue;
+    if (!isLabelled(atom, adjacency.get(id)?.length ?? 0, formula, ring.has(id))) continue;
     const label = buildAtomLabel(
       {
         atom,

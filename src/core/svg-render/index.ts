@@ -5,6 +5,7 @@ export { render } from './render';
 export { toSvg, renderSvg } from './to-svg';
 export { curveControls } from './curved-arrow';
 export { isLabelled } from './atom-label';
+export { ringAtoms } from './ring-atoms';
 export type {
   ItemKey,
   RenderNotice,

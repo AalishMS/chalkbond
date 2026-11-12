@@ -81,14 +81,25 @@ export interface AtomLabel {
   readonly notices: UnmeasuredGlyphNotice[];
 }
 
-/** Labelled: not a plain skeleton carbon (any heteroatom, label, isotope, explicit H, no bonds). */
-export function isLabelled(atom: Atom, bondCount: number): boolean {
+/**
+ * Labelled: not a plain skeleton carbon (any heteroatom, label, isotope, explicit H, no bonds).
+ * With `formula` `'structural'` (SPEC-svg-render.md Decision 15) every carbon is labelled too,
+ * except a ring atom (Decision 16: `inRing`, see `ringAtoms`), which stays a skeleton vertex.
+ * The defaults give the rule as it was before the setting existed.
+ */
+export function isLabelled(
+  atom: Atom,
+  bondCount: number,
+  formula: 'skeletal' | 'structural' = 'skeletal',
+  inRing = false,
+): boolean {
   return (
     atom.element !== 'C' ||
     (atom.label !== undefined && atom.label !== '') ||
     atom.isotope !== undefined ||
     atom.explicitH !== undefined ||
-    bondCount === 0
+    bondCount === 0 ||
+    (formula === 'structural' && !inRing)
   );
 }
 

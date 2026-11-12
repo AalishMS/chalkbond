@@ -7,6 +7,7 @@ import {
   addBond,
   addObject,
   emptyDoc,
+  setStyle,
   type AtomId,
   type Doc,
   type ObjectInit,
@@ -79,41 +80,63 @@ const text = (x: number, y: number): ObjectInit => ({
   runs: [{ text: 'H' }, { text: '2', script: 'sub' }, { text: 'SO' }, { text: '4', script: 'sub' }],
 });
 
-describe('svg-render performance budgets', () => {
-  budget('slide-sized scheme (4 molecules, 3 arrows, 6 texts): render median < 8 ms', () => {
-    let doc = emptyDoc(NOW);
-    for (let m = 0; m < 4; m++) doc = substituted(doc, m * 6, 0);
-    for (let k = 0; k < 3; k++) {
-      [doc] = addObject(doc, {
-        type: 'arrow',
-        kind: k === 1 ? 'equilibrium' : 'forward',
-        from: { x: k * 6 + 2.6, y: 0 },
-        to: { x: k * 6 + 3.4, y: 0 },
-      });
-    }
-    for (let k = 0; k < 6; k++) [doc] = addObject(doc, text(k * 3 + 3, -1.4));
-    const perception = perceive(doc);
-    expect(Object.keys(doc.atoms)).toHaveLength(40);
-    const ms = time(50, () => render(doc, { perception }));
-    expect(ms, `slide scheme render median ${ms.toFixed(2)} ms`).toBeLessThan(8);
-  });
+function slideScheme(): Doc {
+  let doc = emptyDoc(NOW);
+  for (let m = 0; m < 4; m++) doc = substituted(doc, m * 6, 0);
+  for (let k = 0; k < 3; k++) {
+    [doc] = addObject(doc, {
+      type: 'arrow',
+      kind: k === 1 ? 'equilibrium' : 'forward',
+      from: { x: k * 6 + 2.6, y: 0 },
+      to: { x: k * 6 + 3.4, y: 0 },
+    });
+  }
+  for (let k = 0; k < 6; k++) [doc] = addObject(doc, text(k * 3 + 3, -1.4));
+  return doc;
+}
 
-  budget('500-atom fragment plus 20 objects: render median < 40 ms', () => {
-    let doc = emptyDoc(NOW);
-    let prev: AtomId | undefined;
-    for (let i = 0; i < 84; i++) {
-      let ids: AtomId[];
-      [doc, ids] = ring(doc, (i % 12) * 3, Math.floor(i / 12) * 3);
-      if (prev) [doc] = addBond(doc, prev, ids[0] as AtomId);
-      prev = ids[3];
-    }
-    for (let k = 0; k < 20; k++) {
-      [doc] = addObject(doc, k % 2 ? text(k, -2) : { type: 'plus', at: { x: k, y: -3 } });
-    }
-    const perception = perceive(doc);
-    expect(Object.keys(doc.atoms).length).toBeGreaterThanOrEqual(500);
-    expect(perception.fragments).toHaveLength(1);
-    const ms = time(20, () => render(doc, { perception }));
-    expect(ms, `500-atom render median ${ms.toFixed(2)} ms`).toBeLessThan(40);
-  });
+function bigFragment(): Doc {
+  let doc = emptyDoc(NOW);
+  let prev: AtomId | undefined;
+  for (let i = 0; i < 84; i++) {
+    let ids: AtomId[];
+    [doc, ids] = ring(doc, (i % 12) * 3, Math.floor(i / 12) * 3);
+    if (prev) [doc] = addBond(doc, prev, ids[0] as AtomId);
+    prev = ids[3];
+  }
+  for (let k = 0; k < 20; k++) {
+    [doc] = addObject(doc, k % 2 ? text(k, -2) : { type: 'plus', at: { x: k, y: -3 } });
+  }
+  return doc;
+}
+
+// The structural variants (Decision 15) run the same scenes with `formula: 'structural'` and the
+// same budgets: the chain carbons between the rings and the substituents' carbons are written.
+const FORMULAS = [
+  ['', 'skeletal'],
+  [' (structural)', 'structural'],
+] as const;
+
+describe('svg-render performance budgets', () => {
+  for (const [suffix, formula] of FORMULAS) {
+    budget(
+      `slide-sized scheme (4 molecules, 3 arrows, 6 texts): render median < 8 ms${suffix}`,
+      () => {
+        const doc = setStyle(slideScheme(), { formula });
+        const perception = perceive(doc);
+        expect(Object.keys(doc.atoms)).toHaveLength(40);
+        const ms = time(50, () => render(doc, { perception }));
+        expect(ms, `slide scheme render median ${ms.toFixed(2)} ms${suffix}`).toBeLessThan(8);
+      },
+    );
+
+    budget(`500-atom fragment plus 20 objects: render median < 40 ms${suffix}`, () => {
+      const doc = setStyle(bigFragment(), { formula });
+      const perception = perceive(doc);
+      expect(Object.keys(doc.atoms).length).toBeGreaterThanOrEqual(500);
+      expect(perception.fragments).toHaveLength(1);
+      const ms = time(20, () => render(doc, { perception }));
+      expect(ms, `500-atom render median ${ms.toFixed(2)} ms${suffix}`).toBeLessThan(40);
+    });
+  }
 });

@@ -64,6 +64,40 @@ describe('isLabelled', () => {
   it.each(rows)('%s', (_name, atom, bonds, expected) => {
     expect(isLabelled(mk(atom), bonds)).toBe(expected);
   });
+
+  it('is the old rule when the formula is skeletal, spelled out or not, ring or not', () => {
+    for (const [, atom, bonds, expected] of rows) {
+      expect(isLabelled(mk(atom), bonds, 'skeletal')).toBe(expected);
+      expect(isLabelled(mk(atom), bonds, 'skeletal', true)).toBe(expected);
+    }
+  });
+
+  describe('structural', () => {
+    it.each([0, 1, 2, 3, 4])('labels a carbon with %i bonds', (bonds) => {
+      expect(isLabelled(mk({}), bonds, 'structural')).toBe(true);
+      expect(isLabelled(mk({ charge: 1 }), bonds, 'structural')).toBe(true);
+      expect(isLabelled(mk({ radical: 1 }), bonds, 'structural')).toBe(true);
+    });
+
+    it('keeps every row of the skeletal table labelled', () => {
+      for (const [, atom, bonds, expected] of rows) {
+        if (expected) expect(isLabelled(mk(atom), bonds, 'structural')).toBe(true);
+      }
+    });
+
+    it('does not label a plain ring carbon, charged or radical or not', () => {
+      expect(isLabelled(mk({}), 2, 'structural', true)).toBe(false);
+      expect(isLabelled(mk({ charge: 1 }), 3, 'structural', true)).toBe(false);
+      expect(isLabelled(mk({ radical: 1 }), 3, 'structural', true)).toBe(false);
+    });
+
+    it('labels a ring carbon with a label, an isotope or explicit H, and a ring heteroatom', () => {
+      expect(isLabelled(mk({ label: 'Ph' }), 2, 'structural', true)).toBe(true);
+      expect(isLabelled(mk({ isotope: 13 }), 2, 'structural', true)).toBe(true);
+      expect(isLabelled(mk({ explicitH: 1 }), 2, 'structural', true)).toBe(true);
+      expect(isLabelled(mk({ element: 'N' }), 2, 'structural', true)).toBe(true);
+    });
+  });
 });
 
 describe('side rule for implicit H', () => {

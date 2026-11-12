@@ -11,6 +11,7 @@ import {
   everything,
   parse,
   serialize,
+  setStyle,
   transformItems,
   translation,
   type AtomId,
@@ -21,6 +22,7 @@ import {
   type Selection,
 } from '../doc-model';
 import { command, run } from '../doc-model/__fixtures__/arbitraries';
+import { structuralOracle } from './__fixtures__/structural-oracle';
 import { checkXml } from './__fixtures__/xml-check';
 import { unionAll } from './geom';
 import { render } from './render';
@@ -432,4 +434,25 @@ describe('property 7: arbitrary Unicode in runs, labels, numbers and metadata is
       { numRuns: LIGHT_RUNS },
     );
   });
+});
+
+describe('property 8: the structural render equals the render of its oracle', () => {
+  it(
+    'same parts, extents, bounds and notices as the skeletal document with the written carbons given explicit H',
+    { timeout: TIMEOUT },
+    () => {
+      fc.assert(
+        fc.property(docOf, (doc) => {
+          const structural = setStyle(doc, { formula: 'structural' });
+          const got = render(structural);
+          const want = render(structuralOracle(structural));
+          expect(got.parts).toEqual(want.parts);
+          expect(got.extents).toEqual(want.extents);
+          expect(got.bounds).toEqual(want.bounds);
+          expect(got.notices).toEqual(want.notices);
+        }),
+        { numRuns: RUNS },
+      );
+    },
+  );
 });
