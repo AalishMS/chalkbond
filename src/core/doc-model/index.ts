@@ -40,4 +40,11 @@ export {
   type CreateHistoryOptions,
   type TransactOptions,
 } from './history';
+export {
+  historyToRecord,
+  historyFromRecord,
+  type HistoryRecord,
+  type StepRecord,
+  type PatchRecord,
+} from './history-record';
 export { checkInvariants, type InvariantCode, type InvariantViolation } from './invariants';

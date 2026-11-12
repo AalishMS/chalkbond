@@ -115,11 +115,11 @@ the history keeps all; `maxSteps` 0 gives an empty history. **Perf (`perf.test.t
 restoring 100 steps of a 500-atom drawing <= 150 ms median, of the 2-step scheme fixture <= 30 ms.
 
 **Acceptance criteria:**
-- [ ] The new surface exists exactly as D2 lists and nothing else is exported
-- [ ] A restored history undoes to the same drawings as the original (D2 round-trip and property)
-- [ ] A damaged history keeps the drawing with the steps that verified (`dropped` counts the rest)
-- [ ] The perf budgets are met on this machine; the measured medians are written in the task's commit message and `docs/editor-perf.md` is not touched
-- [ ] doc-model coverage stays >= 95 % lines; `tests/tooling/lint-boundaries.test.ts` passes
+- [x] The new surface exists exactly as D2 lists and nothing else is exported
+- [x] A restored history undoes to the same drawings as the original (D2 round-trip and property)
+- [x] A damaged history keeps the drawing with the steps that verified (`dropped` counts the rest)
+- [x] The perf budgets are met on this machine; the measured medians are written in the task's commit message and `docs/editor-perf.md` is not touched
+- [x] doc-model coverage stays >= 95 % lines; `tests/tooling/lint-boundaries.test.ts` passes
 
 **Verification:** `npm test -- src/core/doc-model && npx vitest run --project perf src/core/doc-model/perf.test.ts`, then `npm run check`.
 

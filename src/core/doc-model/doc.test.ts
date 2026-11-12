@@ -108,6 +108,8 @@ describe('public entry (index.ts)', () => {
         'extract',
         'findBond',
         'fragments',
+        'historyFromRecord',
+        'historyToRecord',
         'insert',
         'isValidElement',
         'mergeAtoms',
