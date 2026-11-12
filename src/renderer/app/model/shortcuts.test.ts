@@ -14,10 +14,11 @@ const NOW_CONTEXT: HostKeyContext = {
   fileBusy: false,
   empty: false,
   insideEditor: true,
+  canReopen: true,
 };
 
 /** A chip text as `KeyboardEvent.key` (letters lower case; − is the minus key). */
-function input(combo: string): KeyInfo {
+function input(combo: string): KeyInfo & { readonly code?: string } {
   const parts = combo === '+' ? ['+'] : combo.split('+').map((p) => (p === '' ? '+' : p));
   const key = parts.at(-1) ?? '';
   const named: Record<string, string> = {
@@ -30,6 +31,7 @@ function input(combo: string): KeyInfo {
   };
   return {
     key: named[key] ?? (key.length === 1 ? key.toLowerCase() : key),
+    code: /^[0-9]$/.test(key) ? `Digit${key}` : undefined,
     ctrlKey: parts.includes('Ctrl'),
     shiftKey: parts.includes('Shift'),
     altKey: false,
@@ -49,7 +51,7 @@ describe('SHORTCUTS', () => {
       'Editing',
       'Chemistry',
       'View',
-      'Files',
+      'Tabs and files',
       'While typing text',
     ]);
   });
@@ -108,12 +110,18 @@ describe('SHORTCUTS', () => {
         ['Ctrl+0', 'Fit drawing'],
         ['Space+drag', 'Move around the drawing'],
       ],
-      Files: [
-        ['Ctrl+N', 'New drawing'],
+      'Tabs and files': [
+        ['Ctrl+T Ctrl+N', 'New tab'],
+        ['Ctrl+W', 'Close tab'],
+        ['Ctrl+Shift+T', 'Reopen closed tab'],
+        ['Ctrl+Tab Ctrl+Shift+Tab', 'Next tab, previous tab'],
+        ['Ctrl+1–8', 'Go to tab 1–8'],
+        ['Ctrl+9', 'Go to the last tab'],
         ['Ctrl+O', 'Open'],
         ['Ctrl+S', 'Save'],
         ['Ctrl+Shift+S', 'Save as'],
         ['Ctrl+E', 'Export'],
+        ['F10', 'Open the menu'],
         ['F1', 'This list'],
       ],
       'While typing text': [
@@ -146,6 +154,14 @@ describe('keyParts: one chip per key joined by "+"', () => {
     expect(keyParts('+')).toEqual([{ kind: 'key', text: '+' }]);
     expect(keyParts('−')).toEqual([{ kind: 'key', text: '−' }]);
     expect(keyParts('F1')).toEqual([{ kind: 'key', text: 'F1' }]);
+  });
+
+  it('Ctrl+1–8 is two chips, the second one the range "1–8" (en dash)', () => {
+    expect(keyParts('Ctrl+1–8')).toEqual([
+      { kind: 'key', text: 'Ctrl' },
+      { kind: 'key', text: '1–8' },
+    ]);
+    expect(keyParts('Ctrl+Shift+Tab').map((p) => p.text)).toEqual(['Ctrl', 'Shift', 'Tab']);
   });
 
   it('"drag" is a word, not a key chip', () => {
@@ -288,17 +304,49 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
     );
   });
 
-  it('Files: the host keys (K1)', () => {
-    expect(
-      Object.fromEntries(keys('Files').map(([k]) => [k, hostKey(input(k), NOW_CONTEXT)])),
-    ).toEqual({
+  it('Tabs and files: the host keys (K1, R36, R45)', () => {
+    const host = (combo: string): unknown => hostKey(input(combo), NOW_CONTEXT);
+    const expected: Record<string, string> = {
+      'Ctrl+T': 'new',
       'Ctrl+N': 'new',
+      'Ctrl+W': 'close-tab',
+      'Ctrl+Shift+T': 'reopen-tab',
+      'Ctrl+Tab': 'next-tab',
+      'Ctrl+Shift+Tab': 'previous-tab',
+      'Ctrl+9': 'last-tab',
       'Ctrl+O': 'open',
       'Ctrl+S': 'save',
       'Ctrl+Shift+S': 'save-as',
       'Ctrl+E': 'export',
+      F10: 'menu',
       F1: 'shortcuts',
-    });
+    };
+    const listed = keys('Tabs and files')
+      .map(([k]) => k)
+      .filter((k) => k !== 'Ctrl+1–8');
+    expect(listed).toEqual(Object.keys(expected));
+    for (const [combo, action] of Object.entries(expected)) expect(host(combo), combo).toBe(action);
+  });
+
+  it('Ctrl+1–8 expands to eight real keys, by physical key (R45)', () => {
+    const range = keys('Tabs and files').find(([k]) => k === 'Ctrl+1–8');
+    expect(range?.[1].meaning).toBe('Go to tab 1–8');
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 8])
+      expect(hostKey(input(`Ctrl+${n}`), NOW_CONTEXT), `Ctrl+${n}`).toBe(`tab-${n}`);
+    // Devanagari digits: `key` differs, the physical key still goes to the tab.
+    expect(hostKey({ ...input('Ctrl+3'), key: '३' }, NOW_CONTEXT)).toBe('tab-3');
+  });
+
+  it('Ctrl+Shift+T reopens only when a closed tab can come back', () => {
+    expect(hostKey(input('Ctrl+Shift+T'), { ...NOW_CONTEXT, canReopen: false })).toBeNull();
+  });
+
+  it('no row names a key the editor has taken: Ctrl+1 is not Zoom to 100% and Tidy is Ctrl+Shift+R', () => {
+    expect(globalCommand(input('Ctrl+1'), 'all')).toBeNull();
+    expect(globalCommand(input('Ctrl+Shift+T'), 'all')).toBeNull();
+    expect(globalCommand(input('Ctrl+Shift+R'), 'all')).toBe('tidy-reaction');
+    const all = SHORTCUTS.flatMap((s) => s.rows.flatMap((r) => r.keys));
+    expect(all).not.toContain('Ctrl+1');
   });
 
   it('While typing text: the editor K3 keys (SPEC-editor.md K3)', () => {
@@ -373,11 +421,19 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
       'Ctrl+Shift+H',
     ];
     const hostK1 = [
+      'Ctrl+T',
       'Ctrl+N',
+      'Ctrl+W',
+      'Ctrl+Shift+T',
+      'Ctrl+Tab',
+      'Ctrl+Shift+Tab',
+      'Ctrl+1–8',
+      'Ctrl+9',
       'Ctrl+O',
       'Ctrl+S',
       'Ctrl+Shift+S',
       'Ctrl+E',
+      'F10',
       'F1',
       'Ctrl+C',
       'Ctrl+V',
@@ -385,6 +441,13 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
     ];
     for (const key of [...editorK1, ...editorK2, ...toolKeys, ...editorK3, ...hostK1])
       expect(listed.has(key), key).toBe(true);
+    // Aliases left out of the dialog on purpose (A12): they work, the list names the main keys.
+    for (const alias of ['Ctrl+PageDown', 'Ctrl+PageUp'])
+      expect(listed.has(alias), alias).toBe(false);
+    expect(hostKey(input('Ctrl+PageDown'), NOW_CONTEXT)).toBe('next-tab');
+    expect(hostKey(input('Ctrl+PageUp'), NOW_CONTEXT)).toBe('previous-tab');
+    // A lone Alt opens the menu too (M4, altGuard); it is not a chip either.
+    expect(listed.has('Alt')).toBe(false);
     // And the editor really has each listed K1 key, so nothing above is invented.
     for (const key of editorK1.filter((k) => k.startsWith('Ctrl+')))
       expect(globalCommand(input(key), 'all'), key).not.toBeNull();

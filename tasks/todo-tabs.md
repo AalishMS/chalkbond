@@ -919,9 +919,9 @@ matching), `Ctrl+1–8` expands to eight real keys, `F10` through the host; the 
 test loses Ctrl+1 and Ctrl+Shift+T-as-Tidy and gains the host's tab keys; `ShortcutsDialog.test.tsx`.
 
 **Acceptance criteria:**
-- [ ] The dialog lists exactly A12's rows and each is a working key
-- [ ] No row names a key that does nothing (the test asserts through the real keymap and `hostKey`)
-- [ ] `DEVIATIONS.md` item 5 reads as done
+- [x] The dialog lists exactly A12's rows and each is a working key
+- [x] No row names a key that does nothing (the test asserts through the real keymap and `hostKey`)
+- [x] `DEVIATIONS.md` item 5 reads as done
 
 **Verification:** `npm test -- src/renderer/app`, then `npm run check`.
 

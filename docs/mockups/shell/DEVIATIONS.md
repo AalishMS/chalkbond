@@ -115,9 +115,10 @@ A21). Every other page (A01-A03, A08, A10-A14) was updated in place to the new c
    "Zoom to 100%" row is dropped; A06 and the status-bar zoom button show no key. (The editor mock-up
    `pages.mjs` zoom button label lost its "(Ctrl+1)" too.) A19 shows only the File submenu, which has no zoom.
 4. Closing the last tab leaves one empty "Untitled" tab (A18 "One tab").
-5. **To sync at implementation:** `src/renderer/app/model/shortcuts.ts` must match the A12 `SHORTCUTS` rows,
-   otherwise `src/renderer/app/model/shortcuts.test.ts` (which mirrors `pages.mjs`) fails. The editor keymap
-   (Tidy) and the editor zoom tooltip text follow.
+5. **Done (TB23):** `src/renderer/app/model/shortcuts.ts` matches the A12 `SHORTCUTS` rows (Tidy is
+   Ctrl+Shift+R, no Ctrl+1 row, "Tabs and files"), `shortcuts.test.ts` checks each row against the editor keymap
+   and `hostKey`, and the editor keymap (Tidy) and zoom tooltip follow (TB3). Ctrl+PageDown, Ctrl+PageUp and a
+   lone Alt work but are not listed (aliases).
 6. Decided (R48, T12): "Reopen closed tab" also brings back an unnamed drawing closed with Don't save, for the current run (the last 10 closed tabs).
 
 ## New tokens (in `shell-tokens.css`; merge into `app-tokens.css` or `tokens.css`)

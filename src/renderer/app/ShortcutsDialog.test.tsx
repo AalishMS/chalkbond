@@ -57,6 +57,30 @@ describe('ShortcutsDialog markup', () => {
     );
   });
 
+  it('A12 "Tabs and files": the tab keys are chips, the range and the lone keys included', () => {
+    const plus = '<span aria-hidden="true">+</span>';
+    const chips = (...parts: string[]): string =>
+      parts.map((k) => `<kbd class="key">${k}</kbd>`).join(plus);
+    expect(html).not.toContain('>Files</h3>');
+    expect(html).toContain('<h3 class="sc-section">Tabs and files</h3>');
+    expect(html).toContain(
+      `<span class="keys">${chips('Ctrl', 'T')}${chips('Ctrl', 'N')}</span><span class="sc-meaning">New tab</span>`,
+    );
+    expect(html).toContain(
+      `<span class="keys">${chips('Ctrl', 'Tab')}${chips('Ctrl', 'Shift', 'Tab')}</span><span class="sc-meaning">Next tab, previous tab</span>`,
+    );
+    expect(html).toContain(
+      `<span class="keys">${chips('Ctrl', '1–8')}</span><span class="sc-meaning">Go to tab 1–8</span>`,
+    );
+    expect(html).toContain(
+      `<span class="keys">${chips('F10')}</span><span class="sc-meaning">Open the menu</span>`,
+    );
+    expect(html).toContain(
+      `<span class="keys">${chips('Ctrl', 'Shift', 'R')}</span><span class="sc-meaning">Tidy reaction</span>`,
+    );
+    expect(html).not.toContain('Zoom to 100%');
+  });
+
   it('the body scrolls; the footer holds one secondary Close button', () => {
     expect(html).toContain('<div class="dialog-body">');
     const foot = between('<div class="dialog-foot">', '</div></div>');

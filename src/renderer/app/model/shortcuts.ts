@@ -84,13 +84,19 @@ export const SHORTCUTS: readonly ShortcutSection[] = [
     ],
   },
   {
-    section: 'Files',
+    section: 'Tabs and files',
     rows: [
-      row(['Ctrl+N'], 'New drawing'),
+      row(['Ctrl+T', 'Ctrl+N'], 'New tab'),
+      row(['Ctrl+W'], 'Close tab'),
+      row(['Ctrl+Shift+T'], 'Reopen closed tab'),
+      row(['Ctrl+Tab', 'Ctrl+Shift+Tab'], 'Next tab, previous tab'),
+      row(['Ctrl+1–8'], 'Go to tab 1–8'),
+      row(['Ctrl+9'], 'Go to the last tab'),
       row(['Ctrl+O'], 'Open'),
       row(['Ctrl+S'], 'Save'),
       row(['Ctrl+Shift+S'], 'Save as'),
       row(['Ctrl+E'], 'Export'),
+      row(['F10'], 'Open the menu'),
       row(['F1'], 'This list'),
     ],
   },
@@ -116,7 +122,7 @@ export interface KeyPart {
   readonly text: string;
 }
 
-/** `Ctrl+Shift+L` → three chips; a lone `+` is the plus key; `drag` is a word, not a key. */
+/** `Ctrl+Shift+L` → three chips; `Ctrl+1–8` → Ctrl and the range chip "1–8"; a lone `+` is the plus key; `drag` is a word, not a key. */
 export function keyParts(combo: string): KeyPart[] {
   if (combo === '+') return [{ kind: 'key', text: '+' }];
   return combo.split('+').map((part) => {
