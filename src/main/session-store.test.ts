@@ -439,6 +439,8 @@ describe('N10: a record the renderer could not parse (SS11, TB15)', () => {
     await seed({ [`tabs/${A}.json`]: record('x') });
     const store = make();
     for (const id of ['../index', `${A}/..`, 'index', '']) await store.damagedRecord(id);
+    // Refused ids never queue, so wait for the start-up read before looking (and before cleanup).
+    await store.idle();
     expect(await list(damaged)).toEqual([]);
     expect(await list(tabs)).toEqual([`${A}.json`]);
   });
