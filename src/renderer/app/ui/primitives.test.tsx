@@ -11,6 +11,7 @@ import {
   scrolledTop,
   Segmented,
 } from './primitives';
+import { placeBelow, tipAttrs, TipBubble } from './Tooltip';
 it('exposes named, focusable disabled controls', () => {
   const html = render(
     <Button disabled title="Nothing to save" data-testid="save">
@@ -114,4 +115,50 @@ it('scrolledTop: arrows step 40, pages step a view less 40, Home and End, clampe
   expect(scrolledTop('PageDown', 0, 30, 500)).toBe(40);
   expect(scrolledTop('a', 0, 200, 500)).toBeNull();
   expect(scrolledTop(' ', 0, 200, 500)).toBeNull();
+});
+
+it("tipAttrs: the data attributes the app tooltip host reads (not the editor host's)", () => {
+  expect(tipAttrs({ title: 'New tab', key: 'Ctrl+T' }, 'below')).toEqual({
+    'data-ui-tip': 'New tab',
+    'data-ui-tip-key': 'Ctrl+T',
+    'data-ui-tip-help': undefined,
+    'data-ui-tip-side': 'below',
+  });
+  expect(
+    Object.keys(tipAttrs({ title: 'x' }, 'below')).every((k) => k.startsWith('data-ui-tip')),
+  ).toBe(true);
+});
+
+it('TipBubble: the editor tooltip classes, title, key cap and help line', () => {
+  const html = render(
+    <TipBubble id="t" tip={{ title: 'Untitled 2', key: 'Ctrl+W', help: 'Not saved.' }} />,
+  );
+  expect(html).toContain('class="tooltip"');
+  expect(html).toContain('role="tooltip"');
+  expect(html).toContain('id="t"');
+  expect(html).toContain(
+    '<div class="tooltip-title"><span>Untitled 2</span><kbd>Ctrl+W</kbd></div>',
+  );
+  expect(html).toContain('<div class="tooltip-help">Not saved.</div>');
+  const bare = render(<TipBubble id="t" tip={{ title: 'Close tab' }} />);
+  expect(bare).not.toContain('<kbd');
+  expect(bare).not.toContain('tooltip-help');
+});
+
+it('placeBelow: centred 8 px under the anchor, kept 8 px inside the span', () => {
+  const tip = { width: 100, height: 30 };
+  const span = { from: 0, to: 600 };
+  expect(placeBelow({ x: 200, y: 4, width: 200, height: 28 }, tip, span)).toEqual({
+    x: 250,
+    y: 40,
+  });
+  // Near the left edge the margin wins; near the right edge the bubble ends 8 px short of it.
+  expect(placeBelow({ x: 0, y: 4, width: 40, height: 28 }, tip, span).x).toBe(8);
+  expect(placeBelow({ x: 560, y: 4, width: 40, height: 28 }, tip, span).x).toBe(492);
+  // A span narrower than the bubble: the left margin wins.
+  expect(placeBelow({ x: 10, y: 0, width: 10, height: 10 }, tip, { from: 0, to: 50 }).x).toBe(8);
+  // The span can start left of the strip (negative offsets).
+  expect(placeBelow({ x: 20, y: 0, width: 40, height: 10 }, tip, { from: -100, to: 500 }).x).toBe(
+    -10,
+  );
 });

@@ -960,10 +960,10 @@ arrows), CSS check that every colour and size is a token (the existing `shell-to
 `.css` in the folder).
 
 **Acceptance criteria:**
-- [ ] Roles, names and the markup contract of T16 hold in the tests
-- [ ] No hit target below 24 x 24 px in the CSS (asserted by the DOM-box e2e in TB27, and by token values here)
-- [ ] `tests/tooling/shell-tokens.test.ts` passes (defined tokens, no raw colours)
-- [ ] Not mounted in the app yet (TB20)
+- [x] Roles, names and the markup contract of T16 hold in the tests
+- [x] No hit target below 24 x 24 px in the CSS (asserted by the DOM-box e2e in TB27, and by token values here)
+- [x] `tests/tooling/shell-tokens.test.ts` passes (defined tokens, no raw colours)
+- [x] Not mounted in the app yet (TB20)
 
 **Verification:** `npm test -- src/renderer/app tests/tooling/shell-tokens.test.ts`, then `npm run check`.
 

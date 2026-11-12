@@ -1,0 +1,181 @@
+/*
+ * Tab strip (SPEC-app-shell.md T2-T6, T16; mock-up A18, copied from `docs/mockups/shell/shell.css`
+ * "Tab strip"). Tokens only: sizes from shell-tokens.css, colours from the editor's tokens. The
+ * strip sits in the editor's `.tabs-slot` (editor R56, which owns the grid row); drag, scroll
+ * buttons and the lifted-tab styles of the mock-up are TB25's.
+ */
+
+.tabstrip {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3) 0;
+}
+
+/* The line under the strip; the active tab (z-index 2) covers it. */
+.tabstrip::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.tabs {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: flex-end;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: var(--tab-max-w);
+  min-width: var(--tab-min-w);
+  max-width: var(--tab-max-w);
+  height: var(--tab-h);
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  color: var(--text-muted);
+}
+
+.tab-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--type-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+
+.tab:active:not(:has(.tab-close:active)) {
+  background: var(--pressed-bg);
+  color: var(--text);
+}
+
+/*
+ * Active tab: the canvas colour, so it runs into the canvas, plus a 2 px accent line on top (the
+ * non-colour cue). 29 px tall: it covers the 1 px line under the strip; the 1 px bottom padding
+ * keeps its text on the inactive tabs' line.
+ */
+.tab[aria-selected='true'] {
+  z-index: 2;
+  height: calc(var(--tab-h) + 1px);
+  padding-bottom: 1px;
+  border-top: 2px solid var(--accent);
+  background: var(--canvas-bg);
+  color: var(--text);
+}
+
+.tab:focus {
+  outline: none;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* A faint divider between inactive tabs; hidden beside the active or a hovered tab. */
+.tab::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--space-3) - var(--space-1));
+  right: calc(-1 * var(--space-1) - 1px);
+  width: 1px;
+  height: var(--icon-sm);
+  background: var(--border);
+}
+
+.tab[aria-selected='true']::after,
+.tab:hover::after,
+.tab:has(+ .tab[aria-selected='true'])::after,
+.tab:has(+ .tab:hover)::after,
+.tab:last-child::after {
+  display: none;
+}
+
+/* Unsaved: a dot. Unavailable file or unkept drawing: the warning icon in its place (T6). */
+.tab-dot {
+  flex: none;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.tab-warn {
+  flex: none;
+  margin-left: calc(-1 * var(--space-1));
+  color: var(--warning);
+}
+
+/* Close cross: shown on the active tab and on a hovered or focused one; the room is kept. */
+.tab-close {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tab-close);
+  height: var(--tab-close);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  visibility: hidden;
+}
+
+.tab[aria-selected='true'] .tab-close,
+.tab:hover .tab-close,
+.tab:focus-within .tab-close,
+.tab:focus-visible .tab-close {
+  visibility: visible;
+}
+
+.tab-close:hover {
+  background: var(--pressed-bg);
+  color: var(--text);
+}
+
+.tab-close:active {
+  background: var(--border);
+  box-shadow: inset 0 0 0 1px var(--border-control);
+  color: var(--text);
+}
+
+/* New tab: right after the last tab. */
+.tab-add {
+  width: var(--tab-add);
+  height: var(--tab-add);
+  margin-bottom: 1px;
+  margin-left: var(--space-2);
+  color: var(--text-muted);
+}
+
+.tab-add:hover {
+  color: var(--text);
+}
+
+/*
+ * A21: below 1100 px, with a strip (and so the menu button) in the window, option buttons are
+ * narrower so every options bar fits. The editor's `has-tabs` class is the hook (editor R56).
+ */
+@media (max-width: 1099.98px) {
+  .editor.has-tabs .btn-opt {
+    min-width: var(--option-btn-compact);
+  }
+}
