@@ -484,6 +484,40 @@ after "Show structural", compared with the structural goldens on the golden shee
 **Scope:** S. Cross-platform. Must not change: the Kekulé button (109 px), other options-bar
 boxes asserted by `editor-layout.spec.ts`, the lifted tokens and icons.
 
+## N14: hint to tidy after switching to structural (U16)
+
+**Description:** `SPEC-editor.md` R55 (orchestrator's UI decision U16), "Notices and errors". When a
+switch to structural succeeds and Tidy reaction is enabled for the document (`selectionScope`
+`hasArrow`) the editor shows the info notice `Press Tidy reaction to make room for the written carbons.` in the status bar, through
+`showNotice` (existing duration, replacement and `aria-live` rules). `toggleFormula` in
+`state/formula.ts` sets it after the commit; the text is an exported constant next to it. Not on
+switching to skeletal, not on undo or redo (those go through `stepHistory`, which clears the notice), not
+when there is no arrow, not when the switch does nothing. The switch still moves nothing.
+
+**Tests first:** `state/reducer-formula.test.ts` (RED: no notice): skeletal to structural with an
+arrow gives the notice (info, the exact text); skeletal to structural without an arrow, structural
+to skeletal (with an arrow), undo and redo of a switch (with an arrow), and a switch that does
+nothing (empty document) give none; the document after the switch is unchanged apart from the
+formula. E2E `e2e/editor-formula.spec.ts` (RED: no text in the hint slot): insert the esterification
+scheme with its chip, switch to structural, the status bar's hint shows the text; press Tidy
+reaction; no ink box of a label overlaps a plus sign or an arrow (DOM boxes of the drawn parts) and
+every gap between neighbouring items is positive. Shots `e2e/shots/N14.shot.ts`:
+`N14/after-switch.png`, `N14/after-tidy.png`.
+
+**Acceptance criteria:**
+- [x] unit and e2e tests pass; the notice appears only in the case R55 names
+- [x] after the switch and Tidy nothing in the esterification scheme touches (measured gaps in the report)
+- [x] shots exist and were looked at
+
+**Verification:** `npx vitest run --project unit src/renderer/editor/state`, `npm run test:e2e -- e2e/editor-formula.spec.ts`, `npm run shots -- N14`, then `npm run check`
+
+**Dependencies:** N6, N7
+
+**Files:** `src/renderer/editor/state/{formula.ts,reducer-formula.test.ts}`, `e2e/editor-formula.spec.ts`,
+`e2e/shots/N14.shot.ts`
+
+**Scope:** XS. Cross-platform. Must not change: the switch's commit, U13, the notice rules.
+
 ## N8: white-backed clipboard bitmap with margin
 
 **Description:** `SPEC-clipboard-export.md` R10, PI3, CB-C2, Public surface, SC3, SC14, "Test
@@ -615,7 +649,7 @@ what was compared in the commit message. No product code.
 
 **Verification:** `npm run shots -- N5 N7 N10` (playwright args pass through), then `npm run check`
 
-**Dependencies:** N1–N10, N3a, N3b, N13
+**Dependencies:** N1–N10, N14, N3a, N3b, N13
 
 **Files:** `AGENTS.md`, `docs/editor-perf.md`
 
@@ -640,7 +674,7 @@ by the owner. Record results as the checklist asks; tick only what was run and s
 
 **Verification:** the commands above, each on its own; exit codes and summaries written into the checklist
 
-**Dependencies:** N1–N11, N3a, N3b, N13 (S1 and S2 are answered)
+**Dependencies:** N1–N11, N14, N3a, N3b, N13 (S1 and S2 are answered)
 
 **Files:** `docs/windows-checklist.md`, `SPEC.md`
 

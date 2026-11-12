@@ -84,6 +84,7 @@ is blocked; N12 needs N3a, N3b and N13.
 - [ ] N13: editor BLU ↔ pt through `ptPerBlu` (R53), viewport defaults on `bondLength` (U14)
 - [ ] N6: `toggle-formula` command, C7 reducer, R52/R53 consequences (R37 bend with the ring flag, U11 label editor, U13 view on a switch), perf variant
 - [ ] N7: the formula switch in the options bar, icon-only below 1100 px (R51, U5, U6, U8)
+- [ ] N14: hint in the status bar to press Tidy reaction after a switch to structural (R55, U16)
 
 ### Checkpoint F-b — editor
 - [ ] `npm run check` green; `npm run test:e2e` green; editor ≥ 70 % lines; perf budgets unchanged and met
@@ -106,7 +107,7 @@ is blocked; N12 needs N3a, N3b and N13.
 | Criterion | Task(s) |
 |---|---|
 | editor SC13 (number keys) | N4, N5, N5b (held digit, text targets, numpad, layouts) |
-| editor SC14 (formula switch, structural canvas) | N13, N6, N7 |
+| editor SC14 (formula switch, structural canvas) | N13, N6, N7, N14 |
 | doc-model D1 tests (Testing "Schema v2") | N1 |
 | svg-render SC14 (skeletal unchanged; structural legible) | N2 (unchanged part, ring rule), N3a (factor, oracle), N3b (goldens, L1–L3) |
 | clipboard-export SC14 (white bitmap), SC15 (formula travels, incl. a structural export reopens structural), R12 (structural picture sizes, margin unchanged) | N8, N9 |

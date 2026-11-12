@@ -1,9 +1,14 @@
 // R51 / C7 / R53 U13: the Show structural | Show skeletal switch.
 import { current, setStyle, type Doc } from '@core/doc-model';
 import type { Derive } from '../model/derive';
+import { hasArrow } from '../model/scope';
 import { keepInkCentre, reveal, type Viewport } from '../model/viewport';
 import type { EditorState } from './editor-state';
+import { showNotice } from './notice';
 import type { EditorAction } from './reducer';
+
+/** R55 (U16): the notice after a switch to structural when Tidy reaction is enabled. */
+export const TIDY_HINT = 'Press Tidy reaction to make room for the written carbons.';
 
 type Commit = Extract<EditorAction, { type: 'commit' }>;
 
@@ -32,7 +37,8 @@ export function followFormula(viewport: Viewport, was: Doc, now: Doc, derive: De
 
 /**
  * One "Show structural formula" / "Show skeletal formula" commit on the whole document (selection
- * and tool kept), then U13. An empty skeletal document, an open editor or a running gesture: nothing.
+ * and tool kept), then U13, then R55's hint when the switch is to structural and the drawing has
+ * an arrow. An empty skeletal document, an open editor or a running gesture: nothing.
  */
 export function toggleFormula(
   state: EditorState,
@@ -50,8 +56,11 @@ export function toggleFormula(
     recipe: (d) => setStyle(d, { formula }),
   });
   if (done.history === state.history) return done;
-  return {
+  const next = current(done.history);
+  const switched = {
     ...done,
-    viewport: followFormula(done.viewport, doc, current(done.history), derive),
+    viewport: followFormula(done.viewport, doc, next, derive),
   };
+  // R55: only the switch to structural, and only when Tidy reaction is enabled.
+  return structural || !hasArrow(next) ? switched : showNotice(switched, 'info', TIDY_HINT);
 }

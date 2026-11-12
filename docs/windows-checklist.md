@@ -99,6 +99,7 @@ Hand checks (installed final build):
 - [ ] Narrator on a tool-rail button: it reads the tool name alone ("Bond") and the keys "3 B" once (`aria-keyshortcuts`), not the badge or the caption twice; write down what Narrator said.
 - [ ] The rail digit badges at 125 % and at 150 % display scaling: each badge is crisp, inside its button, does not touch the icon or the caption, and the rail does not change size.
 - [ ] Digits typed with the Devanagari IME in the label editor (and in the text editor) stay text and pick no tool; with the canvas focused and the IME on, write down whether the digit keys pick tools (the spec does not say; this is an observation, not a pass criterion).
+- [ ] The hint after a switch to structural: insert the esterification scheme (the reaction chip), press "Show structural": the status bar says "Press Tidy reaction to make room for the written carbons."; press Tidy reaction: the scheme is spaced so that no label, plus sign or arrow touches another.
 
 ## Checkpoint A — scaffold and tooling
 

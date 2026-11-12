@@ -242,3 +242,63 @@ test('the switch is --formula-btn-w wide at 1280 and 32 px icon-only at 960 with
     await app.close();
   }
 });
+
+type ScreenBox = { x: number; y: number; w: number; h: number };
+
+/** Screen boxes of every written label (the `<text>` of an `atom:` part), plus signs and arrows. */
+const schemeBoxes = (page: Page): Promise<{ labels: ScreenBox[]; others: ScreenBox[] }> =>
+  page.evaluate(() => {
+    const box = (r: DOMRect) => ({ x: r.x, y: r.y, w: r.width, h: r.height });
+    const labels = [...document.querySelectorAll('[data-layer="content"] > [data-key^="atom:"]')]
+      .flatMap((g) => [...g.querySelectorAll('text')])
+      .map((t) => box(t.getBoundingClientRect()));
+    const others = [
+      ...document.querySelectorAll('[data-layer="content"] > [data-key^="obj:"]'),
+    ].map((g) => box(g.getBoundingClientRect()));
+    return { labels, others };
+  });
+
+/** Gap between two boxes: negative when they overlap (the larger of the two axis gaps). */
+const boxGap = (a: ScreenBox, b: ScreenBox): number =>
+  Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w), b.y - (a.y + a.h), a.y - (b.y + b.h));
+
+const smallestGap = ({ labels, others }: { labels: ScreenBox[]; others: ScreenBox[] }): number =>
+  Math.min(...labels.flatMap((l) => others.map((o) => boxGap(l, o))));
+
+test('U16 (R55): after Show structural on the esterification scheme the status bar says to press Tidy reaction, and Tidy leaves nothing touching', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page
+      .getByTestId('empty-state')
+      .getByRole('button', { name: 'ethanol + acetic acid -> ethyl acetate + water', exact: true })
+      .click();
+    const hint = page.getByTestId('statusbar').getByRole('status');
+    await page.getByTestId('tool-select').click();
+    await switchButton(page).click();
+    await expect(hint).toHaveText('Press Tidy reaction to make room for the written carbons.');
+    const before = await readDocument(page);
+    expect(before.style.formula).toBe('structural');
+    const gapBefore = smallestGap(await schemeBoxes(page));
+
+    await page.getByTestId('act-tidy').click();
+    await expect(hint).not.toHaveText('Press Tidy reaction to make room for the written carbons.');
+    const after = await schemeBoxes(page);
+    const gapAfter = smallestGap(after);
+    console.log(
+      'N14 smallest label gap to a plus or arrow (screen px): before',
+      gapBefore,
+      'after',
+      gapAfter,
+    );
+    expect(after.labels.length).toBeGreaterThan(4);
+    expect(after.others).toHaveLength(3);
+    expect(gapAfter).toBeGreaterThanOrEqual(4);
+
+    // The switch back says nothing; neither does undoing the Tidy and the switch.
+    await switchButton(page).click();
+    await expect(hint).not.toContainText('Press Tidy reaction');
+    expectBlockedRequests(app, 0);
+  } finally {
+    await app.close();
+  }
+});

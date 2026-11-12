@@ -5,12 +5,16 @@ import type { AtomId, BondId, Doc, Selection } from '@core/doc-model';
 import { EMPTY_SCOPE, type SelectionScope } from '../state/selection-actions';
 import { expandSelection, isEmptySelection } from './selection';
 
+/** The document has a straight arrow: the Tidy reaction action is enabled (R11, TR1). */
+export function hasArrow(doc: Doc): boolean {
+  return Object.values(doc.objects).some((o) => o.type === 'arrow');
+}
+
 export function selectionScope(
   doc: Doc,
   perception: Perception,
   selection: Selection,
 ): SelectionScope {
-  const hasArrow = Object.values(doc.objects).some((o) => o.type === 'arrow');
   const whole = isEmptySelection(selection);
   const atoms: ReadonlySet<AtomId> = whole
     ? new Set(Object.keys(doc.atoms) as AtomId[])
@@ -45,7 +49,7 @@ export function selectionScope(
     ),
     hasAromatic15,
     hasAromaticNon15,
-    hasArrow,
+    hasArrow: hasArrow(doc),
     hasSelection: !whole,
     hasAbbreviation,
   };

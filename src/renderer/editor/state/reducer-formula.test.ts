@@ -4,8 +4,10 @@ import { current, setStyle, undoLabel, type Doc } from '@core/doc-model';
 import { ringAtoms } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import { overlayGroups } from '../model/overlay';
+import { messyScheme } from '../model/tidy-fixtures';
 import { fitZoom, ptToScreen, type Viewport } from '../model/viewport';
 import type { EditorState } from './editor-state';
+import { TIDY_HINT } from './formula';
 import { isDirty, reduce, type EditorAction } from './reducer';
 import { drawn, freshState, testContext, testDoc, wholeOf } from './testing';
 
@@ -242,5 +244,55 @@ describe('hover in structural mode (HV4, R52, R53)', () => {
     const scene = ctx.derive.committed(doc).scene;
     const groups = overlayGroups(h.hover as never, doc, scene, h.viewport);
     expect(groups.map((g) => g.kind)).toEqual(['hover']);
+  });
+});
+
+describe('U16: the hint to tidy after a switch to structural (R55)', () => {
+  const HINT = 'Press Tidy reaction to make room for the written carbons.';
+  const scheme = (): EditorState => sized(messyScheme().doc);
+
+  it('skeletal to structural with an arrow: the info notice, and nothing else moves', () => {
+    const before = scheme();
+    const s = toggle(before);
+    expect(s.notice).toMatchObject({ kind: 'info', text: HINT });
+    expect(TIDY_HINT).toBe(HINT);
+    expect(docOf(s).atoms).toEqual(docOf(before).atoms);
+    expect(docOf(s).objects).toEqual(docOf(before).objects);
+    expect(s.history.past).toHaveLength(before.history.past.length + 1);
+  });
+
+  it('a second notice replaces it with a higher id (the existing notice rules)', () => {
+    const s = toggle(scheme());
+    const next = run(s, { type: 'notice-show', kind: 'info', text: 'Other' });
+    expect(next.notice?.text).toBe('Other');
+    expect(next.notice?.id).toBeGreaterThan(s.notice?.id ?? 0);
+  });
+
+  it('no notice without an arrow', () => {
+    expect(toggle(ethanol()).notice).toBeNull();
+  });
+
+  it('no notice on switching back to skeletal, even with an arrow', () => {
+    const structural = toggle(scheme());
+    const back = toggle(run(structural, { type: 'notice-clear' }));
+    expect(docOf(back).style.formula).toBeUndefined();
+    expect(back.notice).toBeNull();
+  });
+
+  it('no notice on undo or redo of a switch', () => {
+    const switched = toggle(scheme());
+    const cleared = run(switched, { type: 'notice-clear' });
+    expect(run(cleared, { type: 'undo' }).notice).toBeNull();
+    const undone = run(switched, { type: 'undo' });
+    expect(undone.notice).toBeNull();
+    expect(run(undone, { type: 'redo' }).notice).toBeNull();
+  });
+
+  it('no notice when the switch does nothing (empty document, editor open)', () => {
+    const empty = sized(testDoc());
+    expect(toggle(empty).notice).toBeNull();
+    const s = scheme();
+    const editing = run(s, { type: 'open-label', atom: Object.keys(docOf(s).atoms)[0] as never });
+    expect(toggle(editing).notice).toBeNull();
   });
 });
