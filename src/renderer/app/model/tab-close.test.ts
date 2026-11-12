@@ -325,6 +325,139 @@ describe('item (3): a tab not loaded in this run is read first', () => {
   });
 });
 
+describe('T8 (2): a record that cannot be read keeps the tab (TB19, never discarded)', () => {
+  const NOTICE = "Couldn't read Untitled 2. Chalkbond keeps your drawing and will try again.";
+
+  /** Tabs `a` (active) and `b` restored; I11 answers `unreadable` for `b` until `lock.on` is false. */
+  async function locked(h: TabFlowHarness): Promise<{ f: TabFlows; lock: { on: boolean } }> {
+    h.storeRecord({ id: 'a', kind: 'untitled', name: 'Untitled' }, stateWith(withAtoms(1)));
+    h.storeRecord({ id: 'b', kind: 'untitled', name: 'Untitled 2' }, stateWith(withAtoms(3)));
+    const lock = { on: true };
+    h.override('readTabRecord', async (tabId: string) => {
+      if (tabId === 'b' && lock.on) return { ok: false, problem: 'unreadable' };
+      const text = h.records.get(tabId);
+      return text === undefined ? { ok: false, problem: 'missing' } : { ok: true, text };
+    });
+    const f = h.flows();
+    await f.start({
+      session: h.session(
+        [
+          { id: 'a', kind: 'untitled', name: 'Untitled', unsaved: true },
+          { id: 'b', kind: 'untitled', name: 'Untitled 2', unsaved: true },
+        ],
+        'a',
+      ),
+      open: null,
+    });
+    return { f, lock };
+  }
+
+  it('the tab stays, nothing is discarded or reopenable, N-A7 says it will try again', async () => {
+    const h = createTabFlowHarness();
+    const { f } = await locked(h);
+    h.notices.length = 0;
+    h.calls.length = 0;
+    await f.close('b');
+    expect(tabIds(f)).toEqual(['a', 'b']);
+    expect(active(f)).toBe('a');
+    expect(f.state().list.discarded).toEqual([]);
+    expect(f.state().list.closed).toEqual([]);
+    expect(h.damaged).toEqual([]);
+    expect(h.names(['ask'])).toEqual([]);
+    expect(h.notices).toEqual([{ kind: 'info', text: NOTICE }]);
+    expect(h.names(['updateSessionIndex'])).toEqual([]);
+  });
+
+  it('a later close, once the record can be read, proceeds normally (T9 asks for the content)', async () => {
+    const h = createTabFlowHarness();
+    const { f, lock } = await locked(h);
+    await f.close('b');
+    expect(tabIds(f)).toEqual(['a', 'b']);
+    lock.on = false;
+    h.notices.length = 0;
+    h.answers.push('discard');
+    await f.close('b');
+    expect(asked(h)).toEqual(['Untitled 2']);
+    expect(tabIds(f)).toEqual(['a']);
+    expect(h.notices).toEqual([]);
+  });
+
+  it('a file tab whose record is locked is kept too (its file is not read instead)', async () => {
+    const h = createTabFlowHarness();
+    const old = withAtoms(2);
+    const ref = h.file('acid.chalk', old);
+    h.bind('c', ref, await sha256(serialize(old)));
+    h.storeRecord({ id: 'c', kind: 'chalk', name: 'acid.chalk' }, stateWith(withAtoms(4)));
+    h.storeRecord({ id: 'a', kind: 'untitled', name: 'Untitled' }, stateWith(withAtoms(1)));
+    h.override('readTabRecord', async (tabId: string) =>
+      tabId === 'c'
+        ? { ok: false, problem: 'unreadable' }
+        : { ok: true, text: h.records.get(tabId) as string },
+    );
+    const f = h.flows();
+    await f.start({
+      session: h.session(
+        [
+          { id: 'a', kind: 'untitled', name: 'Untitled', unsaved: true },
+          { id: 'c', kind: 'chalk', name: 'acid.chalk' },
+        ],
+        'a',
+      ),
+      open: null,
+    });
+    await f.close('c');
+    expect(tabIds(f)).toEqual(['a', 'c']);
+    expect(f.state().list.discarded).toEqual([]);
+    expect(f.state().list.closed).toEqual([]);
+    expect(fileText(h, ref)).toBe(serialize(old));
+    expect(h.notices.map((n) => n.text)).toEqual([
+      "Couldn't read acid.chalk. Chalkbond keeps your drawing and will try again.",
+    ]);
+  });
+
+  it('a read that throws is the same: the tab stays', async () => {
+    const h = createTabFlowHarness();
+    const { f } = await locked(h);
+    h.override('readTabRecord', async () => {
+      throw new Error('ipc');
+    });
+    await f.close('b');
+    expect(tabIds(f)).toEqual(['a', 'b']);
+    expect(f.state().list.discarded).toEqual([]);
+  });
+
+  it('a missing record closes the same way as a damaged one: no question, not reopenable', async () => {
+    const h = createTabFlowHarness();
+    const { f, lock } = await locked(h);
+    lock.on = false;
+    h.records.delete('b');
+    await f.close('b');
+    expect(tabIds(f)).toEqual(['a']);
+    expect(f.state().list.closed).toEqual([]);
+    expect(h.names(['ask'])).toEqual([]);
+  });
+
+  it('closeWindow leaves an unreadable unloaded tab alone: not discarded, still in the index', async () => {
+    const h = createTabFlowHarness();
+    const { f } = await locked(h);
+    await f.closeWindow();
+    expect(f.closed()).toBe(true);
+    expect(h.names(['closeOk'])).toEqual(['closeOk']);
+    expect(h.names(['ask'])).toEqual([]);
+    expect(lastIndex(h).discarded).toEqual([]);
+    expect(lastIndex(h).tabs.map((t) => t.id)).toEqual(['a', 'b']);
+  });
+
+  it('closeWindow after a refused close of that tab still discards nothing', async () => {
+    const h = createTabFlowHarness();
+    const { f } = await locked(h);
+    await f.close('b');
+    await f.closeWindow();
+    expect(lastIndex(h).discarded).toEqual([]);
+    expect(lastIndex(h).tabs.map((t) => t.id)).toEqual(['a', 'b']);
+  });
+});
+
 describe('item (4): a close-time write that is not ok makes the tab unsaved, so T9 asks', () => {
   it('a failed write (AS6): the box asks; Cancel keeps it, unavailable', async () => {
     const h = createTabFlowHarness();

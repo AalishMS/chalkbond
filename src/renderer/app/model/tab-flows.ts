@@ -368,6 +368,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     writeIndex,
     index,
     load,
+    loadToClose: (tab) => load(tab, true),
     lose,
     switchTo,
     facts,
@@ -405,13 +406,23 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
    * Null: the tab is lost (SS11: damaged, or missing while it had content) and N-A5 was shown;
    * a missing record of an untitled tab that had no content gives an empty drawing.
    */
-  async function load(tab: Tab): Promise<EditorTabState | null> {
+  async function load(tab: Tab): Promise<EditorTabState | null>;
+  /** T8 (2): `'unreadable'` (I11 could not read the record) is answered before anything else is done. */
+  async function load(
+    tab: Tab,
+    stopIfUnreadable: true,
+  ): Promise<EditorTabState | null | 'unreadable'>;
+  async function load(
+    tab: Tab,
+    stopIfUnreadable = false,
+  ): Promise<EditorTabState | null | 'unreadable'> {
     const m = metaOf(tab.id);
     const loaded = await loadTabRecord(tab.id, main, {
       clock: o.clock,
       view: m.view,
       saved: 'unknown',
     });
+    if (stopIfUnreadable && !loaded.ok && loaded.problem === 'unreadable') return 'unreadable';
     let state: EditorTabState | null = null;
     if (tab.kind === 'chalk') {
       const checked = await auto.check(tab.id, !loaded.ok);

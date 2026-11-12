@@ -12,7 +12,7 @@ import type {
   SessionIndexUpdate,
   WriteTabRecordResponse,
 } from '../../../shared/ipc-types';
-import type { TabAutosave } from './tab-autosave';
+import { unavailableNotice, type TabAutosave } from './tab-autosave';
 import type { TabFlowOptions, TabMeta } from './tab-flows';
 import { hasUnwrittenChanges, isUnkept, isUnsaved, tabFacts, type TabFacts } from './tab-status';
 import {
@@ -49,6 +49,11 @@ export interface CloseCore {
   index(): Promise<SessionIndexUpdate>;
   /** SS7: reads a tab not loaded in this run; null when it is lost (SS11, N-A5 shown). */
   load(tab: Tab): Promise<EditorTabState | null>;
+  /**
+   * T8 (2): as `load`, but a record that cannot be read now (I11 `unreadable`) answers
+   * `'unreadable'` and touches nothing, so the close can leave the tab as it is.
+   */
+  loadToClose(tab: Tab): Promise<EditorTabState | null | 'unreadable'>;
   /** Removes a lost tab (not discarded). */
   lose(id: string): void;
   /** T11; false when the incoming tab was lost. */
@@ -206,8 +211,15 @@ export function createTabClose(core: CloseCore): TabClose {
     if (tab === undefined) return;
     if (isActive(id)) await o.finishEditing(); // (1) F4a
     if (tab.state === null) {
-      // (2) Read first; a record that cannot be read or parsed is SS11's: closed without asking.
-      const state = await core.load(tab);
+      // (2) Read first. A record that does not parse, or is missing, is SS11's: closed without
+      // asking. One that cannot be read now (a lock) keeps the tab: nothing is closed or discarded
+      // (it would be deleted at the window close) and N-A7 says Chalkbond will try again.
+      const state = await core.loadToClose(tab);
+      if (state === 'unreadable') {
+        o.main.logError('Tab not closed: its record could not be read');
+        o.notify('info', unavailableNotice('unreadable', tab.name));
+        return;
+      }
       if (state === null) {
         core.lose(id);
         o.changed();
