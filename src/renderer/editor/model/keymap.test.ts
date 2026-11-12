@@ -214,4 +214,33 @@ describe('R50 number keys', () => {
   it('Shift is ignored', () => {
     expect(hoverKeys(plain('1', { shiftKey: true }), null, 'bond')).toEqual(pick('select'));
   });
+
+  // N5b: the keymap reads `key` only (R6); there is no `code` fallback.
+  it('the unshifted AZERTY digit row and Shift+1 on QWERTY (& é " !) do nothing', () => {
+    for (const k of ['&', 'é', '"', '!', "'", '(', 'è', '_', 'ç', 'à']) {
+      // Over nothing, over an atom and over a bond (where 1..3 would sprout or set an order).
+      expect(hoverKeys(plain(k), null, 'bond'), k).toBeNull();
+      expect(hoverKeys(plain(k), ATOM, 'bond'), k).toBeNull();
+      expect(hoverKeys(plain(k), BOND, 'bond'), k).toBeNull();
+    }
+  });
+
+  it('Shift+& arrives as key 1 on AZERTY and picks Select', () => {
+    expect(hoverKeys(plain('1', { shiftKey: true }), null, 'bond')).toEqual(pick('select'));
+    expect(hoverKeys(plain('0', { shiftKey: true }), null, 'bond')).toEqual(pick('text'));
+  });
+
+  it('a key whose code names a digit but whose key is not a digit does nothing', () => {
+    // QWERTY Shift+Digit1 is '!' with code Digit1; AZERTY unshifted Digit1 is '&'.
+    const withCode = (k: string, code: string): KeyInfo => ({ ...plain(k), code }) as KeyInfo;
+    expect(hoverKeys(withCode('!', 'Digit1'), null, 'bond')).toBeNull();
+    expect(hoverKeys(withCode('&', 'Digit1'), null, 'bond')).toBeNull();
+  });
+
+  it('number-pad digits are key digits: the same table as the main row', () => {
+    for (const d of DIGITS) {
+      const numpad = { ...plain(d), code: `Numpad${d}` } as KeyInfo;
+      expect(hoverKeys(numpad, null, 'bond')).toEqual(pick(toolOf(d)));
+    }
+  });
 });

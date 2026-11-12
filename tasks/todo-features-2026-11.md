@@ -324,12 +324,11 @@ asserts the tool). E2E `e2e/editor-keyboard.spec.ts`: with the canvas focused, a
 `repeat: true` (dispatch a `keydown` with `repeat`, or `keyboard.down` twice without `up`) picks the
 tool once and a second digit held does nothing; digits typed in the name field, in the label
 editor (open on an atom with Enter) and in the text editor (Text tool, click) appear as text and
-leave the tool unchanged (`aria-pressed`); a numpad digit (`Numpad3` through Playwright) picks
-Bond. IME: digits typed with the Devanagari IME in the label editor stay text (hand check, in the
+leave the tool unchanged (`aria-pressed`); a numpad digit with Num Lock on picks a tool (Playwright's plain `Numpad3` is the Num Lock-off key `PageDown`; its Num Lock-on digit is `Shift+Numpad3`, and a `keydown` with `key: '3'`, `code: 'Numpad3'`, `location: 3` is the exact event; the plain Num Lock-off key does nothing). IME: digits typed with the Devanagari IME in the label editor stay text (hand check, in the
 Windows checklist).
 
 **Acceptance criteria:**
-- [ ] every test above exists and passes (RED shown if any fails, then the fix)
+- [x] every test above exists and passes (RED shown if any fails, then the fix)
 - [x] the shifted-digit-row rule is written in `SPEC-editor.md` R50 (with the task list correction of 2026-11-12)
 
 **Verification:** `npx vitest run --project unit src/renderer/editor/model/keymap.test.ts`, `npm run test:e2e -- e2e/editor-keyboard.spec.ts`, then `npm run check`

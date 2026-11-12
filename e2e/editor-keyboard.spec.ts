@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { canvasPoint, openApp, readDocument } from './harness';
+import { canvasPoint, insertName, openApp, readDocument } from './harness';
 
 interface Box {
   x: number;
@@ -390,6 +390,125 @@ test('with Ring active, hovering a ring atom and pressing 1 sprouts a bond: tolu
     await page.keyboard.press('1');
     await expect(page.getByTestId('formula')).toHaveText('C7H8 · 92.14 g/mol');
     await expect(page.getByTestId('tool-ring')).toHaveAttribute('aria-pressed', 'true');
+  } finally {
+    await app.close();
+  }
+});
+
+/** Dispatches a keydown on the canvas the way the browser does for an auto-repeating key. */
+const repeatKey = (page: Page, key: string): Promise<void> =>
+  page.getByTestId('canvas').dispatchEvent('keydown', { key, repeat: true });
+
+const pressedTool = (page: Page): Promise<string> =>
+  page.evaluate(
+    () =>
+      document
+        .querySelector('[data-testid^="tool-"][aria-pressed="true"]')
+        ?.getAttribute('data-testid') ?? '',
+  );
+
+test('a held digit picks its tool once; a repeated digit does nothing (R50, SC13)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('canvas').focus();
+    const before = await pressedTool(page);
+    expect(before).not.toBe('tool-ring');
+    // Auto-repeat events alone never pick a tool.
+    await repeatKey(page, '5');
+    expect(await pressedTool(page)).toBe(before);
+    // A real key down picks Ring; the held key's repeats then change nothing.
+    await page.keyboard.down('5');
+    await expect(page.getByTestId('tool-ring')).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.down('5');
+    await page.keyboard.down('5');
+    await page.keyboard.up('5');
+    await expect(page.getByTestId('tool-ring')).toHaveAttribute('aria-pressed', 'true');
+    // A second digit that arrives as a repeat does nothing either.
+    await repeatKey(page, '7');
+    await repeatKey(page, '0');
+    expect(await pressedTool(page)).toBe('tool-ring');
+    await page.keyboard.press('7');
+    await expect(page.getByTestId('tool-arrow')).toHaveAttribute('aria-pressed', 'true');
+  } finally {
+    await app.close();
+  }
+});
+
+test('digits typed in the name field are text and leave the tool unchanged (R50, SC13)', async () => {
+  const { app, page } = await openApp();
+  try {
+    const before = await pressedTool(page);
+    const input = page.getByTestId('namefield-input');
+    await input.focus();
+    await page.keyboard.type('1234567890');
+    await expect(input).toHaveValue('1234567890');
+    expect(await pressedTool(page)).toBe(before);
+  } finally {
+    await app.close();
+  }
+});
+
+test('digits typed in the label editor are text and leave the tool unchanged (R50, SC13)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await insertName(page, 'ethanol');
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Escape');
+    const doc = await readDocument(page);
+    const o = Object.values(doc.atoms).find((a) => a.element === 'O');
+    if (!o) throw new Error('no oxygen');
+    const at = await canvasPoint(page, o);
+    await page.mouse.move(at.x, at.y);
+    const before = await pressedTool(page);
+    await page.keyboard.press('Enter');
+    const edit = page.getByTestId('textbox-edit');
+    await expect(edit).toBeFocused();
+    await page.keyboard.type('R1234567890');
+    await expect(edit).toHaveText('R1234567890');
+    expect(await pressedTool(page)).toBe(before);
+    await page.keyboard.press('Escape');
+    await expect(edit).toHaveCount(0);
+    expect(await pressedTool(page)).toBe(before);
+  } finally {
+    await app.close();
+  }
+});
+
+test('digits typed in the text editor are text and leave the tool unchanged (R50, SC13)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('0');
+    await expect(page.getByTestId('tool-text')).toHaveAttribute('aria-pressed', 'true');
+    await page.mouse.click(600, 400);
+    const edit = page.getByTestId('textbox-edit');
+    await expect(edit).toBeFocused();
+    await page.keyboard.type('1234567890');
+    await expect(edit).toHaveText('1234567890');
+    await expect(page.getByTestId('tool-text')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('rail').locator('[aria-pressed="true"]')).toHaveCount(1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a number-pad digit with Num Lock on picks its tool; Num Lock off does nothing (R50, SC13)', async () => {
+  const { app, page } = await openApp();
+  try {
+    const canvas = page.getByTestId('canvas');
+    await canvas.focus();
+    // The exact event a Num Lock-on number pad sends: key is the digit, code and location say pad.
+    await canvas.dispatchEvent('keydown', { key: '5', code: 'Numpad5', location: 3 });
+    await expect(page.getByTestId('tool-ring')).toHaveAttribute('aria-pressed', 'true');
+    // Playwright's model of Num Lock on: Shift+NumpadN gives the digit (Shift is ignored, R6).
+    await page.keyboard.press('Shift+Numpad7');
+    await expect(page.getByTestId('tool-arrow')).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Shift+Numpad2');
+    await expect(page.getByTestId('tool-erase')).toHaveAttribute('aria-pressed', 'true');
+    // Num Lock off: the pad sends End, ArrowDown, Clear ... and none of them is a digit.
+    await page.keyboard.press('Numpad5');
+    await page.keyboard.press('Numpad1');
+    await expect(page.getByTestId('tool-erase')).toHaveAttribute('aria-pressed', 'true');
   } finally {
     await app.close();
   }
