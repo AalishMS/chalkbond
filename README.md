@@ -33,10 +33,19 @@ checks run on Windows 11 only (Windows 10 is untested by hand for 1.0.0); the Of
 development machine (Office 2016) is accepted for the Office checks; the development machine is not
 the teacher's laptop, so the teacher's-laptop checks stay open.
 
+The feature set of 2026-11-12 is implemented: number keys for the tool rail (1 to 9 and 0), a
+"Show structural" / "Show skeletal" switch that writes the carbons (CH3, CH2) with bonds twice as
+long, and a clipboard picture on a white background with a small margin (so it shows in dark-mode
+chat apps). A structural drawing is saved as a version 2 `.chalk` file (a skeletal one is still
+version 1, and the 1.0.0 build cannot open version 2). Not yet re-run on the final build: the full
+e2e suite, the OS-input test, the installer build, the packaged smoke test and the full shots run;
+the Windows hand checks in "Re-checks after the 2026-11-12 feature set"
+(`docs/windows-checklist.md`) are open. The release is not declared.
+
 ## The editor
 
 The window is the editor: a tool rail (Select, Erase, Bond, Chain, Ring, Atom, Arrow, Plus, Curly,
-Text), an options bar per tool, and a name field that turns a compound name ("ethanol") or a
+Text; keys 1 to 9 and 0 pick them in that order, the letters still work), an options bar per tool, and a name field that turns a compound name ("ethanol") or a
 reaction ("ethanol + acetic acid -> ethyl acetate + water") into a drawing. It draws bonds,
 chains, rings and atom labels, selects, moves, rotates, flips, copies and pastes inside the app,
 adds reaction arrows, plus signs, curved electron-pushing arrows and conditions text (with Tidy

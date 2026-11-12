@@ -644,8 +644,8 @@ what was compared in the commit message. No product code.
 **Tests first:** none (documentation task; disclosed exception to test-first).
 
 **Acceptance criteria:**
-- [ ] AGENTS.md and `docs/editor-perf.md` updated; nothing contradicts the specs
-- [ ] every listed shot exists and was looked at against its mock-up
+- [x] AGENTS.md and `docs/editor-perf.md` updated; nothing contradicts the specs
+- [x] every listed shot exists and was looked at against its mock-up
 
 **Verification:** `npm run shots -- N5 N7 N10` (playwright args pass through), then `npm run check`
 

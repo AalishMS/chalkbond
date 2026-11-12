@@ -8,7 +8,7 @@ commit ae3eecd) are part of this spec (see "Normative sources"). Amended 2026-11
 owner's feature set: number keys for the tool rail (R50) and the structural formula switch (R51,
 R52; its drawing was svg-render question S1, answered 2026-11-12 by svg-render Decision 16 and
 R53 here: bonds twice as long, rings drawn as before). The mock-ups were updated in the same commit
-(rail badges, the formula switch, its two icons, the `--formula-btn-w` token).
+(rail badges, the formula switch, its two icons, the `--formula-btn-w` token). Implemented 2026-11-12 (feature tasks N1-N14, `tasks/todo-features-2026-11.md`); the final checkpoint (N12) and the re-checks in `docs/windows-checklist.md` are open.
 
 Audience: a grade 11–12 chemistry teacher in Nepal (NEB curriculum) making slides and handouts on
 a Windows laptop, often 1366×768, no network. Not a power user of drawing software. The test for

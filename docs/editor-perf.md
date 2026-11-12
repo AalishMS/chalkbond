@@ -116,3 +116,27 @@ Electron 45.2.3, a real window.
 | Windows, real clipboard (inside the full `npm run test:e2e`, orchestrator, 2026-11-11, `956a4a4`) | <= 500 ms | 5 | 47.4 ms | 88.4, 52.9, 46.5, 46.8, 47.4 |
 
 The first sample is the slowest (cold encoder); the median is about a tenth of the budget.
+
+### After the white-backed bitmap (clipboard-export R10, task N8; Windows 11, 2026-11-12)
+
+The `image/png` entry is now rasterised on opaque white with a margin. Same spec, fixture, sample definition and machine
+as above (`e2e/win/clipboard-perf.spec.ts`, real clipboard), run by the orchestrator on 2026-11-12;
+this worker did not repeat the run.
+
+| Run | Budget | n | Median | Samples |
+|---|---|---|---|---|
+| Windows, real clipboard (orchestrator, 2026-11-12, after N8) | <= 500 ms | 5 | 66.9 ms | 100.2, 67.6, 64.1, 66.9, 62.8 |
+
+N8's own todo records 69.1 ms for the same spec at its commit; the 2026-11-11 rows above (50.9 ms,
+47.4 ms) predate N8, so the median rose by roughly 16 ms. The budget is unchanged and met.
+
+## Structural formula (feature set of 2026-11-12; budgets unchanged)
+
+No new budget. The structural variants of the scenes reuse the skeletal budgets: the svg-render
+perf scenes with `formula: 'structural'` (N2, N3a, `src/core/svg-render/perf.test.ts`), and the
+editor's `hitTest` on a 500-atom structural document (0.5 ms median) and one bond-drag preview step
+on the structural 40-atom scheme (10 ms median) in `src/renderer/editor/perf.test.ts` (N6, N13).
+`npx vitest run --project perf` ran on Windows 11 on 2026-11-12 at N11 (this worker):
+4 files, 17 tests, all passed. The tests assert the budgets and print no medians, so no structural
+median is recorded here; a measured number would need the probes to log it. The structural frame-time
+probe (`e2e/editor-perf.spec.ts`) was not run for N11 (needs a build; open for N12).

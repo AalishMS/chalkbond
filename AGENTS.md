@@ -39,6 +39,14 @@ hand for 1.0.0); the Office on the development machine (Office 2016) is accepted
 checks; the teacher's-laptop checks (the cold start box and E32) are open because the development
 machine is not that laptop. The release is not declared.
 
+The feature set of 2026-11-12 (number keys for the tool rail, the structural formula display, the
+white-backed clipboard bitmap; `tasks/todo-features-2026-11.md` N1-N14) is **implemented** and
+committed (N11, this documentation, is the last task before the checkpoint). Not yet re-run on the
+final build: the full `npm run test:e2e`, `test:e2e:os-input`, `dist:win`, `test:packaged`, the
+full `npm run shots` and the hand checks of "Re-checks after the 2026-11-12 feature set" in
+`docs/windows-checklist.md` (all unticked). N12, the final checkpoint, is open. The only feature
+measurement taken on Windows is the Copy timing (median 66.9 ms; `docs/editor-perf.md`).
+
 ## Workflow
 
 1. `CAPABILITY-MAP.md` lists the module. Specify first: write `SPEC-<module>.md` and get it
@@ -126,6 +134,11 @@ Vitest projects (`vitest.config.mts`):
   injectable clock. Undo restores `nextId`, so an undone id can be reissued; callers drop ids.
 - The `.chalk` Zod schema is strict: unknown keys are rejected and any new field bumps
   `schemaVersion`. No chemistry rules here.
+- Schema v2 (D1) adds the optional `style.formula: 'structural'`. `serialize` writes the lowest
+  version that holds the document: v1 (byte-identical to before) when `formula` is absent, v2 when
+  it is set. A file is validated with its **own** version's strict schema, then migrated; a
+  version above 2 is `newer-version`. A skeletal drawing has no `formula` key at all
+  (`setStyle(doc, { formula: 'skeletal' })` leaves it undefined).
 
 ### chem-core
 
@@ -156,6 +169,19 @@ Vitest projects (`vitest.config.mts`):
 - `e2e/font-calibration.spec.ts` checks the table and text ink boxes against real text rendering
   in Electron's Chromium (real Arial on Windows). Fix box errors in the renderer, not the tolerance.
 - Valence warnings, selection and hit-testing are not drawn here; the editor overlays them.
+- Structural formula (Decisions 15 and 16): `style.formula: 'structural'` writes carbons outside
+  rings with the existing label rules (`isLabelled` takes the formula and a ring flag; `ringAtoms`
+  finds ring members iteratively) and draws rings as in skeletal mode. Layout: every coordinate is
+  turned into pt by **`ptPerBlu`** (`bondLength`, or `STRUCTURAL_SCALE` = 2 times it when
+  structural), never by `bondLength` directly; label size, line widths and other decorations stay
+  at the style's size. S2 (answered B): atom-anchor offsets and a condition text's offset are drawn
+  at `x bondLength`, not `x ptPerBlu`. The **Decision 16 oracle** (coordinates doubled, written
+  carbons given their explicit H) is what the tests compare a structural render with, bit for bit.
+  13 structural scenes x 2 presets are goldens (39 files added, no pre-existing golden changed:
+  `git diff --stat 628ea2b -- src/core/svg-render/__golden__` shows only added files), and
+  `structural-legibility.test.ts` asserts L1 (visible length of a bond with a written end), L2
+  (no two labels closer than half the font size) and L3 (no bond skipped). Never re-record a
+  skeletal golden to make a structural change pass.
 - Property 5 (`svg-render.prop.test.ts`) compares `bounds` with doc-model's hull of the drawn items;
   keys whose geometry is not ink are left out of that oracle (callout anchor, hash bond, caption on
   atoms without ink). Fix such a failure in the oracle only when the scene's ink is right.
@@ -213,6 +239,22 @@ Vitest projects (`vitest.config.mts`):
 - Preset segments are 64x24 (editor R41), so every status-bar control meets the 24 px hit target;
   `--border-control` is `#79818c`, 3 : 1 or better on rest, hover and pressed (R42). Both are
   asserted in `editor-tokens.test.ts` and `editor-a11y.spec.ts`.
+- Number keys (R50): `1`-`9`, `0` pick the ten rail tools in rail order; the table is
+  `state/catalog.ts` (rail badges, `aria-keyshortcuts` and the two-key tooltips read it). A digit
+  works under the conditions of the tool's letter (canvas focused, no label or text editor, no
+  Ctrl/Alt/Meta, Shift ignored, `KeyboardEvent.key`, number pad included). Exception: where hover
+  keys are active (an atom or bond under the pointer), `1`-`3` keep their R5 meaning (bond
+  orders); the other digits still pick tools.
+- Formula switch (R51-R55): `toggle-formula` is one `setStyle` commit on the whole document (one
+  undo step, selection ignored); the Select options bar shows "Show structural" / "Show skeletal"
+  (icon-only below 1100 px). U13 (R53): the view is scaled about the centre on a switch and zooms
+  out only if the drawing no longer fits. **Every BLU <-> pt or screen conversion uses
+  `scene.style.ptPerBlu` (or `resolveStyle(doc.style).ptPerBlu`), never `bondLength`** (R53);
+  `model/structural-offsets.ts` is the one place for R54's exception (offsets drawn at the
+  skeletal scale), so items are hit, outlined and dragged where they are drawn. Written carbons
+  count as labelled (R52): hover, hit extents, selection and valence boxes apply to them, and HV4
+  gives no hover ghost over a carbon. After a switch to structural with a straight arrow present
+  the status bar says "Press Tidy reaction to make room for the written carbons." (R55, U16).
 - Host seam additions (R44-R49): the `actions` slot after Redo, `notify` and the `busy` event,
   right-click on an unselected item selects it first, `focus-name-field` is host-callable
   (`canRun` is true when no label or text editor is open; `run` records a focus request and the
@@ -239,6 +281,12 @@ Vitest projects (`vitest.config.mts`):
 - Rasterising happens in the renderer (SVG, `<img>`, `<canvas>`, `toDataURL`, X10, C11); the PDF is
   printed in main and embedded in the renderer (R2), so main imports no core (app-shell SEC9).
   No new dependency (X11).
+- Feature set 2026-11-12: the clipboard `image/png` entry is opaque white with a margin of 0.25 x
+  the preset's `bondLength` on every side (R10; the SVG entry stays transparent and tight; File >
+  Export is unchanged). `pictureDoc` copies `style.formula`, so every carrier shows and restores
+  the formula (R11); a pasted fragment takes the target document's setting. A structural picture
+  is `exportSvg` of the source document at true size, bonds `2 x bondLength` (R12). Whole-document
+  exports skip `pictureDoc`, so only a unit test covers the selection path.
 - Ctrl+C / Ctrl+V / Ctrl+X in a text target are never handled here (R4); pasting the editor's own
   last copy follows the generation rule (C8, CB-P1). `onCopy` bumps the generation synchronously.
 
@@ -258,6 +306,11 @@ Vitest projects (`vitest.config.mts`):
   that checks the sender frame, validates with Zod and logs (SEC5, SEC6, `src/main/ipc.ts`).
 - The renderer never holds a path: files are opaque refs (`FileRef`); a dropped file's path is read
   inside the preload (R8, SEC14); native dialog texts come from main's message table.
+- Feature set 2026-11-12 (R27, R28): the shortcuts list's Tools rows are digit then letter
+  (`model/shortcuts.ts` mirrors `docs/mockups/shell/pages.mjs` and is checked against the editor
+  keymap); no menu item or accelerator changed. File > New is always skeletal (the formula is not
+  remembered; `file-flows.test.ts` and `e2e/app-files.spec.ts` guard it). A skeletal drawing is
+  saved as v1 and a structural one as v2; the 1.0.0 build shows `newer-version` for a v2 file.
 - Menus and native boxes are data: the pure menu model and message table are asserted in unit
   tests, and e2e stubs `dialog` and `Menu.prototype.popup` and reads what Electron received. Menu
   items never register accelerators and carry no `role` (M2, R1); the renderer owns all keys.
@@ -297,6 +350,13 @@ Vitest projects (`vitest.config.mts`):
 - Keep the project green on Windows and Linux: no POSIX-only syntax in npm scripts and LF line
   endings (`.gitattributes`). `e2e/launch.ts` has a Linux branch.
 
+- Structural-mode work: the goldens diff must show only added files for the pre-existing scenes;
+  use `ptPerBlu` for every coordinate-to-pt step and keep R54's offsets in
+  `structural-offsets.ts`; the structural perf variants share the skeletal budgets (never a
+  separate, looser one). A selection-path change to `pictureDoc` needs its own unit test.
+- Digit keys read `KeyboardEvent.key` only, so on AZERTY a digit needs Shift (ignored). What the
+  Devanagari IME does with the canvas focused is a recorded observation in the checklist, not a
+  spec rule.
 - A coverage or test run that seems to hang with one busy worker is usually a failed property test
   shrinking (fast-check). Wait, or rerun that file with the verbose reporter
   (`npx vitest run --project unit <file> --reporter=verbose`); the failing seed is printed.
@@ -330,6 +390,12 @@ the human checks, the installed Office 2016 accepted for the Office checks, the 
 checks open because the development machine is not that laptop, and new features before the release
 (the human checks they touch will be repeated on the final installer). Version 1.0.0 is not
 declared released until the rest pass.
+
+- The feature set of 2026-11-12 is implemented (N1-N11, N13, N14, N3a, N3b); the final checkpoint
+  N12 and the Windows hand checks of "Re-checks after the 2026-11-12 feature set" are open, and the
+  release is not declared. Its spec rows are in the Decisions tables (editor R50-R55, svg-render
+  15 and 16, clipboard-export R10-R12, doc-model D1, app-shell R27 and R28). N11 collected the
+  shots `out/shots/N5`, `N7`, `N10` and the golden sheet and compared them with the mock-up PNGs.
 
 - Windows gates still open: the written observation for "Shutdown right after an edit" (whether the
   last change was there), Checkpoint R "Pen or touch" (only if the teacher uses touch or a pen), and,

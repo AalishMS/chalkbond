@@ -6,7 +6,7 @@ Core depends on: `doc-model`, `svg-render` (public `index.ts` entries only). Wri
 (app-shell "Process split and IPC"). Status: **approved 2026-11-10** (drafted in commit 4dd7d48;
 reviewed and approved by the delegated reviewer with the shell mock-ups of commit d3abe4b as the
 visual source of truth; see "Decisions"). Amended 2026-11-12: white-backed clipboard bitmap
-(R10) and the formula setting in the payload (R11).
+(R10) and the formula setting in the payload (R11). Implemented 2026-11-12 (feature tasks N1-N14, `tasks/todo-features-2026-11.md`); the final checkpoint (N12) and the re-checks in `docs/windows-checklist.md` are open.
 
 Audience: a grade 11–12 chemistry teacher in Nepal (NEB curriculum) on a Windows laptop with
 Office 2021, no network, not a power user. The test for every choice: *what would this teacher

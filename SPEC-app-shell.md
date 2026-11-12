@@ -8,7 +8,7 @@ main folders). Written together with `SPEC-clipboard-export.md`; the two share o
 (drafted in commit 4dd7d48; reviewed and approved by the delegated reviewer with the shell
 mock-ups of commit d3abe4b as the visual source of truth; see "Decisions"). Amended 2026-11-12:
 the shortcuts list names the tool number keys (R27); the formula switch needs no menu (R28); new
-mock-up A15c (the Select bar at the minimum window).
+mock-up A15c (the Select bar at the minimum window). Implemented 2026-11-12 (feature tasks N1-N14, `tasks/todo-features-2026-11.md`); the final checkpoint (N12) and the re-checks in `docs/windows-checklist.md` are open.
 
 Audience: a grade 11–12 chemistry teacher in Nepal on a Windows 10/11 laptop (often 1366×768; Windows 10 was not tested by hand before 1.0.0 (owner decision 2026-11-12)),
 Office 2021, no network, power cuts common, not a power user. The test for every choice: *what

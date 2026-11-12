@@ -5,6 +5,7 @@ Depends on: `doc-model`, `chem-core` (public entries only). Status: **approved 2
 (reviewed and approved by the delegated reviewer; see "Decisions"). Amended 2026-11-12 for the
 structural formula display (Decision 15; its layout was question S1, answered 2026-11-12 by
 Decision 16: bonds twice as long, rings drawn as in skeletal mode).
+Implemented 2026-11-12 (feature tasks N1-N14, `tasks/todo-features-2026-11.md`); the final checkpoint (N12) and the re-checks in `docs/windows-checklist.md` are open.
 
 Audience: a teacher of grade 11–12 chemistry in Nepal (NEB curriculum) building slides and
 worksheets on Windows with Office 2021. Output must look like a textbook figure with no manual
