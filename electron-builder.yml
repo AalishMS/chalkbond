@@ -2,7 +2,7 @@ appId: com.chalkbond.app
 productName: Chalkbond
 copyright: Copyright © 2026 Aalish
 directories: { buildResources: build, output: dist }
-files: [out/**, package.json]
+files: [out/main/**, out/preload/**, out/renderer/**, package.json]
 extraResources:
   - { from: build/THIRD-PARTY-NOTICES.txt, to: THIRD-PARTY-NOTICES.txt }
   - { from: build/icon.png, to: icon.png }

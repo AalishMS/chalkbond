@@ -7,6 +7,7 @@
 // asserts nothing that depends on hover. On Windows it uses the real `%APPDATA%\Chalkbond` (test
 // flags are ignored by design; it only reads and closes); on Linux a fresh `XDG_CONFIG_HOME`.
 import { expect, test, type ElectronApplication } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -122,4 +123,23 @@ test('I1: the effective electron-builder config', () => {
   ]) {
     expect(yaml, line).toContain(line);
   }
+});
+
+test('R29: the app archive holds only out/main, out/preload and out/renderer under out/', () => {
+  // The asar CLI that electron-builder brings (no dependency of ours); it lists every entry.
+  const archive = join(dirname(unpackedExecutable()), 'resources', 'app.asar');
+  expect(existsSync(archive), `no app archive: ${archive}`).toBe(true);
+  const entries = execFileSync(
+    process.execPath,
+    [join(ROOT, 'node_modules', '@electron', 'asar', 'bin', 'asar.js'), 'list', archive],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+  )
+    .split(/\r?\n/)
+    .filter((line) => line !== '')
+    .map((line) => line.split(String.fromCharCode(92)).join('/').replace(/^[/]/, ''));
+  const underOut = new Set(
+    entries.filter((e) => e.startsWith('out/')).map((e) => e.split('/')[1] ?? ''),
+  );
+  expect([...underOut].sort()).toEqual(['main', 'preload', 'renderer']);
+  expect(entries).toContain('package.json');
 });
