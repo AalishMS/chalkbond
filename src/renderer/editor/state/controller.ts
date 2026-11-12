@@ -51,7 +51,9 @@ export type EditorCommand =
   | 'toggle-formula'
   | { type: 'set-preset'; preset: StylePreset }
   | { type: 'paste-sub'; sub: SubDoc }
-  | { type: 'insert-text'; text: string };
+  | { type: 'insert-text'; text: string }
+  /** R58 (AS7): replace the whole drawing as one undo step labelled `label`. */
+  | { type: 'replace-doc'; doc: Doc; label: string };
 
 /** What a context-menu event points at. */
 export type HostHit =
@@ -285,7 +287,7 @@ export function createEditorController(options: EditorOptions): EditorController
         if (typeof cmd === 'object' && cmd.type === 'set-preset') {
           return s.gesture === null && s.editing === null;
         }
-        if (typeof cmd === 'object' && cmd.type === 'paste-sub') {
+        if (typeof cmd === 'object' && (cmd.type === 'paste-sub' || cmd.type === 'replace-doc')) {
           return s.gesture === null && s.editing === null;
         }
         // Later tasks (selection actions) turn the rest on.
@@ -365,6 +367,8 @@ export function createEditorController(options: EditorOptions): EditorController
             store.dispatch({ type: 'set-preset', preset: cmd.preset });
           } else if (typeof cmd === 'object' && cmd.type === 'paste-sub') {
             store.dispatch({ type: 'paste', at: pointerAt, sub: cmd.sub });
+          } else if (typeof cmd === 'object' && cmd.type === 'replace-doc') {
+            store.dispatch({ type: 'replace-doc', doc: cmd.doc, label: cmd.label });
           }
           break;
       }

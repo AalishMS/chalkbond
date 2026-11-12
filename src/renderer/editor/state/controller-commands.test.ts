@@ -104,6 +104,14 @@ const fragment = (() => {
   return extract(doc, everything(doc));
 })();
 
+/** A drawing that shares no ids with ethane and has a larger nextId (R58). */
+const replacement = (() => {
+  const c = make();
+  c.store.dispatch({ type: 'commit', label: 'Add bond', recipe: addEthane });
+  c.store.dispatch({ type: 'commit', label: 'Add bond', recipe: addEthane });
+  return c.getDoc();
+})();
+
 interface CommandCase {
   readonly name: string;
   readonly cmd: EditorCommand;
@@ -309,6 +317,23 @@ const COMMAND_CASES: readonly CommandCase[] = [
     effect: (c) => expect(atomCount(c)).toBe(2),
   },
   {
+    name: 'replace-doc',
+    cmd: { type: 'replace-doc', doc: replacement, label: 'Load changed file' },
+    blocked: () => withEditorOpen(ethane()),
+    ready: ethane,
+    effect: (c) => {
+      expect(c.getDoc().atoms).toEqual(replacement.atoms);
+      expect(c.undoLabel()).toBe('Load changed file');
+    },
+  },
+  {
+    name: 'replace-doc (gesture running)',
+    cmd: { type: 'replace-doc', doc: replacement, label: 'Load changed file' },
+    blocked: () => withGesture(ethane()),
+    ready: ethane,
+    effect: (c) => expect(c.undoLabel()).toBe('Load changed file'),
+  },
+  {
     name: 'insert-text',
     cmd: { type: 'insert-text', text: 'ethanol' },
     blocked: null,
@@ -341,6 +366,7 @@ const HOST_COMMANDS = [
   'set-preset',
   'paste-sub',
   'insert-text',
+  'replace-doc',
 ];
 
 describe('every host command has a canRun and a run that agree', () => {
@@ -433,5 +459,85 @@ describe('every host command has a canRun and a run that agree', () => {
     c.run({ type: 'insert-text', text: 'ethanl' });
     expect(atomCount(c)).toBe(0);
     expect(c.store.getState().nameField.error).not.toBeNull();
+  });
+
+  describe('replace-doc (R58)', () => {
+    const replace = (c: EditorController, label = 'Load changed file'): void =>
+      c.run({ type: 'replace-doc', doc: replacement, label });
+
+    it('is one undo step: Ctrl+Z restores the previous drawing exactly, redo replays', () => {
+      const c = ethane();
+      const old = c.getDoc();
+      replace(c);
+      expect(c.getDoc().atoms).toEqual(replacement.atoms);
+      expect(c.getDoc().nextId).toBe(replacement.nextId);
+      c.run('undo');
+      expect(c.getDoc().atoms).toEqual(old.atoms);
+      expect(c.getDoc().bonds).toEqual(old.bonds);
+      expect(c.getDoc().nextId).toBe(old.nextId);
+      expect(c.undoLabel()).toBe('Add bond');
+      expect(c.redoLabel()).toBe('Load changed file');
+      c.run('redo');
+      expect(c.getDoc().atoms).toEqual(replacement.atoms);
+      expect(c.getDoc().nextId).toBe(replacement.nextId);
+      expect(c.undoLabel()).toBe('Load changed file');
+    });
+
+    it('clears the selection and the hover and keeps the zoom and the centre', () => {
+      const c = selectAll(ethane());
+      c.run('zoom-in');
+      const view = c.store.getState().viewport;
+      expect(c.getSelection().atoms.size).toBeGreaterThan(0);
+      replace(c);
+      expect(c.getSelection().atoms.size).toBe(0);
+      expect(c.getSelection().bonds.size).toBe(0);
+      expect(c.store.getState().viewport).toEqual(view);
+      expect(c.store.getState().hover).toBeNull();
+    });
+
+    it('is not marked saved: dirty until markSaved', () => {
+      const c = sized();
+      c.markSaved();
+      expect(c.isDirty()).toBe(false);
+      replace(c);
+      expect(c.isDirty()).toBe(true);
+      c.markSaved();
+      expect(c.isDirty()).toBe(false);
+      c.run('undo');
+      expect(c.isDirty()).toBe(true);
+    });
+
+    it('a larger nextId reissues no existing id on the next addition', () => {
+      const c = ethane();
+      replace(c);
+      c.store.dispatch({ type: 'commit', label: 'Add bond', recipe: addEthane });
+      const ids = Object.keys(c.getDoc().atoms);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids).toHaveLength(Object.keys(replacement.atoms).length + 2);
+    });
+
+    it('does not merge into a coalesced step before it', () => {
+      const c = sized();
+      c.store.dispatch({ type: 'commit', label: 'Move', coalesceKey: 'drag', recipe: addEthane });
+      replace(c);
+      expect(c.undoLabel()).toBe('Load changed file');
+      c.run('undo');
+      expect(c.undoLabel()).toBe('Move');
+      expect(Object.keys(c.getDoc().atoms)).toHaveLength(2);
+    });
+
+    it('a replacement equal to the drawing records no step', () => {
+      const c = ethane();
+      const before = c.store.getState().history;
+      c.run({ type: 'replace-doc', doc: c.getDoc(), label: 'Load changed file' });
+      expect(c.store.getState().history).toBe(before);
+    });
+
+    it('canRun is false while busy (a gesture or an editor) and true when idle', () => {
+      const cmd: EditorCommand = { type: 'replace-doc', doc: replacement, label: 'L' };
+      expect(ethane().canRun(cmd)).toBe(true);
+      expect(withGesture(ethane()).canRun(cmd)).toBe(false);
+      expect(withEditorOpen(ethane()).canRun(cmd)).toBe(false);
+    });
   });
 });

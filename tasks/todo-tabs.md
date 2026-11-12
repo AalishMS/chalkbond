@@ -314,10 +314,10 @@ larger than the old one reissues no existing id; coalescing: a replace after a c
 not merge into it.
 
 **Acceptance criteria:**
-- [ ] One undo step, correct undo and redo, selection cleared, view kept (R58)
-- [ ] `canRun` follows the idle rule used by `set-preset`
-- [ ] The command type is in `EditorCommand` and nothing else in `index.ts` changes
-- [ ] Editor coverage stays >= 70 %
+- [x] One undo step, correct undo and redo, selection cleared, view kept (R58)
+- [x] `canRun` follows the idle rule used by `set-preset`
+- [x] The command type is in `EditorCommand` and nothing else in `index.ts` changes
+- [x] Editor coverage stays >= 70 %
 
 **Verification:** `npm test -- src/renderer/editor`, then `npm run check`.
 

@@ -23,6 +23,7 @@ import { moveItems } from '../model/structural-offsets';
 import { reveal, screenToBlu } from '../model/viewport';
 import { EMPTY_SELECTION, type EditorState, type Hit } from './editor-state';
 import { openLabelEditor } from './editing';
+import { differs } from './dirty';
 import { nameDismiss } from './name-field';
 import type { EditorAction } from './reducer';
 
@@ -63,6 +64,29 @@ export function deleteSelection(
     type: 'commit',
     label: hasSelection ? 'Delete' : 'Erase',
     recipe: (doc) => deleteWithOrphans(doc, target),
+    selection: EMPTY_SELECTION,
+  });
+  return done.history === state.history ? done : { ...done, hover: null };
+}
+
+/**
+ * R58 (app-shell AS7): a whole replacement of the drawing in one `transact` named `label`: one
+ * undo step (coarse patches; `nextId` comes from `doc`), no coalescing, selection and hover
+ * cleared, viewport kept, not marked saved. Only when no gesture runs and no editor is open.
+ */
+export function replaceDocument(
+  state: EditorState,
+  doc: Doc,
+  label: string,
+  commit: (state: EditorState, action: Commit) => EditorState,
+): EditorState {
+  if (state.gesture !== null || state.editing !== null) return state;
+  // The same drawing (apart from its stamp) is no change: no step, nothing else touched.
+  if (!differs(current(state.history), doc)) return state;
+  const done = commit(state, {
+    type: 'commit',
+    label,
+    recipe: () => doc,
     selection: EMPTY_SELECTION,
   });
   return done.history === state.history ? done : { ...done, hover: null };

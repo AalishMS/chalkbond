@@ -40,6 +40,7 @@ import {
   hoverEdit,
   nudgeSelection,
   pasteFragment,
+  replaceDocument,
   selectEverything,
 } from './commands';
 import { differs } from './dirty';
@@ -143,6 +144,8 @@ export type EditorAction =
   | { type: 'show-warning' }
   /** PR1: the Slides | Handout switch. */
   | { type: 'set-preset'; preset: StylePreset }
+  /** R58: a whole replacement of the drawing as one undo step (app-shell AS7). */
+  | { type: 'replace-doc'; doc: Doc; label: string }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'notice-show'; kind: 'info' | 'error'; text: string }
@@ -380,6 +383,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return showWarning(state, ctx.derive);
     case 'set-preset':
       return setPreset(state, action.preset, ctx.derive, (s, a) => commit(s, a, ctx));
+    case 'replace-doc':
+      return replaceDocument(state, action.doc, action.label, (s, a) => commit(s, a, ctx));
     case 'name-text':
       return nameText(state, action.text, ctx);
     case 'name-highlight':

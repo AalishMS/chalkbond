@@ -238,3 +238,31 @@ describe('small state actions', () => {
     expect(s.editing).toEqual(labelEditing(A1));
   });
 });
+
+describe('replace-doc (R58)', () => {
+  const whole = reduce(freshState(), commitEthane, testContext()).history.doc;
+
+  it('is one commit labelled as given, selection cleared, nothing marked saved', () => {
+    const ctx = testContext();
+    const sel = selecting(A1);
+    const base = { ...freshState(), selection: sel, hover: { kind: 'atom', id: A1 } as const };
+    const s = reduce(base, { type: 'replace-doc', doc: whole, label: 'Load changed file' }, ctx);
+    expect(s.history.doc.atoms).toEqual(whole.atoms);
+    expect(undoLabel(s.history)).toBe('Load changed file');
+    expect(s.selection).toBe(EMPTY_SELECTION);
+    expect(s.hover).toBeNull();
+    expect(isDirty(s)).toBe(true);
+    const undone = reduce(s, { type: 'undo' }, ctx);
+    expect(Object.keys(current(undone.history).atoms)).toHaveLength(0);
+    expect(canUndo(undone.history)).toBe(false);
+  });
+
+  it('leaves the state untouched while a gesture runs or an editor is open', () => {
+    const ctx = testContext();
+    const action = { type: 'replace-doc', doc: whole, label: 'L' } as const;
+    const gesturing = { ...freshState(), gesture: { kind: 'test' } } as never;
+    expect(reduce(gesturing, action, ctx)).toBe(gesturing);
+    const editing = { ...freshState(), editing: labelEditing(A1) };
+    expect(reduce(editing, action, ctx)).toBe(editing);
+  });
+});
