@@ -581,7 +581,7 @@ The editor owns the canvas; this module supplies the following and nothing more.
   contains `\r`.
 - **Shipped pipeline** is checked manually (`docs/windows-checklist.md`): paste three goldens
   into PowerPoint/Word 2021; labels, bond ends and circles must look right. (Owner decision 2026-11-12:
-  the Office 2016 on the development machine is accepted for this check.)
+  the Office 2016 on the development machine is accepted for this check.) Ticked 2026-11-12 in Checkpoint K from the owner's own hand check (check 15 of his list of 31, details not reported per item).
 - **Perf** (separate perf project like the other modules, skipped under `--coverage`; `perception`
   supplied, since `perceive` has its own budget): slide-sized scheme (4 molecules ≈ 40 atoms, 3
   arrows, 6 texts) `render` < 8 ms median; 500-atom single fragment + 20 objects < 40 ms median.

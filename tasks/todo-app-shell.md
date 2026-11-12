@@ -774,6 +774,8 @@ once and update the size row. Sweep both specs' success criteria into the plans'
 
 Human batch 1, 2026-11-11: the setup was installed on the development machine and its size written in I1; first five "Clipboard and export" human checks passed (details in the plan). Checkpoint Z is not reached.
 
+Human batch 3 (2026-11-12, performed and reported by the owner, not watched by the orchestrator): the owner ran a numbered list of 31 checks by hand with the installed Chalkbond 1.0.0 on the development machine and reported "everything works well. the tests pass." (all 31 run, details not reported per item). Ticked in `docs/windows-checklist.md`: Checkpoint K (5 of 5), Checkpoint R (9 of 10), "Clipboard and export" (all twelve human boxes) and "App shell and installer" (15 of 17). Open: "Shutdown right after an edit" (the written observation), Checkpoint R "Pen or touch", Checkpoint E32 and the cold-start box on the teacher's laptop. Finding: a picture pasted into Discord was "barely visible because it was dark on dark" (transparent bitmap, black ink, Decision X3), to be decided in the 2026-11-12 feature set. Checkpoint Z is not reached; the owner decided to add features before the release.
+
 ## Corrective verification before C5/C6 (2026-11-10)
 
 Owned corrections only; no checkpoint status changed.

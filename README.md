@@ -17,19 +17,21 @@ Modules and their order are defined in `CAPABILITY-MAP.md`.
 |---|---|---|
 | `doc-model` | Document data, edit transactions, undo/redo, file format | done |
 | `chem-core` | OpenChemLib wrapper: valence, formula, SMILES/Molfile, name dictionary | done |
-| `svg-render` | Document to SVG with style presets | done (automated Windows checks passed; Office checklist not yet ticked) |
-| `editor` | Interactive canvas and drawing tools | done (automated Windows checks passed; "Editor" checklist not yet ticked) |
-| `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; automated Windows gates passed; paste and export round trips passed on the development machine; a few human checks open |
-| `app-shell` | Menus, dialogs, settings, installer | implemented; automated Windows gates passed; installed on the development machine; other human checks open |
+| `svg-render` | Document to SVG with style presets | done (automated Windows checks passed; Office checks ticked 2026-11-12 from the owner's hand checks) |
+| `editor` | Interactive canvas and drawing tools | done (automated Windows checks passed; "Editor" checks ticked 2026-11-12 except pen or touch; E32 open on the teacher's laptop) |
+| `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; automated Windows gates passed; every human check ticked 2026-11-12 from the owner's hand checks |
+| `app-shell` | Menus, dialogs, settings, installer | implemented; automated Windows gates passed; installed on the development machine; human checks ticked 2026-11-12 except the cold start on the teacher's laptop and one written observation |
 
 Version 1.0.0 is prepared. It is not released: the automated Windows gates passed on 2026-11-11,
-the installer was installed on the development machine, and the paste and export round trips in
-PowerPoint and Word passed there. Still open in `docs/windows-checklist.md` (Checkpoint Z): a `CO₂H`
-label, a chat-app paste, the PDF in Edge and Acrobat Reader and on paper, the rest of "App shell and
-installer", the clean Windows 11 install with SmartScreen, and Checkpoints K, E32 and R. Owner decisions
-2026-11-12: the human checks run on Windows 11 only (Windows 10 is untested by hand for 1.0.0); the
-Office on the development machine (Office 2016) is accepted for the Office checks; the development
-machine is not the teacher's laptop, so the teacher's-laptop checks (cold start, E32) stay open.
+the installer was installed on the development machine, and on 2026-11-12 the owner ran 31 checks
+by hand with the installed app ("everything works well. the tests pass."; details were not reported
+per item). Still open in `docs/windows-checklist.md` (Checkpoint Z): the written observation for
+"Shutdown right after an edit", the conditional pen or touch check, and, on the teacher's laptop,
+Checkpoint E32 and the cold start. The owner decided to add features before the release; the human
+checks they touch will be repeated on the final installer. Owner decisions 2026-11-12: the human
+checks run on Windows 11 only (Windows 10 is untested by hand for 1.0.0); the Office on the
+development machine (Office 2016) is accepted for the Office checks; the development machine is not
+the teacher's laptop, so the teacher's-laptop checks stay open.
 
 ## The editor
 

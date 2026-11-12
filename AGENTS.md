@@ -13,24 +13,31 @@ The product spec is `SPEC.md`; the module list is `CAPABILITY-MAP.md`. Module id
 |---|---|---|---|
 | 1 | `doc-model` | none | done |
 | 2 | `chem-core` | doc-model | done |
-| 3 | `svg-render` | doc-model, chem-core | done; automated Windows checks passed 2026-11-11; Office checks in `docs/windows-checklist.md` still unticked |
-| 4 | `editor` | doc-model, chem-core, svg-render | done; "Editor" checks in `docs/windows-checklist.md` still unticked |
-| 5 | `clipboard-export` | doc-model, svg-render | implemented; automated Windows gates passed 2026-11-11; human checks open (`docs/windows-checklist.md`) |
-| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11; human checks open (`docs/windows-checklist.md`) |
+| 3 | `svg-render` | doc-model, chem-core | done; automated Windows checks passed 2026-11-11; Office checks (Checkpoint K) ticked 2026-11-12 from the owner's hand checks (Office 2016) |
+| 4 | `editor` | doc-model, chem-core, svg-render | done; Checkpoint R ticked 2026-11-12 from the owner's hand checks except "Pen or touch"; E32 open (teacher's laptop) |
+| 5 | `clipboard-export` | doc-model, svg-render | implemented; automated Windows gates passed 2026-11-11; all human boxes ticked 2026-11-12 from the owner's hand checks (`docs/windows-checklist.md`) |
+| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11; 15 of 17 human boxes ticked 2026-11-12 from the owner's hand checks; open: cold start on the teacher's laptop, written observation for "Shutdown right after an edit" (`docs/windows-checklist.md`) |
 
 Version 1.0.0 is prepared in `package.json`; the release is pending Checkpoint Z on a Windows
 machine (`docs/windows-checklist.md`). Everything was built on Linux; on 2026-11-11 the automated
 Windows gates passed at `956a4a4` (check, e2e with `e2e/win`, os-input, `dist:win`, packaged smoke
 test, shots). The installer was installed on the development machine on 2026-11-11 and the
-installed size is written (`SPEC-app-shell.md` I1). In "Clipboard and export" the paste and export
-round trips passed on the development machine (Office 2016 Click-to-Run Version 2610; run by a
-computer-use agent, verified by the orchestrator): nine of the twelve human boxes are ticked. Open
-there: a `CO₂H` label, a chat-app paste, and the PDF in Edge, in Adobe Acrobat Reader and on paper.
-Open elsewhere: all of "App shell and installer" except the first box, the clean Windows 11 install
-with SmartScreen, and Checkpoints K, E32 and R. Owner decisions 2026-11-12: the human checks run on
-Windows 11 only (Windows 10 waived, so untested by hand for 1.0.0); the Office on the development
-machine (Office 2016) is accepted for the Office checks; the teacher's-laptop checks (the cold start
-box and E32) are open because the development machine is not that laptop. The release is not declared.
+installed size is written (`SPEC-app-shell.md` I1). In "Clipboard and export" the paste and export round trips passed on the development machine on
+2026-11-11 (Office 2016 Click-to-Run Version 2610; run by a computer-use agent, verified by the
+orchestrator). On 2026-11-12 the owner ran a numbered list of 31 checks by hand with the installed
+1.0.0 on the development machine and reported "everything works well. the tests pass." (all 31 run,
+details not reported per item, not watched by the orchestrator). That ticked every human box of
+"Clipboard and export", Checkpoint K, Checkpoint R except "Pen or touch", and 15 of the 17 boxes of
+"App shell and installer". Open: the written observation for "Shutdown right after an edit"
+(reported as passed, not written down), Checkpoint R "Pen or touch" (conditional, not run), and, on
+the teacher's laptop, Checkpoint E32 and the cold-start box. Finding: the clipboard bitmap is
+transparent with black ink and is barely visible pasted into a dark-mode chat app (Discord; Decision
+X3), to be decided in the 2026-11-12 feature set. The owner decided on 2026-11-12 to add features
+before the release; the human checks they touch will be repeated on the final installer. Owner
+decisions 2026-11-12: the human checks run on Windows 11 only (Windows 10 waived, so untested by
+hand for 1.0.0); the Office on the development machine (Office 2016) is accepted for the Office
+checks; the teacher's-laptop checks (the cold start box and E32) are open because the development
+machine is not that laptop. The release is not declared.
 
 ## Workflow
 
@@ -313,21 +320,22 @@ All six modules are implemented. The automated Windows gates (Checkpoint Z steps
 2026-11-11 at `956a4a4`: `npm run test:e2e` including `e2e/win/` (321), `npm run test:e2e:os-input`,
 the C3 clipboard probes (keys decided, Decision R9), `npm run dist:win`, `npm run test:packaged`
 and `npm run shots`. Step 8 is done: installer, unpacked and installed sizes are in
-`SPEC-app-shell.md` I1. Step 9 (the human sections) is in progress: nine of the twelve human
-"Clipboard and export" boxes (paste, restart round trip, PNG, SVG and PDF export and reopening, on
-the development machine) and the first "App shell and installer" box are ticked. What is open: a
-`CO₂H` label, a chat-app paste, the PDF in Edge and Acrobat Reader and on paper; the other "App shell
-and installer" boxes; the clean Windows 11 install and SmartScreen; and Checkpoints K, E32 and R.
-Owner decisions 2026-11-12 (`SPEC.md` Decisions Log): Windows 11 only for the human checks, the
-installed Office 2016 accepted for the Office checks, and the teacher's-laptop checks (cold start,
-E32) open because the development machine is not that laptop. Version 1.0.0 is not declared released
-until the rest pass.
+`SPEC-app-shell.md` I1. Step 9 (the human sections) is in progress: on 2026-11-12 the owner's hand checks (31 checks,
+"everything works well. the tests pass.", details not reported per item) ticked every human
+"Clipboard and export" box, Checkpoint K, Checkpoint R except "Pen or touch", and 15 of the 17
+"App shell and installer" boxes. What is open: the written observation for "Shutdown right after an
+edit", Checkpoint R "Pen or touch" (conditional, not run), and, on the teacher's laptop, Checkpoint
+E32 and the cold-start box. Owner decisions 2026-11-12 (`SPEC.md` Decisions Log): Windows 11 only for
+the human checks, the installed Office 2016 accepted for the Office checks, the teacher's-laptop
+checks open because the development machine is not that laptop, and new features before the release
+(the human checks they touch will be repeated on the final installer). Version 1.0.0 is not
+declared released until the rest pass.
 
-- Windows gates still open: clean-account install and SmartScreen, IME, shutdown, display scaling,
-  Office checks for svg-render (Checkpoint K), Edge and Acrobat Reader for the PDF export and the
-  other human checks in the checklist, on Windows 11 only (Windows 10 waived, owner decision
-  2026-11-12). The teacher's-laptop checks (cold start, E32) are open because the development
-  machine is not that laptop.
+- Windows gates still open: the written observation for "Shutdown right after an edit" (whether the
+  last change was there), Checkpoint R "Pen or touch" (only if the teacher uses touch or a pen), and,
+  on the teacher's laptop, Checkpoint E32 and the cold start. The human checks run on Windows 11
+  only (Windows 10 waived, owner decision 2026-11-12). Features added before the release will
+  reopen the human checks they touch.
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
   the code and tests. Decisions of later dates supersede older text anywhere (including this file).
 - A bug found in a finished module: add a failing regression test first. A property-test failure

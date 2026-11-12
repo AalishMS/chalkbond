@@ -1242,7 +1242,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
    draws ethanol by gestures (Bond click on empty canvas, hover the end atom, `O`) and
    `[data-testid=formula]` reads "C2H6O · 46.07 g/mol"; a Ring click places benzene ("C6H6 ·
    78.11 g/mol"). Shots `E20/hover-key-O.png`, `E21/toluene.png`.
-   **Partly proven:** `e2e/editor-structures.spec.ts`, shots `E20/hover-key-O.png`, `E21/toluene.png`. **Manual, pending:** the "no instructions" part is a human judgement (first-use pass, `docs/windows-checklist.md` Checkpoint R, unticked); not claimed.
+   **Partly proven:** `e2e/editor-structures.spec.ts`, shots `E20/hover-key-O.png`, `E21/toluene.png`. **Manual, pending:** the "no instructions" part is a human judgement (first-use pass, `docs/windows-checklist.md` Checkpoint R). Update 2026-11-12: ticked there from the owner's own hand check (check 1 of his list of 31, details not reported per item).
 2. Toluene in ≤ 3 actions (Ring, click canvas, hover a ring atom + `1`) and the SC3 reaction
    ("ethanol + acetic acid -> ethyl acetate + water", H₂SO₄ above, Δ below) in ≤ 15 actions,
    aligned: `state/scenarios.test.ts` (exact, 0.01 BLU) and `e2e/editor-reaction.spec.ts`
@@ -1265,7 +1265,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
 7. The window matches the approved mock-ups: `e2e/editor-layout.spec.ts` measures the region and
    control boxes in "Layout" at 1280×800 and 960×640 (±1 px), and the named shots of every UI task
    exist for side-by-side review with `out/mockups/*.png`.
-   **Partly proven:** `e2e/editor-layout.spec.ts` boxes; **Manual, pending:** the side-by-side shot review (`docs/windows-checklist.md` Checkpoint R, unticked); not claimed.
+   **Partly proven:** `e2e/editor-layout.spec.ts` boxes; **Manual, pending:** the side-by-side shot review (`docs/windows-checklist.md` Checkpoint R). Update 2026-11-12: ticked there from the owner's own hand check (check 13 of his list of 31, details not reported per item).
 8. Valence warnings appear as overlays with their message on hover and never in exports: an
    overlay unit test for a doc with an `H20` label, an e2e hover over it showing chem-core's
    message `Unknown label "H20".` (shot `E24/warning-tooltip.png`), and a unit test that `renderSvg(doc)` of that doc
@@ -1275,7 +1275,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
    closest first ("ethanl" → ethanol), reaction text builds a tidy scheme (unit + e2e).
    **Proven:** `state/reducer-name.test.ts`, `e2e/editor-name.spec.ts`, `e2e/editor-reactions.spec.ts`.
 10. Performance budgets met on Windows and node perf budgets pass.
-   **Partly proven:** `src/renderer/editor/perf.test.ts` (node) and `e2e/editor-perf.spec.ts` on the development machine (table in "Performance"). **Manual, pending:** the owner's laptop (`docs/windows-checklist.md` E32 and Checkpoint R, unticked); not claimed. Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop, so the E32 run on that laptop stays open.
+   **Partly proven:** `src/renderer/editor/perf.test.ts` (node) and `e2e/editor-perf.spec.ts` on the development machine (table in "Performance"). **Manual, pending:** the owner's laptop (`docs/windows-checklist.md` E32 and Checkpoint R). Update 2026-11-12: Checkpoint R is ticked from the owner's own hand checks except "Pen or touch" (conditional, not run); E32 stays open and is not claimed. Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop, so the E32 run on that laptop stays open.
 11. `npm run check` green; `src/renderer/editor` ≥ 70 % line coverage; the DOM-free lint block
     and boundary probes pass.
    **Proven:** `npm run check` green; `npm test -- --coverage` reports `src/renderer/editor` at 85.5 % lines (model 99.4, state 99.5, tools 98.7, view 27.1) with a 70 % threshold enforced in `vitest.config.mts`; lint probes in `tests/tooling/`.
