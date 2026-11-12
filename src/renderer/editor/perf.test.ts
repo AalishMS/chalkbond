@@ -3,11 +3,15 @@ import { createNameIndex } from '@core/chem-core';
 import {
   addAtom,
   addBond,
+  createHistory,
   current,
   emptyDoc,
   setStyle,
+  transact,
+  updateAtom,
   type AtomId,
   type Doc,
+  type History,
 } from '@core/doc-model';
 import { render } from '@core/svg-render';
 import { expect, it } from 'vitest';
@@ -20,6 +24,9 @@ import { bluToScreen, screenToBlu, type Viewport } from './model/viewport';
 import type { EditorState } from './state/editor-state';
 import { reduce } from './state/reducer';
 import { createEditorController } from './state/controller';
+import { EMPTY_SELECTION } from './state/editor-state';
+import { sealTabState, type EditorTabState } from './state/tab-state';
+import { tabStateToRecord } from './state/tab-state-record';
 import { drawn, freshState, testContext } from './state/testing';
 
 declare const performance: { now(): number };
@@ -207,3 +214,65 @@ budget('putState of a 100-atom tab to its first derived scene takes under 100 ms
   console.log(`PERF putState to first derived scene, 100 atoms: median ${ms.toFixed(3)} ms`);
   expect(ms).toBeLessThan(100);
 });
+
+// ---- R57 / app-shell SS4: the tab record written on the renderer main thread ------------------
+
+/**
+ * A tab holding `doc` with 100 undo steps, as the session store writes them: single-atom moves,
+ * additions with a bond, and every tenth step a move of the whole drawing (a select-all drag,
+ * the largest patch set).
+ */
+function tabWith100Steps(doc: Doc): EditorTabState {
+  let h: History = createHistory(doc, { clock: () => '2026-01-01T00:00:00.000Z' });
+  const ids = Object.keys(doc.atoms) as AtomId[];
+  for (let i = 0; i < 100; i++) {
+    const id = ids[(i * 7) % ids.length] as AtomId;
+    if (i % 10 === 9) {
+      h = transact(h, 'Move', (d) =>
+        ids.reduce((acc, a) => updateAtom(acc, a, { x: (acc.atoms[a]?.x ?? 0) + 0.25 }), d),
+      );
+    } else if (i % 4 === 3) {
+      h = transact(h, 'Add bond', (d) => {
+        const [d1, added] = addAtom(d, { x: i, y: -4 });
+        return addBond(d1, id, added)[0];
+      });
+    } else {
+      h = transact(h, 'Move', (d) => updateAtom(d, id, { x: (d.atoms[id]?.x ?? 0) + 0.1 }));
+    }
+  }
+  expect(h.past).toHaveLength(100);
+  return sealTabState({
+    history: h,
+    saved: doc,
+    selection: EMPTY_SELECTION,
+    view: { zoom: 1, centre: { x: 0, y: 0 } },
+    viewPending: false,
+  });
+}
+
+function recordMedian(atoms: number): number {
+  const tab = tabWith100Steps(chain(atoms));
+  let length = 0;
+  const ms = time(60, () => {
+    length = JSON.stringify(tabStateToRecord(tab, { maxSteps: 100 })).length;
+  });
+  expect(length).toBeGreaterThan(atoms * 50);
+  console.log(
+    `PERF tabStateToRecord + JSON.stringify, ${atoms} atoms, 100 steps: median ${ms.toFixed(3)} ms`,
+  );
+  return ms;
+}
+
+budget(
+  'the tab record of the 100-atom document with 100 steps takes at most 16 ms (median)',
+  () => {
+    expect(recordMedian(100)).toBeLessThanOrEqual(16);
+  },
+);
+
+budget(
+  'the tab record of the 500-atom document with 100 steps takes at most 50 ms (median)',
+  () => {
+    expect(recordMedian(500)).toBeLessThanOrEqual(50);
+  },
+);

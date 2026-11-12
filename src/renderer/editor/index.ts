@@ -16,3 +16,5 @@ export {
   tabStateView,
 } from './state/tab-state';
 export type { EditorTabState } from './state/tab-state';
+export { tabStateFromRecord, tabStateToRecord } from './state/tab-state-record';
+export type { EditorTabRecord } from './state/tab-state-record';

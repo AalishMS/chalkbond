@@ -282,10 +282,10 @@ is rejected (strict). **Perf (`perf.test.ts`):** `tabStateToRecord` plus `JSON.s
 <= 50 ms median (SS4).
 
 **Acceptance criteria:**
-- [ ] The two functions and the type are exported from `index.ts` and match R57
-- [ ] The SS4 budgets are met; if not, the code is fixed (a worker is the spec's named fallback and needs a spec note first), never the budget
-- [ ] The record contains nothing outside doc-model's `HistoryRecord` (a unit test lists its keys)
-- [ ] Editor coverage stays >= 70 %
+- [x] The two functions and the type are exported from `index.ts` and match R57
+- [x] The SS4 budgets are met; if not, the code is fixed (a worker is the spec's named fallback and needs a spec note first), never the budget
+- [x] The record contains nothing outside doc-model's `HistoryRecord` (a unit test lists its keys)
+- [x] Editor coverage stays >= 70 %
 
 **Verification:** `npm test -- src/renderer/editor && npx vitest run --project perf src/renderer/editor/perf.test.ts`, then `npm run check`.
 
