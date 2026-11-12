@@ -284,6 +284,9 @@ export function createTabFlowHarness(options: HarnessOptions = {}) {
     finishEditing: async () => {
       log('finishEditing', []);
     },
+    finishEditingNow: () => {
+      log('finishEditingNow', []);
+    },
     ask: async (request) => {
       log('ask', [request]);
       return answers.shift() ?? 'cancel';

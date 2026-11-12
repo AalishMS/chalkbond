@@ -846,10 +846,10 @@ label editor open and during an IME composition uses `snapshotState` and changes
 (except finishing the editor when no composition runs).
 
 **Acceptance criteria:**
-- [ ] Items (3), (4), (7) and (2)'s shutdown half pass; every T9 answer has a test
-- [ ] A close never discards a tab whose drawing exists nowhere else without T9 (R34), except Don't save
-- [ ] The window close shows no box when no tab is unkept (R35)
-- [ ] `src/renderer/app/model` coverage >= 90 % lines
+- [x] Items (3), (4), (7) and (2)'s shutdown half pass; every T9 answer has a test
+- [x] A close never discards a tab whose drawing exists nowhere else without T9 (R34), except Don't save
+- [x] The window close shows no box when no tab is unkept (R35)
+- [x] `src/renderer/app/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/renderer/app/model`, then `npm run check`.
 

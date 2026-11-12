@@ -385,6 +385,7 @@ describe('T12 reopen', () => {
     const f = await started(h);
     draw(h, 2);
     await f.newTab();
+    h.answers.push('discard'); // T9 (TB19): Don't save
     await f.close('tab-1');
     expect(tabIds(f)).toEqual(['tab-2']);
     expect((h.indexes.at(-1) as SessionIndexUpdate).discarded).toEqual(['tab-1']);
@@ -485,7 +486,7 @@ describe('T12 reopen', () => {
   });
 });
 
-describe('T8 list part (close without a question)', () => {
+describe('T8 list part (the full close with T9 is tab-close.test.ts)', () => {
   it('closing the last empty Untitled does nothing (R39); closing an inactive tab keeps the active one', async () => {
     const h = createTabFlowHarness();
     const f = await started(h);
@@ -514,6 +515,7 @@ describe('T8 list part (close without a question)', () => {
       ),
       open: null,
     });
+    h.answers.push('discard'); // T9 (TB19): Don't save
     await f.close('a');
     expect(tabIds(f)).toEqual(['b']);
     expect(atoms(h.editor.getDoc())).toBe(3);
@@ -537,6 +539,7 @@ describe('T8 list part (close without a question)', () => {
       ),
       open: null,
     });
+    h.answers.push('discard'); // T9 (TB19): Don't save
     await f.close('a');
     expect(tabIds(f)).toEqual(['c']);
     expect(atoms(h.editor.getDoc())).toBe(5);

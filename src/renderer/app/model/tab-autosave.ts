@@ -88,12 +88,19 @@ export interface TabAutosave {
   settle(id: string): Promise<void>;
   /** T11: writes the outgoing tab now unless the very drawing is already being written. */
   flushTab(id: string): Promise<void>;
+  /**
+   * T8 step 3, SS10 (TB19): AS1 for a file tab now, also when the same drawing is in flight, and its
+   * result applied (AS3); null when it is not a loaded file tab or the answer was for another tab.
+   */
+  writeNow(id: string): Promise<AutoSaveResponse | null>;
   /** AS2: the timer of the active tab (a write, or a retry check while unavailable). */
   tick(): Promise<void>;
   /** AS4: Ctrl+S (a file tab written now, N-A1; any other kind F6). */
   save(): Promise<boolean>;
   /** F6: Save as; true when written (the tab is then a file tab bound to the new file). */
   saveAs(): Promise<boolean>;
+  /** AS7 for the active tab now (T8 step 3 applies a `changed` result before deciding, TB19). */
+  applyOutside(): Promise<void>;
   /** AS7 is waiting for the active tab, or a box is due (both wait for the host to be idle). */
   idlePending(): boolean;
   /** AS7 for the active tab, then the due boxes. Runs as a flow while the host is idle. */
@@ -428,5 +435,16 @@ export function createTabAutosave(core: AutosaveCore): TabAutosave {
     }
   }
 
-  return { check, settle, flushTab, tick, save, saveAs, idlePending, idleWork };
+  return {
+    check,
+    settle,
+    flushTab,
+    writeNow: writeTab,
+    tick,
+    save,
+    saveAs,
+    applyOutside,
+    idlePending,
+    idleWork,
+  };
 }

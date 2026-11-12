@@ -1,17 +1,20 @@
 // Tab flows (SPEC-app-shell.md "Tabs, auto-save and session"): T7 new tab, T11 switch, T12 reopen,
 // T17 opening into tabs (with its open queue), SS7 restore and SS11's renderer half; TB18's
 // auto-save, outside change, Save and Save as live in `tab-autosave.ts` over this module's state;
-// TB19 adds the full close. Pure: DOM-free, no timers; every effect goes through an injected port
-// (`main` is the preload's functions, `controller` the one editor controller).
+// TB19's close (T8, T9), window close (SS10, R51), shutdown flush and SS6 box in `tab-close.ts`.
+// Pure: DOM-free, no timers; every effect goes through an injected port (`main` is the preload's
+// functions, `controller` the one editor controller).
 //
-// Idle (AS5, AS7): what waits for the host to be idle (AS7, the AS6 boxes) runs as a flow when no
-// flow runs, no open waits and the host reports idle (`hostIdle`): at the end of every flow, after
-// every `write`, and when the host calls `settleIdle`.
+// Idle (AS5, AS7): what waits for the host to be idle (AS7, the AS6 and SS6 boxes) runs as a flow
+// when no flow runs, no open waits and the host reports idle (`hostIdle`): at the end of every flow,
+// after every `write`, and when the host calls `settleIdle`.
 //
 // One in-progress flag for every flow. While a flow runs, keys, clicks and the + button are ignored
 // (T11: input waits for the incoming state) and opens wait in a first-in-first-out queue of at most
-// `OPEN_QUEUE_LIMIT` (T17, R37). The active tab's truth is the controller: its `Tab.state` in the
-// list is only refreshed when a flow needs it (`snapshotState`). A tab never holds a path (R8).
+// `OPEN_QUEUE_LIMIT` (T17, R37); a window close waits as the one pending close (F13) and runs before
+// them. After N5 (SS10) nothing more is sent: flows, opens, writes and the flush do nothing. The
+// active tab's truth is the controller: its `Tab.state` in the list is only refreshed when a flow
+// needs it (`snapshotState`). A tab never holds a path (R8).
 import { emptyDoc, parse, setStyle, type Doc } from '@core/doc-model';
 import { extractDrawing, fileKindOf } from '@core/clipboard-export';
 import {
@@ -32,6 +35,7 @@ import type {
   FileDroppedResponse,
   FileProblem,
   FileRef,
+  KeepProblem,
   OpenTarget,
   ReadFileResponse,
   ReadTabRecordResponse,
@@ -45,13 +49,13 @@ import type {
 } from '../../../shared/ipc-types';
 import { parseProblem } from './file-flows';
 import { createTabAutosave, type Trouble } from './tab-autosave';
+import { createTabClose } from './tab-close';
 import { buildRecord, loadTabRecord } from './session-record';
 import {
   drawingHash,
   hasUnwrittenChanges,
   indexFlags,
   markerOf,
-  recordFailedAfter,
   tabFacts,
   type Sha256,
   type TabFacts,
@@ -61,7 +65,6 @@ import {
   activate,
   activeTab,
   canOpenInto,
-  close,
   createTabs,
   findTab,
   indexOfTab,
@@ -82,7 +85,7 @@ export const OPEN_QUEUE_LIMIT = 20;
 /** N-A5 (SS11). */
 export const DAMAGED_NOTICE = 'A drawing kept by Chalkbond could not be read.';
 
-/** The preload functions the tab flows use (`window.chalkbond`); TB19 adds its own. */
+/** The preload functions the tab flows use (`window.chalkbond`). */
 export interface TabFlowMain {
   /** I1: a ref, `{ focus }` when the file is open in a tab (T17), or null when cancelled. */
   chooseOpen(): Promise<OpenTarget | null>;
@@ -92,6 +95,8 @@ export interface TabFlowMain {
   showFileError(problem: FileProblem, name: string): Promise<void>;
   /** I5: the auto-save boxes (AS6, AS7). */
   showFileError(problem: AutoSaveProblem, name: string, context: 'auto-save'): Promise<void>;
+  /** I5: the "Couldn't keep" box (SS6). */
+  showFileError(problem: KeepProblem, name: string, context: 'keep'): Promise<void>;
   /** C3 (F6): the Save dialog; main picks the folder. */
   chooseSave(format: 'chalk', suggestedName: string): Promise<FileRef | null>;
   /** C4 (F6): the Save-as write; main settles the I12 `save-as` binding from its result. */
@@ -114,6 +119,8 @@ export interface TabFlowMain {
   acceptOutsideChange(value: AcceptOutsideRequest): void;
   /** N6. */
   logError(message: string): void;
+  /** N5 (SS10): sent last; main closes once the session chain is empty. */
+  closeOk(): void;
 }
 
 export type TabFlowController = Pick<
@@ -133,7 +140,12 @@ export interface TabFlowOptions {
   notify(kind: 'info' | 'error', text: string): void;
   /** F4a: finishes an open label or text editor through its commit path (at once when none). */
   finishEditing(): Promise<void>;
-  /** I4 `save-changes` (T9); used by TB19. */
+  /**
+   * R25 (`flush-session`): finishes an open label or text editor through its commit path at once,
+   * unless an IME composition runs (then nothing); never waits (`createFinishEditingNow`).
+   */
+  finishEditingNow(): void;
+  /** I4 `save-changes` (T9, R51). */
   ask(request: { kind: 'save-changes'; name: string }): Promise<'save' | 'discard' | 'cancel'>;
   /** ST1 / T18. */
   newDrawingStyle(): NewDrawingStyle;
@@ -168,6 +180,10 @@ export interface TabMeta {
   readonly boxShown: boolean;
   /** AS6: the box waiting for the host to be idle. */
   readonly boxDue: AutoSaveProblem | null;
+  /** SS6: the "Couldn't keep" box was shown for this tab in this run (at most once). */
+  readonly keepShown: boolean;
+  /** SS6: the "Couldn't keep" box waiting for the host to be idle; a later success drops it. */
+  readonly keepDue: KeepProblem | null;
 }
 
 export interface TabFlowState {
@@ -217,10 +233,19 @@ export interface TabFlows {
   /** T12. Ignored while a flow runs. */
   reopen(): Promise<void>;
   /**
-   * T8, the list part only (TB19 adds loading, the close-time write and T9): closes `tabId` with no
-   * question. Ignored while a flow runs.
+   * T8: closes `tabId` (F4a, loaded first, a file tab written first, T9 for an unsaved or unkept
+   * tab, R39). Ignored while a flow runs.
    */
   close(tabId: string): Promise<void>;
+  /**
+   * SS10 (`close-requested`): R51's box for each unkept tab, then the active record, AS1, the index
+   * and N5. While a flow runs it waits as the one pending close and runs right after it.
+   */
+  closeWindow(): Promise<void>;
+  /** RC5 / R25 (`flush-session`): best effort, never ignored while a flow runs, nothing awaited. */
+  flushSession(): Promise<void>;
+  /** N5 was sent (SS10): the host stops its write schedule; the flows send nothing more. */
+  closed(): boolean;
   state(): TabFlowState;
   busy(): boolean;
   /** The facts of a loaded tab (the active one from `snapshotState`); null when not loaded. */
@@ -257,6 +282,8 @@ const freshMeta = (written: string | null = null): TabMeta => ({
   reported: false,
   boxShown: false,
   boxDue: null,
+  keepShown: false,
+  keepDue: null,
 });
 
 export function createTabFlows(o: TabFlowOptions): TabFlows {
@@ -265,6 +292,8 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
   let list: TabList = initialTabs(tabPorts, o.newDrawingStyle());
   let meta: Record<string, TabMeta> = {};
   let running = false;
+  let closePending = false;
+  let closed = false;
   const queue: OpenRequest[] = [];
 
   const metaOf = (id: string): TabMeta => meta[id] ?? freshMeta();
@@ -305,7 +334,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
       main.logError(`Tab record write failed: ${String(error)}`);
       response = { ok: false, problem: 'write-failed' };
     }
-    setMeta(tab.id, { recordFailed: recordFailedAfter(response) });
+    await closer.recordWritten(tab, state, response);
   }
 
   async function writeIndex(): Promise<void> {
@@ -323,6 +352,29 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     writeRecord,
     writeIndex,
     freshMeta,
+  });
+
+  const closer = createTabClose({
+    o,
+    auto,
+    tabPorts,
+    list: () => list,
+    setList: (next) => {
+      list = next;
+    },
+    meta: metaOf,
+    setMeta,
+    writeRecord,
+    writeIndex,
+    index,
+    load,
+    lose,
+    switchTo,
+    facts,
+    stop: () => {
+      closed = true;
+      queue.length = 0;
+    },
   });
 
   /**
@@ -511,7 +563,10 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
 
   // ---- flow runner --------------------------------------------------------------------------
 
-  /** Runs one flow under the flag, then the queued opens in order, then the idle work. */
+  /**
+   * Runs one flow under the flag, then a pending window close (F13), then the queued opens in order,
+   * then the idle work.
+   */
   async function run(flow: () => Promise<void>): Promise<void> {
     running = true;
     try {
@@ -521,22 +576,32 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     } finally {
       running = false;
     }
+    if (closed) return;
+    if (closePending) {
+      closePending = false;
+      return run(closer.closeWindow);
+    }
     const next = queue.shift();
     if (next !== undefined) return run(() => perform(next));
     await settleIdle();
   }
 
-  /** AS7 and the AS6 boxes, as a flow, once nothing runs and the host is idle. */
+  /** AS7, the AS6 and SS6 boxes, as a flow, once nothing runs and the host is idle. */
   function settleIdle(): Promise<void> {
-    if (running || !o.hostIdle() || !auto.idlePending()) return Promise.resolve();
-    return run(() => auto.idleWork());
+    if (closed || running || !o.hostIdle()) return Promise.resolve();
+    if (!auto.idlePending() && !closer.keepPending()) return Promise.resolve();
+    return run(async () => {
+      await auto.idleWork();
+      await closer.keepWork();
+    });
   }
 
   /** A flow started by her (a key, a click, a menu item): ignored while another runs. */
   const idle = (flow: () => Promise<void>): Promise<void> =>
-    running ? Promise.resolve() : run(flow);
+    running || closed ? Promise.resolve() : run(flow);
 
   function request(r: OpenRequest): Promise<void> {
+    if (closed) return Promise.resolve();
     if (!running) return run(() => perform(r));
     if (queue.length < OPEN_QUEUE_LIMIT) queue.push(r);
     else main.logError('Open request dropped: the queue is full');
@@ -586,7 +651,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     await auto.settle(list.active); // SS5: a record newer than its file is written now
   }
 
-  // ---- T12 reopen and the T8 list part -------------------------------------------------------
+  // ---- T12 reopen ----------------------------------------------------------------------------
 
   async function reopenNow(): Promise<void> {
     syncActive();
@@ -620,34 +685,6 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     list = { ...result.list, active: list.active };
     if (tab.state !== null) await writeRecord(tab, tab.state);
     await switchTo(tab.id);
-  }
-
-  async function closeNow(id: string): Promise<void> {
-    const tab = findTab(list, id);
-    if (tab === undefined) return;
-    if (id === list.active) {
-      await o.finishEditing();
-      list = update(list, id, { state: controller.takeState() });
-    }
-    const before = list;
-    list = close(list, id, tabPorts, o.newDrawingStyle());
-    if (list === before) return;
-    if (list.active !== before.active) {
-      for (;;) {
-        const next = activeTab(list);
-        const state = next.state ?? (await load(next));
-        if (state !== null) {
-          controller.putState(state);
-          list = update(list, next.id, { state });
-          if (next.kind === 'chalk' && next.state !== null) await auto.check(next.id, false);
-          break;
-        }
-        lose(next.id);
-      }
-    }
-    o.changed();
-    await writeIndex();
-    await auto.settle(list.active);
   }
 
   // ---- reading ------------------------------------------------------------------------------
@@ -713,7 +750,15 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
         await switchTo(tabId);
       }),
     reopen: () => idle(reopenNow),
-    close: (tabId) => idle(() => closeNow(tabId)),
+    close: (tabId) => idle(() => closer.closeTab(tabId)),
+    closeWindow: () => {
+      if (closed) return Promise.resolve();
+      if (!running) return run(closer.closeWindow);
+      closePending = true;
+      return Promise.resolve();
+    },
+    flushSession: () => (closed ? Promise.resolve() : closer.flushSession()),
+    closed: () => closed,
     state: () => ({ list, meta }),
     busy: () => running,
     facts,
@@ -725,12 +770,13 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     index,
     async write(due) {
       const tab = activeTab(list);
-      if (tab.state === null) return; // SS7: the active tab is not loaded yet
+      if (closed || tab.state === null) return; // after N5; SS7: the active tab is not loaded yet
       if (due.record) {
         await writeRecord(tab, controller.snapshotState());
+        if (closed) return;
         await auto.tick();
       }
-      if (due.index) await writeIndex();
+      if (due.index && !closed) await writeIndex();
       await settleIdle();
     },
     save: () =>
