@@ -14,6 +14,9 @@ async function box(locator: Locator): Promise<Box> {
   return b;
 }
 
+/** The app's tab strip in the editor's `tabs` slot (TB20; mock-up A18), its line included. */
+const STRIP_H = 33; // --tabstrip-h (32 px) plus its 1 px line
+
 const px = (page: Page, testId: string, prop: string): Promise<string> =>
   page.getByTestId(testId).evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
 
@@ -47,11 +50,12 @@ async function checkRegions(page: Page, [w, h]: Size): Promise<void> {
   near(status.height, 29);
   expect(await px(page, 'statusbar', 'border-top-width')).toBe('1px');
 
-  // Canvas fills the rest.
+  // The app's tab strip (TB20) sits above the canvas in the canvas column (R31, editor R56): 32 px
+  // plus its 1 px line. The canvas fills the rest.
   near(canvas.x, 65);
-  near(canvas.y, 49);
+  near(canvas.y, 49 + STRIP_H);
   near(canvas.width, w - 65);
-  near(canvas.height, h - 49 - 29);
+  near(canvas.height, h - 49 - 29 - STRIP_H);
 
   // Token colours and the UI font stack, not browser defaults.
   expect(await px(page, 'canvas', 'background-color')).toBe('rgb(255, 255, 255)');
@@ -232,7 +236,7 @@ test('clicking tools and options changes tool and variant, not focus', async () 
   }
 });
 
-test('option buttons are 32x32 and 2 px apart; the Atom bar fits at 960', async () => {
+test('option buttons are 28x32 below 1100 px with the tab strip (A21) and 2 px apart; the Atom bar fits at 960', async () => {
   const { app, page } = await openApp({ size: [960, 640] });
   try {
     await page.getByTestId('tool-bond').click();
@@ -240,7 +244,7 @@ test('option buttons are 32x32 and 2 px apart; the Atom bar fits at 960', async 
     let prev: Box | undefined;
     for (const id of ids) {
       const b = await box(page.getByTestId(`opt-${id}`));
-      near(b.width, 32);
+      near(b.width, 28); // --option-btn-compact (A21): the app always shows the strip (TB20)
       near(b.height, 32);
       if (prev) near(b.x - (prev.x + prev.width), 2);
       prev = b;
@@ -414,33 +418,8 @@ for (const size of [
 
 // ---- R56: the `tabs` host slot ---------------------------------------------------------------
 //
-// The editor is only ever mounted by the app, which does not pass `tabs` until TB20. So this is a
-// component-level probe of the CSS contract: it gives the live editor the DOM the React markup
-// gives it with `tabs` (the `has-tabs` class, a `tabs-slot` between the rail and the canvas and
-// the canvas inside a `canvas-panel`; the markup itself is pinned by `Editor.test.tsx`) and
-// measures the boxes. The real strip and its e2e are TB24 and TB27.
-
-const STRIP_H = 33;
-
-async function giveTabsSlot(page: Page): Promise<void> {
-  await page.evaluate((h) => {
-    const root = document.querySelector('.editor');
-    const canvas = root?.querySelector('[data-testid="canvas"]');
-    if (!root || !canvas) throw new Error('no editor');
-    root.classList.add('has-tabs');
-    const slot = document.createElement('div');
-    slot.className = 'tabs-slot';
-    slot.setAttribute('data-testid', 'tabs-slot');
-    slot.style.height = `${h}px`;
-    const panel = document.createElement('div');
-    panel.className = 'canvas-panel';
-    panel.setAttribute('data-testid', 'canvas-panel');
-    panel.setAttribute('role', 'tabpanel');
-    root.insertBefore(slot, canvas);
-    root.insertBefore(panel, canvas);
-    panel.appendChild(canvas);
-  }, STRIP_H);
-}
+// From TB20 the app always fills the editor's `tabs` slot with the tab strip (R31, T2): the slot
+// is measured as the app shows it (the markup itself is pinned by `Editor.test.tsx`).
 
 for (const size of [
   [1280, 800],
@@ -449,17 +428,16 @@ for (const size of [
   test(`tabs slot at ${size[0]}x${size[1]}: strip above the canvas, rail unchanged, viewport follows`, async () => {
     const { app, page } = await openApp({ size: [...size] });
     try {
-      const w = size[0];
-      const railBefore = await box(page.getByTestId('rail'));
-      const canvasBefore = await box(page.getByTestId('canvas'));
-      await giveTabsSlot(page);
-
+      const [w, h] = size;
+      await expect(page.getByTestId('tab')).toHaveCount(1);
       const rail = await box(page.getByTestId('rail'));
       const strip = await box(page.getByTestId('tabs-slot'));
       const canvas = await box(page.getByTestId('canvas'));
       const panel = await box(page.getByTestId('canvas-panel'));
       const top = await box(page.getByTestId('topbar'));
       const status = await box(page.getByTestId('statusbar'));
+      const railBefore = { x: 0, y: 49, width: 65, height: h - 49 - 29 };
+      const canvasBefore = { height: h - 49 - 29 };
 
       // The rail keeps its place and height (the strip is not above it).
       near(rail.x, railBefore.x);

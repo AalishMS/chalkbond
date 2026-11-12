@@ -1,7 +1,7 @@
 import { addAtom, emptyDoc, type Doc } from '@core/doc-model';
 import { describe, expect, it } from 'vitest';
 import { createEditorController, type EditorController } from '../../editor';
-import { createTestHook } from './test-hook';
+import { createTestHook, type HookTab } from './test-hook';
 
 const T0 = '2026-01-01T00:00:00.000Z';
 
@@ -78,6 +78,36 @@ describe('createTestHook', () => {
     const { hook } = make();
     expect(hook.notices()).toEqual([]);
     expect(hook.commands()).toEqual([]);
+  });
+
+  it('reads the tabs and activates one through the host (TB20 seams)', async () => {
+    const controller = createEditorController({ clock: () => T0 });
+    const activated: string[] = [];
+    const tabs: HookTab[] = [
+      { id: 'a', label: 'Untitled', kind: 'untitled', active: true, marker: 'dot' },
+      { id: 'b', label: 'ethanol', kind: 'chalk', active: false, marker: 'none' },
+    ];
+    const hook = createTestHook(controller, [], undefined, {
+      read: () => Promise.resolve(tabs),
+      activate: (id) => {
+        activated.push(id);
+        return Promise.resolve();
+      },
+      menuRequests: () => 2,
+    });
+    const read = await hook.readTabs();
+    expect(read).toEqual(tabs);
+    expect(read).not.toBe(tabs); // a copy
+    await hook.activateTab('b');
+    expect(activated).toEqual(['b']);
+    expect(hook.menuRequests()).toBe(2);
+  });
+
+  it('without a tab host: no tabs, activation does nothing, no menu request', async () => {
+    const { hook } = make();
+    expect(await hook.readTabs()).toEqual([]);
+    await expect(hook.activateTab('x')).resolves.toBeUndefined();
+    expect(hook.menuRequests()).toBe(0);
   });
 
   it('stops listening after dispose', () => {

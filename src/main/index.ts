@@ -19,7 +19,7 @@ import { createAbout } from './about';
 import { createDialogs } from './dialogs';
 import { createFiles, realPathOf, sha256Hex } from './files';
 import { createFileRefs } from './model/file-refs';
-import { createSessionFolders } from './model/session-folders';
+import { createSessionFolders, folderOf } from './model/session-folders';
 import {
   firstWindowBounds,
   restoredWindowBounds,
@@ -285,8 +285,8 @@ async function startApp(): Promise<void> {
   // Session store (SS2, SS5, SS11): userData/session, one ordered chain; the start-up read runs
   // first on it (damaged files moved aside, discarded records deleted after a valid read). The old
   // userData/recovery folder is neither read nor deleted by it. TB10 adds the tab bindings (I12),
-  // the auto-save writer (I13), the AS5 check (I14) and N9 to the same chain. Nothing in the
-  // renderer calls these channels yet (TB20); I7 returns `restored()` from TB12 on.
+  // the auto-save writer (I13), the AS5 check (I14) and N9 to the same chain; the renderer's tab
+  // flows use them from TB20 on; I7 returns `restored()` from TB12 on.
   const sessionStore = createSessionStore({
     folder: join(app.getPath('userData'), 'session'),
     log: (message) => log('session', message),
@@ -312,9 +312,25 @@ async function startApp(): Promise<void> {
         () => true,
         () => false,
       ),
-    // N2 decides the folders for this run (A10 persists them).
-    folders: { open: () => folders.openFolder(), save: (format) => folders.saveFolder(format) },
+    // N2 / I12 decide the folders for this run (A10 persists them); F6 (TB20): the active tab's.
+    folders: {
+      open: () => folders.openFolder(),
+      save: (format) =>
+        format === 'chalk' && saveAsFolder !== null ? saveAsFolder : folders.saveFolder(format),
+    },
   });
+  /** F6 (TB20): the folder the Save as dialog of the active tab starts in, while it is asked for. */
+  let saveAsFolder: string | null = null;
+  const tabSaveFolder = async (): Promise<string> => {
+    const active = await sessionStore.activeBinding();
+    if (active === null) return folders.tabSaveFolder(null);
+    const folder = folderOf(active.path);
+    const folderExists = await stat(folder).then(
+      (info) => info.isDirectory(),
+      () => false,
+    );
+    return folders.tabSaveFolder({ ...active, folderExists });
+  };
   // I1 (T17): a chosen file already open in a tab answers that tab; nothing is read.
   ipc.handle(CHANNELS.chooseOpen, chooseOpenSchema, async (): Promise<OpenTarget | null> => {
     const ref = await dialogs.chooseOpen();
@@ -334,7 +350,14 @@ async function startApp(): Promise<void> {
     return { ok: false, problem: result.problem === 'unsupported' ? 'unreadable' : result.problem };
   });
   ipc.handle(CHANNELS.chooseSave, chooseSaveSchema, async ({ format, suggestedName }) => {
-    const ref = await dialogs.chooseSave(format, suggestedName);
+    // F6: the renderer's Save as is always for the active tab (the flows run one at a time).
+    saveAsFolder = format === 'chalk' ? await tabSaveFolder() : null;
+    let ref: FileRef | null;
+    try {
+      ref = await dialogs.chooseSave(format, suggestedName);
+    } finally {
+      saveAsFolder = null;
+    }
     // ST2: an Export Save dialog (every format but .chalk) remembers its folder.
     const entry = ref === null || format === 'chalk' ? undefined : refs.get(ref.id);
     if (entry) folders.exported(entry);
@@ -479,7 +502,7 @@ async function startApp(): Promise<void> {
   // CM1–CM3 (A13): the canvas menu on request (I6); the text-field menu from webContents.
   const contextMenus = createContextMenus({ Menu, window: () => mainWindow });
   ipc.handle(CHANNELS.showContextMenu, contextMenuSchema, (request) => contextMenus.show(request));
-  // I10 (T15, CM4): the tab menu shares the popup slot with CM1 (M5); nothing calls it yet (TB25).
+  // I10 (T15, CM4): the tab menu shares the popup slot with CM1 (M5); the tab strip asks for it.
   ipc.handle(CHANNELS.showTabMenu, tabMenuSchema, (request) => contextMenus.showTab(request));
   // Recovery (RC1–RC6): one ordered chain of writes and clears in userData/recovery.
   const recovery = createRecovery({
@@ -514,16 +537,16 @@ async function startApp(): Promise<void> {
     flush: () => Promise.all([store.flush(), recovery.idle(), sessionStore.idle()]),
     log: (message) => log('quit', message),
   });
-  // I7 with ST2: the renderer's view only (no path, folder, window or recent list). The recovery
-  // file is checked for size and signature here; the renderer parses it (RC3). SS7 (TB12): the
-  // restored session from the store's start-up read; the launch's file is looked up after it, so a
-  // file a restored tab holds answers that tab (T17). The renderer ignores `session` until TB20.
+  // I7 with ST2: the renderer's view only (no path, folder, window or recent list). No recovery
+  // offer any more (R35). SS7 (TB12): the restored session from the store's start-up read; the
+  // launch's file is looked up after it, so a file a restored tab holds answers that tab (T17).
   ipc.handle(CHANNELS.startup, startupSchema, async (): Promise<StartupResponse> => {
     const path = openRequests.takeStartup();
     const session = await sessionStore.restored();
     return {
       settings: rendererSettings(store.get()),
-      recovery: await recovery.read(),
+      // SS7, R35 (TB20): the old recovery folder is neither read nor deleted; TB21 drops the field.
+      recovery: null,
       session,
       open: path === null ? null : await openedTarget(path),
     };

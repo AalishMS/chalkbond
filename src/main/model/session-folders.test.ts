@@ -127,3 +127,31 @@ describe('A10: remembered folders (ST2)', () => {
     expect(changes).toEqual([]);
   });
 });
+
+describe('F6 with tabs (TB20): the active tab decides, never the last N2', () => {
+  it("a picture tab starts in its picture's folder", () => {
+    const { folders } = rig();
+    expect(
+      folders.tabSaveFolder({ kind: 'picture', path: 'C:\\Pics\\t.png', folderExists: true }),
+    ).toBe('C:\\Pics');
+  });
+
+  it("a kept tab starts in its former file's folder only while that folder exists", () => {
+    const { refs, folders } = rig();
+    folders.sessionFile(refs.get(refs.add('C:\\Save\\b.chalk', 'chalk', 'saved').id) ?? null);
+    const former = { kind: 'former' as const, path: 'D:\\Stick\\ester.chalk' };
+    expect(folders.tabSaveFolder({ ...former, folderExists: true })).toBe('D:\\Stick');
+    expect(folders.tabSaveFolder({ ...former, folderExists: false })).toBe('C:\\Save');
+  });
+
+  it('a file tab or an unbound tab: the last save folder, else Documents (an opened picture does not leak)', () => {
+    const { refs, folders } = rig();
+    folders.sessionFile(refs.get(refs.add('C:\\Pics\\t.png', 'png', 'opened').id) ?? null);
+    expect(folders.tabSaveFolder(null)).toBe(DOCS);
+    expect(
+      folders.tabSaveFolder({ kind: 'chalk', path: 'C:\\Open\\a.chalk', folderExists: true }),
+    ).toBe(DOCS);
+    folders.sessionFile(refs.get(refs.add('C:\\Save\\b.chalk', 'chalk', 'saved').id) ?? null);
+    expect(folders.tabSaveFolder(null)).toBe('C:\\Save');
+  });
+});

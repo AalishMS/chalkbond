@@ -10,7 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { drawingPayload, withPictureChunks } from '../src/core/clipboard-export';
 import { serialize, setStyle } from '../src/core/doc-model';
 import { dialogLog, exportWith, expectNotice, openFrom, saveTo } from './export-steps';
-import { goldenDoc, loadDocument, readDocument } from './harness';
+import { goldenDoc, loadDocument, readDocument, readTabs } from './harness';
 import { closeForReal, launchWith, windowState, windowTitle, workArea } from './relaunch';
 
 const SIZE: [number, number] = [1280, 800];
@@ -38,16 +38,16 @@ const readSettings = (): Record<string, unknown> | null => {
 const presetOf = async (page: Page): Promise<string> => (await readDocument(page)).style.preset;
 
 test('ST1: switch to Handout, Ctrl+N is Handout, and a relaunch keeps it', async () => {
-  // The switch makes the drawing dirty: Ctrl+N asks; "Don't save" (1).
+  // T7 (TB20): Ctrl+N is a new tab and asks nothing; it takes the remembered style.
   let { app, page } = await launchWith(userData, {
     size: SIZE,
-    launch: { dialogs: [{ response: 1 }] },
+    launch: { dialogs: [] },
   });
   await page.getByTestId('preset-handout').click();
   await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('canvas').focus();
   await page.keyboard.press('Control+n');
-  await expect.poll(() => windowTitle(app)).toBe('Untitled - Chalkbond');
+  await expect.poll(() => windowTitle(app)).toBe('Untitled 2 - Chalkbond');
   expect(await presetOf(page)).toBe('journal');
   await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
   await closeForReal(app);
@@ -80,7 +80,11 @@ test('ST1: a Handout picture opened (Open) or a drawing loaded (test hook) is no
     await expect(page.getByTestId('preset-handout')).toHaveAttribute('aria-checked', 'true');
     await closeForReal(app);
     expect(readSettings()?.['newDrawingStyle']).toBe('slides');
+    // The relaunch restores the session (SS7); a new tab shows the remembered style.
     ({ app, page } = await launchWith(userData, { size: SIZE }));
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+t');
+    await expect.poll(async () => (await readTabs(page)).length).toBe(3);
     expect(await presetOf(page)).toBe('slides');
     await closeForReal(app);
   } finally {
@@ -306,10 +310,14 @@ test('ST2: the open, save and export folders survive a real close and relaunch',
     const cancelled = { canceled: true, filePaths: [], filePath: '' };
     ({ app, page } = await launchWith(userData, {
       size: SIZE,
-      launch: { dialogs: [cancelled, cancelled, cancelled, { response: 1 }] },
+      launch: { dialogs: [cancelled, cancelled, cancelled] },
     }));
     try {
-      // Export needs a drawing; a test-hook load (the close may ask: "Don't save").
+      // The restored tab is copy.chalk (SS7): a new Untitled tab, and Export needs a drawing (a
+      // test-hook load).
+      await page.getByTestId('canvas').focus();
+      await page.keyboard.press('Control+t');
+      await expect.poll(() => windowTitle(app)).toBe('Untitled - Chalkbond');
       await loadDocument(page, goldenDoc('ethanol'));
       await page.getByTestId('canvas').focus();
       await page.keyboard.press('Control+o');

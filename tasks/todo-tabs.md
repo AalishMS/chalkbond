@@ -1046,10 +1046,10 @@ follows the active tab and F7's *unsaved*); the e2e rewrites above are the RED s
 and see which fail for the old behaviour. `host.test.ts` and `test-hook.test.ts` for the hook additions.
 
 **Acceptance criteria:**
-- [ ] No box ever appears for New, Open, a drop or a close of a named or empty tab; the window close shows none (R51's box is TB28's e2e)
-- [ ] Killing the app after 12 s and relaunching with the same user data restores the drawing (the rewritten `app-session.spec.ts`)
-- [ ] The whole `npm run test:e2e` is green on Windows at this commit (342 existing specs, rewritten where the specs supersede them)
-- [ ] Every e2e file still ends by asserting `blockedRequests === 0`; `src/renderer/app/model` coverage >= 90 % lines
+- [x] No box ever appears for New, Open, a drop or a close of a named or empty tab; the window close shows none (R51's box is TB28's e2e)
+- [x] Killing the app after 12 s and relaunching with the same user data restores the drawing (the rewritten `app-session.spec.ts`)
+- [x] The whole `npm run test:e2e` is green on Windows at this commit (342 existing specs, rewritten where the specs supersede them) (2026-11-12: 344 passed at this commit; check 5475 tests; `src/renderer/app/model` 99.34 % lines)
+- [x] Every e2e file still ends by asserting `blockedRequests === 0`; `src/renderer/app/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/renderer/app`, `npm run test:e2e` (Windows, about 7 minutes), then `npm run check`.
 

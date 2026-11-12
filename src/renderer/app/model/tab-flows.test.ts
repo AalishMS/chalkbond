@@ -379,6 +379,47 @@ describe('SS6 (c): the per-tab record flag', () => {
   });
 });
 
+describe('T13 reorder (TB20: the strip drags, the flows own the list)', () => {
+  it('moves a tab, keeps the active tab and reports the change', async () => {
+    const h = createTabFlowHarness();
+    const f = await started(h);
+    await f.newTab();
+    await f.newTab();
+    const [a, b, c] = tabIds(f);
+    const before = h.changes();
+    f.move(0, 2);
+    expect(tabIds(f)).toEqual([b, c, a]);
+    expect(active(f)).toBe(c);
+    expect(h.changes()).toBe(before + 1);
+  });
+
+  it('an index out of range or the same index changes nothing and reports nothing', async () => {
+    const h = createTabFlowHarness();
+    const f = await started(h);
+    await f.newTab();
+    const ids = tabIds(f);
+    const before = h.changes();
+    f.move(0, 0);
+    f.move(0, 5);
+    expect(tabIds(f)).toEqual(ids);
+    expect(h.changes()).toBe(before);
+  });
+
+  it('is ignored while a flow runs', async () => {
+    const h = createTabFlowHarness();
+    const f = await started(h);
+    await f.newTab();
+    const ids = tabIds(f);
+    const held = h.hold('chooseOpen');
+    const opening = f.open();
+    await held.reached;
+    f.move(0, 1);
+    expect(tabIds(f)).toEqual(ids);
+    held.release();
+    await opening;
+  });
+});
+
 describe('T12 reopen', () => {
   it('item (A): a fresh id, its record written at once, and it survives a restart after the old id was discarded', async () => {
     const h = createTabFlowHarness();

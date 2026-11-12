@@ -1,12 +1,14 @@
-// F12 wiring (DOM only): window drag events feed the tracker; a Files drop hands the chosen File
-// to the host (I3 through the preload, SEC14). While an in-window dialog is open a file drop still
+// F12 wiring (DOM only): window drag events feed the tracker; a Files drop hands every dropped File
+// to the host, which opens each with an Open extension in its own tab (R37; I3 through the preload,
+// SEC14). While an in-window dialog is open a file drop still
 // prevents the page's default (navigating to the file) but opens nothing (R22). Text drags are not
 // touched (the editor's).
-import { hasFiles, pickDropped, type DropTracker } from './model/drop';
+import { hasFiles, type DropTracker } from './model/drop';
 
 export interface DropHost {
   modal(): boolean;
-  openDropped(file: File): Promise<void>;
+  /** The files in the order dropped (at least one). */
+  openDropped(files: readonly File[]): Promise<void>;
 }
 
 const typesOf = (event: DragEvent): readonly string[] => [...(event.dataTransfer?.types ?? [])];
@@ -32,8 +34,8 @@ export function installDropTarget(
     event.preventDefault();
     tracker.drop();
     if (host.modal()) return;
-    const file = pickDropped([...(event.dataTransfer?.files ?? [])]);
-    if (file !== null) void host.openDropped(file);
+    const files = [...(event.dataTransfer?.files ?? [])];
+    if (files.length > 0) void host.openDropped(files);
   };
   const key = (event: KeyboardEvent): void => {
     if (event.key === 'Escape' && tracker.visible()) tracker.escape();

@@ -1,32 +1,28 @@
-// A14 shots (tasks/todo-app-shell.md): the relaunch after a kill with the stubbed box answering
-// Recover: ethanol on the canvas, hint slot empty (`recovered`); with a .chalk on the command line,
-// the RC4 notice in the hint slot (`recovered-with-file`). The box's look (A11) is on the checklist.
+// A14 shots (tasks/todo-app-shell.md; TB20: the session store replaced the recovery box): the
+// relaunch after a kill restores the drawing with no box (`restored`); with a .chalk on the command
+// line the file opens in a new tab after the restore (`restored-with-file`). TB32 looks at them.
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { serialize } from '../../src/core/doc-model';
 import { goldenDoc, readDocument, shot } from '../harness';
-import { drawThenKill, launchIn, RECOVER } from '../recovery-steps';
+import { drawThenKill, launchIn } from '../session-steps';
 
-for (const name of ['recovered', 'recovered-with-file'] as const) {
+for (const name of ['restored', 'restored-with-file'] as const) {
   test(`A14 ${name}`, async () => {
-    const userData = mkdtempSync(join(tmpdir(), 'chalkbond-shot-recovery-'));
+    const userData = mkdtempSync(join(tmpdir(), 'chalkbond-shot-session-'));
     try {
       const file = join(userData, 'ethanol.chalk');
       writeFileSync(file, serialize(goldenDoc('ethanol')));
-      const drawn = await drawThenKill(userData, 'ethanol');
+      const drawn = await drawThenKill(userData, 'benzene');
       const { app, page } = await launchIn(userData, {
-        dialogs: [RECOVER],
-        extraArgs: name === 'recovered' ? [] : [file],
+        dialogs: [],
+        extraArgs: name === 'restored' ? [] : [file],
       });
       try {
-        await expect.poll(async () => (await readDocument(page)).atoms).toEqual(drawn.atoms);
-        if (name === 'recovered-with-file') {
-          await expect(page.getByTestId('statusbar').getByRole('status')).toHaveText(
-            'Recovered your unsaved drawing. Save it, then open ethanol.chalk again.',
-          );
-        }
+        const want = name === 'restored' ? drawn.doc.atoms : goldenDoc('ethanol').atoms;
+        await expect.poll(async () => (await readDocument(page)).atoms).toEqual(want);
         await page.mouse.move(1270, 790);
         await shot(page, 'A14', name);
       } finally {

@@ -85,6 +85,27 @@ describe('createPresetMemory', () => {
     expect(stored).toEqual(['journal']);
   });
 
+  it('a tab switch (putState through quietly) is never stored; a switch after it compares with it', () => {
+    const { controller, stored, memory } = rig();
+    const other = controller.newState(doc('journal', 1));
+    memory.quietly(() => controller.putState(other));
+    expect(controller.getDoc().style.preset).toBe('journal');
+    expect(stored).toEqual([]);
+    controller.run({ type: 'set-preset', preset: 'slides' });
+    expect(stored).toEqual(['slides']);
+  });
+
+  it('quietly ends the suppression when its function throws', () => {
+    const { controller, stored, memory } = rig();
+    expect(() =>
+      memory.quietly(() => {
+        throw new Error('boom');
+      }),
+    ).toThrow('boom');
+    controller.run({ type: 'set-preset', preset: 'journal' });
+    expect(stored).toEqual(['journal']);
+  });
+
   it('dispose stops listening', () => {
     const { controller, stored, memory } = rig();
     memory.dispose();

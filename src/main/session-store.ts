@@ -570,6 +570,24 @@ export function createSessionStore(options: SessionStoreOptions) {
     },
 
     /**
+     * F6's folder (TB20): the binding of the active tab of the index the renderer sent last (its
+     * file, its picture or a kept tab's former file), or null. On the chain, so an index update
+     * or a bind sent before it is seen.
+     */
+    activeBinding(): Promise<{ kind: TabBinding['kind']; path: string } | null> {
+      return enqueue(
+        'Active tab lookup',
+        () => {
+          const binding = index.active === null ? undefined : registry.get(index.active);
+          return Promise.resolve(
+            binding === undefined ? null : { kind: binding.kind, path: binding.path },
+          );
+        },
+        null,
+      );
+    },
+
+    /**
      * F6: the C4 write of a Save-as ref has finished. Success: the bytes written become the file
      * hash. Failure: the tab's previous binding comes back (a failed Save as changes nothing).
      * Answers whether `ref` was a pending Save-as (main then updates the folders and recent list).

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { CopyButton, type CopyDisabledReason } from '../clipboard-export/CopyButton';
 import { ExportDialog } from '../clipboard-export/ExportDialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
@@ -9,6 +9,7 @@ import { PDF_OUTCOME } from '../clipboard-export/model/export-flow';
 import type { CopyFlow } from '../clipboard-export/model/copy-flow';
 import { Editor, type EditorController } from '../editor';
 import { installHostKeys } from './host-keys';
+import { TabStrip, tabDomId } from './TabStrip';
 import { createTestHook } from './model/test-hook';
 
 import type { WindowHost } from './host';
@@ -16,49 +17,35 @@ import sprite from './shell-icons.svg?raw';
 import './shell-tokens.css';
 
 export function App({ host }: { host: WindowHost }): React.JSX.Element {
-  const { controller, copyFlow, exportFlow, fileFlows } = host;
-  const commands = host.actions;
+  const { controller, copyFlow, exportFlow } = host;
   useEffect(
     () =>
       installHostKeys(
         controller,
-        fileFlows,
-        {
-          'copy-whole': commands.copy,
-          paste: commands.paste,
-          new: commands.newDrawing,
-          open: commands.open,
-          save: commands.save,
-          'save-as': commands.saveAs,
-          export: commands.exportDialog,
-          shortcuts: commands.shortcuts,
-          'focus-name': () => {
-            if (controller.canRun('focus-name-field')) controller.run('focus-name-field');
-          },
-        },
+        host.tabFlows,
+        host.hostActions,
         // K1: while an in-window dialog is open no host key acts.
         host.modal,
+        // R40: Ctrl+Shift+T only while the reopen list has an entry.
+        host.canReopen,
       ),
-    [commands, controller, fileFlows, host],
+    [controller, host],
   );
   const exportState = useSyncExternalStore(exportFlow.subscribe, exportFlow.state);
   const shortcutsOpen = useSyncExternalStore(
     host.shortcutsDialog.subscribe,
     host.shortcutsDialog.open,
   );
+  const activeId = useSyncExternalStore(
+    host.tabsView.subscribe,
+    () => host.tabsView.get().activeId,
+  );
   useEffect(() => {
-    const stopMain = window.chalkbond.onMainEvent((event) => {
-      if (event.type === 'command') {
-        host.commands.push(event.command);
-        host.runCommand(event.command);
-      } else if (event.type === 'close-requested') void fileFlows.requestClose();
-      else if (event.type === 'open') void host.openRequested(event.ref);
-      else host.flushRecovery();
-    });
+    const stopMain = window.chalkbond.onMainEvent((event) => host.handleMainEvent(event));
     host.publishSession();
-    // CO5: the recovery offer and the launch's file, once, now that the view is mounted.
+    // CO5, SS7: the strip, the active tab, then the launch's file, once the view is mounted.
     void host.start();
-    // N1 (title, dirty, menu) follows the editor, focus and dialogs, at most once per frame.
+    // N1 (title, menu) and the strip follow the editor, focus and dialogs, at most once per frame.
     const invalidate = host.invalidateMenu;
     const stopController = controller.subscribe((event) => {
       if (event.type === 'context-menu') void host.contextMenu(event);
@@ -74,19 +61,25 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
     });
     const stopExport = exportFlow.subscribe(invalidate);
     const stopShortcuts = host.shortcutsDialog.subscribe(invalidate);
+    const stopView = host.tabsView.subscribe(invalidate);
+    // AS5 (c): the window regained focus: the active file tab is checked.
+    const focused = (): void => void host.windowFocused();
     document.addEventListener('focusin', invalidate);
     document.addEventListener('focusout', invalidate);
+    window.addEventListener('focus', focused);
     return () => {
       stopController();
       stopStore();
       stopExport();
       stopShortcuts();
+      stopView();
       document.removeEventListener('focusin', invalidate);
       document.removeEventListener('focusout', invalidate);
+      window.removeEventListener('focus', focused);
       host.cancelMenu();
       stopMain();
     };
-  }, [controller, exportFlow, fileFlows, host]);
+  }, [controller, exportFlow, host]);
   // F12: the drop overlay follows window drag events; a drop goes to I3 through the preload.
   const drops = useMemo(() => createDropTracker(), []);
   useEffect(() => installDropTarget(window, drops, host), [drops, host]);
@@ -95,7 +88,12 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
   // started with `--chalkbond-test-hooks`. Without the query nothing is defined.
   useEffect(() => {
     if (new URLSearchParams(location.search).get('testHooks') !== '1') return undefined;
-    const hook = createTestHook(controller, host.commands, (doc) => host.loadUntitled(doc));
+    const hook = createTestHook(
+      controller,
+      host.commands,
+      (doc) => host.loadIntoActive(doc),
+      host.hookTabs,
+    );
     Object.defineProperty(window, '__chalkbondTest', {
       value: hook,
       configurable: true,
@@ -110,10 +108,17 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
     () => <CopyAction controller={controller} copyFlow={copyFlow} />,
     [controller, copyFlow],
   );
+  // R31, R56: the strip in the editor's `tabs` slot; it re-renders itself, not the editor.
+  const tabs = useMemo(() => <HostTabs host={host} />, [host]);
   return (
     <div className="app" data-testid="canvas-area">
       <div className="sprite" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sprite }} />
-      <Editor controller={controller} actions={actions} />
+      <Editor
+        controller={controller}
+        actions={actions}
+        tabs={tabs}
+        tabPanelLabelledBy={tabDomId(activeId)}
+      />
       {shortcutsOpen && <ShortcutsDialog onClose={host.shortcutsDialog.close} />}
       {dropping && <DropOverlay />}
       {exportState && (
@@ -127,6 +132,43 @@ export function App({ host }: { host: WindowHost }): React.JSX.Element {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * The tab strip over the host's view (T2-T6) and callbacks (T7, T8, T11, T13, T15). T11's focus
+ * rule: after a mouse click on a tab (or the + button) the canvas takes focus; after a key it stays
+ * where it was. A click is told from Enter or Space by the click event that carries it.
+ */
+function HostTabs({ host }: { host: WindowHost }): React.JSX.Element {
+  const view = useSyncExternalStore(host.tabsView.subscribe, host.tabsView.get);
+  const clicked = useRef(false);
+  const byClick = (): boolean => {
+    const was = clicked.current;
+    clicked.current = false;
+    return was;
+  };
+  return (
+    <div
+      className="app-tabs"
+      onClickCapture={() => {
+        clicked.current = true;
+        // Reset once the click has been dispatched (the × stops its propagation).
+        queueMicrotask(() => {
+          clicked.current = false;
+        });
+      }}
+    >
+      <TabStrip
+        tabs={view.tabs}
+        activeId={view.activeId}
+        onActivate={(id) => void host.tabs.activate(id, byClick())}
+        onClose={(id) => void host.tabs.close(id)}
+        onNew={() => void host.tabs.newTab(byClick())}
+        onMove={(from, to) => host.tabs.move(from, to)}
+        onTabMenu={(id, at) => void host.tabs.menu(id, at)}
+      />
     </div>
   );
 }

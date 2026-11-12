@@ -282,13 +282,13 @@ describe('guardClose (F13, RC2, RC5)', () => {
     return event;
   };
 
-  it('RC5: query-session-end sends flush-recovery and prevents nothing', () => {
+  it('RC5: query-session-end sends flush-session and prevents nothing', () => {
     const { win, guard } = setup();
     guard.rendererReady();
     const event = asking();
     win.emit('query-session-end', event);
     expect(event.prevented).toBe(false);
-    expect(win.sent).toEqual([{ type: 'flush-recovery' }]);
+    expect(win.sent).toEqual([{ type: 'flush-session' }]);
   });
 
   it('R24: query-session-end waits for nothing and touches neither chain nor the window', () => {
@@ -343,7 +343,7 @@ describe('guardClose (F13, RC2, RC5)', () => {
     win.emit('query-session-end', asking());
     win.emit('session-end', {});
     expect(win.close().prevented).toBe(false);
-    expect(win.sent).toEqual([{ type: 'flush-recovery' }]);
+    expect(win.sent).toEqual([{ type: 'flush-session' }]);
     expect(closing).toHaveBeenCalledTimes(1);
   });
 });

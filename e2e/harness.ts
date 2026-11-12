@@ -84,6 +84,18 @@ interface PageHook {
   clearEvents(): void;
   notices(): { kind: string; text: string }[];
   commands(): string[];
+  readTabs(): Promise<HookTab[]>;
+  activateTab(id: string): Promise<void>;
+  menuRequests(): number;
+}
+
+/** A tab as the test hook reports it (TB20): id, T3 label, kind, active, T6 marker. */
+export interface HookTab {
+  id: string;
+  label: string;
+  kind: 'untitled' | 'chalk' | 'picture' | 'kept';
+  active: boolean;
+  marker: 'none' | 'dot' | 'unavailable' | 'unkept';
 }
 type HookWindow = Window & { __chalkbondTest?: PageHook };
 
@@ -219,4 +231,42 @@ export async function expectNoNetwork(app: ElectronApplication, expected = 0): P
           ?.blockedRequests ?? 0,
     ),
   ).toBe(expected);
+}
+
+/** The tabs in strip order, through the test hook (TB20). */
+export async function readTabs(page: Page): Promise<HookTab[]> {
+  await waitForHook(page);
+  return page.evaluate(() => (window as HookWindow).__chalkbondTest?.readTabs() ?? []);
+}
+
+/** Activates tab `id` as a click on it would (T11), through the test hook; resolves when done. */
+export async function activateTab(page: Page, id: string): Promise<void> {
+  await waitForHook(page);
+  await page.evaluate((tabId) => (window as HookWindow).__chalkbondTest?.activateTab(tabId), id);
+}
+
+/** How often the host's menu action ran (F10, a lone Alt), through the test hook. */
+export async function menuRequests(page: Page): Promise<number> {
+  await waitForHook(page);
+  return page.evaluate(() => (window as HookWindow).__chalkbondTest?.menuRequests() ?? 0);
+}
+
+/** The `data-tab-id` of every tab in the strip, in DOM order. */
+export function tabKeys(page: Page): Promise<string[]> {
+  return page
+    .getByTestId('tab')
+    .evaluateAll((tabs) => tabs.map((t) => t.getAttribute('data-tab-id') ?? ''));
+}
+
+/**
+ * A new empty tab by the strip's + button (T7); waits until it is in the strip and active, and
+ * returns its id.
+ */
+export async function openTab(page: Page): Promise<string> {
+  const before = await tabKeys(page);
+  await page.getByTestId('tab-add').click();
+  await expect.poll(async () => (await tabKeys(page)).length).toBe(before.length + 1);
+  const added = (await tabKeys(page)).find((id) => !before.includes(id)) ?? '';
+  await expect.poll(async () => (await readTabs(page)).find((t) => t.active)?.id).toBe(added);
+  return added;
 }

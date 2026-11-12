@@ -1,35 +1,61 @@
-// A10 host wiring (SPEC-app-shell.md ST1, ST2, CO1): startup settings, preset tracking through the
-// one controller, loads not stored, New uses the remembered style. Fake preload API.
+// Host wiring (SPEC-app-shell.md ST1, ST2, CO1, CO5, M1, CM1, CM2, W3, N1; TB20: the tabs, their
+// flows and the SS4 write schedule over the preload's functions). The preload API is the shared
+// fake-port harness of the tab flows (an in-memory session store, files by ref, main's bindings)
+// plus the host's own channels; timers are vitest's fake timers.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { emptyDoc, serialize, setStyle, addAtom, type AtomId, type Doc } from '@core/doc-model';
+import { emptyDoc, parse, setStyle, addAtom, type AtomId, type Doc } from '@core/doc-model';
 import type { ChalkbondApi } from '../../preload/api';
-import type { FileRef, RendererSettings } from '../../shared/ipc-types';
+import type {
+  FileRef,
+  MainEvent,
+  RendererSettings,
+  StartupResponse,
+  TabMenuAnswer,
+} from '../../shared/ipc-types';
+import { exportSvg } from '@core/clipboard-export';
+import {
+  createTabFlowHarness,
+  encodeUtf8,
+  type TabFlowHarness,
+} from './model/__fixtures__/tab-flows-ports';
 import { createWindowHost, type WindowHost } from './host';
 import { installHostKeys } from './host-keys';
 
 const NOW = '2026-11-11T09:00:00.000Z';
-const REF: FileRef = { id: '00000000-0000-4000-8000-000000000001', name: 'a.chalk', kind: 'chalk' };
-const drawing = (preset: 'slides' | 'journal'): Doc => {
-  const [d] = addAtom(setStyle(emptyDoc(NOW), { preset }), { element: 'C', x: 0, y: 0 });
+const drawing = (preset: 'slides' | 'journal', n = 1): Doc => {
+  let d = setStyle(emptyDoc(NOW), { preset });
+  for (let i = 0; i < n; i++) [d] = addAtom(d, { element: 'C', x: i, y: 0 });
   return d;
 };
 
-function fakeMain(settings: RendererSettings, fileText = serialize(drawing('slides'))) {
+const DEFAULTS: RendererSettings = {
+  newDrawingStyle: 'slides',
+  export: { format: 'png', pngDpi: 300, pngWhite: false },
+};
+
+function rig(settings: RendererSettings = DEFAULTS, startup: Partial<StartupResponse> = {}) {
+  const h = createTabFlowHarness();
   const setSettings = vi.fn<ChalkbondApi['setSettings']>(() => Promise.resolve());
+  const updateSession = vi.fn<ChalkbondApi['updateSession']>();
+  const ask = vi.fn(() => Promise.resolve('discard'));
+  const showTabMenu = vi.fn<ChalkbondApi['showTabMenu']>(() => Promise.resolve(null));
+  const openDroppedFile = vi.fn<ChalkbondApi['openDroppedFile']>();
+  const closeOk = vi.fn();
   const main = {
-    startup: () => Promise.resolve({ settings, recovery: null, open: null }),
+    ...h.main,
+    closeOk: () => {
+      closeOk();
+      h.main.closeOk();
+    },
+    startup: () =>
+      Promise.resolve({ settings, recovery: null, session: null, open: null, ...startup }),
     setSettings,
-    readFile: () =>
-      Promise.resolve({ ok: true as const, bytes: new TextEncoder().encode(fileText) }),
-    ask: () => Promise.resolve('discard'),
+    updateSession,
+    ask,
+    showTabMenu,
+    openDroppedFile,
+    showContextMenu: vi.fn(() => Promise.resolve(null)),
     sessionFile: vi.fn(),
-    updateSession: vi.fn(),
-    logError: vi.fn(),
-    chooseOpen: () => Promise.resolve(REF),
-    chooseSave: () => Promise.resolve(null),
-    writeFile: () => Promise.resolve({ ok: true as const }),
-    showFileError: () => Promise.resolve(),
-    closeOk: vi.fn(),
     writeRecovery: vi.fn(),
     clearRecovery: vi.fn(),
     clipboardWrite: () => Promise.resolve({ ok: true }),
@@ -38,86 +64,113 @@ function fakeMain(settings: RendererSettings, fileText = serialize(drawing('slid
     platform: 'linux',
     onMainEvent: () => () => undefined,
   } as unknown as ChalkbondApi;
-  return { main, setSettings };
+  return { h, main, setSettings, updateSession, ask, showTabMenu, openDroppedFile, closeOk };
 }
 
-const DEFAULTS: RendererSettings = {
-  newDrawingStyle: 'slides',
-  export: { format: 'png', pngDpi: 300, pngWhite: false },
-};
+/** A host over `rig`, started (SS7), the canvas focus counted. */
+async function started(r: ReturnType<typeof rig>, text = () => false) {
+  const focus = vi.fn();
+  const host = await createWindowHost(r.main, text, focus);
+  await host.start();
+  return { host, focus };
+}
+
+const count = (h: TabFlowHarness, name: string): number => h.names([name]).length;
+/** An open waits in the queue while another flow runs (T17): wait until nothing runs. */
+const settled = (host: WindowHost): Promise<void> =>
+  vi.waitFor(() => expect(host.tabFlows.busy()).toBe(false));
+const tabIds = (host: WindowHost): string[] => host.tabFlows.state().list.tabs.map((t) => t.id);
+const activeId = (host: WindowHost): string => host.tabFlows.state().list.active;
+const lastTitle = (r: ReturnType<typeof rig>): string | undefined =>
+  r.updateSession.mock.lastCall?.[0].title;
+/** The drawing in the record main last stored for `tabId`. */
+function recordDoc(h: TabFlowHarness, tabId: string): Doc {
+  const text = h.records.get(tabId);
+  if (text === undefined) throw new Error(`no record for ${tabId}`);
+  const parsed = parse((JSON.parse(text) as { editor: { file: string } }).editor.file);
+  if (!parsed.ok) throw new Error('record drawing does not parse');
+  return parsed.value;
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('A10 host settings', () => {
   it('starts with the startup style and export choices', async () => {
     const remembered = { ...DEFAULTS, newDrawingStyle: 'journal' as const };
-    const { main } = fakeMain(remembered);
-    const host = await createWindowHost(main);
+    const r = rig(remembered);
+    const { host } = await started(r);
     expect(host.controller.getDoc().style.preset).toBe('journal');
     expect(host.settings()).toEqual(remembered);
   });
 
   it('a preset switch through the controller stores newDrawingStyle (I8)', async () => {
-    const { main, setSettings } = fakeMain(DEFAULTS);
-    const host = await createWindowHost(main);
+    const r = rig();
+    const { host } = await started(r);
     host.controller.run({ type: 'set-preset', preset: 'journal' });
-    expect(setSettings).toHaveBeenLastCalledWith({ newDrawingStyle: 'journal' });
+    expect(r.setSettings).toHaveBeenLastCalledWith({ newDrawingStyle: 'journal' });
     expect(host.settings().newDrawingStyle).toBe('journal');
     host.controller.run('undo');
-    expect(setSettings).toHaveBeenLastCalledWith({ newDrawingStyle: 'slides' });
+    expect(r.setSettings).toHaveBeenLastCalledWith({ newDrawingStyle: 'slides' });
   });
 
-  it('loads (test hook, Open, New) are never stored; New uses the remembered style', async () => {
-    const { main, setSettings } = fakeMain(DEFAULTS);
-    const host = await createWindowHost(main);
+  it('loads (test hook, Open, a tab switch) are never stored; a new tab uses the remembered style', async () => {
+    const r = rig();
+    const { host } = await started(r);
     host.controller.run({ type: 'set-preset', preset: 'journal' });
-    setSettings.mockClear();
-    host.loadUntitled(drawing('slides'));
-    await host.fileFlows.openRef(REF); // a slides drawing
+    const first = activeId(host);
+    r.setSettings.mockClear();
+    host.loadIntoActive(drawing('slides'));
+    await host.openRequested(r.h.file('a.chalk', drawing('slides'))); // a new tab
+    await settled(host);
     expect(host.controller.getDoc().style.preset).toBe('slides');
-    await host.fileFlows.newDrawing();
+    await host.tabs.activate(first);
+    await host.tabs.newTab();
     expect(host.controller.getDoc().style.preset).toBe('journal');
-    expect(setSettings).not.toHaveBeenCalled();
+    expect(r.setSettings).not.toHaveBeenCalled();
     expect(host.settings().newDrawingStyle).toBe('journal');
   });
 
   it('remember(export) updates the settings and sends I8', async () => {
-    const { main, setSettings } = fakeMain(DEFAULTS);
-    const host = await createWindowHost(main);
+    const r = rig();
+    const { host } = await started(r);
     const choices = { format: 'svg', pngDpi: 600, pngWhite: true } as const;
     await host.remember({ export: choices });
-    expect(setSettings).toHaveBeenCalledWith({ export: choices });
+    expect(r.setSettings).toHaveBeenCalledWith({ export: choices });
     expect(host.settings().export).toEqual(choices);
   });
 });
 
 describe('A11 host menu (N1 menu state, commands re-checked)', () => {
   it('N1 carries the menu state and is sent again only when title, dirty or menu changed', async () => {
-    const { main } = fakeMain(DEFAULTS);
-    const send = vi.mocked(main.updateSession);
+    const r = rig();
     let text = false;
-    const host = await createWindowHost(main, () => text);
-    host.publishSession();
-    expect(send).toHaveBeenCalledTimes(1);
-    expect(send.mock.lastCall?.[0]).toMatchObject({
+    const { host } = await started(r, () => text);
+    await host.refresh();
+    const sent = r.updateSession.mock.calls.length;
+    expect(r.updateSession.mock.lastCall?.[0]).toMatchObject({
       title: 'Untitled - Chalkbond',
       dirty: false,
       menu: { idle: true, empty: true, textFocus: false, modal: false, preset: 'slides' },
     });
     host.publishSession();
-    expect(send).toHaveBeenCalledTimes(1);
+    expect(r.updateSession).toHaveBeenCalledTimes(sent);
     text = true;
     host.publishSession();
-    expect(send).toHaveBeenCalledTimes(2);
-    expect(send.mock.lastCall?.[0].menu.textFocus).toBe(true);
-    host.loadUntitled(drawing('slides'));
-    expect(send.mock.lastCall?.[0].menu.empty).toBe(false);
+    expect(r.updateSession).toHaveBeenCalledTimes(sent + 1);
+    expect(r.updateSession.mock.lastCall?.[0].menu.textFocus).toBe(true);
+    host.loadIntoActive(drawing('slides'));
+    await host.refresh();
+    expect(r.updateSession.mock.lastCall?.[0].menu.empty).toBe(false);
   });
 
   it('runs a menu command only when the state now allows it', async () => {
-    const { main } = fakeMain(DEFAULTS);
+    const r = rig();
     let text = false;
-    const host = await createWindowHost(main, () => text);
+    const { host } = await started(r, () => text);
     expect(host.runCommand('file.export')).toBe(false); // an empty drawing has nothing to export
-    host.loadUntitled(drawing('slides'));
+    host.loadIntoActive(drawing('slides'));
     expect(host.runCommand('edit.select-all')).toBe(true);
     expect(host.controller.getSelection().atoms.size).toBe(1);
     expect(host.runCommand('view.zoom-reset')).toBe(true);
@@ -130,9 +183,9 @@ describe('A11 host menu (N1 menu state, commands re-checked)', () => {
   });
 
   it('while the Export dialog is open no menu command runs (M1 modal)', async () => {
-    const { main } = fakeMain(DEFAULTS);
-    const host = await createWindowHost(main, () => false);
-    host.loadUntitled(drawing('slides'));
+    const r = rig();
+    const { host } = await started(r);
+    host.loadIntoActive(drawing('slides'));
     host.exportFlow.open();
     expect(host.modal()).toBe(true);
     expect(host.runCommand('edit.select-all')).toBe(false);
@@ -140,13 +193,344 @@ describe('A11 host menu (N1 menu state, commands re-checked)', () => {
     host.exportFlow.cancel();
     expect(host.runCommand('view.zoom-fit')).toBe(true);
   });
+
+  it("File > New (the menu's file.new) adds a tab (T7), never asks", async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.loadIntoActive(drawing('slides'));
+    expect(host.runCommand('file.new')).toBe(true);
+    await vi.waitFor(() => expect(tabIds(host)).toHaveLength(2));
+    expect(r.ask).not.toHaveBeenCalled();
+  });
+});
+
+describe('W3, N1: the title follows the active tab and F7 unsaved', () => {
+  it('Untitled, *Untitled after a drawing, a file by its label, back to *Untitled on a switch', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    await host.refresh();
+    expect(lastTitle(r)).toBe('Untitled - Chalkbond');
+    const first = activeId(host);
+    host.controller.run({ type: 'insert-text', text: 'ethanol' });
+    await host.refresh();
+    expect(lastTitle(r)).toBe('*Untitled - Chalkbond');
+    expect(r.updateSession.mock.lastCall?.[0].dirty).toBe(true);
+    await host.openRequested(r.h.file('esterification.chalk', drawing('slides', 2)));
+    await settled(host);
+    await host.refresh();
+    expect(lastTitle(r)).toBe('esterification - Chalkbond');
+    // An edit of a named file is no `*` (auto-save is due, not unsaved; R41).
+    host.controller.run({ type: 'insert-text', text: 'water' });
+    await host.refresh();
+    expect(lastTitle(r)).toBe('esterification - Chalkbond');
+    await host.tabs.activate(first);
+    await host.refresh();
+    expect(lastTitle(r)).toBe('*Untitled - Chalkbond');
+  });
+
+  it('the strip view: labels and markers, the active id', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.controller.run({ type: 'insert-text', text: 'ethanol' });
+    await host.openRequested(
+      r.h.file('toluene.svg', encodeUtf8(exportSvg(drawing('slides'), null).svg)),
+    );
+    await settled(host);
+    await host.refresh();
+    const view = host.tabsView.get();
+    expect(view.tabs.map((t) => [t.label, t.marker])).toEqual([
+      ['Untitled', 'dot'],
+      ['toluene.svg', 'none'],
+    ]);
+    expect(view.activeId).toBe(activeId(host));
+    expect(await host.hookTabs.read()).toEqual([
+      expect.objectContaining({ label: 'Untitled', kind: 'untitled', active: false }),
+      expect.objectContaining({ label: 'toluene.svg', kind: 'picture', active: true }),
+    ]);
+  });
+});
+
+describe('TB20 start-up (SS7, CO5): no recovery offer', () => {
+  it('no session: one empty Untitled tab, nothing asked, the canvas focused, a second start does nothing', async () => {
+    const r = rig();
+    const { host, focus } = await started(r);
+    await host.start();
+    expect(tabIds(host)).toHaveLength(1);
+    expect(r.ask).not.toHaveBeenCalled();
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(count(r.h, 'readTabRecord')).toBe(0);
+    // Main knows the tabs and the active one at once (F6's folder reads it).
+    expect(r.h.indexes.at(-1)).toEqual({
+      tabs: [expect.objectContaining({ id: activeId(host), kind: 'untitled' })],
+      active: activeId(host),
+      discarded: [],
+    });
+  });
+
+  it('a session: the strip shows every tab, only the active record is read; I7 open after it', async () => {
+    const r = rig();
+    const stored = createTabFlowHarness();
+    stored.editor.run({ type: 'replace-doc', doc: drawing('slides', 3), label: 'Draw' });
+    r.h.storeRecord(
+      { id: 'b', kind: 'untitled', name: 'Untitled 2' },
+      stored.editor.snapshotState(),
+    );
+    const ref = r.h.file('c.chalk', drawing('slides'));
+    const session = r.h.session(
+      [
+        { id: 'a', kind: 'untitled', name: 'Untitled', unsaved: true },
+        { id: 'b', kind: 'untitled', name: 'Untitled 2', unsaved: true },
+      ],
+      'b',
+    );
+    const r2 = {
+      ...r,
+      main: Object.assign(r.main, {
+        startup: () => Promise.resolve({ settings: DEFAULTS, recovery: null, session, open: ref }),
+      }),
+    };
+    const { host } = await started(r2);
+    expect(r.h.argsOf('readTabRecord')).toEqual(['b']);
+    expect(tabIds(host).slice(0, 2)).toEqual(['a', 'b']);
+    expect(host.tabFlows.state().list.tabs.map((t) => t.name)).toEqual([
+      'Untitled',
+      'Untitled 2',
+      'c.chalk',
+    ]);
+    expect(r.ask).not.toHaveBeenCalled();
+    await host.refresh();
+    expect(host.tabsView.get().tabs[0]?.marker).toBe('dot'); // from the index, not loaded
+  });
+});
+
+describe('TB20 SS4 write schedule wiring', () => {
+  it('a doc event writes the active record on AS2: 2 s after the last change, not before', async () => {
+    vi.useFakeTimers();
+    const r = rig();
+    const { host } = await started(r);
+    await vi.advanceTimersByTimeAsync(1000);
+    const before = count(r.h, 'writeTabRecord');
+    host.controller.run({ type: 'insert-text', text: 'ethanol' });
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(count(r.h, 'writeTabRecord')).toBe(before);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(count(r.h, 'writeTabRecord')).toBe(before + 1);
+    expect(recordDoc(r.h, activeId(host)).atoms).toEqual(host.controller.getDoc().atoms);
+  });
+
+  it('a view event writes the index after 2 s and no record', async () => {
+    vi.useFakeTimers();
+    const r = rig();
+    const { host } = await started(r);
+    await vi.advanceTimersByTimeAsync(3000);
+    const records = count(r.h, 'writeTabRecord');
+    const indexes = r.h.indexes.length;
+    host.controller.store.dispatch({ type: 'canvas-resized', size: { w: 1000, h: 600 } });
+    host.controller.run('zoom-in');
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(r.h.indexes.length).toBe(indexes);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(r.h.indexes.length).toBe(indexes + 1);
+    expect(count(r.h, 'writeTabRecord')).toBe(records);
+  });
+
+  it('a switch writes the outgoing record itself; the put-in state schedules nothing', async () => {
+    vi.useFakeTimers();
+    const r = rig();
+    const { host } = await started(r);
+    const first = activeId(host);
+    host.controller.run({ type: 'insert-text', text: 'ethanol' });
+    await host.tabs.newTab();
+    const second = activeId(host);
+    expect(recordDoc(r.h, first).atoms).not.toEqual({});
+    const records = count(r.h, 'writeTabRecord');
+    await host.tabs.activate(first);
+    await vi.advanceTimersByTimeAsync(20_000);
+    // The switch wrote `second` once; no timer wrote anything after it.
+    expect(count(r.h, 'writeTabRecord')).toBe(records + 1);
+    expect(r.h.argsOf('writeTabRecord').at(-1)).toMatchObject({ tabId: second });
+  });
+
+  it('a tab-list change writes the index 500 ms later', async () => {
+    vi.useFakeTimers();
+    const r = rig();
+    const { host } = await started(r);
+    await host.tabs.newTab();
+    await vi.advanceTimersByTimeAsync(3000);
+    const indexes = r.h.indexes.length;
+    host.tabs.move(0, 1);
+    await vi.advanceTimersByTimeAsync(499);
+    expect(r.h.indexes.length).toBe(indexes);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(r.h.indexes.length).toBe(indexes + 1);
+    expect(r.h.indexes.at(-1)?.tabs.map((t) => t.id)).toEqual(tabIds(host));
+  });
+});
+
+describe('TB20 main events', () => {
+  const send = (host: WindowHost, event: MainEvent): void => host.handleMainEvent(event);
+
+  it('focus-tab activates that tab; an unknown id changes nothing', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    const first = activeId(host);
+    await host.tabs.newTab();
+    send(host, { type: 'focus-tab', tabId: first });
+    await vi.waitFor(() => expect(activeId(host)).toBe(first));
+    send(host, { type: 'focus-tab', tabId: 'nobody' });
+    await vi.waitFor(() => expect(host.tabFlows.busy()).toBe(false));
+    expect(activeId(host)).toBe(first);
+  });
+
+  it('open opens the ref in the empty Untitled tab (T17); a command runs; flush-recovery is ignored', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    const ref = r.h.file('a.chalk', drawing('slides', 2));
+    send(host, { type: 'open', ref });
+    await vi.waitFor(() => expect(host.tabFlows.state().list.tabs[0]?.name).toBe('a.chalk'));
+    expect(tabIds(host)).toHaveLength(1);
+    send(host, { type: 'command', command: 'edit.select-all' });
+    expect(host.commands).toEqual(['edit.select-all']);
+    expect(host.controller.getSelection().atoms.size).toBe(2);
+    const calls = r.h.calls.length;
+    send(host, { type: 'flush-recovery' });
+    expect(r.h.calls.length).toBe(calls);
+  });
+
+  it('flush-session writes the record and the index at once', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.controller.run({ type: 'insert-text', text: 'ethanol' });
+    const records = count(r.h, 'writeTabRecord');
+    send(host, { type: 'flush-session' });
+    await vi.waitFor(() => expect(count(r.h, 'writeTabRecord')).toBe(records + 1));
+    expect(recordDoc(r.h, activeId(host)).atoms).toEqual(host.controller.getDoc().atoms);
+  });
+
+  it('close-requested: no box, the record, then N5; after N5 the schedule writes nothing', async () => {
+    vi.useFakeTimers();
+    const r = rig();
+    const { host } = await started(r);
+    host.controller.run({ type: 'insert-text', text: 'ethanol' });
+    send(host, { type: 'close-requested' });
+    await vi.waitFor(() => expect(r.closeOk).toHaveBeenCalledTimes(1));
+    expect(r.ask).not.toHaveBeenCalled();
+    expect(recordDoc(r.h, activeId(host)).atoms).toEqual(host.controller.getDoc().atoms);
+    const calls = r.h.calls.length;
+    host.controller.run({ type: 'insert-text', text: 'water' });
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(r.h.names().slice(calls)).toEqual([]);
+  });
+});
+
+describe('TB20 host actions (K1 tab keys, the strip, the tab menu)', () => {
+  it('next, previous, tab n, last, close and reopen act on the tabs', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    await host.tabs.newTab();
+    await host.tabs.newTab();
+    const [a, b, c] = tabIds(host);
+    const keys = host.hostActions;
+    keys['tab-1']?.();
+    await vi.waitFor(() => expect(activeId(host)).toBe(a));
+    keys['next-tab']?.();
+    await vi.waitFor(() => expect(activeId(host)).toBe(b));
+    keys['previous-tab']?.();
+    await vi.waitFor(() => expect(activeId(host)).toBe(a));
+    keys['previous-tab']?.(); // wraps
+    await vi.waitFor(() => expect(activeId(host)).toBe(c));
+    keys['tab-8']?.(); // no tab 8: nothing
+    await settled(host);
+    expect(activeId(host)).toBe(c);
+    keys['tab-1']?.();
+    await vi.waitFor(() => expect(activeId(host)).toBe(a));
+    keys['last-tab']?.();
+    await vi.waitFor(() => expect(activeId(host)).toBe(c));
+    expect(host.canReopen()).toBe(false);
+    keys['close-tab']?.();
+    await vi.waitFor(() => expect(tabIds(host)).toEqual([a, b]));
+    expect(host.canReopen()).toBe(true);
+    keys['reopen-tab']?.();
+    await vi.waitFor(() => expect(tabIds(host)).toHaveLength(3));
+    expect(r.ask).not.toHaveBeenCalled();
+  });
+
+  it('the menu key is counted until TB26 opens the ☰ menu', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.hostActions.menu?.();
+    host.hostActions.menu?.();
+    expect(host.hookTabs.menuRequests()).toBe(2);
+  });
+
+  it('a click activation focuses the canvas; a key activation does not', async () => {
+    const r = rig();
+    const { host, focus } = await started(r);
+    const first = activeId(host);
+    await host.tabs.newTab(true);
+    expect(focus).toHaveBeenCalledTimes(2);
+    await host.tabs.activate(first, false);
+    expect(focus).toHaveBeenCalledTimes(2);
+    await host.tabs.activate(tabIds(host)[1] ?? '', true);
+    expect(focus).toHaveBeenCalledTimes(3);
+  });
+
+  it('the tab menu acts on the right-clicked tab, not the active one', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    await host.tabs.newTab();
+    const [a, b] = tabIds(host);
+    const answers: TabMenuAnswer[] = ['close', 'reopen', 'new-tab', null];
+    r.showTabMenu.mockImplementation(() => Promise.resolve(answers.shift() ?? null));
+    await host.tabs.menu(a ?? '', null);
+    expect(r.showTabMenu).toHaveBeenLastCalledWith({
+      tabId: a,
+      state: { canReopenTab: false },
+      at: null,
+    });
+    expect(tabIds(host)).toEqual([b]);
+    await host.tabs.menu(b ?? '', { x: 10, y: 20 });
+    expect(r.showTabMenu.mock.lastCall?.[0].state).toEqual({ canReopenTab: true });
+    expect(tabIds(host)).toHaveLength(2);
+    await host.tabs.menu(b ?? '', null);
+    expect(tabIds(host)).toHaveLength(3);
+    await host.tabs.menu(b ?? '', null);
+    expect(tabIds(host)).toHaveLength(3);
+  });
+
+  it('a failing tab menu is logged; none opens while a dialog is open', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    r.showTabMenu.mockRejectedValueOnce(new Error('gone'));
+    await host.tabs.menu(activeId(host), null);
+    expect(r.h.errors).toContainEqual(expect.stringContaining('Tab menu failed'));
+    host.actions.shortcuts();
+    await host.tabs.menu(activeId(host), null);
+    expect(r.showTabMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('Export suggests the active tab name; an untitled tab has none', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.loadIntoActive(drawing('slides'));
+    host.exportFlow.open();
+    await host.exportFlow.save();
+    await host.openRequested(r.h.file('a.chalk', drawing('slides')));
+    await settled(host);
+    host.exportFlow.open();
+    await host.exportFlow.save();
+    expect(r.h.calls.filter((c) => c.name === 'chooseSave').map((c) => c.args[1])).toEqual([
+      'Untitled.png',
+      'a.png',
+    ]);
+  });
 });
 
 describe('A12 one in-window dialog at a time (Export, Keyboard shortcuts)', () => {
   it('the shortcuts dialog is modal; Export cannot open over it, nor it over Export', async () => {
-    const { main } = fakeMain(DEFAULTS);
-    const host = await createWindowHost(main, () => false);
-    host.loadUntitled(drawing('slides'));
+    const r = rig();
+    const { host } = await started(r);
+    host.loadIntoActive(drawing('slides'));
     const heard: boolean[] = [];
     host.shortcutsDialog.subscribe(() => heard.push(host.shortcutsDialog.open()));
     expect(host.runCommand('help.shortcuts')).toBe(true);
@@ -171,12 +555,12 @@ describe('A12 one in-window dialog at a time (Export, Keyboard shortcuts)', () =
 
 describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   type Shown = { onItem: boolean; state: { textFocus: boolean; hasSelection: boolean } };
-  function rig(answers: (string | null)[], start: { text: boolean } = { text: false }) {
-    const { main } = fakeMain(DEFAULTS);
+  function menuRig(answers: (string | null)[], start: { text: boolean } = { text: false }) {
+    const r = rig();
     const shown: Shown[] = [];
     const pending: ((value: string | null) => void)[] = [];
     const view = { text: start.text, focused: 0 };
-    Object.assign(main, {
+    Object.assign(r.main, {
       showContextMenu: vi.fn(
         (request: Shown) =>
           new Promise<string | null>((resolve) => {
@@ -186,7 +570,7 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
           }),
       ),
     });
-    return { main, shown, pending, view };
+    return { ...r, shown, pending, view };
   }
   const ethanol = (): Doc => {
     let d = setStyle(emptyDoc(NOW), { preset: 'slides' });
@@ -201,9 +585,9 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   };
 
   it('on an item: I6 with onItem and the state now, then the chosen command runs (Delete)', async () => {
-    const r = rig(['edit.delete']);
-    const host = await createWindowHost(r.main, () => r.view.text);
-    host.loadUntitled(ethanol());
+    const r = menuRig(['edit.delete']);
+    const { host } = await started(r, () => r.view.text);
+    host.loadIntoActive(ethanol());
     host.controller.run('select-all');
     await host.contextMenu({ target: target(host), screen: { x: 1, y: 1 } });
     expect(r.shown).toEqual([
@@ -216,9 +600,9 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   });
 
   it('empty canvas: onItem false; dismissed (null) changes nothing', async () => {
-    const r = rig([null]);
-    const host = await createWindowHost(r.main, () => r.view.text);
-    host.loadUntitled(ethanol());
+    const r = menuRig([null]);
+    const { host } = await started(r, () => r.view.text);
+    host.loadIntoActive(ethanol());
     const before = host.controller.getDoc();
     await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
     expect(r.shown[0]?.onItem).toBe(false);
@@ -228,7 +612,7 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   });
 
   it('name field focused before: the canvas takes focus first, so Delete acts on the drawing', async () => {
-    const r = rig(['edit.delete'], { text: true });
+    const r = menuRig(['edit.delete'], { text: true });
     const host = await createWindowHost(
       r.main,
       () => r.view.text,
@@ -237,7 +621,7 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
         r.view.text = false;
       },
     );
-    host.loadUntitled(ethanol());
+    host.loadIntoActive(ethanol());
     host.controller.run('select-all');
     await host.contextMenu({ target: target(host), screen: { x: 1, y: 1 } });
     expect(r.view.focused).toBe(1);
@@ -246,7 +630,7 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   });
 
   it('the chosen command is re-checked: text focus regained meanwhile → Delete does nothing', async () => {
-    const r = rig([]);
+    const r = menuRig([]);
     const host = await createWindowHost(
       r.main,
       () => r.view.text,
@@ -254,7 +638,7 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
         r.view.text = false;
       },
     );
-    host.loadUntitled(ethanol());
+    host.loadIntoActive(ethanol());
     host.controller.run('select-all');
     const done = host.contextMenu({ target: target(host), screen: { x: 1, y: 1 } });
     r.view.text = true;
@@ -264,7 +648,7 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   });
 
   it('Paste runs the clipboard flow (CB-P1), the same function as Edit > Paste', async () => {
-    const r = rig(['edit.paste']);
+    const r = menuRig(['edit.paste']);
     const read = vi.fn(() =>
       Promise.resolve({ drawing: null, text: null, textTooLong: false, image: false }),
     );
@@ -275,9 +659,9 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   });
 
   it('one menu at a time; none while an in-window dialog is open', async () => {
-    const r = rig([]);
+    const r = menuRig([]);
     const host = await createWindowHost(r.main, () => false);
-    host.loadUntitled(ethanol());
+    host.loadIntoActive(ethanol());
     const first = host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
     await host.contextMenu({ target: null, screen: { x: 2, y: 2 } });
     expect(r.shown).toHaveLength(1);
@@ -289,214 +673,116 @@ describe('A13 canvas context menu (CM1, CM2; I6)', () => {
   });
 
   it('an unknown answer is ignored and a failing I6 is logged', async () => {
-    const r = rig(['app.quit']);
+    const r = menuRig(['app.quit']);
     const host = await createWindowHost(r.main, () => false);
-    host.loadUntitled(ethanol());
+    host.loadIntoActive(ethanol());
     const before = host.controller.getDoc();
     await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
     expect(host.controller.getDoc()).toBe(before);
     Object.assign(r.main, { showContextMenu: () => Promise.reject(new Error('gone')) });
     await host.contextMenu({ target: null, screen: { x: 1, y: 1 } });
-    expect(vi.mocked(r.main.logError)).toHaveBeenCalledWith(
-      expect.stringContaining('Context menu'),
-    );
+    expect(r.h.errors).toContainEqual(expect.stringContaining('Context menu'));
   });
 });
 
-describe('A14 host recovery wiring (RC1, RC3, RC5; CO5)', () => {
-  const recoveryMain = (recovery: { text: string; name: string } | null, answer = 'recover') => {
-    const { main } = fakeMain(DEFAULTS);
-    Object.assign(main, {
-      startup: () => Promise.resolve({ settings: DEFAULTS, recovery, open: null }),
-      ask: vi.fn(() => Promise.resolve(answer)),
-    });
-    return main;
-  };
-
-  it('start offers the recovery once, loads it as Recovered drawing, then focuses the canvas', async () => {
-    const main = recoveryMain({ text: serialize(drawing('journal')), name: 'a.chalk' });
-    const focused = vi.fn();
-    const host = await createWindowHost(main, () => false, focused);
-    await Promise.all([host.start(), host.start()]);
-    expect(main.ask).toHaveBeenCalledTimes(1);
-    expect(Object.keys(host.controller.getDoc().atoms)).toHaveLength(1);
-    expect(host.session).toMatchObject({
-      kind: 'recovered',
-      forcedDirty: true,
-      saveName: 'a.chalk',
-    });
-    expect(vi.mocked(main.updateSession).mock.lastCall?.[0].title).toBe(
-      '*Recovered drawing - Chalkbond',
-    );
-    expect(focused).toHaveBeenCalledTimes(1);
-    expect(main.clearRecovery).not.toHaveBeenCalled();
+describe('A15 incoming opens (F11, R22, R37) and drops (F12, SEC14)', () => {
+  it('no dialog open: an incoming open runs T17 at once', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    const ref = r.h.file('a.chalk', drawing('journal'));
+    await host.openRequested(ref);
+    expect(r.h.argsOf('readFile')).toEqual([ref]);
+    expect(host.tabFlows.state().list.tabs.map((t) => t.name)).toEqual(['a.chalk']);
   });
 
-  it('a normal launch (no recovery, no file) never loads: a test-hook drawing stays', async () => {
-    const main = recoveryMain(null);
-    const focused = vi.fn();
-    const host = await createWindowHost(main, () => false, focused);
-    host.loadUntitled(drawing('journal'));
-    const loaded = host.controller.getDoc();
-    await host.start();
-    expect(host.controller.getDoc()).toBe(loaded);
-    expect(main.ask).not.toHaveBeenCalled();
-    expect(focused).not.toHaveBeenCalled();
-  });
-
-  it('an edit writes N3 2 s later with the committed drawing; flush writes at once', async () => {
-    vi.useFakeTimers();
-    try {
-      const main = recoveryMain(null);
-      const host = await createWindowHost(main, () => false);
-      host.controller.run({ type: 'insert-text', text: 'ethanol' });
-      expect(main.writeRecovery).not.toHaveBeenCalled();
-      vi.advanceTimersByTime(2000);
-      expect(main.writeRecovery).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(main.writeRecovery).mock.lastCall?.[0]).toEqual({
-        text: serialize(host.controller.getDoc()),
-        name: 'Untitled',
-      });
-      host.flushRecovery();
-      expect(main.writeRecovery).toHaveBeenCalledTimes(2);
-      host.controller.run('undo');
-      expect(main.clearRecovery).toHaveBeenCalledTimes(1);
-      host.flushRecovery();
-      expect(main.writeRecovery).toHaveBeenCalledTimes(2);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-});
-
-describe('A15 incoming opens (F11, R22) and drops (F12, SEC14)', () => {
-  const B: FileRef = { id: '00000000-0000-4000-8000-000000000002', name: 'b.chalk', kind: 'chalk' };
-  const fileMain = () => {
-    const { main } = fakeMain(DEFAULTS);
-    const readFile = vi.fn(() =>
-      Promise.resolve({
-        ok: true as const,
-        bytes: new TextEncoder().encode(serialize(drawing('journal'))),
-      }),
-    );
-    const showFileError = vi.fn(() => Promise.resolve());
-    const openDroppedFile = vi.fn<ChalkbondApi['openDroppedFile']>();
-    Object.assign(main, { readFile, showFileError, openDroppedFile });
-    return { main, readFile, showFileError, openDroppedFile };
-  };
-
-  it('no dialog open: an incoming open runs F3 at once', async () => {
-    const { main, readFile } = fileMain();
-    const host = await createWindowHost(main, () => false);
-    await host.openRequested(REF);
-    expect(readFile).toHaveBeenCalledWith(REF);
-    expect(host.session).toMatchObject({ kind: 'chalk', name: 'a.chalk' });
-  });
-
-  it('while Export is open an incoming open waits (latest wins), leaves the dialog, runs after it closes', async () => {
-    const { main, readFile } = fileMain();
-    const host = await createWindowHost(main, () => false);
-    host.loadUntitled(drawing('slides'));
+  it('while Export is open opens and focuses wait in order, leave the dialog, run after it closes', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    const first = activeId(host);
+    host.loadIntoActive(drawing('slides'));
+    const a = r.h.file('a.chalk', drawing('journal'));
+    const b = r.h.file('b.chalk', drawing('journal'));
     host.exportFlow.open();
     const dialog = host.exportFlow.state();
-    await host.openRequested(REF);
-    await host.openRequested(B);
-    expect(readFile).not.toHaveBeenCalled();
+    await host.openRequested(a);
+    await host.openRequested(b);
+    await host.focusRequested(first);
+    expect(count(r.h, 'readFile')).toBe(0);
     expect(host.exportFlow.state()).toEqual(dialog);
     host.exportFlow.cancel();
-    await vi.waitFor(() => expect(host.session.name).toBe('b.chalk'));
-    expect(readFile).toHaveBeenCalledTimes(1);
-    expect(readFile).toHaveBeenCalledWith(B);
+    await vi.waitFor(() => expect(activeId(host)).toBe(first));
+    await vi.waitFor(() => expect(host.tabFlows.busy()).toBe(false));
+    expect(host.tabFlows.state().list.tabs.map((t) => t.name)).toEqual([
+      'Untitled',
+      'a.chalk',
+      'b.chalk',
+    ]);
+    expect(activeId(host)).toBe(first);
   });
 
   it('while Keyboard shortcuts is open an incoming open waits until it closes', async () => {
-    const { main, readFile } = fileMain();
-    const host = await createWindowHost(main, () => false);
+    const r = rig();
+    const { host } = await started(r);
+    const ref = r.h.file('a.chalk', drawing('journal'));
     host.actions.shortcuts();
-    await host.openRequested(REF);
-    expect(readFile).not.toHaveBeenCalled();
+    await host.openRequested(ref);
+    expect(count(r.h, 'readFile')).toBe(0);
     expect(host.shortcutsDialog.open()).toBe(true);
     host.shortcutsDialog.close();
-    await vi.waitFor(() => expect(readFile).toHaveBeenCalledWith(REF));
+    await vi.waitFor(() => expect(r.h.argsOf('readFile')).toEqual([ref]));
   });
 
-  it('a drop asks I3 through the preload; the ref opens (F3)', async () => {
-    const { main, readFile, openDroppedFile } = fileMain();
-    openDroppedFile.mockResolvedValue({ ok: true, ref: REF });
-    const host = await createWindowHost(main, () => false);
-    const file = new File(['x'], 'a.chalk');
-    await host.openDropped(file);
-    expect(openDroppedFile).toHaveBeenCalledWith(file);
-    expect(readFile).toHaveBeenCalledWith(REF);
+  it('a drop asks I3 for each file through the preload; each opens in its own tab in order', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    host.loadIntoActive(drawing('slides'));
+    const a = r.h.file('a.chalk', drawing('slides'));
+    const b = r.h.file('b.chalk', drawing('slides'));
+    const refs: Record<string, FileRef> = { 'a.chalk': a, 'b.chalk': b };
+    r.openDroppedFile.mockImplementation((file) =>
+      Promise.resolve({ ok: true, ref: refs[file.name] as FileRef }),
+    );
+    const files = [
+      new File(['x'], 'a.chalk'),
+      new File(['x'], 'notes.docx'),
+      new File(['x'], 'b.chalk'),
+    ];
+    await host.openDropped(files);
+    await vi.waitFor(() => expect(host.tabFlows.busy()).toBe(false));
+    expect(r.openDroppedFile.mock.calls.map(([f]) => f.name)).toEqual(['a.chalk', 'b.chalk']);
+    expect(host.tabFlows.state().list.tabs.map((t) => t.name)).toEqual([
+      'Untitled',
+      'a.chalk',
+      'b.chalk',
+    ]);
   });
 
   it("a refused drop shows the F14 box with main's name (the file's name when main has none)", async () => {
-    const { main, readFile, showFileError, openDroppedFile } = fileMain();
-    openDroppedFile
+    const r = rig();
+    const { host } = await started(r);
+    r.openDroppedFile
       .mockResolvedValueOnce({ ok: false, problem: 'unsupported', name: 'notes.docx' })
       .mockResolvedValueOnce({ ok: false, problem: 'unsupported', name: '' })
       .mockRejectedValueOnce(new Error('ipc'));
-    const host = await createWindowHost(main, () => false);
-    await host.openDropped(new File(['x'], 'notes.docx'));
-    await host.openDropped(new File(['x'], 'made.chalk'));
-    await host.openDropped(new File(['x'], 'boom.chalk'));
-    expect(showFileError.mock.calls).toEqual([
+    await host.openDropped([new File(['x'], 'notes.docx')]);
+    await host.openDropped([new File(['x'], 'made.chalk')]);
+    await host.openDropped([new File(['x'], 'boom.chalk')]);
+    await vi.waitFor(() => expect(host.tabFlows.busy()).toBe(false));
+    expect(r.h.calls.filter((c) => c.name === 'showFileError').map((c) => c.args)).toEqual([
       ['unsupported', 'notes.docx'],
       ['unsupported', 'made.chalk'],
     ]);
-    expect(readFile).not.toHaveBeenCalled();
-    expect(main.logError).toHaveBeenCalledWith(expect.stringMatching(/^Drop failed: /));
+    expect(count(r.h, 'readFile')).toBe(0);
+    expect(r.h.errors).toContainEqual(expect.stringMatching(/^Tab flow failed: /));
   });
 
-  it('a drop while a dialog is open opens nothing and asks nothing', async () => {
-    const { main, openDroppedFile } = fileMain();
-    const host = await createWindowHost(main, () => false);
+  it('a drop while a dialog is open opens nothing and asks nothing; an empty drop nothing', async () => {
+    const r = rig();
+    const { host } = await started(r);
+    await host.openDropped([]);
     host.actions.shortcuts();
-    await host.openDropped(new File(['x'], 'a.chalk'));
-    expect(openDroppedFile).not.toHaveBeenCalled();
-  });
-});
-
-describe('A15 RC7: recovery tracking waits for the startup offer (R23)', () => {
-  it('an edit before the answer writes nothing and clears nothing; after Delete it is written', async () => {
-    vi.useFakeTimers();
-    try {
-      const { main } = fakeMain(DEFAULTS);
-      let answer!: (value: string) => void;
-      Object.assign(main, {
-        startup: () =>
-          Promise.resolve({
-            settings: DEFAULTS,
-            recovery: { text: serialize(drawing('journal')), name: 'a.chalk' },
-            open: null,
-          }),
-        ask: vi.fn(() => new Promise<string>((resolve) => (answer = resolve))),
-      });
-      const host = await createWindowHost(
-        main,
-        () => false,
-        () => undefined,
-      );
-      host.controller.run({ type: 'insert-text', text: 'ethanol' });
-      const starting = host.start();
-      vi.advanceTimersByTime(20_000);
-      host.flushRecovery();
-      host.controller.run('undo');
-      host.controller.run('redo');
-      vi.advanceTimersByTime(20_000);
-      expect(main.writeRecovery).not.toHaveBeenCalled();
-      expect(main.clearRecovery).not.toHaveBeenCalled();
-      answer('delete');
-      await vi.waitFor(() => expect(main.clearRecovery).toHaveBeenCalledTimes(1));
-      await starting;
-      vi.advanceTimersByTime(2000);
-      expect(main.writeRecovery).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(main.writeRecovery).mock.lastCall?.[0].text).toBe(
-        serialize(host.controller.getDoc()),
-      );
-    } finally {
-      vi.useRealTimers();
-    }
+    await host.openDropped([new File(['x'], 'a.chalk')]);
+    expect(r.openDroppedFile).not.toHaveBeenCalled();
   });
 });
 

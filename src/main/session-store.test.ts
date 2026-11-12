@@ -1418,3 +1418,66 @@ describe('opening a path bound to a tab (TB12: T17, R37)', () => {
     expect(await Promise.all([bound, looked])).toEqual([{ ok: true }, A]);
   });
 });
+
+describe("the active tab's binding (TB20: F6's folder)", () => {
+  it('follows the index the renderer sent last (on the chain): file, picture, former, none', async () => {
+    const store = make();
+    await store.restored();
+    expect(await store.activeBinding()).toBeNull();
+    const file = join(root, 'a.chalk');
+    const picture = join(root, 'p.png');
+    const update = store.updateIndex({
+      tabs: [
+        { id: A, kind: 'chalk', name: 'a.chalk', view: null, unsaved: false, warning: false },
+        { id: B, kind: 'picture', name: 'p.png', view: null, unsaved: false, warning: false },
+        { id: D, kind: 'untitled', name: 'Untitled', view: null, unsaved: false, warning: false },
+      ],
+      active: B,
+      discarded: [],
+    });
+    void store.bind({
+      reason: 'open',
+      tabId: A,
+      path: file,
+      kind: 'chalk',
+      fileHash: HASH,
+      written: WRITTEN,
+    });
+    void store.bind({
+      reason: 'open',
+      tabId: B,
+      path: picture,
+      kind: 'picture',
+      fileHash: null,
+      written: null,
+    });
+    // Sent after the index and the binds: it sees them.
+    expect(await store.activeBinding()).toEqual({ kind: 'picture', path: picture });
+    await update;
+    await store.updateIndex({
+      tabs: [
+        {
+          id: A,
+          kind: 'kept',
+          name: 'a (your changes)',
+          view: null,
+          unsaved: true,
+          warning: false,
+        },
+        { id: D, kind: 'untitled', name: 'Untitled', view: null, unsaved: false, warning: false },
+      ],
+      active: A,
+      discarded: [B],
+    });
+    await store.bind({ reason: 'unbind', tabId: A });
+    expect(await store.activeBinding()).toEqual({ kind: 'former', path: file });
+    await store.updateIndex({
+      tabs: [
+        { id: D, kind: 'untitled', name: 'Untitled', view: null, unsaved: false, warning: false },
+      ],
+      active: D,
+      discarded: [A, B],
+    });
+    expect(await store.activeBinding()).toBeNull();
+  });
+});

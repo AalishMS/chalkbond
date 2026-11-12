@@ -1,7 +1,6 @@
 // K1 listener (SPEC-app-shell.md "Keyboard (host keys)"): capture phase on `window`, before the
 // editor's own handler; the decision is `model/keys.ts`. K3: a lone Alt opens the menu, the Alt key-up after an Alt+click opens nothing.
 import type { EditorController } from '../editor';
-import type { FileFlows } from './model/file-flows';
 import {
   ALT_IDLE,
   altGuard,
@@ -17,7 +16,7 @@ function insideEditor(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest('.editor') !== null;
 }
 
-/** The tab keys and F10 (TB20, TB26 wire them): a key without a handler is left unhandled. */
+/** The tab keys and F10 (TB20 wires them, TB26 the ☰ menu): a key without a handler is unhandled. */
 type LaterAction = Exclude<
   HostKeyAction,
   | 'copy-whole'
@@ -35,11 +34,12 @@ export type HostActions = Record<Exclude<HostKeyAction, LaterAction>, () => void
 
 export function installHostKeys(
   controller: Pick<EditorController, 'getSelection' | 'canRun' | 'getDoc'>,
-  fileFlows: Pick<FileFlows, 'busy'>,
+  /** The tab flows (T11: keys wait while a flow runs). */
+  fileFlows: { busy(): boolean },
   actions: HostActions,
   /** An in-window dialog is open (Export, Keyboard shortcuts): K1 does nothing. */
   modal: () => boolean = () => false,
-  /** The reopen list (R40) is non-empty: Ctrl+Shift+T does something (TB20 passes it). */
+  /** The reopen list (R40) is non-empty: Ctrl+Shift+T does something. */
   canReopen: () => boolean = () => false,
 ): () => void {
   let alt: AltState = ALT_IDLE;

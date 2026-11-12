@@ -1,13 +1,14 @@
 // A15 Open recent (SPEC-app-shell.md F10, R21): saves and opens fill the submenu (newest first,
 // duplicate names with their folder), an entry opens its file, a missing file shows F14 and
-// leaves the list, Clear empties it. Read through Menu.getApplicationMenu() (TH4, TH5).
+// leaves the list, Clear empties it. Read through Menu.getApplicationMenu() (TH4, TH5). With tabs
+// (TB20): each save binds its own tab; an open or an entry opens a tab.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 import { serialize, type Doc } from '../src/core/doc-model';
 import { clickEnabled, menuItem, menuItems } from './app-menu';
-import { goldenDoc, loadDocument, openApp, readDocument } from './harness';
+import { goldenDoc, loadDocument, openApp, readDocument, readTabs } from './harness';
 import { windowTitle } from './relaunch';
 
 type DialogLog = { method: string; options: Record<string, unknown> }[];
@@ -32,13 +33,30 @@ test.afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-/** Loads `doc` as Untitled (the test hook: clean) and saves it (Ctrl+S → Save as) to `file`. */
+/**
+ * Loads `doc` into the active Untitled tab (the test hook) and saves it (Ctrl+S → Save as), which
+ * binds the tab to that file (TB20); then a new tab (Ctrl+T) for the next one.
+ */
 async function saveAs(app: ElectronApplication, page: Page, doc: Doc, base: string) {
   await loadDocument(page, doc);
-  await expect.poll(() => windowTitle(app)).toBe('Untitled - Chalkbond');
+  await expect.poll(() => windowTitle(app)).toBe('*Untitled - Chalkbond');
   await page.getByTestId('canvas').focus();
   await page.keyboard.press('Control+s');
   await expect.poll(() => windowTitle(app)).toBe(`${base} - Chalkbond`);
+  await page.keyboard.press('Control+t');
+  await expect.poll(() => windowTitle(app)).toBe('Untitled - Chalkbond');
+}
+
+/** Closes every tab with Ctrl+W (named, written files and an empty tab close without a box). */
+async function closeAll(page: Page): Promise<void> {
+  await page.getByTestId('canvas').focus();
+  for (let n = (await readTabs(page)).length; n > 1; n--) {
+    await page.keyboard.press('Control+w');
+    await expect.poll(async () => (await readTabs(page)).length).toBe(n - 1);
+  }
+  // R39: closing the last tab (a written file) leaves one new empty Untitled.
+  await page.keyboard.press('Control+w');
+  await expect.poll(async () => (await readTabs(page)).map((t) => t.label)).toEqual(['Untitled']);
 }
 
 test('F10: saves and an open fill Open recent; an entry opens; a missing one leaves; Clear empties', async () => {
@@ -64,6 +82,8 @@ test('F10: saves and an open fill Open recent; an entry opens; a missing one lea
     await saveAs(app, page, goldenDoc('ethanol'), 'esterification');
     await saveAs(app, page, goldenDoc('acetic-acid'), 'esterification');
     await saveAs(app, page, goldenDoc('ammonium'), 'R&D');
+    // Files open in a tab are focused, not opened (T17): close them so Open and the entries open.
+    await closeAll(page);
     await page.keyboard.press('Control+o');
     await expect
       .poll(async () => serialize(await readDocument(page)))

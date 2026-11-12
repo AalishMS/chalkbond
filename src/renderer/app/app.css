@@ -484,3 +484,8 @@ body,
   color: var(--text-muted);
   font: var(--type-sm);
 }
+
+/* The host's wrapper of the tab strip (it only tells a click from a key, T11): no box of its own. */
+.app-tabs {
+  display: contents;
+}

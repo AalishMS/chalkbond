@@ -68,15 +68,23 @@ test('keyboard only: name, copy, paste, nudge, undo, tool key, tooltip on focus,
     await expect(page.getByTestId('tool-bond')).toHaveAttribute('aria-pressed', 'true');
     expect(await focused(page)).toBe('canvas');
 
-    // 7. Shift+Tab lands on the rail's tab stop (the active tool) and its tooltip opens on focus.
+    // 7. Shift+Tab goes back through the tab strip (K4, editor R56: the + button, then the active
+    // tab), then lands on the rail's tab stop (the active tool) and its tooltip opens on focus.
+    await page.keyboard.press('Shift+Tab');
+    expect(await focused(page)).toBe('tab-add');
+    await page.keyboard.press('Shift+Tab');
+    expect(await focused(page)).toBe('tab');
     await page.keyboard.press('Shift+Tab');
     expect(await focused(page)).toBe('tool-bond');
     await expect(tooltip(page).locator('.tooltip-title span')).toHaveText('Bond');
     await expect(tooltip(page).locator('kbd')).toHaveText(['3', 'B']);
 
-    // 8. Back to the canvas, on to the preset switch, ArrowRight switches to Handout.
-    await page.keyboard.press('Tab');
-    expect(await focused(page)).toBe('canvas');
+    // 8. Back to the canvas (through the strip), on to the preset switch, ArrowRight switches to
+    // Handout.
+    for (const stop of ['tab', 'tab-add', 'canvas']) {
+      await page.keyboard.press('Tab');
+      expect(await focused(page)).toBe(stop);
+    }
     await page.keyboard.press('Tab');
     expect(await focused(page)).toBe('preset-slides');
     await page.keyboard.press('ArrowRight');
@@ -371,7 +379,10 @@ test('every control has an accessible name that starts with its tooltip name', a
     expect(unnamed).toEqual([]);
 
     await page.keyboard.press('Escape');
-    const controls = await page.locator('.editor button[data-testid]').evaluateAll((els) =>
+    // The editor's own controls: the tab strip in its `tabs` slot is the host's, named by T2 / T16
+    // (`Close <label> (Ctrl+W)`, asserted in TabStrip.test.tsx; TB27 adds its e2e).
+    const editorButtons = '.editor button[data-testid]:not([data-testid="tabs-slot"] *)';
+    const controls = await page.locator(editorButtons).evaluateAll((els) =>
       els.map((e) => ({
         id: e.getAttribute('data-testid') as string,
         iconOnly: (e.textContent ?? '').trim() === '',

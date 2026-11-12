@@ -1,12 +1,16 @@
 import { existsSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import {
+  activateTab,
   goldenDoc,
   heardEvents,
   listenEvents,
   loadDocument,
   openApp,
+  openTab,
   readDocument,
+  readTabs,
+  tabKeys,
 } from './harness';
 import { launchApp } from './launch';
 
@@ -46,6 +50,31 @@ test('the hook reports the selection as arrays of ids and the events after an ed
     expect(types).toContain('selection');
     expect(types).toContain('doc');
     expect(Object.keys((await readDocument(page)).atoms)).toEqual([]);
+  } finally {
+    await app.close();
+  }
+});
+
+test('TB20: the hook reads the tabs (id, label, kind, active, marker) and activates one', async () => {
+  const { app, page } = await openApp();
+  try {
+    await expect.poll(async () => (await readTabs(page)).length).toBe(1);
+    const [first] = await readTabs(page);
+    expect(first).toEqual({
+      id: expect.any(String),
+      label: 'Untitled',
+      kind: 'untitled',
+      active: true,
+      marker: 'none',
+    });
+    await loadDocument(page, goldenDoc('ethanol'));
+    await expect.poll(async () => (await readTabs(page))[0]?.marker).toBe('dot');
+    const second = await openTab(page);
+    expect(await tabKeys(page)).toEqual([first?.id, second]);
+    expect(Object.keys((await readDocument(page)).atoms)).toEqual([]);
+    await activateTab(page, first?.id ?? '');
+    expect((await readTabs(page)).map((t) => t.active)).toEqual([true, false]);
+    expect((await readDocument(page)).atoms).toEqual(goldenDoc('ethanol').atoms);
   } finally {
     await app.close();
   }

@@ -9,7 +9,14 @@ import { exportSvg, readSvgDrawing } from '../src/core/clipboard-export';
 import { serialize } from '../src/core/doc-model';
 import { dialogLog, exportWith, expectNotice, openFrom, saveTo } from './export-steps';
 import { loadScheme } from './fixtures';
-import { expectNoNetwork, goldenDoc, loadDocument, openApp, readDocument } from './harness';
+import {
+  expectNoNetwork,
+  goldenDoc,
+  loadDocument,
+  openApp,
+  readDocument,
+  readTabs,
+} from './harness';
 import { windowTitle } from './relaunch';
 
 let dir: string;
@@ -62,7 +69,11 @@ test('the golden toluene SVG: exact bytes; an Untitled drawing stays Untitled', 
     await expectNotice(page, 'Exported toluene.svg.');
     expect((await dialogLog(app))[0]?.options['defaultPath']).toMatch(/[\\/]Untitled\.svg$/);
     expect(readFileSync(file).equals(Buffer.from(exportSvg(doc, null).svg, 'utf8'))).toBe(true);
-    expect(await windowTitle(app)).toBe('Untitled - Chalkbond');
+    // Export binds nothing: the tab stays Untitled, unsaved (W3, R41: an Untitled tab with content).
+    expect(await windowTitle(app)).toBe('*Untitled - Chalkbond');
+    expect((await readTabs(page)).map((t) => [t.label, t.kind])).toEqual([
+      ['Untitled', 'untitled'],
+    ]);
   } finally {
     await app.close();
   }

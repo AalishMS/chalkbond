@@ -1,36 +1,34 @@
-// F4a (SPEC-app-shell.md R17; editor R48): a label or text still being typed when the window is
-// closed, or when main hands over a file to open (F11, F12), is finished through its own commit
-// path first, so the unsaved-changes prompt asks and Save writes the newer drawing. An IME
-// composition keeps the box open until `compositionend`. The name field's text is not an edit.
+// F4a (SPEC-app-shell.md R17; editor R48) with tabs (TB20; R35, SS10, T17): a label or text still
+// being typed when the window is closed, or when main hands over a file to open (F11, F12), is
+// finished through its own commit path first. The close never asks (no unkept tab, R51): the file
+// tab's file and the store hold the committed drawing; an opened file goes to a new tab and the
+// edited tab keeps its label. An IME composition keeps the box open until `compositionend`. The
+// name field's text is not an edit.
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 import { parse, serialize, type AtomId, type Doc, type TextObject } from '../src/core/doc-model';
 import { dialogLog, openFrom, saveTo } from './export-steps';
-import { canvasPoint, goldenDoc, openApp, readDocument } from './harness';
+import {
+  canvasPoint,
+  expectNoNetwork,
+  goldenDoc,
+  loadDocument,
+  readDocument,
+  readTabs,
+} from './harness';
+import { activeTabOf, launchIn, recordDoc } from './session-steps';
 import { windowTitle } from './relaunch';
 
 const box = (page: Page) => page.getByTestId('textbox-edit');
 const hint = (page: Page) => page.getByTestId('statusbar').getByRole('status');
-const SAVE = { response: 0 };
-const CANCEL = { response: 2 };
-const saveChanges = (name: string) => ({
-  type: 'warning',
-  title: 'Chalkbond',
-  message: `Do you want to save “${name}”?`,
-  detail: "If you don't save, your drawing will be lost.",
-  buttons: ['Save', "Don't save", 'Cancel'],
-  defaultId: 0,
-  cancelId: 2,
-  noLink: true,
-});
-const elements = (d: Doc): string[] =>
-  Object.values(d.atoms)
+const elements = (d: Doc | null): string[] =>
+  Object.values(d?.atoms ?? {})
     .map((a) => a.element)
     .sort();
-const texts = (d: Doc): TextObject[] =>
-  Object.values(d.objects).filter((o): o is TextObject => o.type === 'text');
+const texts = (d: Doc | null): TextObject[] =>
+  Object.values(d?.objects ?? {}).filter((o): o is TextObject => o.type === 'text');
 const scripts = (t: TextObject | undefined): string =>
   (t?.runs ?? [])
     .map((r) => (r.script === undefined ? r.text : `${r.script}(${r.text})`))
@@ -47,17 +45,29 @@ const nativeClose = (app: ElectronApplication): Promise<void> =>
   });
 
 let dir: string;
+let userData: string;
 let ethanol: string;
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'chalkbond-draft-'));
+  userData = mkdtempSync(join(tmpdir(), 'chalkbond-draft-data-'));
   ethanol = join(dir, 'ethanol.chalk');
   writeFileSync(ethanol, serialize(goldenDoc('ethanol')));
 });
-test.afterEach(() => {
+/** The app a test launched and has not closed yet: closed after a failure, before the clean-up. */
+let running: ElectronApplication | null = null;
+test.afterEach(async () => {
+  await running?.close().catch(() => undefined);
+  running = null;
   rmSync(dir, { recursive: true, force: true });
+  rmSync(userData, { recursive: true, force: true });
 });
+const launch = async (...args: Parameters<typeof launchIn>) => {
+  const opened = await launchIn(...args);
+  running = opened.app;
+  return opened;
+};
 
-/** Ctrl+O of ethanol.chalk (the first scripted answer): a clean, saved drawing. */
+/** Ctrl+O of ethanol.chalk (the first scripted answer): it opens in the empty Untitled tab. */
 async function openEthanol(app: ElectronApplication, page: Page): Promise<void> {
   await page.getByTestId('canvas').focus();
   await page.keyboard.press('Control+o');
@@ -77,78 +87,78 @@ async function typeLabel(page: Page, text: string): Promise<void> {
   if (text !== '') await page.keyboard.type(text);
 }
 
-test('a label being typed at a native close: the prompt asks; Cancel keeps it, Save writes it', async () => {
-  const { app, page } = await openApp({ launch: { dialogs: [openFrom(ethanol), CANCEL, SAVE] } });
-  let closed = false;
-  try {
-    await openEthanol(app, page);
-    await typeLabel(page, 'NH2');
-    await nativeClose(app);
-    await expect.poll(async () => (await dialogLog(app)).length).toBe(2);
-    expect((await dialogLog(app))[1]?.options).toEqual(saveChanges('ethanol'));
-    // Cancel: the label was committed (L3: NH2 is an N), the window stays, the drawing is dirty.
-    await expect(box(page)).toHaveCount(0);
-    expect(elements(await readDocument(page))).toEqual(['C', 'C', 'N']);
-    await expect.poll(() => windowTitle(app)).toBe('*ethanol - Chalkbond');
+/** A native close, awaited until the app has exited (it must not ask anything). */
+async function closeAndWait(app: ElectronApplication): Promise<void> {
+  await expectNoNetwork(app);
+  const exited = app.waitForEvent('close');
+  await nativeClose(app);
+  await exited;
+  if (running === app) running = null;
+}
 
-    const exited = app.waitForEvent('close');
-    await nativeClose(app);
-    await exited;
-    closed = true;
-    expect(elements(fileDoc(ethanol))).toEqual(['C', 'C', 'N']);
+test('a label being typed at a native close of a file tab: committed, written to the file and the store, no box', async () => {
+  const { app, page } = await launch(userData, { dialogs: [openFrom(ethanol)] });
+  await openEthanol(app, page);
+  const tabId = (await activeTabOf(page)).id;
+  await typeLabel(page, 'NH2');
+  await closeAndWait(app);
+  // L3: NH2 is an N. SS10: the close wrote the record and the file (AS1) before N5.
+  expect(elements(fileDoc(ethanol))).toEqual(['C', 'C', 'N']);
+  expect(elements(recordDoc(userData, tabId))).toEqual(['C', 'C', 'N']);
+});
+
+test('an Untitled drawing with a label being typed at a native close: the committed label is in the store, no box', async () => {
+  const { app, page } = await launch(userData, { dialogs: [] });
+  await loadDocument(page, goldenDoc('ethanol'));
+  await expect.poll(async () => elements(await readDocument(page))).toEqual(['C', 'C', 'O']);
+  const tabId = (await activeTabOf(page)).id;
+  await typeLabel(page, 'Cl');
+  await closeAndWait(app);
+  expect(elements(recordDoc(userData, tabId))).toEqual(['C', 'C', 'Cl']);
+  const again = await launchIn(userData, { dialogs: [] });
+  try {
+    await expect
+      .poll(async () => elements(await readDocument(again.page)))
+      .toEqual(['C', 'C', 'Cl']);
+    expect(await dialogLog(again.app)).toEqual([]);
   } finally {
-    if (!closed) await app.close();
+    await again.app.close();
   }
 });
 
-test('an existing text being edited at a native close is committed (T4 path) and saved', async () => {
+test('an existing text being edited at a native close is committed (T4 path) and written to its file', async () => {
   const file = join(dir, 'note.chalk');
-  const { app, page } = await openApp({ launch: { dialogs: [saveTo(file), CANCEL, SAVE] } });
-  let closed = false;
-  try {
-    await page.getByTestId('tool-text').click();
-    const p = await canvasPoint(page, { x: -5, y: -3 });
-    await page.mouse.click(p.x, p.y);
-    await expect(box(page)).toBeFocused();
-    await page.keyboard.type('dilute');
-    await page.keyboard.press('Enter');
-    await expect(box(page)).toHaveCount(0);
-    await page.getByTestId('canvas').focus();
-    await page.keyboard.press('Control+s');
-    await expect.poll(() => windowTitle(app)).toBe('note - Chalkbond');
+  const { app, page } = await launch(userData, { dialogs: [saveTo(file)] });
+  await page.getByTestId('tool-text').click();
+  const p = await canvasPoint(page, { x: -5, y: -3 });
+  await page.mouse.click(p.x, p.y);
+  await expect(box(page)).toBeFocused();
+  await page.keyboard.type('dilute');
+  await page.keyboard.press('Enter');
+  await expect(box(page)).toHaveCount(0);
+  await page.getByTestId('canvas').focus();
+  await page.keyboard.press('Control+s'); // Untitled: Save as, which binds the tab
+  await expect.poll(() => windowTitle(app)).toBe('note - Chalkbond');
 
-    // Reopen the stored text, type at its end, and close without finishing.
-    const t = texts(await readDocument(page))[0];
-    const at = await canvasPoint(page, t?.at ?? { x: 0, y: 0 });
-    await page.getByTestId('tool-text').click();
-    await page.mouse.click(at.x + 20, at.y);
-    await expect(box(page)).toBeFocused();
-    await page.keyboard.press('End');
-    await page.keyboard.type(' H2SO4');
-    await nativeClose(app);
-    await expect.poll(async () => (await dialogLog(app)).length).toBe(2);
-    expect((await dialogLog(app))[1]?.options).toEqual(saveChanges('note'));
-    await expect(box(page)).toHaveCount(0);
-    // Committed through T4 as a click elsewhere would: typed after stored (explicit) characters,
-    // the new ones inherit `explicit` (T2) and stay as typed.
-    expect(scripts(texts(await readDocument(page))[0])).toBe('dilute H2SO4');
-    await expect.poll(() => windowTitle(app)).toBe('*note - Chalkbond');
-
-    const exited = app.waitForEvent('close');
-    await nativeClose(app);
-    await exited;
-    closed = true;
-    expect(scripts(texts(fileDoc(file))[0])).toBe('dilute H2SO4');
-  } finally {
-    if (!closed) await app.close();
-  }
+  // Reopen the stored text, type at its end, and close without finishing.
+  const t = texts(await readDocument(page))[0];
+  const at = await canvasPoint(page, t?.at ?? { x: 0, y: 0 });
+  await page.getByTestId('tool-text').click();
+  await page.mouse.click(at.x + 20, at.y);
+  await expect(box(page)).toBeFocused();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' H2SO4');
+  await closeAndWait(app);
+  // Committed through T4 as a click elsewhere would: typed after stored (explicit) characters,
+  // the new ones inherit `explicit` (T2) and stay as typed.
+  expect(scripts(texts(fileDoc(file))[0])).toBe('dilute H2SO4');
 });
 
-test('main hands over a file (open event) while a label is typed: finished, then the prompt', async () => {
+test('main hands over a file (open event) while a label is typed: finished, then the file opens in a new tab', async () => {
   const toluene = join(dir, 'toluene.chalk');
   writeFileSync(toluene, serialize(goldenDoc('toluene')));
-  const { app, page } = await openApp({
-    launch: { dialogs: [openFrom(ethanol), openFrom(toluene), CANCEL] },
+  const { app, page } = await launch(userData, {
+    dialogs: [openFrom(ethanol), openFrom(toluene)],
   });
   try {
     await openEthanol(app, page);
@@ -160,18 +170,25 @@ test('main hands over a file (open event) while a label is typed: finished, then
     await app.evaluate(({ BrowserWindow }, r) => {
       BrowserWindow.getAllWindows()[0]?.webContents.send('main:event', { type: 'open', ref: r });
     }, ref);
-    await expect.poll(async () => (await dialogLog(app)).length).toBe(3);
-    expect((await dialogLog(app))[2]?.options).toEqual(saveChanges('ethanol'));
+    await expect.poll(() => windowTitle(app)).toBe('toluene - Chalkbond');
     await expect(box(page)).toHaveCount(0);
-    expect(elements(await readDocument(page))).toEqual(['C', 'C', 'Cl']);
-    await expect.poll(() => windowTitle(app)).toBe('*ethanol - Chalkbond');
+    expect((await readDocument(page)).atoms).toEqual(goldenDoc('toluene').atoms);
+    expect((await readTabs(page)).map((t) => t.label)).toEqual(['ethanol', 'toluene']);
+    // The switch wrote the edited tab's file (AS2: at once on a switch).
+    expect(elements(fileDoc(ethanol))).toEqual(['C', 'C', 'Cl']);
+    expect((await dialogLog(app)).map((d) => d.method)).toEqual([
+      'showOpenDialog',
+      'showOpenDialog',
+    ]);
+    await expectNoNetwork(app);
   } finally {
     await app.close();
   }
 });
 
-test('IME: a native close during a composition waits for compositionend, then commits and asks', async () => {
-  const { app, page } = await openApp({ launch: { dialogs: [openFrom(ethanol), CANCEL] } });
+test('IME: a native close during a composition waits for compositionend, then commits and closes', async () => {
+  const { app, page } = await launch(userData, { dialogs: [openFrom(ethanol)] });
+  let closed = false;
   try {
     await openEthanol(app, page);
     await typeLabel(page, '');
@@ -181,8 +198,9 @@ test('IME: a native close during a composition waits for compositionend, then co
       el.dispatchEvent(new CompositionEvent('compositionstart', { data: '' }));
       el.textContent = 'Br';
     });
+    const exited = app.waitForEvent('close');
     await nativeClose(app);
-    // The host blurred the box (F4a ran) but the commit waits: no prompt, the box stays.
+    // The host blurred the box (F4a ran) but the commit waits: the window stays, the box stays.
     await expect
       .poll(() =>
         page.evaluate(
@@ -191,37 +209,27 @@ test('IME: a native close during a composition waits for compositionend, then co
       )
       .toBe(true);
     await expect(box(page)).toHaveText('Br');
-    expect((await dialogLog(app)).length).toBe(1);
     expect(elements(await readDocument(page))).toEqual(['C', 'C', 'O']);
+    await expectNoNetwork(app);
 
     await page.evaluate(() => {
       const el = document.querySelector('[data-testid="textbox-edit"]') as HTMLElement;
       el.dispatchEvent(new CompositionEvent('compositionend', { data: 'Br' }));
     });
-    await expect.poll(async () => (await dialogLog(app)).length).toBe(2);
-    expect((await dialogLog(app))[1]?.options).toEqual(saveChanges('ethanol'));
-    await expect(box(page)).toHaveCount(0);
-    expect(elements(await readDocument(page))).toEqual(['Br', 'C', 'C']);
-    await expect.poll(() => windowTitle(app)).toBe('*ethanol - Chalkbond');
-  } finally {
-    await app.close();
-  }
-});
-
-test('text typed in the name field is not a drawing edit: a clean drawing closes at once', async () => {
-  const { app, page } = await openApp({ launch: { dialogs: [openFrom(ethanol)] } });
-  let closed = false;
-  try {
-    await openEthanol(app, page);
-    const input = page.getByTestId('namefield-input');
-    await input.click();
-    await input.fill('benzene');
-    const exited = app.waitForEvent('close');
-    await nativeClose(app);
     await exited;
     closed = true;
-    expect(readFileSync(ethanol, 'utf8')).toBe(serialize(goldenDoc('ethanol')));
+    expect(elements(fileDoc(ethanol))).toEqual(['Br', 'C', 'C']);
   } finally {
     if (!closed) await app.close();
   }
+});
+
+test('text typed in the name field is not a drawing edit: a clean file tab closes at once, its file untouched', async () => {
+  const { app, page } = await launch(userData, { dialogs: [openFrom(ethanol)] });
+  await openEthanol(app, page);
+  const input = page.getByTestId('namefield-input');
+  await input.click();
+  await input.fill('benzene');
+  await closeAndWait(app);
+  expect(readFileSync(ethanol, 'utf8')).toBe(serialize(goldenDoc('ethanol')));
 });

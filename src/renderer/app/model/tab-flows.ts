@@ -69,6 +69,7 @@ import {
   findTab,
   indexOfTab,
   initialTabs,
+  move as moveTab,
   newUntitled,
   open,
   openInto,
@@ -232,6 +233,8 @@ export interface TabFlows {
   activate(tabId: string): Promise<void>;
   /** T12. Ignored while a flow runs. */
   reopen(): Promise<void>;
+  /** T13 (TB20): the strip's drag dropped tab `from` at index `to`. Ignored while a flow runs. */
+  move(from: number, to: number): void;
   /**
    * T8: closes `tabId` (F4a, loaded first, a file tab written first, T9 for an unsaved or unkept
    * tab, R39). Ignored while a flow runs.
@@ -761,6 +764,13 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
         await switchTo(tabId);
       }),
     reopen: () => idle(reopenNow),
+    move(from, to) {
+      if (running || closed) return;
+      const moved = moveTab(list, from, to);
+      if (moved === list) return;
+      list = moved;
+      o.changed();
+    },
     close: (tabId) => idle(() => closer.closeTab(tabId)),
     closeWindow: () => {
       if (closed) return Promise.resolve();

@@ -3,7 +3,14 @@
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 import { clickEnabled, clickMenu, menuItem, menuItems } from './app-menu';
 import { loadScheme } from './fixtures';
-import { heardCommands, openApp, readDocument, readSelection } from './harness';
+import {
+  expectNoNetwork,
+  heardCommands,
+  openApp,
+  readDocument,
+  readSelection,
+  readTabs,
+} from './harness';
 
 const atoms = async (page: Page): Promise<number> =>
   Object.keys((await readDocument(page)).atoms).length;
@@ -149,18 +156,17 @@ test('SC2: Edit and View items run their commands; labels and enabled states fol
   }
 });
 
-test('SC2: File items run New, Open, Save, Save as, Export and Exit with scripted boxes', async () => {
+test('SC2: File items run New (a new tab), Open, Save, Save as, Export and Exit (no box) with scripted dialogs', async () => {
   const { app, page } = await openApp({
     launch: {
       dialogs: [
         { canceled: true, filePaths: [] }, // file.open
         { canceled: true }, // file.save (Untitled → Save as)
         { canceled: true }, // file.save-as
-        { response: 1 }, // file.new → Don't save
-        { response: 2 }, // file.exit → Cancel
       ],
     },
   });
+  let closed = false;
   try {
     await loadScheme(page);
     await clickEnabled(app, 'file.open');
@@ -181,18 +187,21 @@ test('SC2: File items run New, Open, Save, Save as, Export and Exit with scripte
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('export-dialog')).toHaveCount(0);
 
+    // T7 (TB20): New adds a tab and asks nothing.
     await clickEnabled(app, 'file.new');
     await expect.poll(() => atoms(page)).toBe(0);
-    expect((await dialogLog(app))[3]?.options['buttons']).toEqual(['Save', "Don't save", 'Cancel']);
+    expect((await readTabs(page)).map((t) => t.label)).toEqual(['Untitled', 'Untitled 2']);
+    expect(await dialogLog(app)).toHaveLength(3);
 
+    // R35: Exit never asks; the drawings are kept by the session store.
     await loadScheme(page);
+    await expectNoNetwork(app);
+    const exited = app.waitForEvent('close');
     await clickEnabled(app, 'file.exit');
-    await expect.poll(async () => (await dialogLog(app)).length).toBe(5);
-    // Cancel: the window stays and the drawing is kept.
-    expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
-    expect(await atoms(page)).toBeGreaterThan(0);
+    await exited;
+    closed = true;
   } finally {
-    await app.close();
+    if (!closed) await app.close();
   }
 });
 

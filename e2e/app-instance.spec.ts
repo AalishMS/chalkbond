@@ -1,14 +1,23 @@
-// A15 single instance (SPEC-app-shell.md F11; SC8, SC4 second-instance part): a second app process
-// with the same user-data folder hands its file to the first window and exits with code 0. Both
+// A15 single instance (SPEC-app-shell.md F11, R37, T17; SC8): a second app process
+// with the same user-data folder hands its file to the first window (a new tab, or the tab that
+// already holds it) and exits with code 0. Both
 // processes are launched through e2e/launch.ts (the OS-mouse guard included).
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type ElectronApplication } from '@playwright/test';
 import { serialize } from '../src/core/doc-model';
-import { goldenDoc, insertName, readDocument } from './harness';
+import {
+  activateTab,
+  expectNoNetwork,
+  goldenDoc,
+  insertName,
+  openTab,
+  readDocument,
+  readTabs,
+} from './harness';
 import { launchSecondInstance } from './launch';
-import { launchIn } from './recovery-steps';
+import { launchIn } from './session-steps';
 import { windowTitle } from './relaunch';
 
 type DialogLog = { method: string; options: Record<string, unknown> }[];
@@ -53,59 +62,60 @@ async function watchWindow(app: ElectronApplication): Promise<void> {
 const windowCalls = (app: ElectronApplication) =>
   app.evaluate(() => (globalThis as { __windowCalls?: string[] }).__windowCalls ?? []);
 
-test("SC8, SC4: a second launch with a .chalk exits 0; the first window restores, prompts, and opens it after Don't save", async () => {
+test('SC8, R37: a second launch with a .chalk exits 0; the first window restores and opens it in a new tab, no box', async () => {
   const file = join(dir, 'ethanol.chalk');
   writeFileSync(file, serialize(goldenDoc('ethanol')));
-  const { app, page } = await launchIn(userData, { dialogs: [{ response: 1 }] });
+  const { app, page } = await launchIn(userData, { dialogs: [] });
   try {
     await insertName(page, 'benzene');
     await expect.poll(() => windowTitle(app)).toBe('*Untitled - Chalkbond');
+    const drawn = await readDocument(page);
     await watchWindow(app);
     const second = await launchSecondInstance({ userData, extraArgs: [file] });
     expect(second).toEqual({ code: 0, signal: null });
     await expect.poll(() => windowTitle(app)).toBe('ethanol - Chalkbond');
     expect((await readDocument(page)).atoms).toEqual(goldenDoc('ethanol').atoms);
-    expect((await dialogLog(app)).map((d) => d.options)).toEqual([
-      {
-        type: 'warning',
-        title: 'Chalkbond',
-        message: 'Do you want to save “Untitled”?',
-        detail: "If you don't save, your drawing will be lost.",
-        buttons: ['Save', "Don't save", 'Cancel'],
-        defaultId: 0,
-        cancelId: 2,
-        noLink: true,
-      },
+    expect((await readTabs(page)).map((t) => [t.label, t.active])).toEqual([
+      ['Untitled', false],
+      ['ethanol', true],
     ]);
+    expect(await dialogLog(app)).toEqual([]);
     expect(await windowCalls(app)).toEqual(['restore', 'focus']);
     expect(await windowCount(app)).toBe(1);
+    // The Untitled tab kept its drawing.
+    await activateTab(page, (await readTabs(page))[0]?.id ?? '');
+    expect((await readDocument(page)).atoms).toEqual(drawn.atoms);
   } finally {
     await app.close();
   }
 });
 
-test('F11: Cancel at the prompt keeps the drawing; a second launch without a file only focuses', async () => {
+test('T17, F11: a second launch with a file open in a tab focuses that tab; without a file it only focuses the window', async () => {
   const file = join(dir, 'ethanol.chalk');
   writeFileSync(file, serialize(goldenDoc('ethanol')));
-  const { app, page } = await launchIn(userData, { dialogs: [{ response: 2 }] });
+  const { app, page } = await launchIn(userData, { dialogs: [], extraArgs: [file] });
   try {
+    await expect.poll(() => windowTitle(app)).toBe('ethanol - Chalkbond');
+    await openTab(page);
     await insertName(page, 'benzene');
-    const drawn = await readDocument(page);
+    await expect.poll(() => windowTitle(app)).toBe('*Untitled - Chalkbond');
     expect(await launchSecondInstance({ userData, extraArgs: [file] })).toEqual({
       code: 0,
       signal: null,
     });
-    await expect.poll(async () => (await dialogLog(app)).length).toBe(1);
+    await expect.poll(() => windowTitle(app)).toBe('ethanol - Chalkbond');
+    expect((await readTabs(page)).map((t) => t.label)).toEqual(['ethanol', 'Untitled']);
     await watchWindow(app);
     expect(await launchSecondInstance({ userData, extraArgs: [join(dir, 'notes.docx')] })).toEqual({
       code: 0,
       signal: null,
     });
     await expect.poll(() => windowCalls(app)).toEqual(['restore', 'focus']);
-    expect(await windowTitle(app)).toBe('*Untitled - Chalkbond');
-    expect(await readDocument(page)).toEqual(drawn);
-    expect(await dialogLog(app)).toHaveLength(1);
+    expect(await windowTitle(app)).toBe('ethanol - Chalkbond');
+    expect((await readTabs(page)).map((t) => t.label)).toEqual(['ethanol', 'Untitled']);
+    expect(await dialogLog(app)).toEqual([]);
     expect(await windowCount(app)).toBe(1);
+    await expectNoNetwork(app);
   } finally {
     await app.close();
   }

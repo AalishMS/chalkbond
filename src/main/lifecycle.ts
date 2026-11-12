@@ -95,9 +95,9 @@ export function guardClose(win: GuardedWindow, ports: CloseGuardPorts) {
     allowed = true;
   });
   // RC5, R24: Windows asks whether the session may end. Nothing is prevented or awaited and no
-  // state changes (the shutdown may be cancelled); the renderer writes the recovery file at once.
+  // state changes (the shutdown may be cancelled); the renderer flushes the session store at once (R25, SS10).
   win.on('query-session-end', () => {
-    send({ type: 'flush-recovery' });
+    send({ type: 'flush-session' });
   });
   // R24: `session-end` cannot be prevented. The close that follows skips F4 and never clears.
   win.on('session-end', () => {

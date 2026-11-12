@@ -48,6 +48,22 @@ export function createSessionFolders(
       if (current !== null && current.kind !== 'chalk') return folderOf(current.path);
       return folders.save ?? documents();
     },
+    /**
+     * F6 with tabs (2026-11-12; TB20): Save as of the active tab starts in a picture tab's picture
+     * folder (A6), a kept tab's former file's folder if it still exists, else the last save folder,
+     * else Documents. `active` is the active tab's binding in main (null: none).
+     */
+    tabSaveFolder(
+      active: {
+        readonly kind: 'chalk' | 'picture' | 'former';
+        readonly path: string;
+        readonly folderExists: boolean;
+      } | null,
+    ): string {
+      if (active?.kind === 'picture') return folderOf(active.path);
+      if (active?.kind === 'former' && active.folderExists) return folderOf(active.path);
+      return folders.save ?? documents();
+    },
   };
 }
 export type SessionFolders = ReturnType<typeof createSessionFolders>;

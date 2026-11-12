@@ -68,7 +68,7 @@ test('a mouse press on a rail button moves focus from the name field to the canv
   }
 });
 
-test('tab order (K4): canvas, empty-state chips, status controls, then the top bar and the rail', async () => {
+test('tab order (K4): canvas, empty-state chips, status controls, then the top bar, the rail and the tab strip', async () => {
   const { app, page } = await openApp();
   try {
     expect(await focused(page)).toBe('canvas');
@@ -87,14 +87,18 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
       'zoom-fit',
     ]);
     // Wrap-around: name field, the options bar (one stop: the selected option), Undo, Redo,
-    // the host's actions (app-shell: Copy), the rail (one stop: the active tool), the canvas.
-    expect(await tab(page, 7)).toEqual([
+    // the host's actions (app-shell: Copy), the rail (one stop: the active tool), the host's tab
+    // strip in the `tabs` slot (editor R56, app-shell T16: the active tab, then the + button), the
+    // canvas.
+    expect(await tab(page, 9)).toEqual([
       'namefield-input',
       'opt-single',
       'undo',
       'redo',
       'copy',
       'tool-bond',
+      'tab',
+      'tab-add',
       'canvas',
     ]);
   } finally {
@@ -105,7 +109,9 @@ test('tab order (K4): canvas, empty-state chips, status controls, then the top b
 test('Shift+Tab walks the same order backwards', async () => {
   const { app, page } = await openApp();
   try {
-    expect(await tab(page, 6, true)).toEqual([
+    expect(await tab(page, 8, true)).toEqual([
+      'tab-add',
+      'tab',
       'tool-bond',
       'copy',
       'redo',
@@ -210,7 +216,8 @@ test('canvas: keyboard focus shows the 2 px inset ring, a mouse click does not',
     // At launch the canvas has focus but no ring.
     expect(await focused(page)).toBe('canvas');
     expect(await ring()).toBe('none');
-    await page.getByTestId('tool-bond').focus();
+    // The tab strip's + button is the stop before the canvas (K4, T16).
+    await page.getByTestId('tab-add').focus();
     await page.keyboard.press('Tab');
     expect(await focused(page)).toBe('canvas');
     expect(await ring()).toContain('inset');
@@ -340,8 +347,9 @@ test('a tooltip goes away on pointer down and on Escape, and shows on keyboard f
     await expect(tooltip(page)).toHaveCount(0);
     await page.keyboard.press('ArrowDown');
     await expect(tooltip(page).locator('.tooltip-title span')).toHaveText('Bond');
+    // Tab leaves the rail for the tab strip (whose own tooltip may show on focus): Bond's goes.
     await page.keyboard.press('Tab');
-    await expect(tooltip(page)).toHaveCount(0);
+    await expect(tooltip(page).filter({ hasText: 'Bond' })).toHaveCount(0);
   } finally {
     await app.close();
   }

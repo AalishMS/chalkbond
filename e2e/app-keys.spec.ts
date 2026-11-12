@@ -4,7 +4,14 @@
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 import { menuItem } from './app-menu';
 import { loadScheme } from './fixtures';
-import { canvasPoint, openApp, readDocument, readSelection } from './harness';
+import {
+  canvasPoint,
+  menuRequests,
+  openApp,
+  readDocument,
+  readSelection,
+  readTabs,
+} from './harness';
 
 type DialogLog = { method: string; options: Record<string, unknown> }[];
 const dialogLog = async (app: ElectronApplication): Promise<DialogLog> =>
@@ -23,7 +30,6 @@ test('K1: every host key reaches its action with the menu installed', async () =
         { canceled: true, filePaths: [] }, // Ctrl+O
         { canceled: true }, // Ctrl+S (Untitled → Save as)
         { canceled: true }, // Ctrl+Shift+S
-        { response: 1 }, // Ctrl+N → Don't save
       ],
     },
   });
@@ -65,9 +71,11 @@ test('K1: every host key reaches its action with the menu installed', async () =
     await page.keyboard.press('Control+=');
     await expect(page.getByTestId('zoom-reset')).toHaveText('125%');
 
+    // T7 (R36): Ctrl+N is a new tab; nothing is asked.
     await page.keyboard.press('Control+n');
     await expect.poll(() => atoms(page)).toBe(0);
-    expect((await dialogLog(app))[3]?.method).toBe('showMessageBox');
+    expect((await readTabs(page)).map((t) => t.label)).toEqual(['Untitled', 'Untitled 2']);
+    expect(await dialogLog(app)).toHaveLength(3);
   } finally {
     await app.close();
   }
@@ -112,7 +120,7 @@ test('text targets keep their keys: Ctrl+A and Ctrl+V in the name field stay the
   }
 });
 
-test('K3: after an Alt+click the Alt key-up is consumed; a standalone Alt is left alone', async () => {
+test('K3 (R32): after an Alt+click the Alt key-up is consumed and opens nothing; a lone Alt and F10 ask for the menu', async () => {
   const { app, page } = await openApp();
   try {
     await loadScheme(page);
@@ -132,21 +140,29 @@ test('K3: after an Alt+click the Alt key-up is consumed; a standalone Alt is lef
     await page.mouse.click(point.x, point.y);
     await page.keyboard.up('Alt');
     await expect.poll(ups).toEqual([true]);
+    expect(await menuRequests(page)).toBe(0);
     // Editor Decision 6: Alt+click picked one atom; the next key goes to the editor.
     expect((await readSelection(page)).atoms).toHaveLength(1);
     await page.mouse.move(5, 5); // off the atom: B is then the Bond tool, not bromine
     await page.keyboard.press('b');
     await expect(page.getByTestId('tool-bond')).toHaveAttribute('aria-pressed', 'true');
 
+    // K3: a lone Alt asks for the menu on its key-up (prevented); TB26 opens the ☰ menu there.
     await page.keyboard.press('Alt');
-    await expect.poll(ups).toEqual([true, false]);
+    await expect.poll(ups).toEqual([true, true]);
+    await expect.poll(() => menuRequests(page)).toBe(1);
     // Alt+click, then another key before Alt goes up: disarmed, Alt-up not consumed.
     await page.getByTestId('tool-select').click();
     await page.keyboard.down('Alt');
     await page.mouse.click(point.x, point.y);
     await page.keyboard.press('Shift');
     await page.keyboard.up('Alt');
-    await expect.poll(ups).toEqual([true, false, false]);
+    await expect.poll(ups).toEqual([true, true, false]);
+    expect(await menuRequests(page)).toBe(1);
+    // K1, M4: F10 alone asks for the menu too.
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('F10');
+    await expect.poll(() => menuRequests(page)).toBe(2);
   } finally {
     await app.close();
   }
