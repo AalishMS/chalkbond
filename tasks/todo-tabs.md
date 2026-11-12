@@ -1232,8 +1232,8 @@ another tab shows the `open-in-tab` box and writes nothing (AS9).
 **Tests first:** the spec is the test.
 
 **Acceptance criteria:**
-- [ ] SC18 and SC21's "never overwritten" are asserted by bytes on disk; the file ends with `blockedRequests === 0`
-- [ ] Waits use the hook or `expect.poll`, never a fixed sleep longer than 2.5 s
+- [x] SC18 and SC21's "never overwritten" are asserted by bytes on disk; the file ends with `blockedRequests === 0`
+- [x] Waits use the hook or `expect.poll`, never a fixed sleep longer than 2.5 s
 
 **Verification:** `npx playwright test --project=e2e e2e/app-autosave.spec.ts`, then `npm run check`.
 
