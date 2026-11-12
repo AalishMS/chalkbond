@@ -624,8 +624,8 @@ reopen position clamped after tabs were closed, fresh id and `discarded`, the fr
 (`newDrawingStyle` is a parameter of `newUntitled`'s doc, ST1), labels.
 
 **Acceptance criteria:**
-- [ ] Every operation above is a pure function over immutable data and the tests pass
-- [ ] `src/renderer/app/model` coverage >= 90 % lines; the DOM-free lint block holds
+- [x] Every operation above is a pure function over immutable data and the tests pass
+- [x] `src/renderer/app/model` coverage >= 90 % lines; the DOM-free lint block holds
 
 **Verification:** `npm test -- src/renderer/app/model`, then `npm run check`.
 
