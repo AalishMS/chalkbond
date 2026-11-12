@@ -2,7 +2,6 @@ import { ChemError, type NameIndex } from '@core/chem-core';
 import {
   canRedo,
   canUndo,
-  createHistory,
   current,
   redo,
   transact,
@@ -75,6 +74,7 @@ import {
   type VariantTool,
 } from './editor-state';
 import { sameHit } from './hover';
+import { newTabState, putTabState, type EditorTabState } from './tab-state';
 import { hoverMove, pointer } from './pointer';
 import {
   insertText,
@@ -149,6 +149,8 @@ export type EditorAction =
   | { type: 'notice-expired'; id: number }
   | { type: 'notice-clear' }
   | { type: 'load'; doc: Doc }
+  /** R57: a tab's part replaces history, saved, selection and view. */
+  | { type: 'put-state'; state: EditorTabState }
   | { type: 'mark-saved' }
   | { type: 'set-selection'; selection: Selection }
   | { type: 'set-hover'; hover: Hit | null }
@@ -305,9 +307,11 @@ function viewportAction(
     case 'canvas-resized': {
       const size = action.size;
       if (size.w === v.size.w && size.h === v.size.h) return state;
-      // First measurement: apply V2 to the real size.
-      if (v.size.w === 0 || v.size.h === 0) {
-        return { ...state, viewport: initialViewport(bounds, size, bond) };
+      // First measurement: apply V2 to the real size, unless a tab's own view was put in (R57);
+      // that one keeps its zoom and centre like any resize.
+      if ((v.size.w === 0 || v.size.h === 0) && state.viewPending) {
+        const pending = size.w === 0 || size.h === 0;
+        return { ...state, viewport: initialViewport(bounds, size, bond), viewPending: pending };
       }
       // "Resizing keeps the document point under the canvas centre fixed."
       const pan = { x: v.pan.x + (size.w - v.size.w) / 2, y: v.pan.y + (size.h - v.size.h) / 2 };
@@ -399,17 +403,11 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return state.notice?.id === action.id ? { ...state, notice: null } : state;
     case 'notice-clear':
       return state.notice === null ? state : { ...state, notice: null };
-    case 'load': {
-      const { bounds, bond } = sceneOf(action.doc, ctx);
-      return {
-        ...settled(state),
-        history: createHistory(action.doc, { clock: state.history.clock }),
-        saved: action.doc,
-        editing: null,
-        notice: null,
-        viewport: initialViewport(bounds, state.viewport.size, bond),
-      };
-    }
+    case 'load':
+      // R57: load is putState(newState(doc)).
+      return putTabState(state, newTabState(action.doc, state.history.clock), ctx.derive);
+    case 'put-state':
+      return putTabState(state, action.state, ctx.derive);
     case 'mark-saved':
       return state.saved === docOf(state) ? state : { ...state, saved: docOf(state) };
     case 'set-selection':

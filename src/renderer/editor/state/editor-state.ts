@@ -131,6 +131,11 @@ export interface EditorState {
   preview: Preview | null;
   /** Zoom (1 = 100 %), pan (screen px) and canvas size (px; 0 x 0 until measured). */
   viewport: Viewport;
+  /**
+   * V2 is still to be applied when the canvas gets a real size (a new or loaded document before
+   * the first measurement). False once a tab's own view is put in (R57) or V2 has been applied.
+   */
+  viewPending: boolean;
   editing: Editing | null;
   nameField: NameField;
   /** Host/view name-field focus request sequence. */
@@ -163,6 +168,7 @@ export function initialState(doc: Doc, clock: () => string): EditorState {
     gesture: null,
     preview: null,
     viewport: initialViewport(null, { w: 0, h: 0 }, resolveStyle(doc.style).bondLength),
+    viewPending: true,
     editing: null,
     nameField: { text: '', open: false, highlighted: 0, error: null },
     notice: null,

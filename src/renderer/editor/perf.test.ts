@@ -19,6 +19,7 @@ import { messyScheme } from './model/tidy-fixtures';
 import { bluToScreen, screenToBlu, type Viewport } from './model/viewport';
 import type { EditorState } from './state/editor-state';
 import { reduce } from './state/reducer';
+import { createEditorController } from './state/controller';
 import { drawn, freshState, testContext } from './state/testing';
 
 declare const performance: { now(): number };
@@ -180,4 +181,29 @@ budget('createNameIndex(compounds.json) takes under 30 ms (median)', () => {
   expect(size).toBeGreaterThan(0);
   console.log(`PERF createNameIndex: median ${ms.toFixed(3)} ms`);
   expect(ms).toBeLessThan(30);
+});
+
+// ---- R57: the editor's share of a tab switch (app-shell T11: 100 ms to the first painted frame) --
+
+budget('putState of a 100-atom tab to its first derived scene takes under 100 ms (median)', () => {
+  const c = createEditorController({ clock: () => '2026-01-01T00:00:00.000Z' });
+  c.store.dispatch({ type: 'canvas-resized', size: SIZE });
+  const first = chain(100);
+  const second = chain(100);
+  expect(Object.keys(first.atoms)).toHaveLength(100);
+  c.load(first);
+  c.run('zoom-in');
+  const a = c.takeState();
+  c.load(second);
+  c.store.dispatch({ type: 'pan-by', dx: 40, dy: 20 });
+  const b = c.takeState();
+  let parts = 0;
+  // Alternate, so every run puts the other drawing and the one-entry derive cache misses.
+  const ms = time(60, (i) => {
+    c.putState(i % 2 === 0 ? a : b);
+    parts = c.derive.committed(c.getDoc()).scene.parts.length;
+  });
+  expect(parts).toBeGreaterThan(90);
+  console.log(`PERF putState to first derived scene, 100 atoms: median ${ms.toFixed(3)} ms`);
+  expect(ms).toBeLessThan(100);
 });

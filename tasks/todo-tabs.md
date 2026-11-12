@@ -245,11 +245,11 @@ state to first derived scene within the tab-switch share of T11 (record the medi
 itself is TB31's e2e).
 
 **Acceptance criteria:**
-- [ ] Every method and pure export above exists with the stated preconditions and effects (R57)
-- [ ] `snapshotState` changes nothing observable (`editor.prop.test.ts` or a unit property: store before and after equal)
-- [ ] `load` is `putState(newState(doc))` and its existing tests pass unchanged
-- [ ] `view` events are emitted on zoom and pan only
-- [ ] Editor coverage stays >= 70 %; no `Date` or timers in `model/tools/state` (lint probe)
+- [x] Every method and pure export above exists with the stated preconditions and effects (R57)
+- [x] `snapshotState` changes nothing observable (`editor.prop.test.ts` or a unit property: store before and after equal)
+- [x] `load` is `putState(newState(doc))` and its existing tests pass unchanged
+- [x] `view` events are emitted on zoom and pan only
+- [x] Editor coverage stays >= 70 %; no `Date` or timers in `model/tools/state` (lint probe)
 
 **Verification:** `npm test -- src/renderer/editor && npx vitest run --project perf src/renderer/editor/perf.test.ts`, then `npm run check`.
 

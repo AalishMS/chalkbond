@@ -28,6 +28,7 @@ import { canToggleFormula } from './formula';
 import { isDirty, type ReducerContext } from './reducer';
 import { selectionActions } from './selection-actions';
 import { createStore, type Store } from './store';
+import { newTabState, tabStateOf, type EditorTabState } from './tab-state';
 
 /** Commands the host sends with `run` (SPEC-editor.md "Seam to the host"). */
 export type EditorCommand =
@@ -58,6 +59,8 @@ export type HostHit =
 
 export type EditorEvent =
   | { type: 'doc' | 'selection' | 'dirty' | 'history' | 'notice' | 'busy' }
+  /** R57: the zoom or the pan changed (not on a canvas resize, `putState` or `load`). */
+  | { type: 'view' }
   | { type: 'context-menu'; target: HostHit | null; screen: Point };
 
 export interface EditorOptions {
@@ -91,6 +94,26 @@ export interface EditorController {
   undoLabel(): string | undefined;
   redoLabel(): string | undefined;
   subscribe(listener: (e: EditorEvent) => void): () => void;
+  /**
+   * R57: the active tab's part, for a tab switch. Precondition: no label or text editor open
+   * (`canRun('focus-name-field')`); throws otherwise. A gesture in progress is cancelled first,
+   * never committed.
+   */
+  takeState(): EditorTabState;
+  /**
+   * R57: puts a tab's part in: history, saved, selection and view (its zoom, its centre at the
+   * middle of the current canvas). Clears hover, gesture, preview, editing and notice; keeps tool,
+   * variants, name field and the in-app clipboard. Sends `doc`, `selection`, `history` and `dirty`
+   * as they change, never `view`.
+   */
+  putState(s: EditorTabState): void;
+  /** R57: what `load(doc)` would make (new history, saved = doc, V2 view); touches nothing. */
+  newState(doc: Doc): EditorTabState;
+  /**
+   * R57: the committed state as it is, read only: no precondition and no side effect. A gesture,
+   * a preview, an open label or text editor and an IME composition stay and are not in it.
+   */
+  snapshotState(): EditorTabState;
   /**
    * The view reports where the pointer is over the canvas (canvas px), or null when it has left:
    * Paste lands there (CB1).
@@ -181,12 +204,21 @@ export function createEditorController(options: EditorOptions): EditorController
   };
 
   // One event per kind of change, however many actions caused it.
+  /** While a tab's state is put in, its view is not news to the host (R57). */
+  let putting = false;
   let last = store.getState();
   let before = snapshot(last, isDirty(last));
   store.subscribe(() => {
     const next = store.getState();
     const unchanged = next.history === last.history && next.saved === last.saved;
     const after = snapshot(next, unchanged ? before.dirty : isDirty(next));
+    const v0 = last.viewport;
+    const v1 = next.viewport;
+    const viewMoved =
+      !putting &&
+      v1.size.w === v0.size.w &&
+      v1.size.h === v0.size.h &&
+      (v1.zoom !== v0.zoom || v1.pan.x !== v0.pan.x || v1.pan.y !== v0.pan.y);
     last = next;
     const prev = before;
     before = after;
@@ -196,7 +228,18 @@ export function createEditorController(options: EditorOptions): EditorController
     if (after.history !== prev.history) emit({ type: 'history' });
     if (after.notice !== prev.notice) emit({ type: 'notice' });
     if (after.idle !== prev.idle) emit({ type: 'busy' });
+    if (viewMoved) emit({ type: 'view' });
   });
+
+  const putState = (s: EditorTabState): void => {
+    putting = true;
+    try {
+      store.dispatch({ type: 'put-state', state: s });
+    } finally {
+      putting = false;
+    }
+  };
+  const newState = (d: Doc): EditorTabState => newTabState(d, store.getState().history.clock);
 
   const canRun = (cmd: EditorCommand): boolean => {
     const s = store.getState();
@@ -256,7 +299,7 @@ export function createEditorController(options: EditorOptions): EditorController
   return {
     getDoc: () => current(store.getState().history),
     getSelection: () => store.getState().selection,
-    load: (d) => store.dispatch({ type: 'load', doc: d }),
+    load: (d) => putState(newState(d)),
     markSaved: () => store.dispatch({ type: 'mark-saved' }),
     isDirty: () => isDirty(store.getState()),
     notify: (kind, text) => store.dispatch({ type: 'notice-show', kind, text }),
@@ -335,6 +378,20 @@ export function createEditorController(options: EditorOptions): EditorController
         listeners.delete(listener);
       };
     },
+    takeState() {
+      if (!canRun('focus-name-field')) {
+        throw new Error('takeState: a label or text editor is open; finish it first');
+      }
+      if (store.getState().gesture !== null) {
+        // Cancelled as Esc or a lost capture would (G-rules): no commit, no history entry.
+        store.dispatch({ type: 'pointer', event: { type: 'cancel' } });
+        if (store.getState().gesture !== null) store.dispatch({ type: 'escape' });
+      }
+      return tabStateOf(store.getState());
+    },
+    putState,
+    newState,
+    snapshotState: () => tabStateOf(store.getState()),
     setPointer(screen) {
       pointerAt = screen;
     },

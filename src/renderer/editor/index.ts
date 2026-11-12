@@ -7,3 +7,12 @@ export type {
   EditorOptions,
   HostHit,
 } from './state/controller';
+export {
+  tabStateCanRedo,
+  tabStateCanUndo,
+  tabStateDirty,
+  tabStateDoc,
+  tabStateMarkSaved,
+  tabStateView,
+} from './state/tab-state';
+export type { EditorTabState } from './state/tab-state';
