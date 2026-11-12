@@ -32,6 +32,7 @@ export interface IpcRequestMap {
   'file:auto-save': AutoSaveRequest;
   'file:check': CheckTabFileRequest;
   'file:accept-outside': AcceptOutsideRequest;
+  'session:damaged-tab': DamagedTabRecordRequest;
   'recovery:write': WriteRecoveryRequest;
   'recovery:clear': Record<string, never>;
 }
@@ -180,6 +181,10 @@ export interface ReadTabRecordRequest {
 /** I11: the record's text (main checked only size and signature), or why not. */
 export type ReadTabRecordResponse =
   { ok: true; text: string } | { ok: false; problem: 'missing' | 'unreadable' | 'too-large' };
+/** N10 (SS11, TB15): the record I11 returned for this tab did not parse; main moves it aside. */
+export interface DamagedTabRecordRequest {
+  tabId: string;
+}
 /** N7 (SS4): a tab's record text, at most 64 MiB of UTF-8, starting "{". */
 export interface WriteTabRecordRequest {
   tabId: string;

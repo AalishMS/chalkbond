@@ -382,6 +382,64 @@ describe('record reads (I11)', () => {
   });
 });
 
+describe('N10: a record the renderer could not parse (SS11, TB15)', () => {
+  it('moves tabs/<id>.json to damaged/ (content kept, nothing logged of it); others stay', async () => {
+    const broken = '{"format":"chalkbond-tab","version":1,"name":"benzene","kind":"nope"}';
+    await seed({
+      'index.json': index({ version: 1, tabs: [tab(A), tab(B)], active: A, discarded: [] }),
+      [`tabs/${A}.json`]: broken,
+      [`tabs/${B}.json`]: record('x'),
+    });
+    const store = make();
+    await store.damagedRecord(A);
+    expect(await list(tabs)).toEqual([`${B}.json`]);
+    expect(await read(join(damaged, `${A}.json`))).toBe(broken);
+    expect(logged.some((line) => line.includes(`${A}.json`))).toBe(true);
+    for (const line of logged) expect(line).not.toContain('benzene');
+  });
+
+  it('never overwrites an earlier damaged copy of the same tab', async () => {
+    await seed({
+      'index.json': index({ version: 1, tabs: [tab(A)], active: A, discarded: [] }),
+      [`tabs/${A}.json`]: '{"second":1}',
+      [`damaged/${A}.json`]: '{"first":1}',
+    });
+    const store = make();
+    await store.damagedRecord(A);
+    expect(await list(damaged)).toEqual([`${A} (2).json`, `${A}.json`]);
+    expect(await read(join(damaged, `${A}.json`))).toBe('{"first":1}');
+    expect(await read(join(damaged, `${A} (2).json`))).toBe('{"second":1}');
+  });
+
+  it('a record that is already gone is logged only; nothing is created', async () => {
+    const store = make();
+    await store.damagedRecord(A);
+    expect(await list(damaged)).toEqual([]);
+    expect(await list(tabs)).toEqual([]);
+    expect(logged.some((line) => line.includes(`${A}.json`))).toBe(true);
+  });
+
+  it('runs on the chain in arrival order: after an earlier write, before a later one', async () => {
+    await seed({ [`tabs/${A}.json`]: record('old') });
+    const store = make();
+    await store.restored();
+    const first = store.writeRecord({ tabId: A, text: record('first') });
+    const moved = store.damagedRecord(A);
+    const second = store.writeRecord({ tabId: A, text: record('second') });
+    await Promise.all([first, moved, second]);
+    expect(await read(join(damaged, `${A}.json`))).toBe(record('first'));
+    expect(await read(join(tabs, `${A}.json`))).toBe(record('second'));
+  });
+
+  it('SEC8: a tab id that is not a uuid never reaches a path, and the call does not reject', async () => {
+    await seed({ [`tabs/${A}.json`]: record('x') });
+    const store = make();
+    for (const id of ['../index', `${A}/..`, 'index', '']) await store.damagedRecord(id);
+    expect(await list(damaged)).toEqual([]);
+    expect(await list(tabs)).toEqual([`${A}.json`]);
+  });
+});
+
 describe('the index (N8, SS3, SS6)', () => {
   it('main keeps its paths and hashes; the renderer sets order, names, views, markers', async () => {
     const chalk = tab(A, {

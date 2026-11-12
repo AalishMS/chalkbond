@@ -23,6 +23,7 @@ export const CHANNELS = {
   autoSave: 'file:auto-save',
   checkTabFile: 'file:check',
   acceptOutsideChange: 'file:accept-outside',
+  damagedTabRecord: 'session:damaged-tab',
   writeRecovery: 'recovery:write',
   clearRecovery: 'recovery:clear',
   logError: 'log:error',

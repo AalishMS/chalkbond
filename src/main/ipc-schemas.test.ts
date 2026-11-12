@@ -355,6 +355,20 @@ describe('TB9 I11 session:read-tab, N7 session:write-tab, N8 session:index', () 
       bad(schemas.readTabRecordSchema, v);
   });
 
+  it('N10 (TB15) takes a uuid tab id only (SEC8)', () => {
+    ok(schemas.damagedTabRecordSchema, { tabId: ID });
+    for (const v of [
+      {},
+      { tabId: '../index' },
+      { tabId: 'index' },
+      { tabId: ID, text: '{}' },
+      { tabId: ID, path: '/x' },
+      { tabId: 3 },
+      null,
+    ])
+      bad(schemas.damagedTabRecordSchema, v);
+  });
+
   it('N7 takes a uuid and text starting "{" of up to 64 MiB of UTF-8', () => {
     ok(schemas.writeTabRecordSchema, { tabId: ID, text: '{}' });
     ok(schemas.writeTabRecordSchema, { tabId: ID, text: `{${'x'.repeat(MIB64 - 1)}` });

@@ -660,6 +660,26 @@ export function createSessionStore(options: SessionStoreOptions) {
       );
     },
 
+    /**
+     * N10 (SS11, TB15): the renderer's strict parse of this tab's record (or of its drawing)
+     * failed, so its record goes to `damaged/` on the chain, after every earlier task; a record
+     * already gone is logged only. A tab id that is not a uuid is logged and ignored (SEC8).
+     */
+    damagedRecord(tabId: string): Promise<void> {
+      const name = recordNameOf(tabId);
+      if (name === null) {
+        log('Session record damaged: refused (not a tab id)');
+        return Promise.resolve();
+      }
+      return enqueue(
+        'Session record damaged',
+        async () => {
+          await moveToDamaged(join(tabsFolder, name), name);
+        },
+        undefined,
+      );
+    },
+
     /** Settles once every task queued so far has run (the window close, quit). */
     idle(): Promise<void> {
       return chain.then(() => undefined);

@@ -662,9 +662,9 @@ each state; title `*Untitled 2 - Chalkbond`, `esterification - Chalkbond` while 
 `*esterification (your changes) - Chalkbond`; an unloaded tab shows its stored flags.
 
 **Acceptance criteria:**
-- [ ] F7's two notions and SS6's *unkept* exist as pure functions and match the spec's Terms paragraph
-- [ ] A record over 64 MiB is made smaller by halving `maxSteps`, never refused outright
-- [ ] `src/renderer/app/model` coverage >= 90 % lines
+- [x] F7's two notions and SS6's *unkept* exist as pure functions and match the spec's Terms paragraph
+- [x] A record over 64 MiB is made smaller by halving `maxSteps`, never refused outright
+- [x] `src/renderer/app/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/renderer/app/model`, then `npm run check`.
 

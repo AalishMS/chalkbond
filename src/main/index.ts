@@ -68,6 +68,7 @@ import {
   autoSaveSchema,
   checkTabFileSchema,
   acceptOutsideSchema,
+  damagedTabRecordSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { createAppMenu, createContextMenus } from './menu';
@@ -443,6 +444,12 @@ async function startApp(): Promise<void> {
     CHANNELS.updateSessionIndex,
     sessionIndexSchema,
     (update) => void sessionStore.updateIndex(update),
+  );
+  // N10 (SS11, TB15): a record the renderer could not parse goes to damaged/ on the chain.
+  ipc.on(
+    CHANNELS.damagedTabRecord,
+    damagedTabRecordSchema,
+    ({ tabId }) => void sessionStore.damagedRecord(tabId),
   );
   // Quit waits for one flush of settings (a change younger than 500 ms, e.g. the window bounds),
   // of the recovery chain and of the session chain.

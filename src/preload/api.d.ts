@@ -92,6 +92,11 @@ export interface ChalkbondApi {
   checkTabFile(tabId: string): Promise<CheckTabFileResponse>;
   /** N9 (AS7(a)): the changed bytes the tab loaded become its file, `written` its written hash. */
   acceptOutsideChange(value: AcceptOutsideRequest): void;
+  /**
+   * N10 (SS11): the record I11 returned for this tab (or its drawing) did not parse; main moves it
+   * to `userData/session/damaged/` on the session chain.
+   */
+  damagedTabRecord(tabId: string): void;
   /** N3 (RC1): writes the recovery file (main queues it, RC6). */
   writeRecovery(value: WriteRecoveryRequest): void;
   /** N4 (RC2): removes the recovery file (queued after every earlier write). */

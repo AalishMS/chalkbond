@@ -36,6 +36,7 @@ const api: ChalkbondApi = {
   autoSave: (request) => ipcRenderer.invoke(CHANNELS.autoSave, request),
   checkTabFile: (tabId) => ipcRenderer.invoke(CHANNELS.checkTabFile, { tabId }),
   acceptOutsideChange: (value) => ipcRenderer.send(CHANNELS.acceptOutsideChange, value),
+  damagedTabRecord: (tabId) => ipcRenderer.send(CHANNELS.damagedTabRecord, { tabId }),
   writeRecovery: (value) => ipcRenderer.send(CHANNELS.writeRecovery, value),
   clearRecovery: () => ipcRenderer.send(CHANNELS.clearRecovery, {}),
   platform: process.platform,

@@ -192,6 +192,8 @@ export const fileDroppedSchema = z.object({ path: z.string().max(4096) }).strict
 const maxRecordBytes = 64 * 1024 * 1024;
 const tabId = z.uuid();
 export const readTabRecordSchema = z.object({ tabId }).strict();
+// N10 (TB15, SS11): the renderer could not parse a tab's record; main moves it to damaged/.
+export const damagedTabRecordSchema = z.object({ tabId }).strict();
 export const writeTabRecordSchema = z
   .object({
     tabId,
