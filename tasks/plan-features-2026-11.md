@@ -100,7 +100,7 @@ is blocked; N12 needs N3a, N3b and N13.
 
 ### Phase 4: hand-over
 - [ ] N11: docs (AGENTS.md module notes, golden sheet look for N3) and the named shots
-- [ ] N12: final checkpoint: every gate, shots looked at, the checklist section
+- [ ] N12: final checkpoint: every gate, shots looked at, the checklist section (automated Windows gates passed at `e34414b` on 2026-11-12; Linux re-run, coverage and the hand checks are open, so this stays unticked; see `tasks/todo-features-2026-11.md` N12)
 
 ## Success Criteria Coverage
 

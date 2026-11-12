@@ -14,9 +14,9 @@ The product spec is `SPEC.md`; the module list is `CAPABILITY-MAP.md`. Module id
 | 1 | `doc-model` | none | done |
 | 2 | `chem-core` | doc-model | done |
 | 3 | `svg-render` | doc-model, chem-core | done; automated Windows checks passed 2026-11-11; Office checks (Checkpoint K) ticked 2026-11-12 from the owner's hand checks (Office 2016) |
-| 4 | `editor` | doc-model, chem-core, svg-render | done; Checkpoint R ticked 2026-11-12 from the owner's hand checks except "Pen or touch"; E32 open (teacher's laptop) |
+| 4 | `editor` | doc-model, chem-core, svg-render | done; Checkpoint R ticked 2026-11-12 from the owner's hand checks ("Pen or touch" not applicable: the teacher uses mouse or touchpad only); feature set of 2026-11-12 implemented, automated gates passed at `e34414b`; E32 open (teacher's laptop) |
 | 5 | `clipboard-export` | doc-model, svg-render | implemented; automated Windows gates passed 2026-11-11; all human boxes ticked 2026-11-12 from the owner's hand checks (`docs/windows-checklist.md`) |
-| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11; 15 of 17 human boxes ticked 2026-11-12 from the owner's hand checks; open: cold start on the teacher's laptop, written observation for "Shutdown right after an edit" (`docs/windows-checklist.md`) |
+| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11 and again at `e34414b` (feature set); 16 of 17 human boxes ticked 2026-11-12 from the owner's hand checks and answers; open: cold start on the teacher's laptop, and the owner's hand re-checks on the final installer (`docs/windows-checklist.md`) |
 
 Version 1.0.0 is prepared in `package.json`; the release is pending Checkpoint Z on a Windows
 machine (`docs/windows-checklist.md`). Everything was built on Linux; on 2026-11-11 the automated
@@ -28,9 +28,10 @@ orchestrator). On 2026-11-12 the owner ran a numbered list of 31 checks by hand 
 1.0.0 on the development machine and reported "everything works well. the tests pass." (all 31 run,
 details not reported per item, not watched by the orchestrator). That ticked every human box of
 "Clipboard and export", Checkpoint K, Checkpoint R except "Pen or touch", and 15 of the 17 boxes of
-"App shell and installer". Open: the written observation for "Shutdown right after an edit"
-(reported as passed, not written down), Checkpoint R "Pen or touch" (conditional, not run), and, on
-the teacher's laptop, Checkpoint E32 and the cold-start box. Finding: the clipboard bitmap is
+"App shell and installer". The owner's written answers the same day ticked "Shutdown right after an
+edit" ("Yes, it was there": the last change was recovered) and "Pen or touch" (not applicable: the
+teacher uses mouse or touchpad only, not run). Open from those checks: on the teacher's laptop,
+Checkpoint E32 and the cold-start box. Finding: the clipboard bitmap is
 transparent with black ink and is barely visible pasted into a dark-mode chat app (Discord; Decision
 X3), to be decided in the 2026-11-12 feature set. The owner decided on 2026-11-12 to add features
 before the release; the human checks they touch will be repeated on the final installer. Owner
@@ -40,12 +41,18 @@ checks; the teacher's-laptop checks (the cold start box and E32) are open becaus
 machine is not that laptop. The release is not declared.
 
 The feature set of 2026-11-12 (number keys for the tool rail, the structural formula display, the
-white-backed clipboard bitmap; `tasks/todo-features-2026-11.md` N1-N14) is **implemented** and
-committed (N11, this documentation, is the last task before the checkpoint). Not yet re-run on the
-final build: the full `npm run test:e2e`, `test:e2e:os-input`, `dist:win`, `test:packaged`, the
-full `npm run shots` and the hand checks of "Re-checks after the 2026-11-12 feature set" in
-`docs/windows-checklist.md` (all unticked). N12, the final checkpoint, is open. The only feature
-measurement taken on Windows is the Copy timing (median 66.9 ms; `docs/editor-perf.md`).
+white-backed clipboard bitmap; `tasks/todo-features-2026-11.md` N1-N14) is **implemented** and its
+automated gates passed at `e34414b` on Windows 11 (2026-11-12): `npm run check` (239 files, 4606
+tests), `npm run test:e2e` (342 passed), `npm run test:e2e:os-input`, `npm run dist:win`,
+`npm run test:packaged` (8 passed) and `npm run shots` (105 passed, looked at against the
+mock-ups). The release is **not declared** and Checkpoint Z is **not reached**. Open: the owner's
+hand re-checks on the final installer (the unticked boxes of "Re-checks after the 2026-11-12
+feature set" in `docs/windows-checklist.md`, including the installed size), and, on the teacher's
+laptop, Checkpoint E32 and the cold-start box. Fixes that touched cross-platform code need a Linux
+re-run (`npm run check`, `npm run test:e2e`, the Linux packaging check and `npm run test:packaged`);
+the list is in `docs/windows-checklist.md`. Copy timing on Windows (`docs/editor-perf.md` has the
+earlier 66.9 ms): median 62.1 ms at `e34414b` (budget 500 ms). Known limitations and review notes:
+the `SPEC.md` Decisions Log (2026-11-12).
 
 ## Workflow
 
@@ -387,25 +394,27 @@ and `npm run shots`. Step 8 is done: installer, unpacked and installed sizes are
 `SPEC-app-shell.md` I1. Step 9 (the human sections) is in progress: on 2026-11-12 the owner's hand checks (31 checks,
 "everything works well. the tests pass.", details not reported per item) ticked every human
 "Clipboard and export" box, Checkpoint K, Checkpoint R except "Pen or touch", and 15 of the 17
-"App shell and installer" boxes. What is open: the written observation for "Shutdown right after an
-edit", Checkpoint R "Pen or touch" (conditional, not run), and, on the teacher's laptop, Checkpoint
-E32 and the cold-start box. Owner decisions 2026-11-12 (`SPEC.md` Decisions Log): Windows 11 only for
+"App shell and installer" boxes. The owner's written answers the same day ticked "Shutdown right
+after an edit" ("Yes, it was there") and "Pen or touch" (not applicable: mouse or touchpad only).
+What is open from those checks: on the teacher's laptop, Checkpoint E32 and the cold-start box.
+Owner decisions 2026-11-12 (`SPEC.md` Decisions Log): Windows 11 only for
 the human checks, the installed Office 2016 accepted for the Office checks, the teacher's-laptop
 checks open because the development machine is not that laptop, and new features before the release
 (the human checks they touch will be repeated on the final installer). Version 1.0.0 is not
 declared released until the rest pass.
 
-- The feature set of 2026-11-12 is implemented (N1-N11, N13, N14, N3a, N3b); the final checkpoint
-  N12 and the Windows hand checks of "Re-checks after the 2026-11-12 feature set" are open, and the
-  release is not declared. Its spec rows are in the Decisions tables (editor R50-R55, svg-render
+- The feature set of 2026-11-12 is implemented (N1-N11, N13, N14, N3a, N3b) and its automated gates
+  passed at `e34414b` (N12, 2026-11-12); the Windows hand checks of "Re-checks after the
+  2026-11-12 feature set" are open, and the release is not declared. Its spec rows are in the Decisions tables (editor R50-R55, svg-render
   15 and 16, clipboard-export R10-R12, doc-model D1, app-shell R27 and R28). N11 collected the
   shots `out/shots/N5`, `N7`, `N10` and the golden sheet and compared them with the mock-up PNGs.
 
-- Windows gates still open: the written observation for "Shutdown right after an edit" (whether the
-  last change was there), Checkpoint R "Pen or touch" (only if the teacher uses touch or a pen), and,
-  on the teacher's laptop, Checkpoint E32 and the cold start. The human checks run on Windows 11
-  only (Windows 10 waived, owner decision 2026-11-12). Features added before the release will
-  reopen the human checks they touch.
+- Windows gates still open: the owner's hand re-checks on the final installer, and, on the
+  teacher's laptop, Checkpoint E32 and the cold start. "Shutdown right after an edit" is ticked
+  ("Yes, it was there") and "Pen or touch" is not applicable (mouse or touchpad only), both from the
+  owner's answers of 2026-11-12. Checkpoint Z is not reached. The human checks run on Windows 11
+  only (Windows 10 waived, owner decision 2026-11-12). Linux has not re-run the cross-platform
+  fixes since `0fdf4de` (list in `docs/windows-checklist.md`).
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
   the code and tests. Decisions of later dates supersede older text anywhere (including this file).
 - A bug found in a finished module: add a failing regression test first. A property-test failure

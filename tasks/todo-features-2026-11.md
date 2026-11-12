@@ -667,12 +667,14 @@ by the owner. Record results as the checklist asks; tick only what was run and s
 - [ ] `npm run check` green (Linux and Windows); `npm run test:e2e` green on both, including `e2e/win/` on Windows
 - [ ] `npm test -- --coverage`: every threshold met, none lowered
 - [ ] every pre-F2 golden unchanged (`git diff --stat 628ea2b -- src/core/svg-render/__golden__` shows only added files)
-- [ ] `npm run test:e2e:os-input`, `npm run dist:win`, `npm run test:packaged` on Windows
-- [ ] `npm run shots` and the golden sheet looked at against the mock-ups
-- [ ] `docs/windows-checklist.md` "Re-checks after the 2026-11-12 feature set": automated boxes ticked with results; hand checks handed to the owner
-- [ ] `SPEC.md` Decisions Log row recording the checkpoint
+- [x] `npm run test:e2e:os-input`, `npm run dist:win`, `npm run test:packaged` on Windows (2026-11-12 at `e34414b`: 1 passed, exit 0, 8 passed)
+- [x] `npm run shots` and the golden sheet looked at against the mock-ups (2026-11-12: 105 passed; the N5, N7, N10, N14 PNGs and `out/sheet-slides-2.png` looked at)
+- [x] `docs/windows-checklist.md` "Re-checks after the 2026-11-12 feature set": automated boxes ticked with results; hand checks handed to the owner
+- [x] `SPEC.md` Decisions Log row recording the checkpoint
 
 **Verification:** the commands above, each on its own; exit codes and summaries written into the checklist
+
+**Status 2026-11-12:** the automated gates on Windows passed at `e34414b` (`npm run check` exit 0, 239 files, 4606 tests; `npm run test:e2e` 342 passed). Not done, so the first two boxes above stay unticked: no Linux run of `npm run check` or `npm run test:e2e`, no `npm test -- --coverage` run, no `git diff --stat 628ea2b -- src/core/svg-render/__golden__` check. The hand checks are open (the owner, on the final installer); the release is not declared and Checkpoint Z is not reached.
 
 **Dependencies:** N1–N11, N14, N3a, N3b, N13 (S1 and S2 are answered)
 

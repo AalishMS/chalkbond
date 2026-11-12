@@ -18,16 +18,17 @@ Modules and their order are defined in `CAPABILITY-MAP.md`.
 | `doc-model` | Document data, edit transactions, undo/redo, file format | done |
 | `chem-core` | OpenChemLib wrapper: valence, formula, SMILES/Molfile, name dictionary | done |
 | `svg-render` | Document to SVG with style presets | done (automated Windows checks passed; Office checks ticked 2026-11-12 from the owner's hand checks) |
-| `editor` | Interactive canvas and drawing tools | done (automated Windows checks passed; "Editor" checks ticked 2026-11-12 except pen or touch; E32 open on the teacher's laptop) |
+| `editor` | Interactive canvas and drawing tools | done (automated Windows checks passed; "Editor" checks ticked 2026-11-12, pen or touch not applicable (mouse or touchpad only); E32 open on the teacher's laptop) |
 | `clipboard-export` | Clipboard, PNG/SVG/PDF export | implemented; automated Windows gates passed; every human check ticked 2026-11-12 from the owner's hand checks |
-| `app-shell` | Menus, dialogs, settings, installer | implemented; automated Windows gates passed; installed on the development machine; human checks ticked 2026-11-12 except the cold start on the teacher's laptop and one written observation |
+| `app-shell` | Menus, dialogs, settings, installer | implemented; automated Windows gates passed; installed on the development machine; human checks ticked 2026-11-12 except the cold start on the teacher's laptop; the owner's re-checks on the final installer are open |
 
 Version 1.0.0 is prepared. It is not released: the automated Windows gates passed on 2026-11-11,
 the installer was installed on the development machine, and on 2026-11-12 the owner ran 31 checks
 by hand with the installed app ("everything works well. the tests pass."; details were not reported
-per item). Still open in `docs/windows-checklist.md` (Checkpoint Z): the written observation for
-"Shutdown right after an edit", the conditional pen or touch check, and, on the teacher's laptop,
-Checkpoint E32 and the cold start. The owner decided to add features before the release; the human
+per item). The owner's written answers the same day closed "Shutdown right after an edit" (the last
+change was there) and the pen or touch check (not applicable: mouse or touchpad only). Still open in
+`docs/windows-checklist.md` (Checkpoint Z): on the teacher's laptop, Checkpoint E32 and the cold
+start. The owner decided to add features before the release; the human
 checks they touch will be repeated on the final installer. Owner decisions 2026-11-12: the human
 checks run on Windows 11 only (Windows 10 is untested by hand for 1.0.0); the Office on the
 development machine (Office 2016) is accepted for the Office checks; the development machine is not
@@ -37,10 +38,12 @@ The feature set of 2026-11-12 is implemented: number keys for the tool rail (1 t
 "Show structural" / "Show skeletal" switch that writes the carbons (CH3, CH2) with bonds twice as
 long, and a clipboard picture on a white background with a small margin (so it shows in dark-mode
 chat apps). A structural drawing is saved as a version 2 `.chalk` file (a skeletal one is still
-version 1, and the 1.0.0 build cannot open version 2). Not yet re-run on the final build: the full
-e2e suite, the OS-input test, the installer build, the packaged smoke test and the full shots run;
-the Windows hand checks in "Re-checks after the 2026-11-12 feature set"
-(`docs/windows-checklist.md`) are open. The release is not declared.
+version 1, and the 1.0.0 build cannot open version 2). Its automated gates passed on Windows 11 at
+`e34414b` on 2026-11-12 (check, e2e, OS-input test, installer build, packaged smoke test, shots).
+The release is not declared and Checkpoint Z is not reached. Open: the owner's hand re-checks on the
+final installer (`docs/windows-checklist.md`, "Re-checks after the 2026-11-12 feature set") and, on
+the teacher's laptop, Checkpoint E32 and the cold start. The fixes that touched cross-platform code
+still need a Linux re-run (list in the checklist).
 
 ## The editor
 

@@ -8,7 +8,7 @@ commit ae3eecd) are part of this spec (see "Normative sources"). Amended 2026-11
 owner's feature set: number keys for the tool rail (R50) and the structural formula switch (R51,
 R52; its drawing was svg-render question S1, answered 2026-11-12 by svg-render Decision 16 and
 R53 here: bonds twice as long, rings drawn as before). The mock-ups were updated in the same commit
-(rail badges, the formula switch, its two icons, the `--formula-btn-w` token). Implemented 2026-11-12 (feature tasks N1-N14, `tasks/todo-features-2026-11.md`); the final checkpoint (N12) and the re-checks in `docs/windows-checklist.md` are open.
+(rail badges, the formula switch, its two icons, the `--formula-btn-w` token). Implemented 2026-11-12 (feature tasks N1-N14, `tasks/todo-features-2026-11.md`); The automated gates of the final checkpoint (N12) passed at `e34414b` on 2026-11-12; the owner's hand re-checks on the final installer (`docs/windows-checklist.md`) are open. The release is not declared.
 
 Audience: a grade 11–12 chemistry teacher in Nepal (NEB curriculum) making slides and handouts on
 a Windows laptop, often 1366×768, no network. Not a power user of drawing software. The test for
@@ -1317,7 +1317,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
    closest first ("ethanl" → ethanol), reaction text builds a tidy scheme (unit + e2e).
    **Proven:** `state/reducer-name.test.ts`, `e2e/editor-name.spec.ts`, `e2e/editor-reactions.spec.ts`.
 10. Performance budgets met on Windows and node perf budgets pass.
-   **Partly proven:** `src/renderer/editor/perf.test.ts` (node) and `e2e/editor-perf.spec.ts` on the development machine (table in "Performance"). **Manual, pending:** the owner's laptop (`docs/windows-checklist.md` E32 and Checkpoint R). Update 2026-11-12: Checkpoint R is ticked from the owner's own hand checks except "Pen or touch" (conditional, not run); E32 stays open and is not claimed. Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop, so the E32 run on that laptop stays open.
+   **Partly proven:** `src/renderer/editor/perf.test.ts` (node) and `e2e/editor-perf.spec.ts` on the development machine (table in "Performance"). **Manual, pending:** the owner's laptop (`docs/windows-checklist.md` E32 and Checkpoint R). Update 2026-11-12: Checkpoint R is ticked from the owner's own hand checks; "Pen or touch" is ticked as not applicable (the owner says the teacher uses mouse or touchpad only, not run); E32 stays open and is not claimed. Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop, so the E32 run on that laptop stays open.
 11. `npm run check` green; `src/renderer/editor` ≥ 70 % line coverage; the DOM-free lint block
     and boundary probes pass.
    **Proven:** `npm run check` green; `npm test -- --coverage` reports `src/renderer/editor` at 85.5 % lines (model 99.4, state 99.5, tools 98.7, view 27.1) with a 70 % threshold enforced in `vitest.config.mts`; lint probes in `tests/tooling/`.
