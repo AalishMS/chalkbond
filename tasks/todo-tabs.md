@@ -887,9 +887,9 @@ and `canvasKey`: Ctrl+T, W, Tab, Shift+Tab, PageUp, PageDown, 1-9, Shift+T and F
 Ctrl+Shift+R is not a host key; Ctrl+Shift+0 is bound by neither).
 
 **Acceptance criteria:**
-- [ ] Every R36 key and F10 / lone Alt decide as K1 and K3 say; K2's extended conflict test passes
-- [ ] `host-keys.ts` passes `code` and the listener stays capture-phase, preventing and stopping handled keys
-- [ ] `src/renderer/app/model` coverage >= 90 % lines
+- [x] Every R36 key and F10 / lone Alt decide as K1 and K3 say; K2's extended conflict test passes
+- [x] `host-keys.ts` passes `code` and the listener stays capture-phase, preventing and stopping handled keys
+- [x] `src/renderer/app/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/renderer/app src/renderer/editor/model`, then `npm run check`.
 

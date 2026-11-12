@@ -1,9 +1,20 @@
 // K1 host keys (SPEC-app-shell.md "Keyboard (host keys)"): the full table (C8: Ctrl+C, C9:
 // Ctrl+V, A8: Ctrl+N / O / S / Shift+S, C10: Ctrl+E, A11: F1, Ctrl+F), the K2 conflict check
-// against the editor's keymap and the K3 Alt rule.
+// against the editor's keymap and the K3 Alt rule; TB22 adds the tab keys (R36, R45), F10 and the
+// lone Alt.
 import { describe, expect, it } from 'vitest';
 import { canvasKey, globalCommand, hoverKeys } from '../../editor/model/keymap';
-import { altGuard, hostKey, type HostKeyContext, type KeyInput } from './keys';
+import {
+  ALT_IDLE,
+  altGuard,
+  hostKey,
+  type AltDecision,
+  type AltGuardEvent,
+  type AltState,
+  type HostKeyAction,
+  type HostKeyContext,
+  type KeyInput,
+} from './keys';
 
 const ctrl = (key: string, mods: Partial<KeyInput> = {}): KeyInput => ({
   key,
@@ -194,6 +205,7 @@ describe('K1 complete: every row and nothing else', () => {
       'F1',
       'F2',
       'F10',
+      'Tab',
       'Delete',
       'Escape',
       'Enter',
@@ -233,6 +245,16 @@ describe('K1 complete: every row and nothing else', () => {
         'Ctrl+f (outside)=focus-name',
         'F1=shortcuts',
         'F1 (outside)=shortcuts',
+        'F10=menu',
+        'F10 (outside)=menu',
+        'Ctrl+t=new',
+        'Ctrl+t (outside)=new',
+        'Ctrl+w=close-tab',
+        'Ctrl+w (outside)=close-tab',
+        'Ctrl+Tab=next-tab',
+        'Ctrl+Tab (outside)=next-tab',
+        'Ctrl+Shift+Tab=previous-tab',
+        'Ctrl+Shift+Tab (outside)=previous-tab',
       ].sort(),
     );
   });
@@ -279,6 +301,42 @@ describe('K2 conflict check against the editor keymap', () => {
       for (const k3 of EDITOR_K3) expect(same(host, k3), `${host.key} vs ${k3.key}`).toBe(false);
   });
 
+  it("K2 extended: the tab keys and F10 have no editor command (TB3 moved the editor's)", () => {
+    const tabKeys = [
+      ctrl('t'),
+      ctrl('w'),
+      ctrl('Tab'),
+      ctrl('Tab', { shiftKey: true }),
+      ctrl('PageUp'),
+      ctrl('PageDown'),
+      ctrl('T', { shiftKey: true }),
+      plain('F10'),
+      ...[1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap((n) => [
+        ctrl(String(n), { code: `Digit${n}` }),
+        ctrl('१', { code: `Digit${n}` }), // a Devanagari digit as `key`
+      ]),
+    ];
+    for (const key of tabKeys) {
+      const name = `${key.key} ${key.code ?? ''}`;
+      expect(globalCommand(key, 'all'), name).toBeNull();
+      expect(canvasKey(key), name).toBeNull();
+      expect(hoverKeys(key, null, 'select'), name).toBeNull();
+      expect(hoverKeys(key, { kind: 'atom', id: 'a1' } as never, 'bond'), name).toBeNull();
+      expect(hoverKeys(key, { kind: 'bond', id: 'b1' } as never, 'bond'), name).toBeNull();
+    }
+  });
+
+  it('Ctrl+Shift+R is the editor Tidy, not a host key; Ctrl+Shift+0 is bound by neither', () => {
+    const tidy = ctrl('R', { shiftKey: true });
+    expect(globalCommand(tidy, 'all')).toBe('tidy-reaction');
+    expect(hostKey(tidy, canvas)).toBeNull();
+    const zero = ctrl(')', { shiftKey: true, code: 'Digit0' });
+    expect(globalCommand(zero, 'all')).toBeNull();
+    expect(canvasKey(zero)).toBeNull();
+    expect(hostKey(zero, { ...canvas, canReopen: true })).toBeNull();
+    expect(hostKey(ctrl('0', { code: 'Digit0' }), canvas)).toBeNull();
+  });
+
   it('menu access keys need Alt, which every editor key requires up', () => {
     for (const key of 'fevhn') {
       const alt = plain(key, { altKey: true });
@@ -290,39 +348,233 @@ describe('K2 conflict check against the editor keymap', () => {
   });
 });
 
-describe('K3 Alt after Alt+click (R4)', () => {
-  it('an Alt+pointerdown arms; the next Alt key-up is prevented and disarms', () => {
-    let s = altGuard(false, { type: 'pointerdown', altKey: true });
-    expect(s).toEqual({ armed: true, prevent: false });
-    s = altGuard(s.armed, { type: 'keydown', key: 'Alt', repeat: true }); // Alt still held
-    expect(s).toEqual({ armed: true, prevent: false });
-    s = altGuard(s.armed, { type: 'keyup', key: 'Alt' });
-    expect(s).toEqual({ armed: false, prevent: true });
-    expect(altGuard(s.armed, { type: 'keyup', key: 'Alt' })).toEqual({
-      armed: false,
-      prevent: false,
-    });
+const tabRows: [string, KeyInput, HostKeyAction][] = [
+  ['Ctrl+T', ctrl('t'), 'new'],
+  ['Ctrl+N', ctrl('n'), 'new'],
+  ['Ctrl+W', ctrl('w'), 'close-tab'],
+  ['Ctrl+Tab', ctrl('Tab'), 'next-tab'],
+  ['Ctrl+PageDown', ctrl('PageDown'), 'next-tab'],
+  ['Ctrl+Shift+Tab', ctrl('Tab', { shiftKey: true }), 'previous-tab'],
+  ['Ctrl+PageUp', ctrl('PageUp'), 'previous-tab'],
+  ['Ctrl+Shift+T', ctrl('T', { shiftKey: true }), 'reopen-tab'],
+];
+
+describe('tab keys (R36)', () => {
+  const reopenable = { ...canvas, canReopen: true };
+
+  it('idle, on the canvas, with a selection and in the name field', () => {
+    for (const [name, key, action] of tabRows) {
+      expect(hostKey(key, reopenable), name).toBe(action);
+      expect(hostKey(key, { ...reopenable, selectionEmpty: false }), name).toBe(action);
+      expect(hostKey(key, { ...reopenable, textTarget: true }), name).toBe(action);
+      expect(hostKey(key, { ...reopenable, insideEditor: false }), name).toBe(action);
+    }
   });
 
-  it('a standalone Alt press is untouched, armed or not', () => {
-    expect(altGuard(false, { type: 'keyup', key: 'Alt' })).toEqual({
-      armed: false,
-      prevent: false,
-    });
-    const pressed = altGuard(true, { type: 'keydown', key: 'Alt', repeat: false });
-    expect(pressed).toEqual({ armed: false, prevent: false });
-    expect(altGuard(pressed.armed, { type: 'keyup', key: 'Alt' }).prevent).toBe(false);
+  it('letters match either case (Caps Lock)', () => {
+    expect(hostKey(ctrl('T'), canvas)).toBe('new');
+    expect(hostKey(ctrl('W'), canvas)).toBe('close-tab');
+    expect(hostKey(ctrl('t', { shiftKey: true }), { ...canvas, canReopen: true })).toBe(
+      'reopen-tab',
+    );
   });
 
-  it('any other keydown disarms; a plain click leaves the flag', () => {
-    expect(altGuard(true, { type: 'keydown', key: 'b', repeat: false })).toEqual({
-      armed: false,
-      prevent: false,
-    });
-    expect(altGuard(true, { type: 'pointerdown', altKey: false })).toEqual({
-      armed: true,
-      prevent: false,
-    });
-    expect(altGuard(true, { type: 'keyup', key: 'b' })).toEqual({ armed: true, prevent: false });
+  it('nothing while a label or text editor is open, a flow runs or a dialog is open', () => {
+    for (const [name, key] of tabRows) {
+      expect(hostKey(key, { ...reopenable, idle: false }), name).toBeNull();
+      expect(hostKey(key, { ...reopenable, idle: false, textTarget: true }), name).toBeNull();
+      expect(hostKey(key, { ...reopenable, fileBusy: true }), name).toBeNull();
+      expect(hostKey(key, { ...reopenable, modal: true }), name).toBeNull();
+    }
+  });
+
+  it('Ctrl+Shift+T needs a non-empty reopen list (absent counts as empty)', () => {
+    const key = ctrl('T', { shiftKey: true });
+    expect(hostKey(key, { ...canvas, canReopen: false })).toBeNull();
+    expect(hostKey(key, canvas)).toBeNull();
+    expect(hostKey(key, { ...canvas, canReopen: true })).toBe('reopen-tab');
+  });
+
+  it('needs Ctrl, and no Alt or Meta; Shift only where the row says so', () => {
+    for (const [name, key] of tabRows) {
+      expect(hostKey({ ...key, ctrlKey: false }, reopenable), name).toBeNull();
+      expect(hostKey({ ...key, altKey: true }, reopenable), name).toBeNull();
+      expect(hostKey({ ...key, metaKey: true }, reopenable), name).toBeNull();
+    }
+    expect(hostKey(ctrl('w', { shiftKey: true }), reopenable)).toBeNull();
+    expect(hostKey(ctrl('PageDown', { shiftKey: true }), reopenable)).toBeNull();
+    expect(hostKey(ctrl('PageUp', { shiftKey: true }), reopenable)).toBeNull();
+    expect(hostKey(plain('Tab'), reopenable)).toBeNull();
+    expect(hostKey(plain('PageDown'), reopenable)).toBeNull();
+  });
+
+  it('Ctrl+1 ... Ctrl+8 go to tab n and Ctrl+9 to the last, by `code` (R45)', () => {
+    for (let n = 1; n <= 9; n++) {
+      const want = n === 9 ? 'last-tab' : `tab-${n}`;
+      for (const code of [`Digit${n}`, `Numpad${n}`]) {
+        expect(hostKey(ctrl(String(n), { code }), canvas), code).toBe(want);
+        // A Devanagari digit as `key` (Nepali layout), and a symbol (AZERTY needs Shift for 1).
+        expect(hostKey(ctrl('१', { code }), canvas), code).toBe(want);
+        expect(hostKey(ctrl('&', { code }), canvas), code).toBe(want);
+        expect(hostKey(ctrl(String(n), { code }), { ...canvas, textTarget: true }), code).toBe(
+          want,
+        );
+      }
+      // `key` alone is not enough: no physical key, no match.
+      expect(hostKey(ctrl(String(n)), canvas)).toBeNull();
+    }
+  });
+
+  it('Ctrl+9 is one action whatever the tab count: the tab model picks the last tab', () => {
+    // The context carries no tab count: the host asks `tabs.last` (1, 3 or 12 tabs alike).
+    expect(hostKey(ctrl('9', { code: 'Digit9' }), canvas)).toBe('last-tab');
+    expect(hostKey(ctrl('9', { code: 'Numpad9' }), { ...canvas, canReopen: true })).toBe(
+      'last-tab',
+    );
+  });
+
+  it('digits need Ctrl alone, idle, no flow or dialog; Ctrl+0 and other codes do nothing', () => {
+    const one = ctrl('1', { code: 'Digit1' });
+    expect(hostKey({ ...one, shiftKey: true }, canvas)).toBeNull();
+    expect(hostKey({ ...one, altKey: true }, canvas)).toBeNull();
+    expect(hostKey({ ...one, metaKey: true }, canvas)).toBeNull();
+    expect(hostKey({ ...one, ctrlKey: false }, canvas)).toBeNull();
+    expect(hostKey(one, { ...canvas, idle: false })).toBeNull();
+    expect(hostKey(one, { ...canvas, fileBusy: true })).toBeNull();
+    expect(hostKey(one, { ...canvas, modal: true })).toBeNull();
+    for (const code of ['Digit0', 'Numpad0', 'KeyA', 'Digit10', 'XDigit1', 'NumpadAdd', ''])
+      expect(hostKey(ctrl('1', { code }), canvas), code).toBeNull();
+  });
+});
+
+describe('F10 (M4: the ☰ menu)', () => {
+  it('opens the menu alone, idle or busy, in a text target or outside the editor', () => {
+    expect(hostKey(plain('F10'), canvas)).toBe('menu');
+    expect(hostKey(plain('F10'), { ...canvas, idle: false })).toBe('menu');
+    expect(hostKey(plain('F10'), { ...canvas, textTarget: true, idle: false })).toBe('menu');
+    expect(hostKey(plain('F10'), { ...canvas, insideEditor: false, fileBusy: true })).toBe('menu');
+  });
+
+  it('does nothing while a dialog is open, or with a modifier (Shift+F10 is the context key)', () => {
+    expect(hostKey(plain('F10'), { ...canvas, modal: true })).toBeNull();
+    for (const mods of [{ ctrlKey: true }, { altKey: true }, { shiftKey: true }, { metaKey: true }])
+      expect(hostKey(plain('F10', mods), canvas)).toBeNull();
+  });
+});
+
+describe('K3 Alt: the R4 guard and the lone Alt (M4)', () => {
+  /** Feed events through `altGuard`; returns every decision. */
+  function run(events: AltGuardEvent[], start: AltState = ALT_IDLE): AltDecision[] {
+    const out: AltDecision[] = [];
+    let state = start;
+    for (const e of events) {
+      const d = altGuard(state, e);
+      state = d.state;
+      out.push(d);
+    }
+    return out;
+  }
+  const altDown = (extra: { repeat?: boolean; otherModifier?: boolean } = {}): AltGuardEvent => ({
+    type: 'keydown',
+    key: 'Alt',
+    repeat: false,
+    ...extra,
+  });
+  const altUp: AltGuardEvent = { type: 'keyup', key: 'Alt' };
+  const click = (altKey: boolean): AltGuardEvent => ({ type: 'pointerdown', altKey });
+  const down = (key: string): AltGuardEvent => ({ type: 'keydown', key, repeat: false });
+  const opened = (events: AltGuardEvent[]): boolean => run(events).some((d) => d.open);
+
+  it('Alt alone opens the menu on the key-up and prevents it', () => {
+    const [d1, d2] = run([altDown(), altUp]);
+    expect(d1).toEqual({ state: { armed: false, alone: true }, prevent: false, open: false });
+    expect(d2).toEqual({ state: ALT_IDLE, prevent: true, open: true });
+  });
+
+  it("Alt's auto-repeat does not count as another key", () => {
+    expect(opened([altDown(), altDown({ repeat: true }), altDown({ repeat: true }), altUp])).toBe(
+      true,
+    );
+  });
+
+  it('opens once: a second key-up without a key-down opens nothing', () => {
+    const d = run([altDown(), altUp, altUp]);
+    expect(d[1]?.open).toBe(true);
+    expect(d[2]).toEqual({ state: ALT_IDLE, prevent: false, open: false });
+  });
+
+  it('Alt then click then up opens nothing; the Alt+click guard prevents that key-up (R4)', () => {
+    const d = run([altDown(), click(true), altDown({ repeat: true }), altUp]);
+    expect(d.some((x) => x.open)).toBe(false);
+    expect(d[3]).toEqual({ state: ALT_IDLE, prevent: true, open: false });
+    // A later lone Alt opens again.
+    expect(opened([altDown(), click(true), altUp, altDown(), altUp])).toBe(true);
+  });
+
+  it('an Alt+click with Alt already held (R4): the next Alt key-up is prevented, opens nothing', () => {
+    let s = altGuard(ALT_IDLE, click(true));
+    expect(s).toEqual({ state: { armed: true, alone: false }, prevent: false, open: false });
+    s = altGuard(s.state, { type: 'keydown', key: 'Alt', repeat: true });
+    expect(s.state).toEqual({ armed: true, alone: false });
+    s = altGuard(s.state, altUp);
+    expect(s).toEqual({ state: ALT_IDLE, prevent: true, open: false });
+    expect(altGuard(s.state, altUp)).toEqual({ state: ALT_IDLE, prevent: false, open: false });
+  });
+
+  it('a click without Alt between down and up cancels the lone Alt and does not arm', () => {
+    const d = run([altDown(), click(false), altUp]);
+    expect(d[1]?.state).toEqual(ALT_IDLE);
+    expect(d[2]).toEqual({ state: ALT_IDLE, prevent: false, open: false });
+  });
+
+  it('Alt+Tab, Alt+F4, Alt+letter: another key between down and up opens nothing', () => {
+    for (const key of ['Tab', 'F4', 'f', 'ArrowLeft', 'Shift', 'Control'])
+      expect(opened([altDown(), down(key), altUp]), key).toBe(false);
+  });
+
+  it('Alt+Shift (language switch), Shift first or Alt first, opens nothing', () => {
+    expect(opened([altDown(), down('Shift'), altUp])).toBe(false);
+    expect(opened([altDown(), down('Shift'), { type: 'keyup', key: 'Shift' }, altUp])).toBe(false);
+    expect(opened([down('Shift'), altDown({ otherModifier: true }), altUp])).toBe(false);
+    expect(opened([down('Control'), altDown({ otherModifier: true }), altUp])).toBe(false);
+  });
+
+  it('a window blur between down and up opens nothing (Alt+Tab away and back)', () => {
+    expect(opened([altDown(), { type: 'blur' }, altUp])).toBe(false);
+    const [, b] = run([altDown(), { type: 'blur' }]);
+    expect(b?.state).toEqual(ALT_IDLE);
+  });
+
+  it('a blur clears an armed guard; the next lone Alt opens', () => {
+    expect(opened([click(true), { type: 'blur' }, altDown(), altUp])).toBe(true);
+  });
+
+  it('a key-up of Alt with no key-down seen (focus came back with Alt held) opens nothing', () => {
+    expect(run([altUp])[0]).toEqual({ state: ALT_IDLE, prevent: false, open: false });
+  });
+
+  it('an open dialog stops it; other key-ups change nothing', () => {
+    const d = run([altDown(), { type: 'keyup', key: 'Alt', modal: true }]);
+    expect(d[1]).toEqual({ state: ALT_IDLE, prevent: false, open: false });
+    const e = run([altDown(), { type: 'keyup', key: 'b' }, altUp]);
+    expect(e[1]?.state).toEqual({ armed: false, alone: true });
+    expect(e[2]?.open).toBe(true);
+  });
+
+  it('AltGraph is not Alt', () => {
+    expect(opened([down('AltGraph'), { type: 'keyup', key: 'AltGraph' }])).toBe(false);
+  });
+
+  it('any other keydown disarms an armed guard; a plain click leaves the flag', () => {
+    const armed: AltState = { armed: true, alone: false };
+    expect(run([down('b')], armed)[0]?.state).toEqual(ALT_IDLE);
+    expect(run([click(false)], armed)[0]?.state).toEqual(armed);
+    expect(run([{ type: 'keyup', key: 'b' }], armed)[0]?.state).toEqual(armed);
+  });
+
+  it('a fresh Alt press after an Alt+click is a new lone Alt (the old guard is dropped)', () => {
+    const d = run([click(true), altDown(), altUp]);
+    expect(d[1]?.state).toEqual({ armed: false, alone: true });
+    expect(d[2]?.open).toBe(true);
   });
 });

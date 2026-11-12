@@ -1,10 +1,11 @@
 // A10 host wiring (SPEC-app-shell.md ST1, ST2, CO1): startup settings, preset tracking through the
 // one controller, loads not stored, New uses the remembered style. Fake preload API.
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { emptyDoc, serialize, setStyle, addAtom, type AtomId, type Doc } from '@core/doc-model';
 import type { ChalkbondApi } from '../../preload/api';
 import type { FileRef, RendererSettings } from '../../shared/ipc-types';
 import { createWindowHost, type WindowHost } from './host';
+import { installHostKeys } from './host-keys';
 
 const NOW = '2026-11-11T09:00:00.000Z';
 const REF: FileRef = { id: '00000000-0000-4000-8000-000000000001', name: 'a.chalk', kind: 'chalk' };
@@ -496,5 +497,177 @@ describe('A15 RC7: recovery tracking waits for the startup offer (R23)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('TB22 host key listener (K1, K3)', () => {
+  class FakeElement extends EventTarget {
+    isContentEditable = false;
+    closest = (): null => null;
+  }
+  class FakeInput extends FakeElement {}
+
+  function setup(opts: { idle?: boolean; modal?: boolean; canReopen?: boolean } = {}) {
+    // Node's `removeEventListener` ignores a boolean `capture`; browsers do not.
+    class FakeWindow extends EventTarget {
+      override removeEventListener(
+        type: string,
+        listener: EventListenerOrEventListenerObject,
+        options?: boolean | EventListenerOptions,
+      ): void {
+        super.removeEventListener(
+          type,
+          listener,
+          typeof options === 'boolean' ? { capture: options } : options,
+        );
+      }
+    }
+    const win = new FakeWindow();
+    vi.stubGlobal('window', win);
+    vi.stubGlobal('Element', FakeElement);
+    vi.stubGlobal('HTMLElement', FakeElement);
+    vi.stubGlobal('HTMLInputElement', FakeInput);
+    vi.stubGlobal('HTMLTextAreaElement', class extends FakeElement {});
+    const controller = {
+      getSelection: () => ({ atoms: new Set(), bonds: new Set(), objects: new Set() }),
+      canRun: () => opts.idle ?? true,
+      getDoc: () => ({ atoms: {}, objects: {} }),
+    };
+    const calls: string[] = [];
+    const record = (name: string) => () => void calls.push(name);
+    const actions = {
+      'copy-whole': record('copy-whole'),
+      paste: record('paste'),
+      new: record('new'),
+      open: record('open'),
+      save: record('save'),
+      'save-as': record('save-as'),
+      export: record('export'),
+      shortcuts: record('shortcuts'),
+      'focus-name': record('focus-name'),
+      menu: record('menu'),
+      'close-tab': record('close-tab'),
+      'tab-2': record('tab-2'),
+      'last-tab': record('last-tab'),
+      'reopen-tab': record('reopen-tab'),
+    };
+    const stop = installHostKeys(
+      controller as never,
+      { busy: () => false },
+      actions as never,
+      () => opts.modal ?? false,
+      () => opts.canReopen ?? false,
+    );
+    const send = (
+      type: string,
+      init: Record<string, unknown>,
+      target?: EventTarget,
+    ): { prevented: boolean; stopped: boolean } => {
+      const event = new Event(type, { cancelable: true, bubbles: true });
+      Object.assign(
+        event,
+        { ctrlKey: false, altKey: false, shiftKey: false, metaKey: false },
+        init,
+      );
+      if (target) Object.defineProperty(event, 'target', { value: target });
+      const stopped = vi.spyOn(event, 'stopPropagation');
+      win.dispatchEvent(event);
+      return { prevented: event.defaultPrevented, stopped: stopped.mock.calls.length > 0 };
+    };
+    return { calls, send, stop, win };
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('passes code: Ctrl+2 and Ctrl+9 match by the physical key with a Devanagari key', () => {
+    const { calls, send, stop } = setup();
+    const two = send('keydown', { key: '२', code: 'Digit2', ctrlKey: true });
+    expect(two).toEqual({ prevented: true, stopped: true });
+    send('keydown', { key: '9', code: 'Numpad9', ctrlKey: true });
+    send('keydown', { key: '2', ctrlKey: true }); // no code: not a tab key
+    expect(calls).toEqual(['tab-2', 'last-tab']);
+    stop();
+  });
+
+  it('handled keys are prevented and stopped; unhandled keys reach the editor untouched', () => {
+    const { calls, send, stop } = setup();
+    expect(send('keydown', { key: 'w', ctrlKey: true })).toEqual({
+      prevented: true,
+      stopped: true,
+    });
+    expect(send('keydown', { key: 'z', ctrlKey: true })).toEqual({
+      prevented: false,
+      stopped: false,
+    });
+    // A tab key with no handler (next-tab here) is left alone.
+    expect(send('keydown', { key: 'Tab', ctrlKey: true })).toEqual({
+      prevented: false,
+      stopped: false,
+    });
+    expect(calls).toEqual(['close-tab']);
+    stop();
+  });
+
+  it('Ctrl+Shift+T follows the reopen list; the name field still gets the tab keys', () => {
+    const empty = setup();
+    empty.send('keydown', { key: 'T', shiftKey: true, ctrlKey: true });
+    expect(empty.calls).toEqual([]);
+    empty.stop();
+    const full = setup({ canReopen: true });
+    full.send('keydown', { key: 'T', shiftKey: true, ctrlKey: true });
+    full.send('keydown', { key: 'w', ctrlKey: true }, new FakeInput());
+    expect(full.calls).toEqual(['reopen-tab', 'close-tab']);
+    full.stop();
+  });
+
+  it('busy (a label or text editor) stops the tab keys but not F10; a dialog stops both', () => {
+    const busy = setup({ idle: false });
+    busy.send('keydown', { key: 'w', ctrlKey: true });
+    busy.send('keydown', { key: 'F10' });
+    expect(busy.calls).toEqual(['menu']);
+    busy.stop();
+    const modal = setup({ modal: true });
+    modal.send('keydown', { key: 'w', ctrlKey: true });
+    modal.send('keydown', { key: 'F10' });
+    modal.send('keydown', { key: 'Alt', repeat: false });
+    modal.send('keyup', { key: 'Alt' });
+    expect(modal.calls).toEqual([]);
+    modal.stop();
+  });
+
+  it('a lone Alt opens the menu on the key-up and prevents it', () => {
+    const { calls, send, stop } = setup();
+    expect(send('keydown', { key: 'Alt', altKey: true, repeat: false }).prevented).toBe(false);
+    expect(send('keyup', { key: 'Alt' }).prevented).toBe(true);
+    expect(calls).toEqual(['menu']);
+    stop();
+  });
+
+  it('Alt+click, Alt+Tab, Alt+Shift and a blur open nothing; the Alt+click key-up is prevented', () => {
+    const { calls, send, stop, win } = setup();
+    send('keydown', { key: 'Alt', altKey: true, repeat: false });
+    send('pointerdown', { altKey: true });
+    expect(send('keyup', { key: 'Alt' }).prevented).toBe(true);
+    send('keydown', { key: 'Alt', altKey: true, repeat: false });
+    send('keydown', { key: 'Tab', altKey: true });
+    send('keyup', { key: 'Alt' });
+    send('keydown', { key: 'Shift', shiftKey: true });
+    send('keydown', { key: 'Alt', altKey: true, shiftKey: true, repeat: false });
+    send('keyup', { key: 'Alt', shiftKey: true });
+    send('keydown', { key: 'Alt', altKey: true, repeat: false });
+    win.dispatchEvent(new Event('blur'));
+    send('keyup', { key: 'Alt' });
+    expect(calls).toEqual([]);
+    stop();
+  });
+
+  it('the cleanup removes every listener, the blur one too', () => {
+    const { calls, send, stop } = setup();
+    stop();
+    send('keydown', { key: 'w', ctrlKey: true });
+    send('keydown', { key: 'F10' });
+    expect(calls).toEqual([]);
   });
 });
