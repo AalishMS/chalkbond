@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { openApp } from './harness';
+import { canvasPoint, openApp, readDocument } from './harness';
 
 interface Box {
   x: number;
@@ -236,7 +236,7 @@ test('a rail tooltip appears after 500 ms, 8 px right of the button, with name, 
     await page.waitForTimeout(350);
     await expect(tooltip(page)).toBeVisible();
     await expect(tooltip(page).locator('.tooltip-title span')).toHaveText('Bond');
-    await expect(tooltip(page).locator('kbd')).toHaveText('B');
+    await expect(tooltip(page).locator('kbd')).toHaveText(['3', 'B']);
     await expect(tooltip(page).locator('.tooltip-help')).toHaveText(
       'Click to add a bond. Drag to aim it.',
     );
@@ -342,6 +342,54 @@ test('a tooltip goes away on pointer down and on Escape, and shows on keyboard f
     await expect(tooltip(page).locator('.tooltip-title span')).toHaveText('Bond');
     await page.keyboard.press('Tab');
     await expect(tooltip(page)).toHaveCount(0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('number keys 1 .. 0 select Select .. Text in turn with the canvas focused (R50)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('canvas').focus();
+    const tools = [
+      'select',
+      'erase',
+      'bond',
+      'chain',
+      'ring',
+      'atom',
+      'arrow',
+      'plus',
+      'curved',
+      'text',
+    ];
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    for (const [i, id] of tools.entries()) {
+      await page.keyboard.press(keys[i] as string);
+      await expect(page.getByTestId(`tool-${id}`)).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByTestId('rail').locator('[aria-pressed="true"]')).toHaveCount(1);
+      expect(await focused(page)).toBe('canvas');
+    }
+  } finally {
+    await app.close();
+  }
+});
+
+test('with Ring active, hovering a ring atom and pressing 1 sprouts a bond: toluene (R5, SC2)', async () => {
+  const { app, page } = await openApp();
+  try {
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('5');
+    await expect(page.getByTestId('tool-ring')).toHaveAttribute('aria-pressed', 'true');
+    await page.mouse.click(600, 400);
+    const doc = await readDocument(page);
+    const first = Object.values(doc.atoms)[0];
+    if (!first) throw new Error('no ring atom');
+    const at = await canvasPoint(page, first);
+    await page.mouse.move(at.x, at.y);
+    await page.keyboard.press('1');
+    await expect(page.getByTestId('formula')).toHaveText('C7H8 · 92.14 g/mol');
+    await expect(page.getByTestId('tool-ring')).toHaveAttribute('aria-pressed', 'true');
   } finally {
     await app.close();
   }

@@ -72,7 +72,7 @@ test('keyboard only: name, copy, paste, nudge, undo, tool key, tooltip on focus,
     await page.keyboard.press('Shift+Tab');
     expect(await focused(page)).toBe('tool-bond');
     await expect(tooltip(page).locator('.tooltip-title span')).toHaveText('Bond');
-    await expect(tooltip(page).locator('kbd')).toHaveText('B');
+    await expect(tooltip(page).locator('kbd')).toHaveText(['3', 'B']);
 
     // 8. Back to the canvas, on to the preset switch, ArrowRight switches to Handout.
     await page.keyboard.press('Tab');
@@ -396,6 +396,16 @@ test('every control has an accessible name that starts with its tooltip name', a
       tipped++;
       const title = (await tip.locator('.tooltip-title span').textContent()) ?? '';
       const name = (await el.getAttribute('aria-label')) ?? '';
+      if (id.startsWith('tool-')) {
+        // R50 U2: the rail name is the tool name alone; the keys are in aria-keyshortcuts and the
+        // tooltip chips say the same thing, digit first.
+        const chips = await tip.locator('kbd').allTextContents();
+        expect(name, id).toBe(title);
+        await expect(el, id).toHaveAttribute(
+          'aria-keyshortcuts',
+          chips.join(' ').replace('+', 'Plus'),
+        );
+      }
       expect(
         name.toLowerCase().includes(title.toLowerCase()),
         `${id}: name "${name}" contains tooltip title "${title}"`,
@@ -572,6 +582,47 @@ test('keyboard only: every selection action runs from its shortcut or its button
     // The Tidy shortcut runs with nothing to tidy and says so.
     await page.keyboard.press('Control+Shift+T');
     await expect(page.getByRole('status')).toContainText('Nothing to tidy');
+  } finally {
+    await app.close();
+  }
+});
+
+test('rail badges: each digit sits inside its unchanged 56 x 48 button and is not announced (R50)', async () => {
+  const { app, page } = await openApp();
+  try {
+    const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    const tools = [
+      'select',
+      'erase',
+      'bond',
+      'chain',
+      'ring',
+      'atom',
+      'arrow',
+      'plus',
+      'curved',
+      'text',
+    ];
+    for (const [i, id] of tools.entries()) {
+      const button = page.getByTestId(`tool-${id}`);
+      const badge = button.locator('.rail-key');
+      await expect(badge).toHaveText(digits[i] as string);
+      await expect(badge).toHaveAttribute('aria-hidden', 'true');
+      const b = await button.boundingBox();
+      const k = await badge.boundingBox();
+      if (!b || !k) throw new Error('no box');
+      expect(Math.abs(b.width - 56), id).toBeLessThanOrEqual(1);
+      expect(Math.abs(b.height - 48), id).toBeLessThanOrEqual(1);
+      expect(k.x, id).toBeGreaterThanOrEqual(b.x);
+      expect(k.y, id).toBeGreaterThanOrEqual(b.y);
+      expect(k.x + k.width, id).toBeLessThanOrEqual(b.x + b.width);
+      expect(k.y + k.height, id).toBeLessThanOrEqual(b.y + b.height);
+      // Top-right: right of the button's middle, in its upper half.
+      expect(k.x, id).toBeGreaterThan(b.x + b.width / 2);
+      expect(k.y + k.height, id).toBeLessThan(b.y + b.height / 2);
+    }
+    await expect(page.getByTestId('tool-bond')).toHaveAttribute('aria-label', 'Bond');
+    await expect(page.getByTestId('tool-plus')).toHaveAttribute('aria-keyshortcuts', '8 Plus');
   } finally {
     await app.close();
   }

@@ -9,19 +9,19 @@ const render = (state = initialState()): string =>
 describe('ToolRail markup', () => {
   const html = render();
 
-  it('has ten buttons in rail order with captions and key labels', () => {
+  it('has ten buttons in rail order with captions and names without keys (R50 U2)', () => {
     const labels = [...html.matchAll(/aria-label="([^"]+)" aria-pressed/g)].map((m) => m[1]);
     expect(labels).toEqual([
-      'Select (V)',
-      'Erase (E)',
-      'Bond (B)',
-      'Chain (Z)',
-      'Ring (R)',
-      'Atom (L)',
-      'Arrow (A)',
-      'Plus (+)',
-      'Curved arrow (M)',
-      'Text (T)',
+      'Select',
+      'Erase',
+      'Bond',
+      'Chain',
+      'Ring',
+      'Atom',
+      'Arrow',
+      'Plus',
+      'Curved arrow',
+      'Text',
     ]);
     const captions = [...html.matchAll(/class="rail-caption"[^>]*>([^<]+)</g)].map((m) => m[1]);
     expect(captions).toEqual([
@@ -38,9 +38,24 @@ describe('ToolRail markup', () => {
     ]);
   });
 
+  it('every button has one aria-hidden digit badge, first, and both keys in aria-keyshortcuts (R50)', () => {
+    const buttons = html.split('<button').slice(1);
+    expect(buttons).toHaveLength(10);
+    const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    buttons.forEach((b, i) => {
+      expect(b.match(/class="rail-key"/g)).toHaveLength(1);
+      expect(b).toContain('<span class="rail-key" aria-hidden="true">' + digits[i] + '</span>');
+      expect(b.indexOf('rail-key')).toBeLessThan(b.indexOf('rail-caption'));
+    });
+    expect(html).toContain('aria-keyshortcuts="3 B"');
+    expect(html).toContain('aria-keyshortcuts="8 Plus"');
+    expect(html).toContain('aria-keyshortcuts="1 V"');
+    expect(html).toContain('aria-keyshortcuts="0 T"');
+  });
+
   it('presses exactly one button: Bond at launch', () => {
     expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
-    expect(html).toContain('aria-label="Bond (B)" aria-pressed="true"');
+    expect(html).toContain('aria-label="Bond" aria-pressed="true"');
   });
 
   it('has two separators between the three groups', () => {

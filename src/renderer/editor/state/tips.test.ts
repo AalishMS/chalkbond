@@ -8,6 +8,7 @@ describe('tool tooltips', () => {
     if (!bond) throw new Error('no bond tool');
     expect(toolTip(bond)).toEqual({
       title: 'Bond',
+      digit: '3',
       key: 'B',
       help: 'Click to add a bond. Drag to aim it.',
     });
@@ -18,6 +19,7 @@ describe('tool tooltips', () => {
       const tip = toolTip(tool);
       expect(tip.title).toBe(tool.label);
       expect(tip.key).toBe(tool.key);
+      expect(tip.digit).toBe(tool.digit);
       expect(tip.help ?? '').not.toBe('');
     }
   });

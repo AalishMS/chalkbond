@@ -189,9 +189,9 @@ bond (toluene, SC2). Shots `e2e/shots/N5.shot.ts`: `N5/rail-badges.png` (Select 
 03), `N5/rail-tooltip.png` (Bond tooltip).
 
 **Acceptance criteria:**
-- [ ] markup, tooltip and tokens tests pass; no new colour pair
-- [ ] e2e boxes unchanged, badges inside, digits select tools, toluene in 3 actions still works
-- [ ] shots exist and were compared with `out/mockups/03-select.png` and `10-states.png` by eye
+- [x] markup, tooltip and tokens tests pass; no new colour pair
+- [x] e2e boxes unchanged, badges inside, digits select tools, toluene in 3 actions still works
+- [x] shots exist and were compared with `out/mockups/03-select.png` and `10-states.png` by eye
 
 **Verification:** `npx vitest run --project unit src/renderer/editor/view`, `npx vitest run --project tooling tests/tooling/editor-tokens.test.ts`, `npm run test:e2e -- e2e/editor-a11y.spec.ts e2e/editor-keyboard.spec.ts`, `npm run shots -- N5`, then `npm run check`
 

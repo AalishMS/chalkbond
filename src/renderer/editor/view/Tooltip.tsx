@@ -13,6 +13,7 @@ export function tipProps(content: TipContent, side: TipSide): Record<string, str
     'data-tip': content.title,
     'data-tip-key': content.key,
     'data-tip-help': content.help,
+    'data-tip-digit': content.digit,
     'data-tip-side': side,
   };
 }
@@ -32,6 +33,7 @@ export const TooltipBubble = forwardRef<HTMLDivElement, BubbleProps>(function To
     <div className="tooltip" role="tooltip" id={id} ref={ref} style={style}>
       <div className="tooltip-title">
         <span>{content.title}</span>
+        {content.digit !== undefined && <kbd>{content.digit}</kbd>}
         {content.key !== undefined && <kbd>{content.key}</kbd>}
       </div>
       {content.help !== undefined && <div className="tooltip-help">{content.help}</div>}
@@ -60,6 +62,7 @@ function read(anchor: HTMLElement): Active {
   const content: TipContent = { title: d['tip'] ?? '' };
   if (d['tipKey'] !== undefined) content.key = d['tipKey'];
   if (d['tipHelp'] !== undefined) content.help = d['tipHelp'];
+  if (d['tipDigit'] !== undefined) content.digit = d['tipDigit'];
   const side = d['tipSide'] === 'right' || d['tipSide'] === 'above' ? d['tipSide'] : 'below';
   return { anchor, content, side };
 }

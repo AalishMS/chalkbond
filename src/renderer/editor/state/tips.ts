@@ -4,6 +4,8 @@ import type { ActionState } from './selection-actions';
 /** What a tooltip shows: the name, an optional key cap, an optional help line. */
 export interface TipContent {
   title: string;
+  /** A rail tool's number key, shown as a chip before `key` (R50). */
+  digit?: string;
   key?: string;
   help?: string;
 }
@@ -15,7 +17,12 @@ function firstSentences(text: string, count: number): string {
 }
 
 export function toolTip(tool: ToolDef): TipContent {
-  return { title: tool.label, key: tool.key, help: firstSentences(HINTS[tool.id], 2) };
+  return {
+    title: tool.label,
+    digit: tool.digit,
+    key: tool.key,
+    help: firstSentences(HINTS[tool.id], 2),
+  };
 }
 
 /** Element buttons say what a click does; everything else is named only. */

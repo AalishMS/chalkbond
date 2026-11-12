@@ -28,6 +28,15 @@ describe('TooltipBubble markup', () => {
     expect(html).toContain('<div class="tooltip-help">Click to add a bond. Drag to aim it.</div>');
   });
 
+  it('a rail tool: two chips, digit then letter (R50)', () => {
+    const html = renderToStaticMarkup(
+      <TooltipBubble id="tip" content={{ title: 'Bond', digit: '3', key: 'B' }} />,
+    );
+    expect(html).toContain(
+      '<div class="tooltip-title"><span>Bond</span><kbd>3</kbd><kbd>B</kbd></div>',
+    );
+  });
+
   it('name only: no key cap and no help line', () => {
     const html = renderToStaticMarkup(<TooltipBubble id="t" content={{ title: 'Cyclopentane' }} />);
     expect(html).not.toContain('<kbd');
@@ -39,6 +48,7 @@ describe('controls carry their tooltip content', () => {
   it('rail buttons: name, key, help; tooltip opens to the right', () => {
     const html = renderToStaticMarkup(<ToolRail state={initialState()} dispatch={noop} />);
     expect(html).toContain('data-tip="Bond" data-tip-key="B"');
+    expect(html).toContain('data-tip-digit="3"');
     expect(html).toContain('data-tip-help="Click to add a bond. Drag to aim it."');
     expect(html.match(/data-tip-side="right"/g)).toHaveLength(10);
   });

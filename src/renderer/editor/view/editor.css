@@ -166,6 +166,29 @@
   outline-offset: 0;
 }
 
+/*
+ * Number key badge (R50): the tool's digit in the top-right corner, in the caption type and
+ * colours (no new colour pair); it leaves the 56 x 48 box and the icon and caption alone.
+ */
+.rail-key {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-2);
+  color: var(--text-muted);
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.btn-rail:hover .rail-key,
+.btn-rail:active .rail-key {
+  color: var(--text);
+}
+
+.btn-rail[aria-pressed='true'] .rail-key {
+  color: var(--active-fg);
+}
+
 .rail-caption {
   display: block;
   color: var(--text-muted);
@@ -729,6 +752,11 @@
   gap: var(--space-3);
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* A rail tool's digit and letter chips stand 4 px apart (R50). */
+.tooltip-title kbd + kbd {
+  margin-left: calc(-1 * var(--space-2));
 }
 
 .tooltip-help {

@@ -36,14 +36,18 @@ export function ToolRail({ state, dispatch }: ToolRailProps): React.JSX.Element 
               type="button"
               className="btn btn-rail"
               data-testid={`tool-${tool.id}`}
-              aria-label={`${tool.label} (${tool.key})`}
+              aria-label={tool.label}
               aria-pressed={state.tool === tool.id}
+              aria-keyshortcuts={`${tool.digit} ${tool.key === '+' ? 'Plus' : tool.key}`}
               {...roving.item(tool.id)}
               {...tipProps(toolTip(tool), 'right')}
               onClick={() => {
                 dispatch({ type: 'select-tool', tool: tool.id });
               }}
             >
+              <span className="rail-key" aria-hidden="true">
+                {tool.digit}
+              </span>
               {face.glyph !== undefined ? (
                 <span className="rail-glyph">{face.glyph}</span>
               ) : (
