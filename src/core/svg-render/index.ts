@@ -1,6 +1,14 @@
 // Public entry for the svg-render module. Other modules import only from here.
 // See SPEC-svg-render.md. Grows with each task.
-export { STYLE_PRESETS, resolveStyle, bluToPt, ptToBlu, INK, type ResolvedStyle } from './style';
+export {
+  STYLE_PRESETS,
+  STRUCTURAL_SCALE,
+  resolveStyle,
+  bluToPt,
+  ptToBlu,
+  INK,
+  type ResolvedStyle,
+} from './style';
 export { render } from './render';
 export { toSvg, renderSvg } from './to-svg';
 export { curveControls } from './curved-arrow';

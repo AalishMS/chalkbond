@@ -9,6 +9,7 @@ import {
   type DrawObject,
   type Point,
   type Rect,
+  type TextObject,
 } from '../doc-model';
 import { layoutArrow, layoutPlus } from './arrows';
 import type { AtomLabel } from './atom-label';
@@ -53,7 +54,16 @@ function rectToPt(r: Rect, style: ResolvedStyle): Rect | null {
 function resolveEnd(anchor: Anchor, ctx: ObjectContext): CurveEnd | string {
   let blu: Point;
   try {
-    blu = resolveAnchor(ctx.doc, anchor);
+    // S2 (Decision 16, item 6): an atom anchor's offset stays at the style's scale, so in
+    // structural mode (r = 2) it is divided by r before `bluToPt` multiplies everything by
+    // ptPerBlu. With r = 1 the division is exact and this is the skeletal arithmetic.
+    const r = ctx.style.ptPerBlu / ctx.style.bondLength;
+    blu = resolveAnchor(
+      ctx.doc,
+      anchor.kind === 'atom' && anchor.offset
+        ? { ...anchor, offset: { x: anchor.offset.x / r, y: anchor.offset.y / r } }
+        : anchor,
+    );
   } catch {
     return 'anchor refers to a missing atom or bond';
   }
@@ -61,6 +71,21 @@ function resolveEnd(anchor: Anchor, ctx: ObjectContext): CurveEnd | string {
   if (!finite(point)) return 'non-finite coordinate';
   const label = anchor.kind === 'atom' && !anchor.offset ? ctx.labels.get(anchor.atom) : undefined;
   return { point, clip: label ? growRect(label.anchorBox, ctx.style.curvedGap) : null };
+}
+
+/**
+ * Where a text object's `at` lands in pt. A text attached to an arrow keeps its offset from the
+ * arrow's midpoint at the style's scale in structural mode (S2, Decision 16 item 6): the midpoint
+ * scales with the coordinates, the offset does not. Skeletal documents (`r = 1`) and texts with
+ * no usable arrow use `bluToPt(at)` unchanged.
+ */
+function textPosition(obj: TextObject, ctx: ObjectContext): Point {
+  const r = ctx.style.ptPerBlu / ctx.style.bondLength;
+  const arrow = obj.attachedTo ? ctx.doc.objects[obj.attachedTo.arrow] : undefined;
+  if (r === 1 || arrow?.type !== 'arrow') return bluToPt(obj.at, ctx.style);
+  const m = { x: (arrow.from.x + arrow.to.x) / 2, y: (arrow.from.y + arrow.to.y) / 2 };
+  if (!finite(m)) return bluToPt(obj.at, ctx.style);
+  return bluToPt({ x: m.x + (obj.at.x - m.x) / r, y: m.y + (obj.at.y - m.y) / r }, ctx.style);
 }
 
 /** The union of the ink of the caption's target atoms (a bare vertex is a point), if any exist. */
@@ -113,7 +138,7 @@ export function drawObject(obj: DrawObject, ctx: ObjectContext): Drawn | string 
       return layoutCurvedArrow(obj.head, from, to, obj.bend, style) ?? 'arrow has no length';
     }
     case 'text': {
-      const at = bluToPt(obj.at, style);
+      const at = textPosition(obj, ctx);
       if (!finite(at)) return 'non-finite coordinate';
       return layoutTextObject(obj.runs, obj.align, at, style) ?? 'text has no content';
     }

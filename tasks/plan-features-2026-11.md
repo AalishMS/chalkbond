@@ -21,7 +21,8 @@ Three changes the owner asked for on 2026-11-12, before the 1.0.0 release. Specs
   drawing is drawn with every coordinate ×2 and the style unchanged (`ptPerBlu`), carbons outside
   rings are written by the existing label rules, ring carbons are not. N3 is split into N3a (the
   factor) and N3b (goldens and legibility); the ring rule is in N2; the editor's unit change is
-  N13. Open question S2 (lone-pair offsets and condition texts) does not block a task before N12.
+  N13. Open question S2 (lone-pair offsets and condition texts) was answered B on 2026-11-12 (the
+  rule is applied in N3a; the editor's placing and moving of such items follows in editor tasks).
 - **F3 white-backed clipboard bitmap** (clipboard-export R10): the `image/png` clipboard entry is
   opaque white with a 0.25-bond margin; the SVG entry and Export are unchanged.
 
@@ -58,11 +59,11 @@ N4 keymap digits ──► N5 rail badges ──► N5b edge-case tests ──�
 N8 white clipboard bitmap (independent) ────────────────────────────────────────────────────┤
 N10 app-shell list and files (needs N4, N6) ────────────────────────────────────────────────┤
                                                                                             ▼
-                                          N11 docs and shots ──► N12 checkpoint (S2 answered)
+                                          N11 docs and shots ──► N12 checkpoint
 ```
 
 N1, N4 and N8 are independent of each other and can start at once. S1 is answered, so nothing
-is blocked; N12 needs N3a, N3b and N13, and the orchestrator's answer to S2.
+is blocked; N12 needs N3a, N3b and N13.
 
 ## Task List
 
@@ -134,7 +135,7 @@ assertions, coverage exclusions or new dependencies.
 |---|---|---|
 | S1 is answered late, so N3 and N12 wait | High | Closed 2026-11-12: S1 answered (svg-render Decision 16) |
 | A BLU ↔ pt conversion in the editor keeps using `bondLength`, so clicks land half-way in a structural drawing | Med | N13 replaces every conversion found by grep and tests a structural document at three zooms; N7's e2e clicks a structural atom |
-| S2 answered B late, changing how lone-pair arrows and conditions are drawn | Low | No structural golden contains either; B is skeletal-neutral; a separate task before N12 |
+| S2 answered B (2026-11-12): lone-pair arrows and condition texts keep their offsets at the style's scale | Low | Done in N3a on the render side; no structural golden contains either; B is skeletal-neutral; the editor side (placing and moving such items in structural mode) is an editor task |
 | The v1/v2 writing rule breaks a round trip | Med | Property: `parse(serialize(d))` deep-equals `d` with `formula` in the generator; every committed fixture re-serialises byte-identically |
 | A digit swallowed by a text target or stolen from R5 | Med | Keymap table tests for every digit × hover × tool; e2e for the toluene path (SC2) |
 | The second `renderSvg` for the bitmap pushes copy past SC12's 500 ms | Low | Measured by the existing clipboard perf e2e; a miss is profiled, the budget is not raised |

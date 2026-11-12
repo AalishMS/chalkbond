@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { perceive } from '../chem-core';
 import {
   addObject,
+  emptyDoc,
   setStyle,
   type Atom,
   type AtomId,
   type BondId,
   type Doc,
   type ObjectId,
+  type ObjectInit,
   type Point,
   type Rect,
   type Selection,
@@ -1144,7 +1146,7 @@ describe('render: nitro group', () => {
   });
 });
 
-describe('structural formula display (Decisions 15 and 16, rule only; no factor yet)', () => {
+describe('structural formula display (Decisions 15 and 16: labelling rule and the x2 factor)', () => {
   const structural = (doc: Doc): Doc => setStyle(doc, { formula: 'structural' });
   const skeletal = (doc: Doc): Doc => setStyle(doc, { formula: 'skeletal' });
   const byKey = (scene: Scene): Map<string, string> =>
@@ -1158,23 +1160,27 @@ describe('structural formula display (Decisions 15 and 16, rule only; no factor 
     );
   }
 
-  it('ethanol: both carbons are written CH2 and CH3, the O part is as in skeletal mode', () => {
+  it('ethanol: both carbons are written CH2 and CH3, the O label is as in skeletal mode', () => {
     const m = ethanol(true); // the neighbours of the first carbon are on its left: `CH3`, not `H3C`
     const sk = byKey(render(m.doc));
     const st = byKey(render(structural(m.doc)));
     expect(textOf(st.get(`atom:${m.atoms[0]}`)!)).toBe('CH3');
     expect(textOf(st.get(`atom:${m.atoms[1]}`)!)).toBe('CH2');
     expect(sk.has(`atom:${m.atoms[0]}`)).toBe(false);
-    expect(st.get(`atom:${m.atoms[2]}`)).toBe(sk.get(`atom:${m.atoms[2]}`));
+    // Same label, same size, drawn at the doubled position (the oracle test checks the bytes).
+    const o = `atom:${m.atoms[2]}`;
+    expect(textOf(st.get(o)!)).toBe(textOf(sk.get(o)!));
+    expect(st.get(o)!.match(/font-size="[^"]+"/g)).toEqual(sk.get(o)!.match(/font-size="[^"]+"/g));
   });
 
-  it('benzene: no atom part, ring and bond parts as in skeletal mode', () => {
+  it('benzene: no atom part, the same ring and bond parts as in skeletal mode, twice as large', () => {
     const m = benzene();
     const sk = render(m.doc);
     const st = render(structural(m.doc));
     expect(atomKeys(st)).toEqual([]);
     expect(st.parts.filter((p) => p.key.startsWith('ring:'))).toHaveLength(1);
-    expect(st.parts).toEqual(sk.parts);
+    expect(keys(st)).toEqual(keys(sk));
+    expect(st.parts).toEqual(render(structuralOracle(structural(m.doc))).parts);
   });
 
   it('toluene: exactly one atom part, the methyl CH3', () => {
@@ -1210,7 +1216,8 @@ describe('structural formula display (Decisions 15 and 16, rule only; no factor 
     const sk = byKey(render(labelled));
     const st = byKey(render(structural(labelled)));
     expect([...st.keys()].sort()).toEqual([...sk.keys()].sort());
-    for (const [k, v] of sk) expect(st.get(k), k).toBe(v);
+    const oracle = byKey(render(structuralOracle(structural(labelled))));
+    for (const [k, v] of oracle) expect(st.get(k), k).toBe(v);
   });
 
   describe('against the skeletal document, committed inputs', () => {
@@ -1234,5 +1241,226 @@ describe('structural formula display (Decisions 15 and 16, rule only; no factor 
         expect(st.bounds).toEqual(oracle.bounds);
       },
     );
+  });
+});
+
+describe('structural factor: bonds twice as long, the style unchanged (Decision 16)', () => {
+  const structural = (doc: Doc): Doc => setStyle(doc, { formula: 'structural' });
+
+  it("ethanol's C-C bond spans twice the skeletal distance between the atom centres", () => {
+    const m = ethanol(true);
+    const key = `bond:${m.bonds[0]}`;
+    const [c0, c1] = [m.doc.atoms[m.atoms[0]!]!, m.doc.atoms[m.atoms[1]!]!];
+    const centres = (scene: Scene): number => norm(c1.x - c0.x, c1.y - c0.y) * scene.style.ptPerBlu;
+    const sk = render(m.doc);
+    const st = render(structural(m.doc));
+    near(centres(sk), 40, 9);
+    near(centres(st), 80, 9);
+    // The drawn line (both ends trimmed at their labels) lies on the segment between the
+    // doubled atom centres, and is longer than the 0.25 x ptPerBlu of criterion L1.
+    const [line] = pathLines(part(st, key).svg);
+    const [p0, p1] = [line!.pts[0]!, line!.pts[line!.pts.length - 1]!];
+    const d = { x: (c1.x - c0.x) * 80, y: (c1.y - c0.y) * 80 };
+    for (const p of [p0, p1]) {
+      const rel = { x: p.x - c0.x * 80, y: p.y - c0.y * 80 };
+      expect(Math.abs(d.x * rel.y - d.y * rel.x) / 80).toBeLessThan(0.01);
+      const t = (rel.x * d.x + rel.y * d.y) / (80 * 80);
+      expect(t).toBeGreaterThan(0);
+      expect(t).toBeLessThan(1);
+    }
+    expect(norm(p1.x - p0.x, p1.y - p0.y)).toBeGreaterThan(20);
+  });
+
+  it('its CH3 text has the skeletal font size, in both presets', () => {
+    const m = ethanol(true);
+    const size = (doc: Doc) =>
+      part(render(doc), `atom:${m.atoms[0]}`).svg.match(/font-size="([^"]+)"/)![1];
+    expect(size(structural(m.doc))).toBe('24');
+    expect(size(structural(setStyle(m.doc, { preset: 'journal' })))).toBe('10');
+  });
+
+  it("a structural benzene's circle radius is twice the skeletal one, its stroke equal", () => {
+    const m = benzene();
+    const ring = `ring:${m.atoms.join(',')}`;
+    const attrs = (scene: Scene) => {
+      const svg = part(scene, ring).svg;
+      return { r: Number(/ r="([^"]+)"/.exec(svg)![1]), w: /stroke-width="([^"]+)"/.exec(svg)![1] };
+    };
+    const sk = attrs(render(m.doc));
+    const st = attrs(render(structural(m.doc)));
+    near(st.r, 2 * sk.r, 2);
+    expect(st.w).toBe(sk.w);
+  });
+
+  it('a hash bond keeps the skeletal hash spacing: the count follows the doubled length', () => {
+    // A ring bond, so that no label trims it in either mode.
+    const m = molecule(
+      hexagon(),
+      Array.from({ length: 6 }, (_, i): BondSpec => [
+        i,
+        (i + 1) % 6,
+        i === 0 ? { stereo: 'hash' } : {},
+      ]),
+    );
+    const lines = (scene: Scene) => pathLines(part(scene, `bond:${m.bonds[0]}`).svg).length;
+    const sk = render(m.doc);
+    const st = render(structural(m.doc));
+    const spacing = sk.style.hashSpacing;
+    expect(lines(sk)).toBe(Math.max(3, Math.round(40 / spacing)));
+    expect(lines(st)).toBe(Math.max(3, Math.round((2 * 40) / spacing)));
+    expect(lines(st)).toBeGreaterThan(lines(sk));
+  });
+
+  it('keeps the double-bond gap and every line width of the skeletal style', () => {
+    const m = aceticAcid();
+    const key = `bond:${m.bonds[1]}`;
+    const gap = (doc: Doc): number => {
+      const lines = pathLines(part(render(doc), key).svg);
+      const [a, b] = [lines[0]!.pts, lines[1]!.pts];
+      // Parallel lines of one bond: the distance between them is the gap.
+      const d = { x: a[1]!.x - a[0]!.x, y: a[1]!.y - a[0]!.y };
+      const n = norm(d.x, d.y);
+      return Math.abs(d.x * (b[0]!.y - a[0]!.y) - d.y * (b[0]!.x - a[0]!.x)) / n;
+    };
+    near(gap(structural(m.doc)), gap(m.doc), 2);
+    const widths = (doc: Doc) =>
+      new Set(
+        render(doc).parts.flatMap((p) =>
+          [...p.svg.matchAll(/stroke-width="([^"]+)"/g)].map((x) => x[1]),
+        ),
+      );
+    expect(widths(structural(m.doc))).toEqual(widths(m.doc));
+  });
+});
+
+describe('structural offsets stay at the style scale (S2, answered B)', () => {
+  const structural = (doc: Doc): Doc => setStyle(doc, { formula: 'structural' });
+  const add = (doc: Doc, init: ObjectInit): [Doc, ObjectId] => addObject(doc, init);
+  const first = (scene: Scene, id: ObjectId): Point =>
+    pathLines(part(scene, `obj:${id}`).svg)[0]!.pts[0]!;
+  const textXY = (scene: Scene, id: ObjectId): Point => {
+    const m = /<text x="([^"]+)" y="([^"]+)"/.exec(part(scene, `obj:${id}`).svg)!;
+    return { x: Number(m[1]), y: Number(m[2]) };
+  };
+
+  function lonePair(offset: Point): { doc: Doc; id: ObjectId; atom: Atom } {
+    const m = ethanol();
+    const atom = m.doc.atoms[m.atoms[1]!]!;
+    const [doc, id] = add(m.doc, {
+      type: 'curved-arrow',
+      head: 'full',
+      from: { kind: 'atom', atom: atom.id, offset },
+      to: { kind: 'point', p: { x: 3, y: 2 } },
+      bend: 0,
+    });
+    return { doc, id, atom };
+  }
+
+  it('a curved arrow from a lone pair starts offset x bondLength from its atom in pt', () => {
+    const { doc, id, atom } = lonePair({ x: 0.1, y: -0.3 });
+    const sk = render(doc);
+    const st = render(structural(doc));
+    near(first(sk, id).x, atom.x * 40 + 4, 2);
+    near(first(sk, id).y, atom.y * 40 - 12, 2);
+    near(first(st, id).x, atom.x * 80 + 4, 2); // the atom is doubled, the offset is not
+    near(first(st, id).y, atom.y * 80 - 12, 2);
+  });
+
+  it('a callout leader ends offset x bondLength from its anchor atom in pt', () => {
+    const m = ethanol();
+    const atom = m.doc.atoms[m.atoms[1]!]!;
+    const [doc, id] = add(m.doc, {
+      type: 'callout',
+      at: { x: 2, y: 3 },
+      runs: [{ text: 'lone pair' }],
+      anchor: { kind: 'atom', atom: atom.id, offset: { x: 0.1, y: -0.3 } },
+    });
+    const end = (scene: Scene) => pathLines(part(scene, `obj:${id}`).svg)[0]!.pts[1]!;
+    near(end(render(doc)).x, atom.x * 40 + 4, 2);
+    near(end(render(structural(doc))).x, atom.x * 80 + 4, 2);
+    near(end(render(structural(doc))).y, atom.y * 80 - 12, 2);
+  });
+
+  describe('texts attached to an arrow', () => {
+    function reaction() {
+      const [d1, arrow] = add(emptyDoc('2026-01-01T00:00:00Z'), {
+        type: 'arrow',
+        kind: 'forward',
+        from: { x: 0, y: 0 },
+        to: { x: 2, y: 0 },
+      });
+      const base = { type: 'text', align: 'center', runs: [{ text: 'H+' }] } as const;
+      const [d2, attached] = add(d1, {
+        ...base,
+        at: { x: 1.5, y: -0.5 },
+        attachedTo: { arrow, slot: 'above' },
+      });
+      const [d3, loose] = add(d2, { ...base, at: { x: 1.5, y: 2 } });
+      return { doc: d3, arrow, attached, loose };
+    }
+
+    it('lies at the arrow midpoint plus (at - midpoint) x bondLength', () => {
+      const r = reaction();
+      const sk = textXY(render(r.doc), r.attached);
+      const st = textXY(render(structural(r.doc)), r.attached);
+      // Skeletal: at (1.5, -0.5) is (60, -20) pt, the midpoint (1, 0) is (40, 0). Structural: the
+      // midpoint is (80, 0), the offset (0.5, -0.5) x 40 = (20, -20): (100, -20). So the text
+      // moves by the midpoint's doubling (40 pt) only, not by the doubled offset (+60 pt).
+      near(st.x - sk.x, 40, 2);
+      near(st.y - sk.y, 0, 2);
+    });
+
+    it('a text without an attachment is at at x ptPerBlu', () => {
+      const r = reaction();
+      const sk = textXY(render(r.doc), r.loose);
+      const st = textXY(render(structural(r.doc)), r.loose);
+      near(st.x - sk.x, 1.5 * 40, 2); // x is the left edge of a centred text; it moves by at.x x 40
+      // y is the baseline: at.y x ptPerBlu plus the same shift in both modes.
+      near(st.y - 2 * 40 * 2, sk.y - 40 * 2, 2);
+    });
+
+    it('a missing or non-arrow target gives at x ptPerBlu', () => {
+      const r = reaction();
+      const retarget = (doc: Doc, arrow: ObjectId, slot: 'above' | 'below'): Doc =>
+        ({
+          ...doc,
+          objects: {
+            ...doc.objects,
+            [r.attached]: { ...doc.objects[r.attached]!, attachedTo: { arrow, slot } },
+          },
+        }) as Doc;
+      const [withPlus, plus] = add(r.doc, { type: 'plus', at: { x: 5, y: 5 } });
+      for (const d of [
+        retarget(r.doc, 'o99' as ObjectId, 'above'),
+        retarget(withPlus, plus, 'below'),
+      ]) {
+        const sk = textXY(render(d), r.attached);
+        const st = textXY(render(structural(d)), r.attached);
+        near(st.x - sk.x, 1.5 * 40, 2);
+      }
+    });
+
+    it('a subset render keeps the rule, and skeletal documents are unchanged', () => {
+      const r = reaction();
+      const sub = render(structural(r.doc), {
+        only: { atoms: new Set(), bonds: new Set(), objects: new Set([r.attached]) },
+      });
+      expect(sub.parts[0]!.svg).toBe(part(render(structural(r.doc)), `obj:${r.attached}`).svg);
+      expect(render(setStyle(r.doc, { formula: 'skeletal' }))).toEqual(render(r.doc));
+    });
+
+    it('the oracle holds bit for bit for it', () => {
+      const r = reaction();
+      const d = structural(r.doc);
+      expect(render(d).parts).toEqual(render(structuralOracle(d)).parts);
+      expect(render(d).bounds).toEqual(render(structuralOracle(d)).bounds);
+    });
+  });
+
+  it('the oracle holds for lone-pair arrows', () => {
+    const { doc } = lonePair({ x: 0.123, y: -0.31 });
+    const d = structural(doc);
+    expect(render(d).parts).toEqual(render(structuralOracle(d)).parts);
+    expect(render(d).extents).toEqual(render(structuralOracle(d)).extents);
   });
 });

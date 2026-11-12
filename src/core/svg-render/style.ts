@@ -22,6 +22,12 @@ export const STYLE_PRESETS: Readonly<Record<StylePreset, StyleSettings>> = Objec
   }),
 });
 
+/**
+ * How much longer a bond is drawn in structural mode (SPEC-svg-render.md Decision 16): the
+ * document is drawn as if every coordinate were multiplied by this, the style unchanged.
+ */
+export const STRUCTURAL_SCALE = 2;
+
 /** The settings plus every derived length (pt), per the spec table. */
 export type ResolvedStyle = Readonly<
   StyleSettings & {
@@ -56,6 +62,12 @@ export type ResolvedStyle = Readonly<
     pairSeparation: number;
     capHeight: number;
     lineHeight: number;
+    /**
+     * pt per BLU, the only factor that turns document coordinates into pt: `bondLength` itself
+     * when the document is skeletal, `STRUCTURAL_SCALE * bondLength` when `style.formula` is
+     * `'structural'`. No other field reads it or the formula.
+     */
+    ptPerBlu: number;
   }
 >;
 
@@ -142,15 +154,16 @@ export function resolveStyle(style: Doc['style']): ResolvedStyle {
     pairSeparation: 0.24 * fs,
     capHeight: 0.716 * fs,
     lineHeight: 1.2 * fs,
+    ptPerBlu: style.formula === 'structural' ? STRUCTURAL_SCALE * bondLength : bondLength,
   });
 }
 
-/** Document BLU to SVG pt. */
+/** Document BLU to SVG pt (`ptPerBlu` per BLU). */
 export function bluToPt(p: Point, style: ResolvedStyle): Point {
-  return { x: p.x * style.bondLength, y: p.y * style.bondLength };
+  return { x: p.x * style.ptPerBlu, y: p.y * style.ptPerBlu };
 }
 
 /** SVG pt back to document BLU. */
 export function ptToBlu(p: Point, style: ResolvedStyle): Point {
-  return { x: p.x / style.bondLength, y: p.y / style.bondLength };
+  return { x: p.x / style.ptPerBlu, y: p.y / style.ptPerBlu };
 }

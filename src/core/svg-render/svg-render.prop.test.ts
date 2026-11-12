@@ -14,6 +14,7 @@ import {
   setStyle,
   transformItems,
   translation,
+  type Anchor,
   type AtomId,
   type BondId,
   type Doc,
@@ -45,7 +46,6 @@ function build(cmds: readonly Parameters<typeof run>[1][]): Doc {
 }
 
 const docOf = sequence.map(build);
-const L = 40;
 
 const joined = (scene: Scene): string => scene.parts.map((p) => p.svg).join('\n');
 const wrap = (scene: Scene): string => `<g>\n${joined(scene)}\n</g>`;
@@ -209,6 +209,11 @@ describe('property 5: bounds', () => {
    * - a hash bond draws its rungs at the centres of `count` equal slices, so its ink stops short
    *   of the end atoms by up to half a rung spacing minus half the line width (0.002 pt for the
    *   shortest bond, 6.012 pt, in the regression below; seed 901270341);
+   * - in structural mode, an object whose position the S2 rule moves off `at x ptPerBlu` (a
+   *   curved arrow or callout with an atom-anchor offset, a text attached to an arrow, and the
+   *   arrow it is attached to, whose selection brings the text in): the offset is drawn at the
+   *   style's scale, so the pt image of doc-model's point is not ink there
+   *   (the picture is checked against the oracle and by the S2 tests in render.test.ts);
    * - a caption whose target atom has no ink (no label, no satellite and no bond that drew
    *   anything, e.g. only a zero-length bond): doc-model's bounds count the atom's point, but the
    *   caption sits below ink that is not there (seed -1130545056). The scene's `extents` say
@@ -228,21 +233,37 @@ describe('property 5: bounds', () => {
       const o = doc.objects[id];
       return o?.type !== 'caption' || o.target.every(hasInk);
     };
+    const structural = scene.style.ptPerBlu !== scene.style.bondLength;
+    const hasOffset = (a: Anchor): boolean => a.kind === 'atom' && a.offset !== undefined;
+    const offStandard = (id: ObjectId): boolean => {
+      const o = doc.objects[id];
+      if (!structural || !o) return false;
+      if (o.type === 'curved-arrow') return hasOffset(o.from) || hasOffset(o.to);
+      if (o.type === 'callout') return hasOffset(o.anchor);
+      if (o.type === 'text') return o.attachedTo !== undefined;
+      // doc-model's selection brings an arrow's attached texts into its bounds, so such an
+      // arrow carries the same offset.
+      return (
+        o.type === 'arrow' &&
+        Object.values(doc.objects).some((t) => t.type === 'text' && t.attachedTo?.arrow === id)
+      );
+    };
     const sel: Selection = {
       atoms: new Set(drawn('atom:') as AtomId[]),
       bonds: new Set((drawn('bond:') as BondId[]).filter((id) => doc.bonds[id]?.stereo !== 'hash')),
       objects: new Set(
         (drawn('obj:') as ObjectId[]).filter(
-          (id) => doc.objects[id]?.type !== 'callout' && captionOnInk(id),
+          (id) => doc.objects[id]?.type !== 'callout' && captionOnInk(id) && !offStandard(id),
         ),
       ),
     };
     const inner = docBounds(doc, sel);
     if (!inner) return;
-    expect(b.x).toBeLessThanOrEqual(inner.x * L + TOL);
-    expect(b.y).toBeLessThanOrEqual(inner.y * L + TOL);
-    expect(b.x + b.w).toBeGreaterThanOrEqual((inner.x + inner.w) * L - TOL);
-    expect(b.y + b.h).toBeGreaterThanOrEqual((inner.y + inner.h) * L - TOL);
+    const k = scene.style.ptPerBlu;
+    expect(b.x).toBeLessThanOrEqual(inner.x * k + TOL);
+    expect(b.y).toBeLessThanOrEqual(inner.y * k + TOL);
+    expect(b.x + b.w).toBeGreaterThanOrEqual((inner.x + inner.w) * k - TOL);
+    expect(b.y + b.h).toBeGreaterThanOrEqual((inner.y + inner.h) * k - TOL);
   }
 
   it('contains the drawn items for a short hash bond (shrunk counterexample)', () => {
@@ -264,6 +285,26 @@ describe('property 5: bounds', () => {
     const scene = render(doc);
     expect(Object.keys(scene.extents)).toEqual([`obj:${Object.keys(doc.objects)[0]}`]);
     expectContainsDrawn(doc, scene);
+  });
+
+  it('contains the drawn items for a structural arrow with an attached text (seed 1094994601)', () => {
+    // doc-model's selection of the arrow brings its attached text into the hull, but in structural
+    // mode that text lies at the arrow's midpoint plus the offset at the style's scale (S2), so
+    // neither the text nor the arrow is compared; the other, plain text still is.
+    const [d1, arrow] = addObject(setStyle(emptyDoc(NOW), { formula: 'structural' }), {
+      type: 'arrow',
+      kind: 'forward',
+      from: { x: 0, y: 0 },
+      to: { x: 2, y: 0 },
+    });
+    const text = (at: { x: number; y: number }) =>
+      ({ type: 'text', at, runs: [{ text: 'H' }], align: 'left' }) as const;
+    const [d2] = addObject(d1, {
+      ...text({ x: 1, y: -2.7 }),
+      attachedTo: { arrow, slot: 'above' },
+    });
+    const [doc] = addObject(d2, text({ x: 5, y: 3 }));
+    expectContainsDrawn(doc, render(doc));
   });
 
   it('equals the union of extents and contains the drawn items', { timeout: TIMEOUT }, () => {
@@ -291,13 +332,15 @@ describe('property 5: bounds', () => {
     fc.assert(
       fc.property(docOf, shift, (doc, { dx, dy }) => {
         fc.pre(wellSeparated(doc));
-        const before = render(doc).bounds as Rect | null;
+        const scene = render(doc);
+        const before = scene.bounds as Rect | null;
         const moved = transformItems(doc, everything(doc), translation(dx, dy));
         const after = render(moved).bounds as Rect | null;
         expect(after === null).toBe(before === null);
         if (!before || !after) return;
-        near(after.x, before.x + dx * L);
-        near(after.y, before.y + dy * L);
+        const k = scene.style.ptPerBlu;
+        near(after.x, before.x + dx * k);
+        near(after.y, before.y + dy * k);
         near(after.w, before.w);
         near(after.h, before.h);
       }),

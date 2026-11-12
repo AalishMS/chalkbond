@@ -128,7 +128,7 @@ gains `ringAtoms`. `golden.test.ts` is **not** edited: it must pass byte for byt
 - [x] structural carbons outside rings are labelled by the existing rules; ring carbons, labelled and non-carbon atoms unchanged
 - [x] `ringAtoms` passes every case of "Ring atoms"; the oracle test and property pass
 - [x] properties 1–7 pass with `formula` in the generator; perf structural variants meet the existing budgets
-- [ ] svg-render ≥ 90 % lines; the ESLint determinism block untouched
+- [x] svg-render ≥ 90 % lines (98.84 % at N3a); the ESLint determinism block untouched
 
 **Verification:** `npx vitest run --project unit src/core/svg-render`, `npx vitest run --project perf src/core/svg-render/perf.test.ts`, then `npm run check`
 
@@ -156,9 +156,14 @@ every placement of a coordinate in the renderer goes through `bluToPt` (`render.
 shortening cap in `bonds.ts` (which stays `0.5 * style.bondLength`). `structural-oracle.ts`
 (N2) gains the Decision 16 doubling: every coordinate ×2 (atom `x`, `y`; arrow `from`, `to`; plus,
 text, callout `at`; bracket and shape `rect`; point anchor `p`; atom-anchor `offset`; not `bend`,
-not a bond anchor's `t`). Open question S2 is applied literally (offsets double) unless the
-orchestrator has answered it before this task starts; if the answer is B, stop and ask for the
-spec change first.
+not a bond anchor's `t`; **S2 was answered B (2026-11-12), so neither an atom-anchor `offset`
+nor a condition text's offset from its arrow doubles**: `SPEC-svg-render.md` Decision 16 (e) and
+"The layout" item 6). In `objects.ts`: an atom anchor's offset is divided by
+`r = ptPerBlu / bondLength` before `bluToPt` (curved arrows and callouts; `r = 1` is today's
+arithmetic bit for bit), and a text whose `attachedTo` names an `arrow` object is drawn at
+`bluToPt(m + (at − m) / r)`, `m` the arrow's BLU midpoint, only when `r ≠ 1` (a missing or
+non-arrow target, or a non-finite midpoint, gives `bluToPt(at)`). The oracle's `d₂` leaves offsets
+as stored and gives such a text `at₂ = 2 · (m + (at − m) / 2)`.
 
 **Tests first:** `style.test.ts` (RED: no `ptPerBlu`): `ptPerBlu` is 40 and 14.4 skeletal (the
 same number as `bondLength`), 80 and 28.8 structural, 120 with a structural 60 pt override;
@@ -169,6 +174,14 @@ doubled); this is the spec's change of the oracle (Decision 16), not a weakened 
 commit says so. `svg-render.prop.test.ts`: property 5's translation uses `scene.style.ptPerBlu`
 (the same as `bondLength` for every skeletal document, so the existing runs are unchanged) and its
 doc-model-bounds image uses `ptPerBlu`; property 6 passes unchanged for structural docs.
+S2 (answered B): `render.test.ts`: a structural lone-pair curved arrow (atom anchor with an
+`offset`) starts `offset × bondLength` from its atom's pt position (not `× ptPerBlu`), skeletal
+unchanged; the same for a callout anchor; a structural condition text attached to an arrow is
+drawn at the arrow's pt midpoint plus `(at − midpoint) × bondLength`; a text with no `attachedTo`,
+with a missing arrow and with a non-arrow target is at `at × ptPerBlu`; a subset render keeps the
+rule; every skeletal document renders as before. The oracle tests compare against the oracle
+whose `d₂` leaves offsets as stored (bit-equal, as `/2` and `×2` are exact). Property 5 leaves
+those keys out of the doc-model-bounds image in structural mode (they are not at `at × ptPerBlu`).
 `render.test.ts`: structural ethanol's `C`–`C` bond part spans twice the skeletal distance between
 the atom centres; its `CH3` text has the skeletal font size; a structural benzene's circle radius
 is twice the skeletal one and its stroke width equal; a hash bond in structural mode has the
@@ -176,10 +189,11 @@ skeletal hash spacing (count `max(3, round(2·len/hashSpacing))`); `clipboardBit
 touched here (clipboard-export, N9).
 
 **Acceptance criteria:**
-- [ ] every golden committed before F2 passes with no `-u`; skeletal output byte-identical
-- [ ] `ptPerBlu` and `STRUCTURAL_SCALE` exported; only `bluToPt` turns coordinates into pt
-- [ ] the doubled oracle holds for every golden input, the doc-model fixtures and as a property
-- [ ] perf structural variants meet the existing budgets; svg-render ≥ 90 % lines; `numRuns` unchanged
+- [x] every golden committed before F2 passes with no `-u`; skeletal output byte-identical
+- [x] `ptPerBlu` and `STRUCTURAL_SCALE` exported; only `bluToPt` turns coordinates into pt
+- [x] the doubled oracle holds for every golden input, the doc-model fixtures and as a property
+- [x] S2 option B: atom-anchor offsets and attached texts' offsets stay at the style's scale, skeletal bytes unchanged
+- [x] perf structural variants meet the existing budgets; svg-render ≥ 90 % lines; `numRuns` unchanged
 
 **Verification:** `npx vitest run --project unit src/core/svg-render`, `npx vitest run --project perf src/core/svg-render/perf.test.ts`, then `npm run check`
 
@@ -622,12 +636,11 @@ by the owner. Record results as the checklist asks; tick only what was run and s
 - [ ] `npm run test:e2e:os-input`, `npm run dist:win`, `npm run test:packaged` on Windows
 - [ ] `npm run shots` and the golden sheet looked at against the mock-ups
 - [ ] `docs/windows-checklist.md` "Re-checks after the 2026-11-12 feature set": automated boxes ticked with results; hand checks handed to the owner
-- [ ] open question S2 (`SPEC-svg-render.md`) answered by the orchestrator; if the answer is B or C, its spec change and task are done before this checkpoint
 - [ ] `SPEC.md` Decisions Log row recording the checkpoint
 
 **Verification:** the commands above, each on its own; exit codes and summaries written into the checklist
 
-**Dependencies:** N1–N11, N3a, N3b, N13 (S1 is answered; S2 see the acceptance criteria)
+**Dependencies:** N1–N11, N3a, N3b, N13 (S1 and S2 are answered)
 
 **Files:** `docs/windows-checklist.md`, `SPEC.md`
 

@@ -16,6 +16,7 @@ describe('public entry', () => {
     ] as const) {
       expect(typeof api[name]).toBe('function');
     }
+    expect(api.STRUCTURAL_SCALE).toBe(2);
     expect(Object.keys(api.STYLE_PRESETS).sort()).toEqual(['journal', 'slides']);
   });
 

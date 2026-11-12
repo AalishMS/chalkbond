@@ -203,10 +203,12 @@ Resolved during review (they replace the draft's open questions); binding until 
     structural drawing are correspondingly larger and "1 unit = 1 pt, true size" holds for the
     doubled drawing; performance budgets, coverage thresholds and `numRuns` are unchanged; no
     existing golden changes.
-    (e) **No separate visual decision was needed:** every quantity in the code is settled by (a)
-    or by "as in skeletal mode" (the classification table). Two coordinate-stored offsets that
-    point at style-sized ink follow (a) literally and give a visible side effect; they are open
-    question **S2** ("Structural formula display").
+    (e) **Two coordinate-stored offsets that point at style-sized ink (question S2, answered B by
+    the orchestrator 2026-11-12):** a curved arrow's or callout's atom-anchor `offset` and a
+    condition text's offset from its arrow are drawn at the style's scale, **not** doubled
+    ("decoration distances stay as in skeletal mode"). Every other quantity is settled by (a) or
+    by "as in skeletal mode" (the classification table). Rule and arithmetic: "The layout
+    (Decision 16)", item 6.
 
 ## Data Model
 
@@ -542,12 +544,27 @@ not the numbers of Decision 16, which keeps `labelMargin` from the style. Recomp
    structural render of `d` has exactly the same parts (keys and bytes), extents and bounds as
    the skeletal render of `d₂`, where `d₂` is `d` with every coordinate doubled (atom `x`, `y`;
    arrow `from`, `to`; plus, text and callout `at`; bracket and shape `rect`, all four numbers;
-   point anchors `p`; atom-anchor `offset`) and every written carbon (a carbon outside a ring
+   point anchors `p`; **not** an atom-anchor `offset`, which stays, and not the `at` of a
+   condition text, which follows item 6) and every written carbon (a carbon outside a ring
    without `label`, `isotope` or `explicitH`) given `explicitH` = its perceived `implicitH`, and
    `style.formula` removed. `bend` and a bond anchor's `t` are ratios and do not change.
 5. `Scene.style.ptPerBlu` is what the editor uses to convert between BLU and pt
    (`SPEC-editor.md` R53); `bondLength` stays the style's value everywhere (viewport defaults,
    the clipboard margin).
+6. **Offsets that stay at the style's scale (S2, answered B 2026-11-12).** Let
+   `r = ptPerBlu / bondLength` (1 when skeletal, `STRUCTURAL_SCALE` = 2 when structural; exact, a
+   power of two). (i) An atom anchor with an `offset` (curved arrows, callouts) is drawn at
+   `bluToPt(atom + offset / r)`: the atom's position scales, the offset does not; with `r = 1`
+   this is today's `bluToPt(atom + offset)` bit for bit. (ii) A text object whose `attachedTo`
+   names an object of type `arrow` is drawn at `bluToPt(m + (at − m) / r)`, `m` the arrow's
+   midpoint `((from + to) / 2)` in BLU: the arrow's midpoint scales, the text's offset from it
+   does not. Skeletal documents (`r = 1`) use `bluToPt(at)` unchanged (the formula would not
+   reproduce every skeletal byte); a text whose `attachedTo` arrow is missing, is not an arrow or
+   has a non-finite midpoint is drawn at `bluToPt(at)`. Dividing by 2 and multiplying by 2 are
+   exact, so the render still equals the oracle's bit for bit when the oracle's `d₂` gives such a
+   text `at₂ = 2 · (m + (at − m) / 2)` and leaves every offset as stored. The stored coordinates
+   never change; the editor inverts the same mapping where it places or moves such a text or
+   offset (editor tasks, after N3a).
 
 **Classification of every quantity that depends on the bond length or the preset** (read from
 `style.ts`, `render.ts`, `bonds.ts`, `circles.ts`, `rings.ts`, `atom-label.ts`, `satellites.ts`,
@@ -577,10 +594,10 @@ is not doubled.
 | Head-length clamp `0.5 ×` (resonance `0.25 ×`) the arrow length | geometry | rule unchanged (the length doubles) |
 | `plusArm` | style | stays (the position doubles) |
 | Curved-arrow anchors (atom position, bond `t`, point `p`); chord; control points from `bend × |c|` | `bluToPt`; ratios | doubles (same shape, twice the size) |
-| Curved-arrow atom-anchor `offset` (BLU) | `bluToPt(resolveAnchor(…))` | doubles (Decision 16 (a) literally; open question S2) |
+| Curved-arrow (and callout) atom-anchor `offset` (BLU) | atom position `bluToPt`, plus the offset at `bondLength` | stays (S2 answered B: the offset is drawn at the style's scale, item 6) |
 | `curvedGap`; curved head clamp `0.5 ×` the clipped chord | style; geometry | stays; rule unchanged |
 | Text and callout `at`; `lineHeight`; alignment | `bluToPt`; style | position doubles; the text's own layout stays |
-| A condition text's offset from its arrow (stored in its `at`) | `bluToPt` | doubles (literally; open question S2) |
+| A condition text's offset from its arrow's midpoint (stored in its `at`; `attachedTo`) | arrow midpoint `bluToPt`, plus the offset at `bondLength` | stays (S2 answered B, item 6) |
 | `captionGap` (`0.5·L`); caption centred under the target atoms' ink | style; ink | gap stays; follows the doubled atoms |
 | `calloutPad`; the leader line | style; geometry | pad stays; the line follows `at` and the anchor |
 | Bracket `rect`; `bracketSerif` (clamped to `w/2`), `roundBulge`, `curlyDepth`, `cornerGap` | `bluToPt`; style | rect doubles; the rest stays |
@@ -645,21 +662,16 @@ dot, by the existing label and satellite rules). Inputs reuse the existing input
 where one exists (only `style.formula` added) and otherwise are built once by a script from
 chem-core's parsers, then frozen.
 
-**Open question S2 (for the orchestrator; Decision 16 (a) applies literally until it is
-answered).** Two stored offsets are coordinates, so they double, but they point at ink whose size
-comes from the style: (i) a curved arrow's atom-anchor `offset` (an arrow that starts at a lone
-pair): the dots stay where they are and the tail moves out to twice the offset, about 12 pt
-beyond the dots at Slides (offset ≈ 0.3 BLU) and 4 pt at Handout; (ii) a condition text's `at`,
-placed by the editor's T3 with an ink gap of `0.2 × bondLength`: placed in skeletal mode, its gap
-to the arrow grows in structural mode from 8 pt to about 33 pt (Handout 2.9 pt to 12.7 pt); placed
-in structural mode (Tidy there), it overlaps the arrow by about 4 pt after switching back to
-skeletal. Options: **A** keep the literal rule (simplest; Tidy again after switching);
-**B** draw an atom-anchor `offset` and a condition text's offset from its arrow's midpoint at
-style scale (`× bondLength`, not `× ptPerBlu`), the editor inverting the same mapping where it
-places or moves them (skeletal bytes unchanged; touches editor T3, S3, S6 and hit-testing);
-**C** A plus re-placing attached texts by T3 on every formula switch (changes coordinates, against
-editor R51; not recommended). W12 recommends **B**. No structural golden scene depends on the
-answer (none has a lone-pair arrow or a condition text).
+**Question S2 (answered B by the orchestrator, 2026-11-12).** Two stored offsets are coordinates
+but point at ink whose size comes from the style: (i) a curved arrow's atom-anchor `offset` (an
+arrow that starts at a lone pair), (ii) a condition text's `at`, placed by the editor's T3 with an
+ink gap of `0.2 × bondLength`. Drawn literally at ×2 the tail of (i) moved about 12 pt beyond the
+dots at Slides (4 pt at Handout) and the gap of (ii) grew from 8 pt to about 33 pt (Handout 2.9 pt
+to 12.7 pt). Options were **A** (keep the literal rule), **B** (draw both offsets at the style's
+scale, `× bondLength`, not `× ptPerBlu`; skeletal bytes unchanged) and **C** (re-place texts on every
+switch; against editor R51). **B** was chosen, following the rule "decoration distances stay as in
+skeletal mode"; the rule is item 6 of "How the factor reaches the renderer". No structural golden
+scene has a lone-pair arrow or a condition text.
 
 ## Text measurement (no DOM)
 
@@ -851,7 +863,9 @@ The editor owns the canvas; this module supplies the following and nothing more.
      `bounds` of the drawn items (the selection of keys that produced parts); translating the
      whole doc by `(dx,dy)` BLU translates `bounds` by `(dx,dy)·ptPerBlu` (= `·L` when skeletal,
      Decision 16) with the same size (±0.002 pt); the pt image of doc-model's `bounds` uses
-     `ptPerBlu` too;
+     `ptPerBlu` too, except that in structural mode the keys whose position the S2 rule (item 6)
+     moves off `at × ptPerBlu` (a curved arrow or callout with an atom-anchor `offset`, a text
+     attached to an arrow) are left out of that image, like the other keys that are not ink;
   6. uniform scale: scaling `bondLength`, `lineWidth`, `fontSize` by a power of two `k` scales
      `bounds` by `k` (±0.005·k pt);
   7. safety: runs, labels, `number` and `metadata` drawn from arbitrary Unicode (including
@@ -890,7 +904,12 @@ The editor owns the canvas; this module supplies the following and nothing more.
   `isLabelled(c, n, 'structural', true)` is false for a plain ring carbon and true with a label,
   isotope or explicit H; the **Decision 16 oracle** (item 4 of "The layout") for every golden
   input, doc-model's fixtures and as a property over generated documents (`numRuns` as property 2);
-  a subset render of part of a ring keeps the ring carbons unwritten; the legibility thresholds
+  a subset render of part of a ring keeps the ring carbons unwritten; **S2 (item 6):** in
+  structural mode a lone-pair curved arrow's tail lies `offset × bondLength` from its atom's
+  position in pt (not `× ptPerBlu`), a text attached to an arrow lies at the arrow's midpoint plus
+  `(at − midpoint) × bondLength`, a text with no arrow (or a missing one) at `at × ptPerBlu`, the
+  same documents drawn skeletally are byte-identical to before, and the oracle's `d₂` leaves the
+  offsets as stored; the legibility thresholds
   L1–L3 for every structural golden scene in both presets; the structural goldens pass the
   ink-scan bounds check (SC5).
 - **Coverage:** `src/core/svg-render` line coverage ≥ 90 % (`SPEC.md` target; the generated metrics

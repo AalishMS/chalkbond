@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Doc, Point } from '../doc-model';
-import { bluToPt, INK, ptToBlu, resolveStyle, STYLE_PRESETS } from './style';
+import { bluToPt, INK, ptToBlu, resolveStyle, STRUCTURAL_SCALE, STYLE_PRESETS } from './style';
 
 type StyleInput = Doc['style'];
 const slides = (overrides: Record<string, unknown> = {}): StyleInput =>
@@ -192,6 +192,47 @@ describe('resolveStyle: overrides', () => {
 
   it('tolerates missing overrides', () => {
     expect(resolveStyle({ preset: 'journal' } as unknown as StyleInput).bondLength).toBe(14.4);
+  });
+});
+
+describe('ptPerBlu (Decision 16)', () => {
+  const structural = (preset: 'slides' | 'journal', overrides: Record<string, unknown> = {}) =>
+    ({ preset, overrides, formula: 'structural' }) as StyleInput;
+
+  it('STRUCTURAL_SCALE is 2', () => {
+    expect(STRUCTURAL_SCALE).toBe(2);
+  });
+
+  it('is the bond length itself when skeletal', () => {
+    expect(resolveStyle(slides()).ptPerBlu).toBe(40);
+    expect(resolveStyle(journal()).ptPerBlu).toBe(14.4);
+    expect(resolveStyle(slides({ bondLength: 33.3 })).ptPerBlu).toBe(33.3);
+  });
+
+  it('is twice the bond length when structural', () => {
+    expect(resolveStyle(structural('slides')).ptPerBlu).toBe(80);
+    expect(resolveStyle(structural('journal')).ptPerBlu).toBe(28.8);
+    expect(resolveStyle(structural('slides', { bondLength: 60 })).ptPerBlu).toBe(120);
+  });
+
+  it('changes no other field', () => {
+    for (const preset of ['slides', 'journal'] as const) {
+      for (const overrides of [{}, { bondLength: 60, lineWidth: 3, fontSize: 18 }]) {
+        const { ptPerBlu: _a, ...skeletal } = resolveStyle({ preset, overrides } as StyleInput);
+        const { ptPerBlu: _b, ...doubled } = resolveStyle(structural(preset, overrides));
+        expect(doubled).toEqual(skeletal);
+      }
+    }
+  });
+
+  it('bluToPt and ptToBlu use it and stay inverse', () => {
+    const s = resolveStyle(structural('slides'));
+    expect(bluToPt({ x: 1.25, y: -0.5 }, s)).toEqual({ x: 100, y: -40 });
+    expect(ptToBlu({ x: 100, y: -40 }, s)).toEqual({ x: 1.25, y: -0.5 });
+    const p = { x: 0.3, y: -7.1 };
+    const back = ptToBlu(bluToPt(p, s), s);
+    expect(back.x).toBeCloseTo(p.x, 12);
+    expect(back.y).toBeCloseTo(p.y, 12);
   });
 });
 
