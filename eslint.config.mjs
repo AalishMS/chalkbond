@@ -228,7 +228,14 @@ const PRELOAD_MESSAGE =
 
 export default tseslint.config(
   {
-    ignores: ['out/**', 'dist/**', 'coverage/**', 'playwright-report/**', 'test-results/**'],
+    ignores: [
+      'out/**',
+      'dist/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      '.claude/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strict,
