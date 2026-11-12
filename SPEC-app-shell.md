@@ -772,7 +772,7 @@ validation rejects and is logged). C1–C5 are clipboard-export's (its "IPC chan
 | I11 | `session:read-tab` / `readTabRecord` | `{ tabId: uuid }` | `{ ok: true, text } \| { ok: false, problem: 'missing' \| 'unreadable' \| 'too-large' }` (SS7) |
 | I12 | `tab:bind` / `bindTab` | `{ tabId: uuid, ref: uuid \| null, reason: 'open' \| 'save-as' \| 'unbind' \| 'reopen' \| 'take-over', from?: uuid, written?: sha256 }` (`open`, `save-as`: bind the ref, `written` = the hash of `serialize(drawing)`; `reopen`: the binding of the closed tab `from` moves to the new id, T12; `take-over`: tab `tabId` takes `from`'s path and file hash, `from` is unbound, AS7(c)) | `{ ok: true } \| { ok: false, openIn: uuid }` (T17, AS9; replaces N2: last folders and the recent list follow `open` and `save-as` as N2 did) |
 | I13 | `file:auto-save` / `autoSave` | `{ tabId: uuid, text: string ≤ 20 MB starting "{" }` | every answer carries `tabId`: `{ tabId, ok: true, sha256 } \| { tabId, ok: false, problem: WriteProblem \| 'missing' \| 'unreadable' } \| { tabId, ok: false, problem: 'changed', bytes: Uint8Array }` (AS1, AS3, AS5) |
-| I14 | `file:check` / `checkTabFile` | `{ tabId: uuid }` | `{ tabId, written: sha256, state: 'same' \| 'missing' \| 'unreadable' } \| { tabId, written, state: 'changed', bytes: Uint8Array }` (AS5) |
+| I14 | `file:check` / `checkTabFile` | `{ tabId: uuid }` | `{ tabId, written: sha256, state: 'same' \| 'missing' \| 'unreadable' } \| { tabId, written, state: 'changed', bytes: Uint8Array }` (AS5; TB10, 2026-11-12: `written` is null for a tab never written; a file over 20 MiB answers `unreadable`) |
 
 **Renderer → main, `send`:**
 
@@ -784,7 +784,7 @@ validation rejects and is logged). C1–C5 are clipboard-export's (its "IPC chan
 | N4 | `recovery:clear` / `clearRecovery` | `{}` | RC2, RC6 (**removed 2026-11-12, R35**) |
 | N7 (2026-11-12) | `session:write-tab` / `writeTabRecord` | `{ tabId: uuid, text: string ≤ 64 MiB starting "{" }` | SS4, SS5. **An `invoke`, not a send (TB9, 2026-11-12):** it answers `{ ok: true }` or `{ ok: false, problem: WriteProblem }`, because SS6 marks a tab unkept from the result |
 | N8 | `session:index` / `updateSessionIndex` | `{ tabs: { id, kind, name, view, unsaved, warning }[], active: uuid, discarded: uuid[] }` | merged with main's paths and written hashes; SS4, SS5 |
-| N9 | `file:accept-outside` / `acceptOutsideChange` | `{ tabId: uuid, written: sha256 }` | the file's current bytes become the file hash and `written` the written hash (AS7(a)) |
+| N9 | `file:accept-outside` / `acceptOutsideChange` | `{ tabId: uuid, written: sha256 }` | the hash of the bytes the last `changed` check (I14) read becomes the file hash (TB10: not a fresh read, so a change after that check is found by the next one) and `written` the written hash (AS7(a)) |
 | N5 | `app:close-ok` / `closeOk` | `{}` | closes the window (F13) |
 | N6 | `log:error` / `logError` | `{ message: string ≤ 4000 }` | LG1 |
 
