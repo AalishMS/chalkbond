@@ -137,6 +137,24 @@ describe('tabStateFromRecord (R57)', () => {
     expect(tabStateView(d.snapshotState()).centre.y).toBeCloseTo(VIEW.centre.y, 9);
   });
 
+  it('view: null (no stored view, app-shell SS3) gives the default view, fitted when put, as newState', () => {
+    const c = edited(2);
+    const record = viaJson(tabStateToRecord(c.snapshotState(), { maxSteps: 100 }));
+    const r = tabStateFromRecord(record, { clock: () => T1, view: null, saved: 'current' });
+    if (!r.ok) throw new Error(r.error.message);
+    const { state } = r.value;
+    const fresh = c.newState(tabStateDoc(state));
+    expect(tabStateParts(state).viewPending).toBe(true);
+    expect(tabStateView(state)).toEqual(tabStateView(fresh));
+    expect(tabStateCanUndo(state)).toBe(true);
+    expect(tabStateDirty(state)).toBe(false);
+    const viaRecord = make();
+    viaRecord.putState(state);
+    const viaNew = make();
+    viaNew.putState(fresh);
+    expect(viaRecord.store.getState().viewport).toEqual(viaNew.store.getState().viewport);
+  });
+
   it("saved: 'current' is clean", () => {
     const record = viaJson(tabStateToRecord(edited(2).snapshotState(), { maxSteps: 100 }));
     const { state } = restore(record, 'current');

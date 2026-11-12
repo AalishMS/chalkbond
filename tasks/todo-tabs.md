@@ -747,9 +747,9 @@ record: file tab recovers from its file, other kinds N-A5; the active tab loads 
 usable and no other record is read on the normal start path (SS8).
 
 **Acceptance criteria:**
-- [ ] T7, T11, T12, T17, SS7 and SS11's renderer half behave as the Description says, each with a test over fake ports
-- [ ] No record other than the active tab's is read at start (SS8, asserted on the fake `readTabRecord` call log)
-- [ ] `src/renderer/app/model` coverage >= 90 % lines
+- [x] T7, T11, T12, T17, SS7 and SS11's renderer half behave as the Description says, each with a test over fake ports
+- [x] No record other than the active tab's is read at start (SS8, asserted on the fake `readTabRecord` call log)
+- [x] `src/renderer/app/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/renderer/app/model`, then `npm run check`.
 
