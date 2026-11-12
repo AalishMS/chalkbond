@@ -2,19 +2,30 @@
 // Owns `<userData>/session/index.json` and one record per tab, `<userData>/session/tabs/<uuid>.json`;
 // unparsable files go to `<userData>/session/damaged/`, and nothing else is ever written. A tab id
 // is a uuid and never part of a path otherwise. One promise chain runs every record write, index
-// write, record delete and record read in arrival order (RC6 generalised; TB10 adds the auto-save
-// write and the AS5 check to it). Every store write is F9's atomic writer from `files.ts`, so a
+// write, record delete, record read, tab binding (I12), auto-save write (I13) and AS5 check (I14)
+// in arrival order (RC6 generalised). Every store write is F9's atomic writer from `files.ts`, so a
 // failed record write never touches the previous record. Main checks a record only for its size and
 // its `{` signature (SEC9); it reads a record's envelope (name, kind) only on SS11's damage path.
 // The pure rules are `model/session-index.ts` and `model/tab-registry.ts`.
+//
+// Auto-save (TB10: AS1, AS5, AS8, AS9, SS5, SEC8): a tab's `.chalk` file is written only to the
+// path bound to that tab id, only after AS5 read and hashed the file (no `stat` shortcut) and found
+// it `same`, and in SS5's order: the index with `writing`, the file, the index with the written
+// hash. A file whose check is not `same` is never written; it is never created, a picture is never
+// written, and a path another open tab is bound to is never written.
 import { mkdir, readdir, readFile, rename as fsRename, rm, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import type {
+  AcceptOutsideRequest,
+  AutoSaveRequest,
+  AutoSaveResponse,
+  BindTabResponse,
+  CheckTabFileResponse,
   ReadTabRecordResponse,
   WriteTabRecordRequest,
   WriteTabRecordResponse,
 } from '../shared/ipc-types';
-import { createFiles } from './files';
+import { createFiles, MAX_READ_BYTES, sha256Hex } from './files';
 import {
   classifyRecords,
   emptyIndex,
@@ -25,6 +36,7 @@ import {
   recordIdOf,
   rendererSession,
   serializeSessionIndex,
+  withMainFields,
   withOrphans,
   withoutDiscarded,
   type RendererIndexUpdate,
@@ -32,11 +44,23 @@ import {
   type SessionIndex,
 } from './model/session-index';
 import {
+  acceptOutside,
+  bindTab,
+  checkOutcome,
   emptyRegistry,
+  failWrite,
+  finishWrite,
   mainFieldsOf,
+  openIn,
+  openTabsOf,
   registryFromIndex,
+  startWrite,
+  withBinding,
   withoutTabs,
+  type BindRequest,
+  type CheckResult,
   type NormalizePath,
+  type TabBinding,
   type TabRegistry,
 } from './model/tab-registry';
 import { writeProblem } from './model/write-problem';
@@ -68,8 +92,32 @@ export interface SessionStoreOptions {
   readBytes?(path: string): Promise<Uint8Array>;
 }
 
-type StoreRead =
-  { ok: true; text: string } | { ok: false; problem: 'missing' | 'unreadable' | 'too-large' };
+type ReadProblem = 'missing' | 'unreadable' | 'too-large';
+type StoreRead = { ok: true; text: string } | { ok: false; problem: ReadProblem };
+type BytesRead = { ok: true; bytes: Uint8Array } | { ok: false; problem: ReadProblem };
+
+/**
+ * I12 with the ref resolved by the caller (paths stay in main, R8). `open`: `fileHash` is the hash
+ * of the bytes the renderer was given (required for a `.chalk`); `save-as` is sent before the C4
+ * write of `ref`, whose result `settleSaveAs` reports.
+ */
+export type StoreBindRequest =
+  | {
+      reason: 'open';
+      tabId: string;
+      path: string;
+      kind: 'chalk' | 'picture';
+      fileHash: string | null;
+      written: string | null;
+    }
+  | { reason: 'save-as'; tabId: string; path: string; written: string; ref: string }
+  | { reason: 'unbind'; tabId: string }
+  | { reason: 'reopen'; tabId: string; from: string }
+  | { reason: 'take-over'; tabId: string; from: string; written: string | null };
+
+/** A request the renderer never makes (AS8, SEC8): refused inside the chain, so the call rejects. */
+const REFUSED = Symbol('refused');
+type Refused = typeof REFUSED;
 
 const codeOf = (error: unknown): string | undefined =>
   error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined;
@@ -110,6 +158,16 @@ export function createSessionStore(options: SessionStoreOptions) {
   let indexLocked = false;
   /** The index text last written, so an unchanged index is not written again. */
   let lastIndexText: string | null = null;
+  /**
+   * AS7: the hash of the bytes each tab's last `changed` check read (and sent to the renderer).
+   * N9 and `take-over` bind exactly those bytes, so a file changed again since is `changed` again.
+   */
+  const changedBytes = new Map<string, string>();
+  /** F6: Save-as bindings waiting for the C4 write of their ref, with the binding they replaced. */
+  const pendingSaveAs = new Map<
+    string,
+    { tabId: string; pathKey: string; previous: TabBinding | undefined }
+  >();
 
   let chain: Promise<unknown> = Promise.resolve();
   let queued = 0;
@@ -130,8 +188,12 @@ export function createSessionStore(options: SessionStoreOptions) {
     return run;
   }
 
-  /** A store file of at most `max` bytes as UTF-8; EBUSY / EPERM are retried 3 × 100 ms. */
-  async function readStoreFile(path: string, max: number): Promise<StoreRead> {
+  /**
+   * A file of at most `max` bytes. The file or its folder gone (`ENOENT`, `ENOTDIR`) → `missing`;
+   * EBUSY / EPERM are retried 3 × 100 ms, then (like any other error) → `unreadable`, logged with
+   * `what` and the code only (LG1).
+   */
+  async function readLimited(path: string, max: number, what: string): Promise<BytesRead> {
     for (let attempt = 0; ; attempt++) {
       try {
         const info = await stat(path);
@@ -139,7 +201,7 @@ export function createSessionStore(options: SessionStoreOptions) {
         if (info.size > max) return { ok: false, problem: 'too-large' };
         const bytes = await readBytes(path);
         if (bytes.length > max) return { ok: false, problem: 'too-large' };
-        return { ok: true, text: decoder.decode(bytes) };
+        return { ok: true, bytes };
       } catch (error) {
         const code = codeOf(error);
         if (code === 'ENOENT' || code === 'ENOTDIR') return { ok: false, problem: 'missing' };
@@ -147,10 +209,16 @@ export function createSessionStore(options: SessionStoreOptions) {
           await sleep(READ_RETRY_MS);
           continue;
         }
-        log(`Session file not read: ${code ?? 'unknown'}`);
+        log(`${what} not read: ${code ?? 'unknown'}`);
         return { ok: false, problem: 'unreadable' };
       }
     }
+  }
+
+  /** A store file of at most `max` bytes as UTF-8. */
+  async function readStoreFile(path: string, max: number): Promise<StoreRead> {
+    const read = await readLimited(path, max, 'Session file');
+    return read.ok ? { ok: true, text: decoder.decode(read.bytes) } : read;
   }
 
   /** `name` in `damaged/`, or `<stem> (n)<ext>` when an earlier one has it (never overwritten). */
@@ -196,6 +264,133 @@ export function createSessionStore(options: SessionStoreOptions) {
     );
     if (result.ok) lastIndexText = text;
     else log(`Session index not written: ${result.problem}`);
+  }
+
+  /** SS4, SS5: the index with main's fields refreshed from the registry, written (F9). */
+  async function persistBindings(): Promise<void> {
+    index = withMainFields(index, (id) => mainFieldsOf(registry, id));
+    await writeIndex();
+  }
+
+  /** T17, AS9: listed or bound tabs that are not closed. */
+  const openTabs = (): Set<string> =>
+    openTabsOf(
+      registry,
+      index.tabs.map((tab) => tab.id),
+      [...index.discarded, ...deleted],
+    );
+
+  /**
+   * AS5 for a chalk tab (else null): read the bound file (≤ 20 MiB) and hash it, no `stat`
+   * shortcut. A file over 20 MiB cannot be one the app wrote or can open: `unreadable` (AS6,
+   * retried). A promoted in-flight hash is stored and written to the index at once; the hash of
+   * `changed` bytes is kept for N9 and `take-over`.
+   */
+  async function checkTab(
+    tabId: string,
+  ): Promise<{ result: CheckResult; bytes: Uint8Array | null } | null> {
+    const entry = registry.get(tabId);
+    if (entry?.kind !== 'chalk') return null;
+    const read = await readLimited(entry.path, MAX_READ_BYTES, 'Tab file');
+    const result = checkOutcome(
+      entry,
+      read.ok
+        ? { ok: true, bytesHash: sha256Hex(read.bytes) }
+        : { ok: false, problem: read.problem === 'too-large' ? 'unreadable' : read.problem },
+    );
+    if (result.outcome === 'changed') changedBytes.set(tabId, result.bytesHash);
+    else if (result.outcome === 'same') changedBytes.delete(tabId);
+    if (result.outcome !== 'same') log(`Tab file check: ${result.outcome}`);
+    if (result.entry !== entry) {
+      registry = withBinding(registry, tabId, result.entry);
+      await persistBindings();
+    }
+    return { result, bytes: read.ok ? read.bytes : null };
+  }
+
+  /** I12 inside the chain: the registry transition, the index written after any change. */
+  async function bindInChain(request: StoreBindRequest): Promise<BindTabResponse | Refused> {
+    const { tabId } = request;
+    let pure: BindRequest;
+    switch (request.reason) {
+      case 'open':
+        if (request.kind === 'chalk' && request.fileHash === null) return REFUSED;
+        pure = { ...request, fileHash: request.fileHash ?? '' };
+        break;
+      case 'save-as':
+        pure = {
+          reason: 'save-as',
+          tabId,
+          path: request.path,
+          fileHash: request.written,
+          written: request.written,
+        };
+        break;
+      case 'take-over': {
+        const fileHash = changedBytes.get(request.from);
+        pure = { ...request, ...(fileHash === undefined ? {} : { fileHash }) };
+        break;
+      }
+      default:
+        pure = request;
+    }
+    const previous = registry.get(tabId);
+    const result = bindTab(registry, pure, openTabs(), normalizePath);
+    if (!result.ok) {
+      if ('openIn' in result) return { ok: false, openIn: result.openIn };
+      // Reopening a tab that had no file binds nothing; a take-over needs a file tab.
+      return request.reason === 'reopen' ? { ok: true } : REFUSED;
+    }
+    registry = result.registry;
+    if (request.reason === 'save-as') {
+      pendingSaveAs.set(request.ref, {
+        tabId,
+        pathKey: normalizePath(request.path),
+        previous,
+      });
+    }
+    if (request.reason === 'take-over') changedBytes.delete(request.from);
+    if (request.reason !== 'reopen') changedBytes.delete(tabId);
+    await persistBindings();
+    return { ok: true };
+  }
+
+  /** I13 inside the chain: AS8's refusals, AS5's check, then SS5's three steps. */
+  async function autoSaveInChain(
+    tabId: string,
+    bytes: Uint8Array,
+  ): Promise<AutoSaveResponse | Refused> {
+    const entry = registry.get(tabId);
+    if (entry?.kind !== 'chalk') return REFUSED;
+    if (openIn(registry, entry.pathKey, openTabs(), [tabId]) !== null) return REFUSED;
+    const checked = await checkTab(tabId);
+    if (checked === null) return REFUSED;
+    const { result } = checked;
+    if (result.outcome === 'changed') {
+      return { tabId, ok: false, problem: 'changed', bytes: checked.bytes ?? new Uint8Array() };
+    }
+    if (result.outcome !== 'same') return { tabId, ok: false, problem: result.outcome };
+    const sha256 = sha256Hex(bytes);
+    registry = startWrite(registry, tabId, sha256);
+    await persistBindings();
+    const written = await files.write(
+      { path: result.entry.path, kind: 'chalk', writable: true },
+      bytes,
+    );
+    registry = written.ok ? finishWrite(registry, tabId, sha256) : failWrite(registry, tabId);
+    await persistBindings();
+    if (!written.ok) {
+      log(`Auto-save not written: ${written.problem}`);
+      return { tabId, ok: false, problem: written.problem };
+    }
+    return { tabId, ok: true, sha256 };
+  }
+
+  /** Runs a chain task whose `REFUSED` answer rejects the call (the IPC wrapper logs it). */
+  function enqueueChecked<T>(label: string, task: () => Promise<T | Refused>): Promise<T> {
+    return enqueue<T | Refused>(label, task, REFUSED).then((answer) =>
+      answer === REFUSED ? refused() : answer,
+    );
   }
 
   async function recordNames(): Promise<string[]> {
@@ -346,6 +541,103 @@ export function createSessionStore(options: SessionStoreOptions) {
         async () => {
           index = mergeRendererIndex(index, update, (id) => mainFieldsOf(registry, id), deleted);
           await writeIndex();
+        },
+        undefined,
+      );
+    },
+
+    /**
+     * I12 (T12, T17, AS7, AS9, F6). Answers `{ ok: false, openIn }` when the path is bound to
+     * another open tab (nothing changes, nothing is written); a `.chalk` open without the hash of
+     * the bytes read, or a take-over from a tab that is not a file tab, is refused (rejects).
+     */
+    bind(request: StoreBindRequest): Promise<BindTabResponse> {
+      if (recordNameOf(request.tabId) === null) return refused();
+      return enqueueChecked('Tab bind', () => bindInChain(request));
+    },
+
+    /**
+     * F6: the C4 write of a Save-as ref has finished. Success: the bytes written become the file
+     * hash. Failure: the tab's previous binding comes back (a failed Save as changes nothing).
+     * Answers whether `ref` was a pending Save-as (main then updates the folders and recent list).
+     */
+    settleSaveAs(
+      ref: string,
+      write: { ok: true; sha256: string } | { ok: false },
+    ): Promise<boolean> {
+      return enqueue(
+        'Save as settle',
+        async () => {
+          const pending = pendingSaveAs.get(ref);
+          if (pending === undefined) return false;
+          pendingSaveAs.delete(ref);
+          const current = registry.get(pending.tabId);
+          // Bound elsewhere since (a later Save as, an unbind): that newer binding stays.
+          if (current?.kind !== 'chalk' || current.pathKey !== pending.pathKey) return true;
+          registry = write.ok
+            ? acceptOutside(registry, pending.tabId, write.sha256, current.written ?? write.sha256)
+            : withBinding(registry, pending.tabId, pending.previous);
+          await persistBindings();
+          return true;
+        },
+        false,
+      );
+    },
+
+    /**
+     * I13 (AS1, AS5, AS8, SS5, SEC8). A text without the `{` signature, over 20 MiB or for a tab
+     * id that is not a uuid is refused before anything is queued; a tab that is not a file tab (a
+     * picture, untitled, kept) or whose path another open tab is bound to is refused in the chain
+     * (both reject). Every answer names `tabId`.
+     */
+    autoSave({ tabId, text }: AutoSaveRequest): Promise<AutoSaveResponse> {
+      if (recordNameOf(tabId) === null || text.length > MAX_READ_BYTES) return refused();
+      const bytes = encoder.encode(text);
+      if (bytes.length > MAX_READ_BYTES || bytes[0] !== SIGNATURE) return refused();
+      return enqueueChecked<AutoSaveResponse>('Auto-save', async () => {
+        try {
+          return await autoSaveInChain(tabId, bytes);
+        } catch (error) {
+          registry = failWrite(registry, tabId);
+          log(`Auto-save failed: ${codeOf(error) ?? 'unknown'}`);
+          return { tabId, ok: false, problem: 'write-failed' };
+        }
+      });
+    },
+
+    /**
+     * I14 (AS5 (b), (c)): the bound file's state and the written hash, an in-flight hash promoted
+     * by this check included. A tab that is not a file tab is refused (rejects).
+     */
+    checkFile(tabId: string): Promise<CheckTabFileResponse> {
+      if (recordNameOf(tabId) === null) return refused();
+      return enqueueChecked<CheckTabFileResponse>('Tab file check', async () => {
+        const checked = await checkTab(tabId);
+        if (checked === null) return REFUSED;
+        const { result } = checked;
+        const written = result.entry.written;
+        return result.outcome === 'changed'
+          ? { tabId, written, state: 'changed', bytes: checked.bytes ?? new Uint8Array() }
+          : { tabId, written, state: result.outcome };
+      });
+    },
+
+    /**
+     * N9 (AS7(a)): the changed bytes the tab's last check read become its file hash and `written`
+     * its written hash. Without such a check there is nothing to accept (logged, ignored).
+     */
+    acceptOutside({ tabId, written }: AcceptOutsideRequest): Promise<void> {
+      return enqueue(
+        'Outside change accept',
+        async () => {
+          const bytesHash = changedBytes.get(tabId);
+          if (bytesHash === undefined || registry.get(tabId)?.kind !== 'chalk') {
+            log('Outside change not accepted: no changed check');
+            return;
+          }
+          changedBytes.delete(tabId);
+          registry = acceptOutside(registry, tabId, bytesHash, written);
+          await persistBindings();
         },
         undefined,
       );

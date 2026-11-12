@@ -1,7 +1,13 @@
 import type {
+  AcceptOutsideRequest,
   AskAnswer,
   AskRequest,
   AutoSaveProblem,
+  AutoSaveRequest,
+  AutoSaveResponse,
+  BindTabRequest,
+  BindTabResponse,
+  CheckTabFileResponse,
   ChooseSaveRequest,
   ClipboardWriteRequest,
   ClipboardReadResponse,
@@ -75,6 +81,17 @@ export interface ChalkbondApi {
   writeTabRecord(value: WriteTabRecordRequest): Promise<WriteTabRecordResponse>;
   /** N8 (SS4): the renderer's part of the session index; main merges its paths and hashes. */
   updateSessionIndex(value: SessionIndexUpdate): void;
+  /**
+   * I12 (T12, T17, AS7, AS9, F6): binds a tab in main. `save-as` is sent before the C4 write; a
+   * path open in another tab answers `{ ok: false, openIn }` and nothing changes.
+   */
+  bindTab(request: BindTabRequest): Promise<BindTabResponse>;
+  /** I13 (AS1, AS5): writes a file tab's drawing after the outside-change check; names its tab. */
+  autoSave(request: AutoSaveRequest): Promise<AutoSaveResponse>;
+  /** I14 (AS5): the outside-change check of a file tab and its written hash. */
+  checkTabFile(tabId: string): Promise<CheckTabFileResponse>;
+  /** N9 (AS7(a)): the changed bytes the tab loaded become its file, `written` its written hash. */
+  acceptOutsideChange(value: AcceptOutsideRequest): void;
   /** N3 (RC1): writes the recovery file (main queues it, RC6). */
   writeRecovery(value: WriteRecoveryRequest): void;
   /** N4 (RC2): removes the recovery file (queued after every earlier write). */

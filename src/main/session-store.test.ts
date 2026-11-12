@@ -2,7 +2,18 @@
 // one ordered chain for record writes, index writes and record deletes; atomic store writes that
 // never touch the previous record; the damage rule (anything unparsable moved to `damaged/`, never
 // deleted); `discarded` records deleted only after a validly read index; paths built from uuids only.
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, truncate, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  truncate,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -674,5 +685,507 @@ describe('the store writes only under userData/session (SS2, SEC8)', () => {
     await store.deleteDiscarded();
     expect(await list(root)).toEqual(['session']);
     expect(await list(folder)).toEqual(['damaged', 'index.json', 'tabs']);
+  });
+});
+
+// TB10: the auto-save writer (AS1, AS5, AS8, AS9, SS5, SEC8), I12-I14 and N9, on the same chain.
+describe('auto-save writer (TB10)', () => {
+  const C = '4d5e6f7a-8b9c-4dad-8ebf-c0d1e2f3a4b5';
+  const sha = (text: string | Uint8Array): string =>
+    createHash('sha256').update(text).digest('hex');
+  const OLD = '{"drawing":"old"}';
+  const NEW = '{"drawing":"new"}';
+  const REF = '5e6f7a8b-9cad-4ebf-8fc0-d1e2f3a4b5c6';
+  let docs = '';
+  let ester = '';
+
+  beforeEach(async () => {
+    docs = join(root, 'docs');
+    ester = join(docs, 'Esterification.chalk');
+    await mkdir(docs, { recursive: true });
+    await writeFile(ester, OLD);
+  });
+
+  const listed = (id: string, kind = 'chalk') => ({
+    id,
+    kind: kind as 'chalk',
+    name: 'Esterification.chalk',
+    view: null,
+    unsaved: false,
+    warning: false,
+  });
+
+  /** A started store with tab `id` listed and bound to `path` as opened (file hash = written). */
+  async function openTab(
+    options: Partial<SessionStoreOptions> = {},
+    id = A,
+    path = ester,
+    others: string[] = [],
+  ) {
+    const store = make(options);
+    await store.restored();
+    await store.updateIndex({
+      tabs: [listed(id), ...others.map((o) => listed(o))],
+      active: id,
+      discarded: [],
+    });
+    const text = await read(path);
+    expect(
+      await store.bind({
+        reason: 'open',
+        tabId: id,
+        path,
+        kind: 'chalk',
+        fileHash: sha(text),
+        written: sha(text),
+      }),
+    ).toEqual({ ok: true });
+    return store;
+  }
+
+  const indexTab = async (id: string) =>
+    ((await readIndex())['tabs'] as Record<string, unknown>[]).find((t) => t['id'] === id);
+
+  it('AS1: a same file is written atomically; the answer names the tab and the hash (AS3)', async () => {
+    const store = await openTab();
+    expect(await store.autoSave({ tabId: A, text: NEW })).toEqual({
+      tabId: A,
+      ok: true,
+      sha256: sha(NEW),
+    });
+    expect(await read(ester)).toBe(NEW);
+    expect(await list(docs)).toEqual(['Esterification.chalk']);
+    expect(await indexTab(A)).toMatchObject({
+      path: ester,
+      fileHash: sha(NEW),
+      written: sha(NEW),
+      writing: null,
+    });
+    // The next write checks against the new hash: still ours.
+    expect(await store.autoSave({ tabId: A, text: OLD })).toMatchObject({ ok: true });
+    expect(await read(ester)).toBe(OLD);
+  });
+
+  it('SS5: record, index with `writing`, file, index with the written hash, in that order', async () => {
+    const steps: { to: string; writing?: unknown; written?: unknown }[] = [];
+    const { rename: realRename } = await import('node:fs/promises');
+    const store = await openTab({
+      rename: async (from, to) => {
+        await realRename(from, to);
+        const name = basename(to);
+        if (name !== 'index.json') return void steps.push({ to: name });
+        const tabsNow = JSON.parse(await read(to))['tabs'] as Record<string, unknown>[];
+        steps.push({
+          to: name,
+          writing: tabsNow[0]?.['writing'],
+          written: tabsNow[0]?.['written'],
+        });
+      },
+    });
+    steps.length = 0;
+    const recordWrite = store.writeRecord({
+      tabId: A,
+      text: record('Esterification.chalk', 'chalk'),
+    });
+    const save = store.autoSave({ tabId: A, text: NEW });
+    await Promise.all([recordWrite, save]);
+    expect(steps).toEqual([
+      { to: `${A}.json` },
+      { to: 'index.json', writing: sha(NEW), written: sha(OLD) },
+      { to: 'Esterification.chalk' },
+      { to: 'index.json', writing: null, written: sha(NEW) },
+    ]);
+  });
+
+  it('item (5): killed between the file write and the index write, a restart finds the in-flight text `same` and promotes it', async () => {
+    const { rename: realRename } = await import('node:fs/promises');
+    let fileWritten = false;
+    const store = await openTab({
+      rename: async (from, to) => {
+        // The power cut: nothing after the file's rename ever runs.
+        if (fileWritten && basename(to) === 'index.json') return new Promise<void>(() => {});
+        await realRename(from, to);
+        if (to === ester) fileWritten = true;
+      },
+    });
+    void store.autoSave({ tabId: A, text: NEW });
+    await expect.poll(() => fileWritten).toBe(true);
+    expect(await read(ester)).toBe(NEW);
+    expect(await indexTab(A)).toMatchObject({ fileHash: sha(OLD), writing: sha(NEW) });
+
+    const restarted = make();
+    await restarted.restored();
+    expect(await restarted.checkFile(A)).toEqual({ tabId: A, written: sha(NEW), state: 'same' });
+    expect(await indexTab(A)).toMatchObject({
+      fileHash: sha(NEW),
+      written: sha(NEW),
+      writing: null,
+    });
+    // No false conflict: the next write goes through.
+    expect(await restarted.autoSave({ tabId: A, text: OLD })).toMatchObject({ ok: true });
+  });
+
+  it('item (5): killed before the file write, the file keeps the written text and is `same`', async () => {
+    const { rename: realRename } = await import('node:fs/promises');
+    let indexWrites = 0;
+    const store = await openTab({
+      rename: async (from, to) => {
+        if (to === ester) return new Promise<void>(() => {});
+        await realRename(from, to);
+        if (basename(to) === 'index.json') indexWrites++;
+      },
+    });
+    const before = indexWrites;
+    void store.autoSave({ tabId: A, text: NEW });
+    await expect.poll(() => indexWrites).toBe(before + 1);
+    const restarted = make();
+    await restarted.restored();
+    expect(await read(ester)).toBe(OLD);
+    expect(await restarted.checkFile(A)).toEqual({ tabId: A, written: sha(OLD), state: 'same' });
+  });
+
+  it('AS5: a change of the same size and the same modified time is `changed` (FAT32, Explorer copies)', async () => {
+    const store = await openTab();
+    // FAT32 keeps modified times in 2 s steps: the outside copy lands on the same time.
+    const time = new Date('2026-11-12T08:00:00Z');
+    await utimes(ester, time, time);
+    const before = await stat(ester);
+    const outside = '{"drawing":"oth"}';
+    expect(outside.length).toBe(OLD.length);
+    await writeFile(ester, outside);
+    await utimes(ester, time, time);
+    const after = await stat(ester);
+    expect([after.size, after.mtimeMs]).toEqual([before.size, before.mtimeMs]);
+    const check = await store.checkFile(A);
+    expect(check).toMatchObject({ tabId: A, written: sha(OLD), state: 'changed' });
+    expect(new TextDecoder().decode((check as { bytes: Uint8Array }).bytes)).toBe(outside);
+    // AS8: a write over the changed file is refused and its bytes stay.
+    const save = await store.autoSave({ tabId: A, text: NEW });
+    expect(save).toMatchObject({ tabId: A, ok: false, problem: 'changed' });
+    expect(new TextDecoder().decode((save as { bytes: Uint8Array }).bytes)).toBe(outside);
+    expect(await read(ester)).toBe(outside);
+    expect(await indexTab(A)).toMatchObject({ fileHash: sha(OLD), writing: null });
+  });
+
+  it('AS5: an equal file is `same`', async () => {
+    const store = await openTab();
+    expect(await store.checkFile(A)).toEqual({ tabId: A, written: sha(OLD), state: 'same' });
+  });
+
+  it('AS5: a missing file, then a missing folder, is `missing`; the file is never created (AS8)', async () => {
+    const store = await openTab();
+    await rm(ester);
+    expect(await store.checkFile(A)).toEqual({ tabId: A, written: sha(OLD), state: 'missing' });
+    expect(await store.autoSave({ tabId: A, text: NEW })).toEqual({
+      tabId: A,
+      ok: false,
+      problem: 'missing',
+    });
+    expect(await list(docs)).toEqual([]);
+    await rm(docs, { recursive: true });
+    expect(await store.autoSave({ tabId: A, text: NEW })).toEqual({
+      tabId: A,
+      ok: false,
+      problem: 'missing',
+    });
+    expect(await list(root)).toEqual(['session']);
+    // The stick comes back: `same` again, and the write goes through.
+    await mkdir(docs);
+    await writeFile(ester, OLD);
+    expect(await store.autoSave({ tabId: A, text: NEW })).toMatchObject({ ok: true });
+  });
+
+  it('AS5: EBUSY / EPERM are retried 3 × 100 ms, then `unreadable`; a lock that clears is `same`', async () => {
+    const waits: number[] = [];
+    let attempts = 0;
+    let failures = Infinity;
+    const store = await openTab({
+      sleep: async (ms) => void waits.push(ms),
+      readBytes: async (path) => {
+        if (path === ester && attempts++ < failures) throw errno(attempts % 2 ? 'EBUSY' : 'EPERM');
+        return new Uint8Array(await readFile(path));
+      },
+    });
+    expect(await store.autoSave({ tabId: A, text: NEW })).toEqual({
+      tabId: A,
+      ok: false,
+      problem: 'unreadable',
+    });
+    expect(attempts).toBe(4);
+    expect(waits).toEqual([100, 100, 100]);
+    expect(await read(ester)).toBe(OLD);
+    attempts = 0;
+    failures = 2;
+    expect(await store.checkFile(A)).toMatchObject({ state: 'same' });
+    expect(logged.join('\n')).toContain('Tab file not read: EPERM');
+  });
+
+  it('AS5: a file over 20 MiB is `unreadable` and never written', async () => {
+    const store = await openTab();
+    await truncate(ester, 20 * 1024 * 1024 + 1);
+    expect(await store.autoSave({ tabId: A, text: NEW })).toEqual({
+      tabId: A,
+      ok: false,
+      problem: 'unreadable',
+    });
+    expect((await stat(ester)).size).toBe(20 * 1024 * 1024 + 1);
+  });
+
+  it('AS8: a picture tab and an untitled tab are refused; nothing is written', async () => {
+    const png = join(docs, 'ethanol.png');
+    await writeFile(png, 'PNG');
+    const store = make();
+    await store.restored();
+    await store.updateIndex({
+      tabs: [listed(A, 'picture'), listed(B, 'untitled')],
+      active: A,
+      discarded: [],
+    });
+    expect(
+      await store.bind({
+        reason: 'open',
+        tabId: A,
+        path: png,
+        kind: 'picture',
+        fileHash: null,
+        written: null,
+      }),
+    ).toEqual({ ok: true });
+    await expect(store.autoSave({ tabId: A, text: NEW })).rejects.toThrow();
+    await expect(store.autoSave({ tabId: B, text: NEW })).rejects.toThrow();
+    await expect(store.checkFile(A)).rejects.toThrow();
+    await expect(store.checkFile(B)).rejects.toThrow();
+    expect(await read(png)).toBe('PNG');
+    expect(await list(docs)).toEqual(['Esterification.chalk', 'ethanol.png']);
+    // A `.chalk` open without the hash of the bytes read is refused too.
+    await expect(
+      store.bind({
+        reason: 'open',
+        tabId: B,
+        path: ester,
+        kind: 'chalk',
+        fileHash: null,
+        written: null,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('AS9 (I12 `openIn`): a path bound to another open tab is refused, case-insensitively, and nothing changes', async () => {
+    const store = await openTab({}, A, ester, [B]);
+    const other = join(docs, 'other.chalk');
+    await writeFile(other, OLD);
+    expect(
+      await store.bind({
+        reason: 'open',
+        tabId: B,
+        path: other,
+        kind: 'chalk',
+        fileHash: sha(OLD),
+        written: sha(OLD),
+      }),
+    ).toEqual({ ok: true });
+    const indexBefore = await read(join(folder, 'index.json'));
+    expect(
+      await store.bind({
+        reason: 'save-as',
+        tabId: B,
+        path: ester.toUpperCase(),
+        written: sha(NEW),
+        ref: REF,
+      }),
+    ).toEqual({ ok: false, openIn: A });
+    expect(await read(join(folder, 'index.json'))).toBe(indexBefore);
+    expect(await read(ester)).toBe(OLD);
+    // B still auto-saves to its own file.
+    expect(await store.autoSave({ tabId: B, text: NEW })).toMatchObject({ ok: true });
+    expect(await read(other)).toBe(NEW);
+    expect(await read(ester)).toBe(OLD);
+  });
+
+  it('AS8: a path that two restored tabs are bound to is never written', async () => {
+    await seed({
+      'index.json': index({
+        version: 1,
+        tabs: [
+          tab(A, { kind: 'chalk', path: ester, fileHash: sha(OLD), written: sha(OLD) }),
+          tab(B, { kind: 'chalk', path: ester, fileHash: sha(OLD), written: sha(OLD) }),
+        ],
+        active: A,
+        discarded: [],
+      }),
+    });
+    const store = make();
+    await store.restored();
+    await expect(store.autoSave({ tabId: A, text: NEW })).rejects.toThrow();
+    expect(await read(ester)).toBe(OLD);
+  });
+
+  it('AS7(c) take-over: the new tab gets the path and the changed bytes as its file hash; the old tab is unbound', async () => {
+    const store = await openTab({}, A, ester, [C]);
+    const outside = '{"drawing":"outside"}';
+    await writeFile(ester, outside);
+    expect(await store.autoSave({ tabId: A, text: NEW })).toMatchObject({ problem: 'changed' });
+    expect(
+      await store.bind({ reason: 'take-over', tabId: C, from: A, written: sha(outside) }),
+    ).toEqual({ ok: true });
+    expect(await indexTab(C)).toMatchObject({
+      path: ester,
+      fileHash: sha(outside),
+      written: sha(outside),
+      writing: null,
+    });
+    expect(await indexTab(A)).toMatchObject({ path: ester, fileHash: null, written: null });
+    await expect(store.autoSave({ tabId: A, text: NEW })).rejects.toThrow();
+    expect(await store.autoSave({ tabId: C, text: NEW })).toMatchObject({ tabId: C, ok: true });
+    expect(await read(ester)).toBe(NEW);
+    // A take-over from a tab that is no longer a file tab is refused.
+    await expect(
+      store.bind({ reason: 'take-over', tabId: B, from: A, written: null }),
+    ).rejects.toThrow();
+  });
+
+  it("T12 reopen: the closed tab's binding moves to the fresh id, hashes and all; an untitled reopen binds nothing", async () => {
+    const store = await openTab();
+    expect(await store.autoSave({ tabId: A, text: NEW })).toMatchObject({ ok: true });
+    await store.updateIndex({ tabs: [listed(B, 'untitled')], active: B, discarded: [A] });
+    // A closed tab binds nothing: its path can be opened again.
+    expect(await store.bind({ reason: 'reopen', tabId: C, from: A })).toEqual({ ok: true });
+    await store.updateIndex({
+      tabs: [listed(B, 'untitled'), listed(C)],
+      active: C,
+      discarded: [A],
+    });
+    expect(await indexTab(C)).toMatchObject({ fileHash: sha(NEW), written: sha(NEW) });
+    expect(await store.checkFile(C)).toEqual({ tabId: C, written: sha(NEW), state: 'same' });
+    expect(await store.bind({ reason: 'reopen', tabId: D, from: B })).toEqual({ ok: true });
+    await expect(store.checkFile(D)).rejects.toThrow();
+  });
+
+  it('N9 (AS7(a)): the changed bytes become the file hash and `written` the written hash', async () => {
+    const store = await openTab();
+    const outside = '{"drawing":"outside"}';
+    await writeFile(ester, outside);
+    expect(await store.checkFile(A)).toMatchObject({ state: 'changed' });
+    await store.acceptOutside({ tabId: A, written: sha('{"serialized":1}') });
+    expect(await indexTab(A)).toMatchObject({
+      fileHash: sha(outside),
+      written: sha('{"serialized":1}'),
+    });
+    expect(await store.autoSave({ tabId: A, text: NEW })).toMatchObject({ ok: true });
+    // Without a changed check there is nothing to accept.
+    await store.acceptOutside({ tabId: A, written: sha(OLD) });
+    expect(await indexTab(A)).toMatchObject({ written: sha(NEW) });
+    expect(logged).toContain('Outside change not accepted: no changed check');
+  });
+
+  it('N9 binds the bytes the check read: a file changed again since stays `changed`', async () => {
+    const store = await openTab();
+    await writeFile(ester, '{"drawing":"first"}');
+    expect(await store.checkFile(A)).toMatchObject({ state: 'changed' });
+    await writeFile(ester, '{"drawing":"second"}');
+    await store.acceptOutside({ tabId: A, written: sha('{"drawing":"first"}') });
+    expect(await store.autoSave({ tabId: A, text: NEW })).toMatchObject({ problem: 'changed' });
+    expect(await read(ester)).toBe('{"drawing":"second"}');
+  });
+
+  it('every failed write maps through write-problem, clears `writing` and keeps the file', async () => {
+    const cases: [string, string][] = [
+      ['EACCES', 'write-denied'],
+      ['ENOSPC', 'disk-full'],
+      ['EBUSY', 'busy'],
+      ['ENOENT', 'folder-gone'],
+      ['EIO', 'write-failed'],
+    ];
+    const { rename: realRename } = await import('node:fs/promises');
+    let failWith: string | null = null;
+    const store = await openTab({
+      rename: async (from, to) => {
+        if (to === ester && failWith !== null) throw errno(failWith);
+        await realRename(from, to);
+      },
+    });
+    for (const [code, problem] of cases) {
+      failWith = code;
+      expect(await store.autoSave({ tabId: A, text: NEW })).toEqual({
+        tabId: A,
+        ok: false,
+        problem,
+      });
+      expect(await read(ester)).toBe(OLD);
+      expect(await list(docs)).toEqual(['Esterification.chalk']);
+      expect(await indexTab(A)).toMatchObject({ fileHash: sha(OLD), writing: null });
+    }
+    failWith = null;
+    expect(await store.autoSave({ tabId: A, text: NEW })).toMatchObject({ ok: true });
+  });
+
+  it('SEC8: a text without a leading "{", over 20 MiB, or a tab id that is not a uuid is refused', async () => {
+    const store = await openTab();
+    await expect(store.autoSave({ tabId: A, text: '[1]' })).rejects.toThrow();
+    await expect(store.autoSave({ tabId: A, text: ' {}' })).rejects.toThrow();
+    await expect(
+      store.autoSave({ tabId: A, text: `{${'x'.repeat(20 * 1024 * 1024)}` }),
+    ).rejects.toThrow();
+    await expect(
+      store.autoSave({ tabId: A, text: `{${'é'.repeat(10 * 1024 * 1024)}` }),
+    ).rejects.toThrow();
+    await expect(store.autoSave({ tabId: '../x', text: NEW })).rejects.toThrow();
+    await expect(store.checkFile('../x')).rejects.toThrow();
+    await expect(store.bind({ reason: 'unbind', tabId: 'x' })).rejects.toThrow();
+    expect(await read(ester)).toBe(OLD);
+  });
+
+  it('F6 Save as: bound before the write; a successful write binds its bytes, a failed one puts the old binding back', async () => {
+    const store = await openTab();
+    const saved = join(docs, 'copy.chalk');
+    expect(
+      await store.bind({ reason: 'save-as', tabId: A, path: saved, written: sha(NEW), ref: REF }),
+    ).toEqual({ ok: true });
+    expect(await indexTab(A)).toMatchObject({ path: saved, written: sha(NEW) });
+    await writeFile(saved, NEW);
+    expect(await store.settleSaveAs(REF, { ok: true, sha256: sha(NEW) })).toBe(true);
+    expect(await indexTab(A)).toMatchObject({ path: saved, fileHash: sha(NEW), written: sha(NEW) });
+    expect(await store.autoSave({ tabId: A, text: OLD })).toMatchObject({ ok: true });
+    expect(await read(saved)).toBe(OLD);
+    // Settled once only; an unknown ref is not a Save as.
+    expect(await store.settleSaveAs(REF, { ok: false })).toBe(false);
+
+    const second = '6f7a8b9c-adbe-4fc0-9d1e-2f3a4b5c6d7e';
+    const failed = join(docs, 'failed.chalk');
+    expect(
+      await store.bind({
+        reason: 'save-as',
+        tabId: A,
+        path: failed,
+        written: sha(OLD),
+        ref: second,
+      }),
+    ).toEqual({ ok: true });
+    expect(await store.settleSaveAs(second, { ok: false })).toBe(true);
+    expect(await indexTab(A)).toMatchObject({ path: saved, fileHash: sha(OLD), written: sha(OLD) });
+    expect(await store.checkFile(A)).toMatchObject({ state: 'same' });
+  });
+
+  it('F6: an untitled tab whose Save-as write fails is unbound again; a binding changed meanwhile stays', async () => {
+    const store = make();
+    await store.restored();
+    await store.updateIndex({ tabs: [listed(B, 'untitled')], active: B, discarded: [] });
+    const saved = join(docs, 'untitled.chalk');
+    await store.bind({ reason: 'save-as', tabId: B, path: saved, written: sha(NEW), ref: REF });
+    expect(await store.settleSaveAs(REF, { ok: false })).toBe(true);
+    expect(await indexTab(B)).toMatchObject({ path: null, fileHash: null });
+
+    const second = '6f7a8b9c-adbe-4fc0-9d1e-2f3a4b5c6d7e';
+    await store.bind({ reason: 'save-as', tabId: B, path: saved, written: sha(NEW), ref: second });
+    await store.bind({ reason: 'unbind', tabId: B });
+    expect(await store.settleSaveAs(second, { ok: false })).toBe(true);
+    expect(await indexTab(B)).toMatchObject({ path: saved, fileHash: null, written: null });
+  });
+
+  it('LG1: the log carries codes, never a drawing', async () => {
+    const store = await openTab();
+    await writeFile(ester, '{"secret":"benzene"}');
+    await store.autoSave({ tabId: A, text: '{"secret":"toluene"}' });
+    expect(logged.join('\n')).not.toMatch(/benzene|toluene/);
   });
 });

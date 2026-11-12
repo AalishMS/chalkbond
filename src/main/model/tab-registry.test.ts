@@ -11,9 +11,11 @@ import {
   finishWrite,
   mainFieldsOf,
   openIn,
+  openTabsOf,
   pathKeyOf,
   registryFromIndex,
   startWrite,
+  withBinding,
   withoutTabs,
   type BindRequest,
   type TabBinding,
@@ -599,5 +601,33 @@ describe('the index and the registry', () => {
   it('withoutTabs drops the bindings of deleted tabs', () => {
     const registry = registryFromIndex(index, winKey);
     expect([...withoutTabs(registry, [A, B]).keys()]).toEqual([C, D]);
+  });
+});
+
+describe('TB10: open tabs and the Save-as rollback', () => {
+  const saveAs = (tabId: string): BindRequest => ({
+    reason: 'save-as',
+    tabId,
+    path: 'D:\\New.chalk',
+    fileHash: hash('d'),
+    written: hash('d'),
+  });
+
+  it('openTabsOf counts listed and bound tabs, never a closed (discarded) one', () => {
+    const registry = bound(bound(emptyRegistry(), openChalk(A), [A]), openChalk(B, ETHANOL), [B]);
+    expect([...openTabsOf(registry, [C, A], [B])].sort()).toEqual([A, C]);
+    expect([...openTabsOf(registry, [], [])].sort()).toEqual([A, B]);
+    expect([...openTabsOf(emptyRegistry(), [D], [D])]).toEqual([]);
+  });
+
+  it('withBinding puts a previous binding back, or removes the tab when it had none', () => {
+    const before = bound(emptyRegistry(), openChalk(A), [A]);
+    const previous = before.get(A);
+    const after = bound(before, saveAs(A), [A]);
+    expect(after.get(A)?.path).toBe('D:\\New.chalk');
+    expect(withBinding(after, A, previous).get(A)).toEqual(previous);
+    const fresh = bound(emptyRegistry(), saveAs(B), [B]);
+    expect(withBinding(fresh, B, undefined).has(B)).toBe(false);
+    expect(fresh.has(B)).toBe(true);
   });
 });

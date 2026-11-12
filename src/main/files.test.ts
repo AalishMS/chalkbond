@@ -4,7 +4,13 @@ import { open, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createFiles, MAX_PICTURE_READ_BYTES, MAX_READ_BYTES, MAX_WRITE_BYTES } from './files';
+import {
+  createFiles,
+  MAX_PICTURE_READ_BYTES,
+  MAX_READ_BYTES,
+  MAX_WRITE_BYTES,
+  sha256Hex,
+} from './files';
 import type { FileEntry } from './model/file-refs';
 
 const PNG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0]);
@@ -32,6 +38,17 @@ const entry = (
 const tmpFiles = (): string[] => readdirSync(dir).filter((f) => f.endsWith('.tmp'));
 const files = (over: Parameters<typeof createFiles>[0] = {}) =>
   createFiles({ log: () => {}, sleep: async () => {}, ...over });
+
+describe('sha256Hex (AS5)', () => {
+  it('hashes bytes to lowercase hex (known vectors)', () => {
+    expect(sha256Hex(new Uint8Array())).toBe(
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    );
+    expect(sha256Hex(new TextEncoder().encode('abc'))).toBe(
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    );
+  });
+});
 
 describe('read (SEC7)', () => {
   it('returns the bytes of a regular file with an Open extension', async () => {

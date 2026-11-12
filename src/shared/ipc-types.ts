@@ -28,6 +28,10 @@ export interface IpcRequestMap {
   'session:read-tab': ReadTabRecordRequest;
   'session:write-tab': WriteTabRecordRequest;
   'session:index': SessionIndexUpdate;
+  'tab:bind': BindTabRequest;
+  'file:auto-save': AutoSaveRequest;
+  'file:check': CheckTabFileRequest;
+  'file:accept-outside': AcceptOutsideRequest;
   'recovery:write': WriteRecoveryRequest;
   'recovery:clear': Record<string, never>;
 }
@@ -183,3 +187,47 @@ export interface WriteTabRecordRequest {
 }
 /** N7's answer (SS6): a failed write keeps the previous record and says why (the tab is unkept). */
 export type WriteTabRecordResponse = WriteFileResponse;
+
+/** I12's reasons: T17 open, F6 save-as, AS7 unbind, T12 reopen, AS7(c) take-over. */
+export type BindReason = 'open' | 'save-as' | 'unbind' | 'reopen' | 'take-over';
+/**
+ * I12 (T12, T17, AS7, AS9, F6): binds a tab in main. `open` and `save-as` name a ref (`written`:
+ * the hash of `serialize(drawing)`; required for `save-as`, which is sent before the C4 write);
+ * `reopen` moves the closed tab `from`'s binding to `tabId`; `take-over` gives `tabId` the path of
+ * `from` and the hash of the bytes `from`'s last `changed` check read, and unbinds `from`.
+ */
+export interface BindTabRequest {
+  tabId: string;
+  ref: string | null;
+  reason: BindReason;
+  from?: string;
+  written?: string;
+}
+/** I12: done, or the file is open in this other tab (T17, AS9) and nothing changed. */
+export type BindTabResponse = { ok: true } | { ok: false; openIn: string };
+/** I13 (AS1): a file tab's drawing as `.chalk` text (at most 20 MiB of UTF-8, starting "{"). */
+export interface AutoSaveRequest {
+  tabId: string;
+  text: string;
+}
+/** I13 (AS3, AS5): every answer names its tab; `sha256` is the hash of the text written. */
+export type AutoSaveResponse =
+  | { tabId: string; ok: true; sha256: string }
+  | { tabId: string; ok: false; problem: WriteProblem | 'missing' | 'unreadable' }
+  | { tabId: string; ok: false; problem: 'changed'; bytes: Uint8Array };
+/** I14 (AS5): the outside-change check of a file tab. */
+export interface CheckTabFileRequest {
+  tabId: string;
+}
+/**
+ * I14: the state of the bound file and the written hash (an in-flight hash promoted by this check
+ * included; null only for a binding restored without one).
+ */
+export type CheckTabFileResponse =
+  | { tabId: string; written: string | null; state: 'same' | 'missing' | 'unreadable' }
+  | { tabId: string; written: string | null; state: 'changed'; bytes: Uint8Array };
+/** N9 (AS7(a)): the changed bytes the tab loaded become its file hash, `written` its written hash. */
+export interface AcceptOutsideRequest {
+  tabId: string;
+  written: string;
+}

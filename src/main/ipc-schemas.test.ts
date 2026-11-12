@@ -413,3 +413,81 @@ describe('TB9 I11 session:read-tab, N7 session:write-tab, N8 session:index', () 
       bad(schemas.sessionIndexSchema, v);
   });
 });
+
+describe('TB10 I12 tab:bind, I13 file:auto-save, I14 file:check, N9 file:accept-outside', () => {
+  const MIB20 = 20 * 1024 * 1024;
+  const OTHER = '6a1f0c2d-3b4e-4f5a-9b6c-7d8e9f0a1b2c';
+  const REF = '9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d';
+  const SHA = 'a'.repeat(64);
+
+  it('I12: open and save-as name a ref; reopen and take-over name `from`; unbind neither', () => {
+    ok(schemas.bindTabSchema, { tabId: ID, ref: REF, reason: 'open', written: SHA });
+    ok(schemas.bindTabSchema, { tabId: ID, ref: REF, reason: 'open' });
+    ok(schemas.bindTabSchema, { tabId: ID, ref: REF, reason: 'save-as', written: SHA });
+    ok(schemas.bindTabSchema, { tabId: ID, ref: null, reason: 'unbind' });
+    ok(schemas.bindTabSchema, { tabId: ID, ref: null, reason: 'reopen', from: OTHER });
+    ok(schemas.bindTabSchema, {
+      tabId: ID,
+      ref: null,
+      reason: 'take-over',
+      from: OTHER,
+      written: SHA,
+    });
+  });
+
+  it('I12 rejects a path, a missing ref or `from`, a bad hash and binding a tab to itself', () => {
+    for (const v of [
+      { tabId: ID, ref: null, reason: 'open', written: SHA },
+      { tabId: ID, ref: REF, reason: 'save-as' },
+      { tabId: ID, ref: REF, reason: 'unbind' },
+      { tabId: ID, ref: null, reason: 'reopen' },
+      { tabId: ID, ref: null, reason: 'unbind', from: OTHER },
+      { tabId: ID, ref: REF, reason: 'take-over', from: OTHER },
+      { tabId: ID, ref: null, reason: 'reopen', from: ID },
+      { tabId: ID, ref: REF, reason: 'open', written: 'A'.repeat(64) },
+      { tabId: ID, ref: REF, reason: 'open', written: 'a'.repeat(63) },
+      { tabId: ID, ref: REF, reason: 'rename' },
+      { tabId: ID, ref: 'C:\\x.chalk', reason: 'open' },
+      { tabId: 'tab-1', ref: REF, reason: 'open' },
+      { tabId: ID, ref: REF, reason: 'open', path: '/x.chalk' },
+      { tabId: ID, reason: 'unbind' },
+      null,
+    ])
+      bad(schemas.bindTabSchema, v);
+  });
+
+  it('I13 takes a uuid and text starting "{" of up to 20 MiB of UTF-8 (SEC8)', () => {
+    ok(schemas.autoSaveSchema, { tabId: ID, text: '{}' });
+    ok(schemas.autoSaveSchema, { tabId: ID, text: `{${'x'.repeat(MIB20 - 1)}` });
+    for (const v of [
+      { tabId: ID, text: '' },
+      { tabId: ID, text: '[1]' },
+      { tabId: ID, text: ' {}' },
+      { tabId: ID, text: `{${'x'.repeat(MIB20)}` },
+      { tabId: ID, text: `{${'é'.repeat(MIB20 / 2)}` },
+      { tabId: '../x', text: '{}' },
+      { tabId: ID, text: '{}', ref: REF },
+      { tabId: ID },
+      null,
+    ])
+      bad(schemas.autoSaveSchema, v);
+  });
+
+  it('I14 takes a uuid tab id only', () => {
+    ok(schemas.checkTabFileSchema, { tabId: ID });
+    for (const v of [{}, { tabId: 'x' }, { tabId: ID, path: '/x' }, null])
+      bad(schemas.checkTabFileSchema, v);
+  });
+
+  it('N9 takes a uuid tab id and the written hash', () => {
+    ok(schemas.acceptOutsideSchema, { tabId: ID, written: SHA });
+    for (const v of [
+      { tabId: ID },
+      { tabId: ID, written: 'x' },
+      { tabId: 'x', written: SHA },
+      { tabId: ID, written: SHA, fileHash: SHA },
+      null,
+    ])
+      bad(schemas.acceptOutsideSchema, v);
+  });
+});

@@ -17,7 +17,7 @@ import {
 import packageJson from '../../package.json';
 import { createAbout } from './about';
 import { createDialogs } from './dialogs';
-import { createFiles } from './files';
+import { createFiles, sha256Hex } from './files';
 import { createFileRefs } from './model/file-refs';
 import { createSessionFolders } from './model/session-folders';
 import {
@@ -27,7 +27,7 @@ import {
 } from './model/window-bounds';
 import { rendererSettings, withRendererSettings } from './model/settings';
 import { createSettingsStore } from './settings-io';
-import type { ReadFileResponse, StartupResponse } from '../shared/ipc-types';
+import type { BindTabResponse, ReadFileResponse, StartupResponse } from '../shared/ipc-types';
 import { fileArg, testFlags } from './model/args';
 import { kindOfPath } from './model/file-refs';
 import { guardClose, installQuitFlush } from './lifecycle';
@@ -64,6 +64,10 @@ import {
   readTabRecordSchema,
   writeTabRecordSchema,
   sessionIndexSchema,
+  bindTabSchema,
+  autoSaveSchema,
+  checkTabFileSchema,
+  acceptOutsideSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { createAppMenu, createContextMenus } from './menu';
@@ -243,6 +247,16 @@ async function startApp(): Promise<void> {
     if (!entry) throw new Error('Unknown file ref');
     return entry;
   };
+  // Session store (SS2, SS5, SS11): userData/session, one ordered chain; the start-up read runs
+  // first on it (damaged files moved aside, discarded records deleted after a valid read). The old
+  // userData/recovery folder is neither read nor deleted by it. TB10 adds the tab bindings (I12),
+  // the auto-save writer (I13), the AS5 check (I14) and N9 to the same chain. Nothing in the
+  // renderer calls these channels yet (TB20); I7 returns `restored()` from TB12 on.
+  const sessionStore = createSessionStore({
+    folder: join(app.getPath('userData'), 'session'),
+    log: (message) => log('session', message),
+    normalizePath: pathKeyOf(process.platform === 'win32'),
+  });
   const documents = (): string => app.getPath('documents');
   // F2, F6, ST2: the last open, save and export folders, remembered in settings.json.
   const folders = createSessionFolders(documents, store.get().folders, (next) =>
@@ -270,7 +284,11 @@ async function startApp(): Promise<void> {
   ipc.handle(CHANNELS.readFile, readFileSchema, async ({ ref }): Promise<ReadFileResponse> => {
     const path = entryOf(ref).path;
     const result = await files.read(path);
-    if (result.ok) return result;
+    // I12 `open`: the tab's file hash is the hash of exactly these bytes (AS5).
+    if (result.ok) {
+      refs.noteHash(ref, sha256Hex(result.bytes));
+      return result;
+    }
     // F10: a missing file leaves the recent list (the renderer shows "can't be found").
     if (result.problem === 'missing') recent.remove(path);
     // A ref always has an Open extension, so `unsupported` cannot answer I2.
@@ -286,10 +304,86 @@ async function startApp(): Promise<void> {
   ipc.handle(CHANNELS.writeFile, writeFileSchema, async ({ ref, data }) => {
     const entry = entryOf(ref);
     const result = await files.write(entry, data);
-    // F10: a successful Save in place counts (Save as is added by its N2).
+    // F10: a successful Save in place counts (Save as is added by its N2 or its I12).
     if (result.ok && ref === sessionRef) recent.add(entry.path);
+    const sha256 = result.ok ? sha256Hex(data) : null;
+    if (sha256 !== null) refs.noteHash(ref, sha256);
+    // F6 (I12 `save-as` is sent before this write): success binds the bytes written and the folders
+    // and recent list follow it as N2 did; a failed write puts the tab's previous binding back.
+    const savedAs =
+      entry.kind === 'chalk' &&
+      (await sessionStore.settleSaveAs(
+        ref,
+        sha256 === null ? { ok: false } : { ok: true, sha256 },
+      ));
+    if (savedAs && sha256 !== null) {
+      folders.sessionFile(entry);
+      recent.add(entry.path);
+    }
     return result;
   });
+  // I12 (T12, T17, AS7, AS9): the ref is resolved here, so paths stay in main (R8). `open` binds
+  // the hash of the bytes I2 gave the renderer; `save-as` takes a Save-dialog `.chalk` ref only.
+  ipc.handle(CHANNELS.bindTab, bindTabSchema, async (request): Promise<BindTabResponse> => {
+    const { tabId } = request;
+    const given = <T>(value: T | null | undefined): T => {
+      if (value === null || value === undefined) throw new Error('Refused bind');
+      return value;
+    };
+    switch (request.reason) {
+      case 'open': {
+        const ref = given(request.ref);
+        const entry = entryOf(ref);
+        const answer = await sessionStore.bind({
+          reason: 'open',
+          tabId,
+          path: entry.path,
+          kind: entry.kind === 'chalk' ? 'chalk' : 'picture',
+          fileHash: refs.hashOf(ref),
+          written: request.written ?? null,
+        });
+        // N2's part: the last open folder and the recent list follow an open (F10).
+        if (answer.ok) {
+          folders.sessionFile(entry);
+          recent.add(entry.path);
+        }
+        return answer;
+      }
+      case 'save-as': {
+        const ref = given(request.ref);
+        const entry = entryOf(ref);
+        if (entry.kind !== 'chalk' || entry.how !== 'saved') throw new Error('Refused bind');
+        return sessionStore.bind({
+          reason: 'save-as',
+          tabId,
+          path: entry.path,
+          written: given(request.written),
+          ref,
+        });
+      }
+      case 'unbind':
+        return sessionStore.bind({ reason: 'unbind', tabId });
+      case 'reopen':
+        return sessionStore.bind({ reason: 'reopen', tabId, from: given(request.from) });
+      case 'take-over':
+        return sessionStore.bind({
+          reason: 'take-over',
+          tabId,
+          from: given(request.from),
+          written: request.written ?? null,
+        });
+    }
+  });
+  // I13 (AS1, AS5, AS8), I14 (AS5) and N9 (AS7(a)) run on the session chain.
+  ipc.handle(CHANNELS.autoSave, autoSaveSchema, (request) => sessionStore.autoSave(request));
+  ipc.handle(CHANNELS.checkTabFile, checkTabFileSchema, ({ tabId }) =>
+    sessionStore.checkFile(tabId),
+  );
+  ipc.on(
+    CHANNELS.acceptOutsideChange,
+    acceptOutsideSchema,
+    (value) => void sessionStore.acceptOutside(value),
+  );
   // I3 (F12, SEC14): a dropped file's path, read by the preload; checked as SEC7, then a ref.
   ipc.handle(CHANNELS.fileDropped, fileDroppedSchema, async ({ path }) => {
     const result = await files.inspect(path);
@@ -338,15 +432,7 @@ async function startApp(): Promise<void> {
   });
   ipc.on(CHANNELS.writeRecovery, writeRecoverySchema, (value) => void recovery.write(value));
   ipc.on(CHANNELS.clearRecovery, clearRecoverySchema, () => void recovery.clear());
-  // Session store (SS2, SS5, SS11): userData/session, one ordered chain; the start-up read runs
-  // first on it (damaged files moved aside, discarded records deleted after a valid read). The old
-  // userData/recovery folder is neither read nor deleted by it. Nothing in the renderer calls these
-  // channels yet (TB20); I7 returns `restored()` from TB12 on.
-  const sessionStore = createSessionStore({
-    folder: join(app.getPath('userData'), 'session'),
-    log: (message) => log('session', message),
-    normalizePath: pathKeyOf(process.platform === 'win32'),
-  });
+  // The session store's record and index channels (I11, N7, N8).
   ipc.handle(CHANNELS.readTabRecord, readTabRecordSchema, ({ tabId }) =>
     sessionStore.readRecord(tabId),
   );

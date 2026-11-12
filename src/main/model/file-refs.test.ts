@@ -42,6 +42,20 @@ describe('createFileRefs', () => {
     const b = refs.add('/d/a.chalk', 'chalk', 'opened');
     expect(a.id).not.toBe(b.id);
   });
+
+  it('TB10: remembers the SHA-256 of the bytes last read or written through a ref (I12)', () => {
+    const refs = createFileRefs(ids());
+    const a = refs.add('/d/a.chalk', 'chalk', 'opened');
+    expect(refs.hashOf(a.id)).toBeNull();
+    refs.noteHash(a.id, 'a'.repeat(64));
+    expect(refs.hashOf(a.id)).toBe('a'.repeat(64));
+    refs.noteHash(a.id, 'b'.repeat(64));
+    expect(refs.hashOf(a.id)).toBe('b'.repeat(64));
+    // An unknown ref keeps nothing; the entry itself never carries the hash.
+    refs.noteHash('00000000-0000-4000-8000-000000000999', 'c'.repeat(64));
+    expect(refs.hashOf('00000000-0000-4000-8000-000000000999')).toBeNull();
+    expect(Object.keys(refs.get(a.id) ?? {}).sort()).toEqual(['how', 'kind', 'path', 'writable']);
+  });
 });
 
 describe('kindOfPath and baseName', () => {

@@ -267,6 +267,36 @@ export function registryFromIndex(index: SessionIndex, normalizePath: NormalizeP
   return registry;
 }
 
+/**
+ * T17, AS9: the tabs main counts as open: every tab the index lists or the registry binds (a tab
+ * bound by I12 before the renderer's next N8 lists it), except closed tabs (`discarded`), whose
+ * bindings stay only so that a reopen (T12) can move them.
+ */
+export function openTabsOf(
+  registry: TabRegistry,
+  listed: readonly string[],
+  closed: Iterable<string>,
+): Set<string> {
+  const open = new Set([...listed, ...registry.keys()]);
+  for (const tabId of closed) open.delete(tabId);
+  return open;
+}
+
+/**
+ * The registry with `binding` for `tabId` (none: the tab is unbound): AS5's promoted entry, or the
+ * previous binding a failed Save-as write puts back (F6: a failed write changes nothing).
+ */
+export function withBinding(
+  registry: TabRegistry,
+  tabId: string,
+  binding: TabBinding | undefined,
+): TabRegistry {
+  const next = new Map(registry);
+  if (binding === undefined) next.delete(tabId);
+  else next.set(tabId, binding);
+  return next;
+}
+
 /** The registry without the bindings of `tabIds` (their records are deleted, SS3). */
 export function withoutTabs(registry: TabRegistry, tabIds: readonly string[]): TabRegistry {
   const next = new Map(registry);

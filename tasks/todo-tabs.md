@@ -499,10 +499,10 @@ stay; a picture tab and an `untitled` tab are refused (AS8); a path bound to ano
 SEC8: a text without a leading `{` is refused; schemas for I12-I14 and N9.
 
 **Acceptance criteria:**
-- [ ] A file changed outside is never overwritten by I13 (AS5, AS8) and every answer carries `tabId`
-- [ ] The SS5 sequence is observable in the tests (index, file, index) and a crash leaves either the written or the in-flight text
-- [ ] I12 refuses a Save-as path bound to another tab (AS9) and writes nothing
-- [ ] Preload key list and SEC5 test updated; `src/main/model` coverage >= 90 % lines
+- [x] A file changed outside is never overwritten by I13 (AS5, AS8) and every answer carries `tabId`
+- [x] The SS5 sequence is observable in the tests (index, file, index) and a crash leaves either the written or the in-flight text
+- [x] I12 refuses a Save-as path bound to another tab (AS9) and writes nothing
+- [x] Preload key list and SEC5 test updated; `src/main/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/main src/preload`, then `npm run check`.
 

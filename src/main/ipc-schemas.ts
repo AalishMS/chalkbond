@@ -219,3 +219,34 @@ const sessionTabSchema = z
 export const sessionIndexSchema = z
   .object({ tabs: z.array(sessionTabSchema), active: tabId, discarded: z.array(tabId) })
   .strict();
+
+// TB10 (SPEC-app-shell.md I12-I14, N9; AS1, AS5, AS7, AS9, SEC8): tabs are named by uuid, files
+// by ref (R8); hashes are lowercase SHA-256 hex. I12: `open` and `save-as` bind a ref (`save-as`
+// with the hash of the text about to be written), `reopen` and `take-over` move `from`'s binding,
+// `unbind` takes neither. I13's text is a drawing: up to 20 MiB of UTF-8, starting "{".
+const sha256 = z.string().regex(/^[0-9a-f]{64}$/);
+export const bindTabSchema = z
+  .object({
+    tabId,
+    ref: fileRefId.nullable(),
+    reason: z.enum(['open', 'save-as', 'unbind', 'reopen', 'take-over']),
+    from: tabId.optional(),
+    written: sha256.optional(),
+  })
+  .strict()
+  .refine((r) => (r.reason === 'open' || r.reason === 'save-as') === (r.ref !== null))
+  .refine((r) => (r.reason === 'reopen' || r.reason === 'take-over') === (r.from !== undefined))
+  .refine((r) => r.from !== r.tabId)
+  .refine((r) => r.reason !== 'save-as' || r.written !== undefined);
+export const autoSaveSchema = z
+  .object({
+    tabId,
+    text: z
+      .string()
+      .max(maxDrawingBytes)
+      .startsWith('{')
+      .refine((text) => Buffer.byteLength(text, 'utf8') <= maxDrawingBytes),
+  })
+  .strict();
+export const checkTabFileSchema = z.object({ tabId }).strict();
+export const acceptOutsideSchema = z.object({ tabId, written: sha256 }).strict();

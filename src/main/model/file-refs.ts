@@ -38,6 +38,8 @@ export function withExtension(path: string, format: FileKind): string {
  */
 export function createFileRefs(newId: () => string) {
   const entries = new Map<string, FileEntry>();
+  /** TB10 (I12): SHA-256 of the bytes last read (I2) or written (C4) through each ref. */
+  const hashes = new Map<string, string>();
   return {
     add(path: string, kind: FileKind, how: 'opened' | 'saved'): FileRef {
       const id = newId();
@@ -46,6 +48,13 @@ export function createFileRefs(newId: () => string) {
     },
     get(id: string): FileEntry | undefined {
       return entries.get(id);
+    },
+    /** I12 `open`: the file hash is the hash of the bytes the renderer was given. */
+    noteHash(id: string, sha256: string): void {
+      if (entries.has(id)) hashes.set(id, sha256);
+    },
+    hashOf(id: string): string | null {
+      return hashes.get(id) ?? null;
     },
   };
 }

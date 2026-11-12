@@ -1,6 +1,6 @@
 // File I/O (SPEC-app-shell.md SEC7 reads, SEC8 + F9 atomic writes). Main parses nothing beyond
 // size and signature (SEC9); the renderer decides what the bytes mean.
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { open, readFile, rename as fsRename, stat, unlink } from 'node:fs/promises';
 import type { ReadProblem, WriteFileResponse } from '../shared/ipc-types';
 import { baseName, kindOfPath, type FileEntry, type FileKind } from './model/file-refs';
@@ -45,6 +45,11 @@ function signatureMatches(kind: FileKind, data: Uint8Array): boolean {
 
 const codeOf = (error: unknown): string | undefined =>
   error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined;
+
+/** AS5, I12, I13: SHA-256 of bytes as lowercase hex; main hashes bytes and never parses them (SEC9). */
+export function sha256Hex(bytes: Uint8Array): string {
+  return createHash('sha256').update(bytes).digest('hex');
+}
 
 export function createFiles(options: FilesOptions = {}) {
   const log = options.log ?? (() => {});
