@@ -302,7 +302,7 @@ export function statusbar({
   parts.push(
     `<div class="zoom">` +
       `<button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">${icon('zoom-out', 16)}</button>` +
-      `<button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100% (Ctrl+1)">${zoom}%</button>` +
+      `<button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100%">${zoom}%</button>` +
       `<button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">${icon('zoom-in', 16)}</button>` +
       `<button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">${icon('fit', 16)}</button>` +
       `</div>`,

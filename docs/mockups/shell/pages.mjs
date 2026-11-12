@@ -2,7 +2,10 @@
 // screen from these (then Prettier formats them). The editor parts come from the approved editor
 // mock-up templates (../editor/pages.mjs) so the two sets cannot drift; their icon links are
 // rewritten to ../editor/icons.svg. Inventory and wording: SPEC-app-shell.md and
-// SPEC-clipboard-export.md "UI design", amended in DEVIATIONS.md.
+// SPEC-clipboard-export.md "UI design", amended in DEVIATIONS.md. From 2026-11-12 the window has
+// no native menu bar: a menu button opens File, Edit, View and Help, and a tab strip (one tab per
+// drawing) sits under the top bar (DEVIATIONS.md "Tabs"). Pages the tabs superseded (A04-A06,
+// A09, A15-A15c) keep the old menu-bar chrome through `legacy`.
 import {
   BOND_OPTIONS,
   HINTS,
@@ -55,14 +58,25 @@ export function copyButton({
   );
 }
 
+/** The menu button: first item of the top bar. `state`: hover, pressed, focus, or open (menu shown). */
+export function menuButton({ state = '' } = {}) {
+  const open = state === 'open';
+  return (
+    `<button class="btn btn-top btn-menu${stateClass(open ? '' : state)}" id="menu-btn" data-testid="menu-button"` +
+    ` aria-label="Menu" aria-haspopup="menu" aria-expanded="${open}">${icon('menu', 20)}</button>`
+  );
+}
+
 function topbar({
   field = nameField(),
   options = '',
   canUndo = true,
   canRedo = false,
   copy = {},
+  menu = menuButton(),
 } = {}) {
   return ed(`<header class="topbar">
+${menu}
 ${field}
 <div class="divider-v" role="separator"></div>
 <div class="options" role="toolbar" aria-label="Tool options">
@@ -86,12 +100,75 @@ function status({ notice, error = false, ...rest } = {}) {
   return html.replace(/<div class="hint"[^>]*>@@<\/div>/, hint);
 }
 
+// ---- Tab strip ----
+
+/**
+ * One tab. `saving`: '' (nothing shown: a named file saves itself, or an unnamed drawing with
+ * nothing on it), 'unnamed' (the dot: unsaved: unnamed with content, an edited picture, a kept
+ * tab), 'unavailable' (warning icon: the file could not be saved, AS6) or 'unkept' (warning icon:
+ * the app could not keep the drawing, SS6). T5 and T6 of SPEC-app-shell.md. `state`: hover, pressed, focus; `closeState`: hover, pressed.
+ */
+export function tab({
+  title,
+  active = false,
+  saving = '',
+  state = '',
+  closeState = '',
+  extra = '',
+  style = '',
+  id,
+} = {}) {
+  const mark =
+    saving === 'unnamed'
+      ? '<span class="tab-dot" aria-hidden="true"></span>'
+      : saving === 'unavailable' || saving === 'unkept'
+        ? `<span class="tab-warn" aria-hidden="true">${edIcon('warning', 16)}</span>`
+        : '';
+  const note =
+    {
+      unnamed: ', not saved as a file yet',
+      unavailable: ", couldn't save",
+      unkept: ", couldn't keep",
+    }[saving] ?? '';
+  return (
+    `<div class="tab${stateClass(state)}${extra}" role="tab" aria-selected="${active}" tabindex="${active ? 0 : -1}"` +
+    `${id ? ` id="${id}"` : ''}${style ? ` style="${style}"` : ''} aria-label="${esc(title)}${note}">` +
+    `${mark}<span class="tab-title">${esc(title)}</span>` +
+    `<button class="tab-close${stateClass(closeState)}" tabindex="-1" aria-label="Close ${esc(title)} (Ctrl+W)">${icon('close', 16)}</button></div>`
+  );
+}
+
+/** The strip: optional scroll chevrons (only when the tabs overflow), the tabs, the new-tab button. */
+export function tabstrip({ tabs, scroll = false, addState = '', style = '', extra = '' }) {
+  const chev = (dir) =>
+    `<button class="btn tab-scroll" tabindex="-1" aria-label="Scroll tabs ${dir}">${icon(`chevron-${dir}`, 16)}</button>`;
+  return (
+    `<div class="tabstrip"${style ? ` style="${style}"` : ''}>` +
+    (scroll ? chev('left') : '') +
+    `<div class="tabs" role="tablist" aria-label="Open drawings">${tabs.join('')}</div>` +
+    (scroll ? chev('right') : '') +
+    `<button class="btn tab-add${stateClass(addState)}" id="tab-add" aria-label="New tab (Ctrl+T)">${icon('add', 20)}</button>` +
+    `${extra}</div>`
+  );
+}
+
+/** The three tabs of the main window: the scheme, ethanol, an unnamed drawing with content. */
+const mainTabs = (active = 0, opts = {}) =>
+  tabstrip({
+    tabs: [
+      tab({ title: SCHEME, active: active === 0, ...opts[0] }),
+      tab({ title: 'ethanol', active: active === 1, ...opts[1] }),
+      tab({ title: 'Untitled 2', active: active === 2, saving: 'unnamed', ...opts[2] }),
+    ],
+  });
+
 const img = (name) => `<img class="canvas-art" src="canvas/${name}.svg" alt="">`;
 
-function editor({ top, left, canvas, foot, extra = '', compact = false }) {
-  return `<div class="window${compact ? ' is-compact' : ''}">
+function editor({ top, left, canvas, foot, extra = '', compact = false, tabs = '' }) {
+  return `<div class="window${compact ? ' is-compact' : ''}${tabs ? ' has-tabs' : ''}">
 ${top}
 ${ed(left)}
+${tabs}
 <main class="canvas" role="application" aria-label="Drawing canvas">
 ${canvas}
 </main>
@@ -101,16 +178,28 @@ ${extra}
 }
 
 /** The main window's editor with the scheme on it, nothing selected, Select active. */
-function schemeEditor({ copy = {}, notice, error, extra = '', canvas = img('scheme'), zoom }) {
+function schemeEditor({
+  copy = {},
+  notice,
+  error,
+  extra = '',
+  canvas,
+  zoom,
+  legacy = false,
+  tabs = mainTabs(),
+  menu,
+}) {
   return editor({
     top: topbar({
       options: ed(selectionActions({ enabled: { kekule: false, flip: false } })),
       copy,
+      menu: legacy ? '' : (menu ?? menuButton()),
     }),
     left: rail('select'),
-    canvas,
+    canvas: canvas ?? img(legacy ? 'scheme' : 'scheme-tabs'),
     foot: status({ hint: HINTS.select, notice, error, zoom }),
     extra,
+    tabs: legacy ? '' : tabs,
   });
 }
 
@@ -127,11 +216,11 @@ function menubar({ open, keys }) {
   return `<div class="menubar" role="menubar">${items.join('')}</div>`;
 }
 
-function windowFrame({ title, width, height, open, keys, client }) {
+function windowFrame({ title, width, height, open, keys, client, legacy }) {
   return `<div class="win" style="width: ${width}px; height: ${height}px">
 <div class="titlebar"><img class="app" src="app-icon-small.svg" alt=""><span class="title">${esc(title)}</span>
 <span class="caption-btn">${glyph('win-min')}</span><span class="caption-btn">${glyph('win-max')}</span><span class="caption-btn">${glyph('win-close')}</span></div>
-${menubar({ open, keys })}
+${legacy ? menubar({ open, keys }) : ''}
 <div class="client">
 ${client}
 </div>
@@ -201,10 +290,11 @@ function desk({
   client,
   popups = '',
   note,
+  legacy = false,
 }) {
   const html = `${head(title)}
 <body class="desk">
-${windowFrame({ title: winTitle, width, height, open, keys, client })}
+${windowFrame({ title: winTitle, width, height, open, keys, client, legacy })}
 ${popups}
 <p class="native-note" style="top: ${24 + height + 14}px">${note}</p>
 <script src="shell.js"></script>
@@ -215,11 +305,16 @@ ${popups}
 }
 
 const NOTE_FRAME =
-  '<b>Native, approximate:</b> Windows 11 title bar and menu bar (Chalkbond cannot style them). Everything inside the window is drawn exactly as it will be built.';
+  '<b>Native, approximate:</b> the Windows 11 title bar (Chalkbond cannot style it; the title is the name of the active tab). Everything inside the window is drawn exactly as it will be built.';
+const NOTE_BOX =
+  '<b>Native, approximate:</b> title bar and the message box (a Windows task dialog; Chalkbond sets only the words, icon and buttons). The window contents are as built.';
+
+// Pages the tabs superseded keep the old chrome (title bar, menu bar) so the old wording can be
+// compared; each says what replaced it.
+const superseded = (by) =>
+  `<b>Superseded 2026-11-12, kept for the old wording (${by}).</b> Old chrome: native menu bar and no tab strip. `;
 const noteMenu = (what) =>
   `<b>Native, approximate:</b> title bar, menu bar and the ${what} (Windows draws them; opened with the keyboard, so access keys are underlined). The window contents are as built.`;
-const NOTE_BOX =
-  '<b>Native, approximate:</b> title bar, menu bar and the message box (a Windows task dialog; Chalkbond sets only the words, icon and buttons). The window contents are as built.';
 
 // ---- Export dialog ----
 
@@ -359,7 +454,7 @@ const SHORTCUTS = [
       [['Ctrl+F'], 'Type a compound name'],
       [['Ctrl+Shift+L'], 'Clean up'],
       [['Ctrl+Shift+K'], 'Show Kekulé or circle'],
-      [['Ctrl+Shift+T'], 'Tidy reaction'],
+      [['Ctrl+Shift+R'], 'Tidy reaction'],
     ],
   ],
   [
@@ -368,18 +463,23 @@ const SHORTCUTS = [
       [['Ctrl+='], 'Zoom in'],
       [['Ctrl+−'], 'Zoom out'],
       [['Ctrl+0'], 'Fit drawing'],
-      [['Ctrl+1'], 'Zoom to 100%'],
       [['Space+drag'], 'Move around the drawing'],
     ],
   ],
   [
-    'Files',
+    'Tabs and files',
     [
-      [['Ctrl+N'], 'New drawing'],
+      [['Ctrl+T', 'Ctrl+N'], 'New tab'],
+      [['Ctrl+W'], 'Close tab'],
+      [['Ctrl+Shift+T'], 'Reopen closed tab'],
+      [['Ctrl+Tab', 'Ctrl+Shift+Tab'], 'Next tab, previous tab'],
+      [['Ctrl+1–8'], 'Go to tab 1–8'],
+      [['Ctrl+9'], 'Go to the last tab'],
       [['Ctrl+O'], 'Open'],
       [['Ctrl+S'], 'Save'],
       [['Ctrl+Shift+S'], 'Save as'],
       [['Ctrl+E'], 'Export'],
+      [['F10'], 'Open the menu'],
       [['F1'], 'This list'],
     ],
   ],
@@ -761,12 +861,357 @@ ${narrow}
   return { html, width: 1280, height: 1110 };
 }
 
+// ---- Tabs, menu button, close prompt, minimum window (2026-11-12) ----
+
+/** A tooltip as the specimen sheets show it (static, with its caption). */
+function tip(title, { key, help, note: n }) {
+  return (
+    '<div class="spec-tipbox"><div class="tooltip static"><div class="tooltip-title"><span>' +
+    title +
+    '</span>' +
+    (key ? '<kbd>' + key + '</kbd>' : '') +
+    '</div>' +
+    (help ? '<div class="tooltip-help">' + help + '</div>' : '') +
+    '</div><span class="spec-note">' +
+    n +
+    '</span></div>'
+  );
+}
+
+/**
+ * A strip at real size beside a 65 px rail and under a 12 px slice of the top bar, with a slice
+ * of canvas under it, so the active tab is seen running into the canvas. 960 px is the minimum
+ * window: the canvas column is 895 px.
+ */
+const stripFrame = (strip, caption = '') =>
+  '<div class="strip-frame"><div class="sf-top"></div><div class="sf-rail"></div>' +
+  strip +
+  '<div class="sf-canvas"></div></div>' +
+  caption;
+
+/** Captions under the tabs of a strip whose tabs all have the same width. */
+const captionRow = (labels, width) =>
+  '<div class="cap-row" style="--cap-w: ' +
+  width +
+  'px">' +
+  labels.map((l) => '<span>' + l + '</span>').join('') +
+  '</div>';
+
+const fixed = (w) => 'flex: none; min-width: 0; width: ' + w + 'px';
+
+function tabsSheet() {
+  const section = (title, note, body) =>
+    '<section class="tab-section"><h2>' +
+    title +
+    '</h2>' +
+    (note ? '<p class="sheet-note">' + note + '</p>' : '') +
+    body +
+    '</section>';
+
+  const one = stripFrame(
+    tabstrip({ tabs: [tab({ title: 'Untitled', active: true })] }),
+    captionRow(['Untitled: nothing drawn yet, so no dot'], 400),
+  );
+
+  const several = stripFrame(
+    tabstrip({
+      tabs: [
+        tab({ title: SCHEME, active: true }),
+        tab({ title: 'ethanol' }),
+        tab({ title: 'Untitled 2', saving: 'unnamed' }),
+        tab({ title: 'Aspirin synthesis from salicylic acid' }),
+      ],
+    }),
+    captionRow(
+      [
+        'active',
+        'rest',
+        'unnamed, with content',
+        'long name: cut with …, full name in the tooltip',
+      ],
+      200,
+    ),
+  );
+
+  const stateTabs = [
+    tab({ title: 'Active', active: true, style: fixed(124) }),
+    tab({ title: 'Rest', style: fixed(124) }),
+    tab({ title: 'Hover', state: 'hover', style: fixed(124) }),
+    tab({ title: 'Pressed', state: 'pressed', style: fixed(124) }),
+    tab({ title: 'Keyboard focus', active: true, state: 'focus', style: fixed(124) }),
+    tab({ title: 'Cross hover', active: true, closeState: 'hover', style: fixed(124) }),
+    tab({ title: 'Cross pressed', active: true, closeState: 'pressed', style: fixed(124) }),
+  ];
+  const states = stripFrame(
+    tabstrip({ tabs: stateTabs }),
+    captionRow(
+      ['active', 'rest', 'hover', 'pressed', 'keyboard focus', 'hover on ×', 'pressed ×'],
+      124,
+    ),
+  );
+  const addStates = stripFrame(
+    tabstrip({
+      tabs: [tab({ title: SCHEME, active: true, style: fixed(124) })],
+      addState: 'hover',
+    }),
+    captionRow(['', '+ hover'], 124),
+  );
+
+  const saving = stripFrame(
+    tabstrip({
+      tabs: [
+        tab({ title: SCHEME, active: true, style: fixed(200) }),
+        tab({ title: 'Untitled 2', saving: 'unnamed', style: fixed(200) }),
+        tab({ title: 'ethanol', saving: 'unavailable', style: fixed(200) }),
+        tab({ title: 'Untitled 3', saving: 'unkept', style: fixed(200) }),
+      ],
+    }),
+    captionRow(
+      [
+        'named file: saves itself, nothing shown (no “Saving…”)',
+        'unsaved (unnamed with content, edited picture, kept copy): the dot',
+        'unavailable file (could not save): warning icon in the dot’s place',
+        'unkept drawing (the app could not keep it, e.g. disk full): warning icon',
+      ],
+      198,
+    ),
+  );
+
+  const names = [
+    'ethanol',
+    'Untitled 2',
+    'benzene',
+    'aspirin',
+    'alkenes',
+    'soap',
+    'polymers',
+    'Untitled 3',
+    'titration',
+    'Grade 12 notes',
+  ];
+  const overflow = stripFrame(
+    tabstrip({
+      scroll: true,
+      tabs: names.map((n, i) =>
+        tab({
+          title: n,
+          active: n === 'Untitled 3',
+          saving: n.startsWith('Untitled') ? 'unnamed' : '',
+          style: i === 0 ? 'margin-left: -52px' : '',
+        }),
+      ),
+    }),
+    '<div class="cap-row" style="--cap-w: 800px"><span>11 tabs in 895 px: tabs shrink to 96 px, then the strip scrolls. The chevrons appear only now, and each only on a side that has more. The mouse wheel scrolls too, and a new or chosen tab scrolls into view.</span></div>',
+  );
+
+  const drag = stripFrame(
+    tabstrip({
+      tabs: [
+        tab({ title: SCHEME, active: true }),
+        tab({ title: 'ethanol', extra: ' is-lifted' }),
+        tab({ title: 'Untitled 2', saving: 'unnamed' }),
+      ],
+      extra:
+        '<div class="tab-drop" style="left: 5px"></div>' +
+        tab({
+          title: 'ethanol',
+          extra: ' is-dragging',
+          style: 'left: 44px; top: 8px; ' + fixed(124),
+        }),
+    }),
+    '<div class="cap-row" style="--cap-w: 800px"><span>dragging “ethanol” to the front: the tab lifts and follows the pointer, its place dims, a 2 px accent line shows where it will land</span></div>',
+  );
+
+  const ctxTabs = tabstrip({
+    tabs: [
+      tab({ title: SCHEME, active: true }),
+      tab({ title: 'ethanol', state: 'hover', id: 'ctx-tab' }),
+      tab({ title: 'Untitled 2', saving: 'unnamed' }),
+    ],
+  });
+  const ctxMenu =
+    menu(
+      [
+        { label: '&New tab', accel: 'Ctrl+T' },
+        '-',
+        { label: '&Close tab', accel: 'Ctrl+W', hover: true },
+        '-',
+        { label: 'Reopen closed &tab', accel: 'Ctrl+Shift+T' },
+      ],
+      { keys: false, style: 'min-width: 0' },
+    ).replace('<div class="menu"', '<div class="menu" data-at="ctx-tab"') +
+    '<svg class="menu-pointer" data-at="ctx-tab" width="14" height="22" aria-hidden="true">' +
+    '<path d="M0.5 0.5V17.5L4.5 13.5L7.5 20L10 19L7.3 12.7H12.5Z" fill="#FFFFFF" stroke="#000000" stroke-linejoin="round"/></svg>';
+  const context = stripFrame(
+    ctxTabs,
+    '<div class="cap-row" style="--cap-w: 800px"><span>right-click on “ethanol” (the active tab does not change)</span></div>',
+  );
+
+  const tips = [
+    tip('esterification', {
+      help: 'Switch tabs with Ctrl+Tab and Ctrl+Shift+Tab.',
+      note: 'on a tab',
+    }),
+    tip('Untitled 2', {
+      help: 'Not saved as a file yet. Chalkbond keeps it for you. Press Ctrl+S to save it.',
+      note: 'on an unsaved tab (the dot)',
+    }),
+    tip('ethanol', {
+      help: "Couldn't save this file. Check that its folder is still there, or use Save as.",
+      note: 'on an unavailable file tab (warning icon)',
+    }),
+    tip('Untitled 3', {
+      help: "Chalkbond couldn't keep this drawing. Free some disk space, or save it with Save as.",
+      note: 'on an unkept tab (warning icon)',
+    }),
+    tip('Close tab', { key: 'Ctrl+W', note: 'on ×' }),
+    tip('New tab', { key: 'Ctrl+T', note: 'on +' }),
+  ].join('\n');
+
+  const html =
+    head('Tab strip states', ['../editor/specimen.css', 'icons-sheet.css', 'tabs-sheet.css']) +
+    '\n<body class="specimen shell-specimen tabs-sheet">\n<h1>Tab strip</h1>\n' +
+    section('One tab', 'Always shown, even with one drawing, like a browser.', one) +
+    section('Several tabs', 'Tabs are 200 px wide at most.', several) +
+    section(
+      'States',
+      'The cross is shown on the active tab and on a hovered or focused one; its room is always kept, so a title never moves.',
+      states + addStates,
+    ) +
+    section(
+      'Saving',
+      'Autosave is silent: a file tab shows nothing, even while it writes. A dot means unsaved (unnamed with content, edited picture, kept copy); a warning icon in its place means the file could not be saved or the drawing could not be kept.',
+      saving,
+    ) +
+    section('Many tabs', '', overflow) +
+    section('Drag to reorder', '', drag) +
+    '<section class="tab-section tips-section"><h2>Tooltips</h2><div class="spec-tips">\n' +
+    tips +
+    '\n</div></section>\n' +
+    section(
+      'Right-click on a tab',
+      'Native, approximate: a Windows popup menu, opened with the mouse (no underlined access keys).',
+      context,
+    ) +
+    ctxMenu +
+    '\n<script src="shell.js"></script>\n</body>\n</html>\n';
+  return { html, width: 1024, height: 1660 };
+}
+
+/** The menu button's open menu with File's submenu, and the button in every state. */
+function menuPage(info) {
+  const file = menu(
+    [
+      { label: '&File', more: true, hover: true, id: 'mi-file' },
+      { label: '&Edit', more: true },
+      { label: '&View', more: true },
+      { label: '&Help', more: true },
+    ],
+    { anchor: 'menu-btn', side: 'below', keys: false, style: 'min-width: 148px' },
+  );
+  const fileSub = menu(
+    [
+      { label: '&New tab', accel: 'Ctrl+T' },
+      { label: '&Open…', accel: 'Ctrl+O' },
+      { label: 'Open &recent', more: true },
+      '-',
+      { label: '&Save', accel: 'Ctrl+S' },
+      { label: 'Save &as…', accel: 'Ctrl+Shift+S' },
+      '-',
+      { label: '&Export…', accel: 'Ctrl+E' },
+      '-',
+      { label: 'Reopen closed &tab', accel: 'Ctrl+Shift+T' },
+      { label: '&Close tab', accel: 'Ctrl+W' },
+      '-',
+      { label: 'E&xit', accel: 'Alt+F4' },
+    ],
+    { anchor: 'mi-file', side: 'right', keys: false },
+  );
+  const desktop = desk({
+    title: 'Menu button and menu',
+    winTitle: SCHEME + ' - Chalkbond',
+    client: schemeEditor({ zoom: info.zoomTabs, menu: menuButton({ state: 'open' }) }),
+    popups: file + '\n' + fileSub,
+    note: '<b>Native, approximate:</b> the title bar and the popup menus (Windows draws them; opened with the mouse, so no access keys are underlined). Edit, View and Help keep their trees from A05, A06 and the spec. The window contents are as built.',
+  });
+  const cell = (state, label) =>
+    '<div class="ms-cell"><div class="ms-slot">' +
+    menuButton({ state }) +
+    '</div><span class="spec-note">' +
+    label +
+    '</span></div>';
+  const states =
+    '<p class="desk-label" style="left: 24px; top: 886px">Menu button, as it sits at the left of the top bar (32 × 32)</p>' +
+    '<div class="ms-row" style="left: 24px; top: 912px">' +
+    cell('', 'rest') +
+    cell('hover', 'hover') +
+    cell('focus', 'keyboard focus') +
+    cell('pressed', 'pressed') +
+    cell('open', 'menu open') +
+    '<div class="ms-cell"><div class="ms-tip"><div class="tooltip static"><div class="tooltip-title"><span>Menu (Alt or F10)</span></div><div class="tooltip-help">File, Edit, View and Help.</div></div></div><span class="spec-note">tooltip</span></div>' +
+    '</div>';
+  const html = desktop.html
+    .replace(
+      '<link rel="stylesheet" href="shell.css">',
+      '<link rel="stylesheet" href="shell.css">\n<link rel="stylesheet" href="tabs-sheet.css">',
+    )
+    .replace('<script src="shell.js"></script>', states + '\n<script src="shell.js"></script>');
+  return { html, width: desktop.width, height: 1040 };
+}
+
+/** The close prompt for an unnamed drawing (modelled on A09). */
+function closePrompt(info) {
+  const client = editor({
+    top: topbar({ options: ed(selectionActions({ enabled: { flip: false } })) }),
+    left: rail('select'),
+    canvas: img('untitled'),
+    foot: status({ hint: HINTS.select, zoom: info.zoomUntitled }),
+    tabs: mainTabs(2, { 2: { closeState: 'hover' } }),
+  });
+  return desk({
+    title: 'Close tab prompt',
+    winTitle: '*Untitled 2 - Chalkbond',
+    client,
+    popups: msgbox({
+      kind: 'warning',
+      main: 'Do you want to save “Untitled 2”?',
+      detail: "If you don't save, your drawing will be lost.",
+      buttons: ['Save', "Don't save", 'Cancel'],
+    }),
+    note:
+      NOTE_BOX +
+      ' Closing an unnamed drawing that has content (cross, Ctrl+W, middle click). Wording is a draft.',
+  });
+}
+
+/** The minimum window, 960 x 640 of content, with the widest options bar (Atom). */
+function minimumWindow(info) {
+  return desk({
+    title: 'Minimum window with tabs',
+    winTitle: SCHEME + ' - Chalkbond',
+    width: 960,
+    height: 671,
+    client: editor({
+      top: topbar({ options: ed(atomOptions({ selected: 'C' })), copy: { variant: 'compact' } }),
+      left: rail('atom'),
+      canvas: img('min-tabs'),
+      foot: status({ hint: HINTS.atom, zoom: info.zoomMin }),
+      compact: true,
+      tabs: mainTabs(),
+    }),
+    note: '<b>Minimum window:</b> content area 960 × 640 (window 960 × 671: the menu bar is gone), with the Atom tool, the widest options bar. Native title bar approximate.',
+  });
+}
+
 // ---- Screens ----
 
 export function buildPages(info) {
   const p = {};
-  const winTitle = `*${SCHEME} - Chalkbond`;
-  const main = (opts = {}) => schemeEditor({ zoom: info.zoom, ...opts });
+  // Autosave: no asterisk any more (a named drawing saves itself); the title is the active tab's.
+  const winTitle = `${SCHEME} - Chalkbond`;
+  const oldTitle = `*${SCHEME} - Chalkbond`;
+  const main = (opts = {}) =>
+    schemeEditor({ zoom: opts.legacy ? info.zoom : info.zoomTabs, ...opts });
 
   p['A01-main'] = desk({
     title: 'Main window',
@@ -814,20 +1259,24 @@ export function buildPages(info) {
   );
   p['A04-file-menu'] = desk({
     title: 'File menu',
-    winTitle,
+    winTitle: oldTitle,
+    legacy: true,
     open: 'file',
     keys: true,
-    client: main(),
+    client: main({ legacy: true }),
     popups: `${fileMenu}\n${recentMenu}`,
-    note: noteMenu('File menu with its Open recent submenu'),
+    note:
+      superseded('the menus now open from the menu button, A19') +
+      noteMenu('File menu with its Open recent submenu'),
   });
 
   p['A05-edit-menu'] = desk({
     title: 'Edit menu',
-    winTitle,
+    winTitle: oldTitle,
+    legacy: true,
     open: 'edit',
     keys: true,
-    client: main(),
+    client: main({ legacy: true }),
     popups: menu(
       [
         { label: '&Undo add bond', accel: 'Ctrl+Z' },
@@ -843,28 +1292,31 @@ export function buildPages(info) {
       ],
       { anchor: 'mb-edit' },
     ),
-    note: noteMenu('Edit menu (nothing selected, so Copy reads "Copy whole drawing")'),
+    note:
+      superseded('the menus now open from the menu button, A19') +
+      noteMenu('Edit menu (nothing selected, so Copy reads "Copy whole drawing")'),
   });
 
   p['A06-view-menu'] = desk({
     title: 'View menu',
-    winTitle,
+    winTitle: oldTitle,
+    legacy: true,
     open: 'view',
     keys: true,
-    client: main(),
+    client: main({ legacy: true }),
     popups: menu(
       [
         { label: 'Zoom &in', accel: 'Ctrl+=' },
         { label: 'Zoom &out', accel: 'Ctrl+−' },
         { label: '&Fit drawing', accel: 'Ctrl+0' },
-        { label: 'Zoom to &100%', accel: 'Ctrl+1' },
+        { label: 'Zoom to &100%' },
         '-',
         { label: '&Slides style', radio: true },
         { label: '&Handout style' },
       ],
       { anchor: 'mb-view' },
     ),
-    note: noteMenu('View menu'),
+    note: superseded('the menus now open from the menu button, A19') + noteMenu('View menu'),
   });
 
   p['A07-context-menus'] = contextMenus(info);
@@ -888,15 +1340,17 @@ export function buildPages(info) {
 
   p['A09-save-prompt'] = desk({
     title: 'Save prompt',
-    winTitle,
-    client: main(),
+    winTitle: oldTitle,
+    legacy: true,
+    client: main({ legacy: true }),
     popups: msgbox({
       kind: 'warning',
       main: `Do you want to save changes to “${SCHEME}”?`,
       detail: "If you don't save, your changes will be lost.",
       buttons: ['Save', "Don't save", 'Cancel'],
     }),
-    note: NOTE_BOX,
+    note:
+      superseded('a named drawing now saves itself; closing an unnamed one asks, A20') + NOTE_BOX,
   });
 
   p['A10-open-errors'] = desk({
@@ -925,6 +1379,7 @@ export function buildPages(info) {
     title: 'Recovery',
     winTitle: 'Untitled - Chalkbond',
     client: editor({
+      tabs: tabstrip({ tabs: [tab({ title: 'Untitled', active: true })] }),
       top: topbar({
         options: ed(iconOptions(BOND_OPTIONS, { selected: 'bond-single', prefix: 'opt' })),
         canUndo: false,
@@ -979,57 +1434,77 @@ export function buildPages(info) {
 
   const minSelect = (canvas, copy) =>
     editor({
-      top: topbar({ options: ed(selectionActions({ enabled: { kekule: true } })), copy }),
+      top: topbar({
+        options: ed(selectionActions({ enabled: { kekule: true } })),
+        copy,
+        menu: '',
+      }),
       left: rail('select'),
       canvas,
       foot: status({ hint: HINTS.select }),
     });
   p['A15-min-window'] = desk({
     title: 'Minimum window',
-    winTitle,
+    winTitle: oldTitle,
+    legacy: true,
     width: 960,
     height: 640,
     client: minSelect(img('min'), { variant: 'icon' }),
-    note: '<b>Spec as written:</b> 960 × 640 window, icon-only Copy. The rail no longer fits (Text is cut off). Title bar and menu bar: native, approximate.',
+    note:
+      superseded('minimum window with tabs and the menu button, A21') +
+      '<b>Spec as written:</b> 960 × 640 window, icon-only Copy. The rail no longer fits (Text is cut off). Title bar and menu bar: native, approximate.',
   });
 
   p['A15b-min-window-proposal'] = desk({
     title: 'Minimum window, proposal',
-    winTitle,
+    winTitle: oldTitle,
+    legacy: true,
     width: 960,
     height: 691,
     client: editor({
       top: topbar({
         options: ed(atomOptions({ selected: 'C' })),
         copy: { variant: 'compact' },
+        menu: '',
       }),
       left: rail('atom'),
       canvas: img('min-proposal'),
       foot: status({ hint: HINTS.atom }),
       compact: true,
     }),
-    note: '<b>Proposal:</b> minimum client area 960 × 640 (window 960 × 691), label-only Copy, name field 204 px; the widest options bar (Atom) fits. Native parts approximate.',
+    note:
+      superseded('minimum window with tabs and the menu button, A21') +
+      '<b>Proposal:</b> minimum client area 960 × 640 (window 960 × 691), label-only Copy, name field 204 px; the widest options bar (Atom) fits. Native parts approximate.',
   });
 
   // SPEC-editor.md R51 (U8, 2026-11-12): the Select bar with the formula switch at the minimum
   // window; below 1100 px the switch is icon-only, so the bar fits beside the label-only Copy.
   p['A15c-min-window-select'] = desk({
     title: 'Minimum window, Select',
-    winTitle,
+    winTitle: oldTitle,
+    legacy: true,
     width: 960,
     height: 691,
     client: editor({
       top: topbar({
         options: ed(selectionActions({ enabled: { kekule: true } })),
         copy: { variant: 'compact' },
+        menu: '',
       }),
       left: rail('select'),
       canvas: img('min-proposal'),
       foot: status({ hint: HINTS.select }),
       compact: true,
     }),
-    note: '<b>2026-11-12 feature set:</b> client area 960 × 640 with the Select tool; the formula switch (R51) is icon-only below 1100 px, so the Select options bar fits beside the label-only Copy. Native parts approximate.',
+    note:
+      superseded('minimum window with tabs and the menu button, A21') +
+      '<b>2026-11-12 feature set:</b> client area 960 × 640 with the Select tool; the formula switch (R51) is icon-only below 1100 px, so the Select options bar fits beside the label-only Copy. Native parts approximate.',
   });
+
+  p['A18-tab-strip'] = tabsSheet();
+  p['A19-menu-button'] = menuPage(info);
+  p['A20-close-tab-prompt'] = closePrompt(info);
+  p['A21-min-window-tabs'] = minimumWindow(info);
 
   p['A16-icons'] = iconsSheet();
   p['A17-notices'] = noticesSheet();

@@ -27,4 +27,27 @@
     <circle cx="12" cy="7.75" r="1" fill="currentColor" stroke="none"/>
   </g>
 </symbol>
+
+<!-- Menu: the button at the left of the top bar that opens File, Edit, View and Help. -->
+<symbol id="menu" viewBox="0 0 24 24">
+  <path d="M4.5 7H19.5M4.5 12H19.5M4.5 17H19.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+
+<!-- Close: the cross on a tab (drawn at 16 px). -->
+<symbol id="close" viewBox="0 0 24 24">
+  <path d="M6.5 6.5L17.5 17.5M17.5 6.5L6.5 17.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+
+<!-- Add: the new-tab button after the last tab. -->
+<symbol id="add" viewBox="0 0 24 24">
+  <path d="M12 5V19M5 12H19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</symbol>
+
+<!-- Chevrons: scroll the tab strip when there are more tabs than fit. -->
+<symbol id="chevron-left" viewBox="0 0 24 24">
+  <path d="M14.5 6L8.5 12L14.5 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+<symbol id="chevron-right" viewBox="0 0 24 24">
+  <path d="M9.5 6L15.5 12L9.5 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
 </svg>

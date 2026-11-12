@@ -538,3 +538,247 @@
   color: var(--text-muted);
   font: var(--type-sm);
 }
+
+/* ---- Menu button (top bar, first item; owner decision 2026-11-12) ---- */
+
+.btn-menu {
+  margin-right: var(--space-3);
+}
+
+/* Open: the button stays pressed while its native menu is shown. */
+.btn-menu[aria-expanded='true'] {
+  background: var(--pressed-bg);
+}
+
+/*
+ * Below 1100 px the menu button takes 40 px of the top bar (32 + 8). The widest options bar (Atom)
+ * then no longer fit by 38 px, so option buttons shrink from 32 to 28 px wide (hit target 24 px
+ * or more) in the compact top bar: the Atom bar fits with room to spare. The name field,
+ * Copy and the gaps stay as A15b proposed.
+ */
+.window.has-tabs.is-compact .btn-opt {
+  min-width: var(--option-btn-compact);
+}
+
+/* ---- Tab strip (owner decision 2026-11-12) ---- */
+
+/* The strip joins the canvas column; the rail runs down both rows. */
+.window.has-tabs {
+  grid-template-areas:
+    'top top'
+    'rail tabs'
+    'rail canvas'
+    'status status';
+  grid-template-rows:
+    calc(var(--topbar-h) + 1px) calc(var(--tabstrip-h) + 1px) 1fr
+    calc(var(--statusbar-h) + 1px);
+}
+
+.tabstrip {
+  grid-area: tabs;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3) 0;
+}
+
+/* The line under the strip; the active tab (z-index 2) covers it. */
+.tabstrip::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.tabs {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: flex-end;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: var(--tab-max-w);
+  min-width: var(--tab-min-w);
+  max-width: var(--tab-max-w);
+  height: var(--tab-h);
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  color: var(--text-muted);
+}
+
+.tab-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--type-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab:hover,
+.tab.is-hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+
+.tab.is-pressed {
+  background: var(--pressed-bg);
+  color: var(--text);
+}
+
+/*
+ * Active tab: the canvas colour, so it runs into the canvas, plus a 2 px accent line on top (the
+ * non-colour cue, as the rail's accent bar). 29 px tall: it covers the 1 px line under the strip;
+ * the 1 px bottom padding keeps its text on the inactive tabs' line (it is 1 px taller upward).
+ */
+.tab[aria-selected='true'] {
+  z-index: 2;
+  height: calc(var(--tab-h) + 1px);
+  padding-bottom: 1px;
+  border-top: 2px solid var(--accent);
+  background: var(--canvas-bg);
+  color: var(--text);
+}
+
+.tab:focus,
+.tab-close:focus {
+  outline: none;
+}
+
+.tab:focus-visible,
+.tab.is-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* A faint divider between inactive tabs; hidden beside the active or a hovered tab. */
+.tab::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: calc(-1 * var(--space-1) - 1px);
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+}
+
+.tab[aria-selected='true']::after,
+.tab:hover::after,
+.tab.is-hover::after,
+.tab:has(+ .tab[aria-selected='true'])::after,
+.tab:has(+ .tab:hover)::after,
+.tab:has(+ .tab.is-hover)::after,
+.tab:last-child::after {
+  display: none;
+}
+
+/* Unsaved: a 6 px dot. Unavailable file or unkept drawing: the warning icon in its place. */
+.tab-dot {
+  flex: none;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.tab-warn {
+  flex: none;
+  margin-left: calc(-1 * var(--space-1));
+  color: var(--warning);
+}
+
+/* Close cross: shown on the active tab and on a hovered or focused one; the room is kept. */
+.tab-close {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tab-close);
+  height: var(--tab-close);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  visibility: hidden;
+}
+
+.tab[aria-selected='true'] .tab-close,
+.tab:hover .tab-close,
+.tab.is-hover .tab-close,
+.tab.is-focus .tab-close,
+.tab:focus-visible .tab-close {
+  visibility: visible;
+}
+
+.tab-close:hover,
+.tab-close.is-hover {
+  background: var(--pressed-bg);
+  color: var(--text);
+}
+
+.tab-close:active,
+.tab-close.is-pressed {
+  background: var(--border);
+  box-shadow: inset 0 0 0 1px var(--border-control);
+  color: var(--text);
+}
+
+/* New tab and the two scroll chevrons (only when the tabs overflow). */
+.tab-add,
+.tab-scroll {
+  height: var(--tab-add);
+  margin-bottom: 1px;
+  color: var(--text-muted);
+}
+
+.tab-add {
+  width: var(--tab-add);
+  margin-left: var(--space-2);
+}
+
+.tab-scroll {
+  width: var(--tab-scroll-w);
+}
+
+.tab-add:hover,
+.tab-add.is-hover,
+.tab-scroll:hover,
+.tab-scroll.is-hover {
+  color: var(--text);
+}
+
+/* A tab being dragged: lifted, following the pointer; its place is dimmed; a 2 px accent line
+   shows where it will land. */
+.tab.is-lifted {
+  opacity: 0.45;
+}
+
+.tab.is-dragging {
+  position: absolute;
+  z-index: 3;
+  box-shadow: var(--shadow-2);
+  background: var(--canvas-bg);
+  color: var(--text);
+}
+
+.tab-drop {
+  position: absolute;
+  z-index: 3;
+  bottom: var(--space-1);
+  width: 2px;
+  height: 24px;
+  border-radius: 1px;
+  background: var(--accent);
+}

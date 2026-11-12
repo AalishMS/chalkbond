@@ -213,6 +213,7 @@
               ><span class="rail-caption" aria-hidden="true">Text</span>
             </button>
           </nav>
+
           <main class="canvas" role="application" aria-label="Drawing canvas">
             <img class="canvas-art" src="canvas/min.svg" alt="" />
           </main>
@@ -231,11 +232,7 @@
                 <svg class="icon icon-16" aria-hidden="true">
                   <use href="../editor/icons.svg#zoom-out" />
                 </svg></button
-              ><button
-                class="btn btn-status btn-zoom"
-                id="zoom-100"
-                aria-label="Zoom to 100% (Ctrl+1)"
-              >
+              ><button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100%">
                 150%</button
               ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
                 <svg class="icon icon-16" aria-hidden="true">
@@ -253,8 +250,13 @@
     </div>
 
     <p class="native-note" style="top: 678px">
-      <b>Spec as written:</b> 960 × 640 window, icon-only Copy. The rail no longer fits (Text is cut
-      off). Title bar and menu bar: native, approximate.
+      <b
+        >Superseded 2026-11-12, kept for the old wording (minimum window with tabs and the menu
+        button, A21).</b
+      >
+      Old chrome: native menu bar and no tab strip. <b>Spec as written:</b> 960 × 640 window,
+      icon-only Copy. The rail no longer fits (Text is cut off). Title bar and menu bar: native,
+      approximate.
     </p>
     <script src="shell.js"></script>
   </body>

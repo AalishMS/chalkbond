@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Menu button and menu</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+    <link rel="stylesheet" href="tabs-sheet.css" />
+  </head>
+  <body class="desk">
+    <div class="win" style="width: 1280px; height: 800px">
+      <div class="titlebar">
+        <img class="app" src="app-icon-small.svg" alt="" /><span class="title"
+          >esterification - Chalkbond</span
+        >
+        <span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-min" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-max" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-close" /></svg
+        ></span>
+      </div>
+
+      <div class="client">
+        <div class="window has-tabs">
+          <header class="topbar">
+            <button
+              class="btn btn-top btn-menu"
+              id="menu-btn"
+              data-testid="menu-button"
+              aria-label="Menu"
+              aria-haspopup="menu"
+              aria-expanded="true"
+            >
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#menu" /></svg>
+            </button>
+            <label class="namefield"
+              ><svg class="icon icon-20" aria-hidden="true">
+                <use href="../editor/icons.svg#search" /></svg
+              ><input
+                type="text"
+                aria-label="Compound name"
+                placeholder="Type a compound name…"
+                value=""
+            /></label>
+            <div class="divider-v" role="separator"></div>
+            <div class="options" role="toolbar" aria-label="Tool options">
+              <button class="btn btn-action" id="act-clean">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#clean-up" /></svg
+                ><span>Clean up</span>
+              </button>
+              <button class="btn btn-action" id="act-kekule" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#show-kekule" /></svg
+                ><span>Show Kekulé</span>
+              </button>
+              <button class="btn btn-action" id="act-formula" aria-label="Show structural formula">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#show-structural" /></svg
+                ><span>Show structural</span>
+              </button>
+              <button class="btn btn-action" id="act-tidy">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#tidy" /></svg
+                ><span>Tidy reaction</span>
+              </button>
+              <div class="options-sep" role="separator"></div>
+              <button
+                class="btn btn-opt"
+                id="act-flip-h"
+                aria-label="Flip horizontal"
+                aria-disabled="true"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-h" />
+                </svg>
+              </button>
+              <button
+                class="btn btn-opt"
+                id="act-flip-v"
+                aria-label="Flip vertical"
+                aria-disabled="true"
+              >
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-v" />
+                </svg>
+              </button>
+            </div>
+            <div class="history">
+              <button class="btn btn-top" id="undo" aria-label="Undo (Ctrl+Z)">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#undo" />
+                </svg>
+              </button>
+              <button class="btn btn-top" id="redo" aria-label="Redo (Ctrl+Y)" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#redo" />
+                </svg>
+              </button>
+            </div>
+            <button class="btn btn-copy" id="copy" data-testid="copy" aria-label="Copy (Ctrl+C)">
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#copy" /></svg
+              ><span aria-hidden="true">Copy</span>
+            </button>
+          </header>
+          <nav class="rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+            <button
+              class="btn btn-rail"
+              id="tool-select"
+              aria-label="Select"
+              aria-keyshortcuts="1 V"
+              aria-pressed="true"
+            >
+              <span class="rail-key" aria-hidden="true">1</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#select" /></svg
+              ><span class="rail-caption" aria-hidden="true">Select</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-erase"
+              aria-label="Erase"
+              aria-keyshortcuts="2 E"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">2</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#erase" /></svg
+              ><span class="rail-caption" aria-hidden="true">Erase</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button
+              class="btn btn-rail"
+              id="tool-bond"
+              aria-label="Bond"
+              aria-keyshortcuts="3 B"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">3</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#bond-single" /></svg
+              ><span class="rail-caption" aria-hidden="true">Bond</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-chain"
+              aria-label="Chain"
+              aria-keyshortcuts="4 Z"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">4</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#chain" /></svg
+              ><span class="rail-caption" aria-hidden="true">Chain</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-ring"
+              aria-label="Ring"
+              aria-keyshortcuts="5 R"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">5</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#ring-benzene" /></svg
+              ><span class="rail-caption" aria-hidden="true">Ring</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-atom"
+              aria-label="Atom"
+              aria-keyshortcuts="6 L"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">6</span><span class="rail-glyph">C</span
+              ><span class="rail-caption" aria-hidden="true">Atom</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button
+              class="btn btn-rail"
+              id="tool-arrow"
+              aria-label="Arrow"
+              aria-keyshortcuts="7 A"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">7</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#arrow-forward" /></svg
+              ><span class="rail-caption" aria-hidden="true">Arrow</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-plus"
+              aria-label="Plus"
+              aria-keyshortcuts="8 Plus"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">8</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#plus" /></svg
+              ><span class="rail-caption" aria-hidden="true">Plus</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-curved"
+              aria-label="Curved arrow"
+              aria-keyshortcuts="9 M"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">9</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#curved-full" /></svg
+              ><span class="rail-caption" aria-hidden="true">Curly</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-text"
+              aria-label="Text"
+              aria-keyshortcuts="0 T"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">0</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#text" /></svg
+              ><span class="rail-caption" aria-hidden="true">Text</span>
+            </button>
+          </nav>
+          <div class="tabstrip">
+            <div class="tabs" role="tablist" aria-label="Open drawings">
+              <div
+                class="tab"
+                role="tab"
+                aria-selected="true"
+                tabindex="0"
+                aria-label="esterification"
+              >
+                <span class="tab-title">esterification</span
+                ><button class="tab-close" tabindex="-1" aria-label="Close esterification (Ctrl+W)">
+                  <svg class="icon icon-16" aria-hidden="true">
+                    <use href="shell-icons.svg#close" />
+                  </svg>
+                </button>
+              </div>
+              <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="ethanol">
+                <span class="tab-title">ethanol</span
+                ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+                  <svg class="icon icon-16" aria-hidden="true">
+                    <use href="shell-icons.svg#close" />
+                  </svg>
+                </button>
+              </div>
+              <div
+                class="tab"
+                role="tab"
+                aria-selected="false"
+                tabindex="-1"
+                aria-label="Untitled 2, not saved as a file yet"
+              >
+                <span class="tab-dot" aria-hidden="true"></span
+                ><span class="tab-title">Untitled 2</span
+                ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 2 (Ctrl+W)">
+                  <svg class="icon icon-16" aria-hidden="true">
+                    <use href="shell-icons.svg#close" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+            </button>
+          </div>
+          <main class="canvas" role="application" aria-label="Drawing canvas">
+            <img class="canvas-art" src="canvas/scheme-tabs.svg" alt="" />
+          </main>
+          <footer class="statusbar">
+            <div class="hint" role="status" aria-live="polite">
+              Click a molecule to select it. Drag to move. Drag on empty space to select an area.
+            </div>
+            <div class="segmented" role="group" aria-label="Style">
+              <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+              ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+                Handout
+              </button>
+            </div>
+            <div class="zoom">
+              <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-out" />
+                </svg></button
+              ><button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100%">
+                117%</button
+              ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-in" />
+                </svg></button
+              ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#fit" />
+                </svg>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+    <div class="menu" role="menu" data-anchor="menu-btn" data-side="below" style="min-width: 148px">
+      <div class="menu-item is-hover" id="mi-file" role="menuitem">
+        <span class="mark"></span><span class="label">File</span><span class="accel"></span
+        ><span class="more"
+          ><svg class="" aria-hidden="true"><use href="native.svg#menu-chevron" /></svg
+        ></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Edit</span><span class="accel"></span
+        ><span class="more"
+          ><svg class="" aria-hidden="true"><use href="native.svg#menu-chevron" /></svg
+        ></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">View</span><span class="accel"></span
+        ><span class="more"
+          ><svg class="" aria-hidden="true"><use href="native.svg#menu-chevron" /></svg
+        ></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Help</span><span class="accel"></span
+        ><span class="more"
+          ><svg class="" aria-hidden="true"><use href="native.svg#menu-chevron" /></svg
+        ></span>
+      </div>
+    </div>
+    <div class="menu" role="menu" data-anchor="mi-file" data-side="right">
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">New tab</span><span class="accel">Ctrl+T</span
+        ><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Open…</span><span class="accel">Ctrl+O</span
+        ><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Open recent</span><span class="accel"></span
+        ><span class="more"
+          ><svg class="" aria-hidden="true"><use href="native.svg#menu-chevron" /></svg
+        ></span>
+      </div>
+      <div class="menu-sep" role="separator"></div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Save</span><span class="accel">Ctrl+S</span
+        ><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Save as…</span
+        ><span class="accel">Ctrl+Shift+S</span><span class="more"></span>
+      </div>
+      <div class="menu-sep" role="separator"></div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Export…</span><span class="accel">Ctrl+E</span
+        ><span class="more"></span>
+      </div>
+      <div class="menu-sep" role="separator"></div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Reopen closed tab</span
+        ><span class="accel">Ctrl+Shift+T</span><span class="more"></span>
+      </div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Close tab</span
+        ><span class="accel">Ctrl+W</span><span class="more"></span>
+      </div>
+      <div class="menu-sep" role="separator"></div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Exit</span><span class="accel">Alt+F4</span
+        ><span class="more"></span>
+      </div>
+    </div>
+    <p class="native-note" style="top: 838px">
+      <b>Native, approximate:</b> the title bar and the popup menus (Windows draws them; opened with
+      the mouse, so no access keys are underlined). Edit, View and Help keep their trees from A05,
+      A06 and the spec. The window contents are as built.
+    </p>
+    <p class="desk-label" style="left: 24px; top: 886px">
+      Menu button, as it sits at the left of the top bar (32 × 32)
+    </p>
+    <div class="ms-row" style="left: 24px; top: 912px">
+      <div class="ms-cell">
+        <div class="ms-slot">
+          <button
+            class="btn btn-top btn-menu"
+            id="menu-btn"
+            data-testid="menu-button"
+            aria-label="Menu"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#menu" /></svg>
+          </button>
+        </div>
+        <span class="spec-note">rest</span>
+      </div>
+      <div class="ms-cell">
+        <div class="ms-slot">
+          <button
+            class="btn btn-top btn-menu is-hover"
+            id="menu-btn"
+            data-testid="menu-button"
+            aria-label="Menu"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#menu" /></svg>
+          </button>
+        </div>
+        <span class="spec-note">hover</span>
+      </div>
+      <div class="ms-cell">
+        <div class="ms-slot">
+          <button
+            class="btn btn-top btn-menu is-focus"
+            id="menu-btn"
+            data-testid="menu-button"
+            aria-label="Menu"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#menu" /></svg>
+          </button>
+        </div>
+        <span class="spec-note">keyboard focus</span>
+      </div>
+      <div class="ms-cell">
+        <div class="ms-slot">
+          <button
+            class="btn btn-top btn-menu is-pressed"
+            id="menu-btn"
+            data-testid="menu-button"
+            aria-label="Menu"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#menu" /></svg>
+          </button>
+        </div>
+        <span class="spec-note">pressed</span>
+      </div>
+      <div class="ms-cell">
+        <div class="ms-slot">
+          <button
+            class="btn btn-top btn-menu"
+            id="menu-btn"
+            data-testid="menu-button"
+            aria-label="Menu"
+            aria-haspopup="menu"
+            aria-expanded="true"
+          >
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#menu" /></svg>
+          </button>
+        </div>
+        <span class="spec-note">menu open</span>
+      </div>
+      <div class="ms-cell">
+        <div class="ms-tip">
+          <div class="tooltip static">
+            <div class="tooltip-title"><span>Menu (Alt or F10)</span></div>
+            <div class="tooltip-help">File, Edit, View and Help.</div>
+          </div>
+        </div>
+        <span class="spec-note">tooltip</span>
+      </div>
+    </div>
+    <script src="shell.js"></script>
+  </body>
+</html>

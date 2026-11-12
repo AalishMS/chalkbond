@@ -13,7 +13,7 @@
     <div class="win" style="width: 1280px; height: 800px">
       <div class="titlebar">
         <img class="app" src="app-icon-small.svg" alt="" /><span class="title"
-          >*esterification - Chalkbond</span
+          >esterification - Chalkbond</span
         >
         <span class="caption-btn"
           ><svg class="" aria-hidden="true"><use href="native.svg#win-min" /></svg></span
@@ -23,15 +23,20 @@
           ><svg class="" aria-hidden="true"><use href="native.svg#win-close" /></svg
         ></span>
       </div>
-      <div class="menubar" role="menubar">
-        <span class="menubar-item" id="mb-file">File</span
-        ><span class="menubar-item" id="mb-edit">Edit</span
-        ><span class="menubar-item" id="mb-view">View</span
-        ><span class="menubar-item" id="mb-help">Help</span>
-      </div>
+
       <div class="client">
-        <div class="window">
+        <div class="window has-tabs">
           <header class="topbar">
+            <button
+              class="btn btn-top btn-menu"
+              id="menu-btn"
+              data-testid="menu-button"
+              aria-label="Menu"
+              aria-haspopup="menu"
+              aria-expanded="false"
+            >
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#menu" /></svg>
+            </button>
             <label class="namefield"
               ><svg class="icon icon-20" aria-hidden="true">
                 <use href="../editor/icons.svg#search" /></svg
@@ -219,8 +224,52 @@
               ><span class="rail-caption" aria-hidden="true">Text</span>
             </button>
           </nav>
+          <div class="tabstrip">
+            <div class="tabs" role="tablist" aria-label="Open drawings">
+              <div
+                class="tab"
+                role="tab"
+                aria-selected="true"
+                tabindex="0"
+                aria-label="esterification"
+              >
+                <span class="tab-title">esterification</span
+                ><button class="tab-close" tabindex="-1" aria-label="Close esterification (Ctrl+W)">
+                  <svg class="icon icon-16" aria-hidden="true">
+                    <use href="shell-icons.svg#close" />
+                  </svg>
+                </button>
+              </div>
+              <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="ethanol">
+                <span class="tab-title">ethanol</span
+                ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+                  <svg class="icon icon-16" aria-hidden="true">
+                    <use href="shell-icons.svg#close" />
+                  </svg>
+                </button>
+              </div>
+              <div
+                class="tab"
+                role="tab"
+                aria-selected="false"
+                tabindex="-1"
+                aria-label="Untitled 2, not saved as a file yet"
+              >
+                <span class="tab-dot" aria-hidden="true"></span
+                ><span class="tab-title">Untitled 2</span
+                ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 2 (Ctrl+W)">
+                  <svg class="icon icon-16" aria-hidden="true">
+                    <use href="shell-icons.svg#close" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+              <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+            </button>
+          </div>
           <main class="canvas" role="application" aria-label="Drawing canvas">
-            <img class="canvas-art" src="canvas/scheme.svg" alt="" />
+            <img class="canvas-art" src="canvas/scheme-tabs.svg" alt="" />
           </main>
           <footer class="statusbar">
             <div class="hint notice" role="status" aria-live="polite">
@@ -237,11 +286,7 @@
                 <svg class="icon icon-16" aria-hidden="true">
                   <use href="../editor/icons.svg#zoom-out" />
                 </svg></button
-              ><button
-                class="btn btn-status btn-zoom"
-                id="zoom-100"
-                aria-label="Zoom to 100% (Ctrl+1)"
-              >
+              ><button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100%">
                 117%</button
               ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
                 <svg class="icon icon-16" aria-hidden="true">
@@ -259,8 +304,9 @@
     </div>
 
     <p class="native-note" style="top: 838px">
-      <b>Native, approximate:</b> Windows 11 title bar and menu bar (Chalkbond cannot style them).
-      Everything inside the window is drawn exactly as it will be built.
+      <b>Native, approximate:</b> the Windows 11 title bar (Chalkbond cannot style it; the title is
+      the name of the active tab). Everything inside the window is drawn exactly as it will be
+      built.
     </p>
     <script src="shell.js"></script>
   </body>

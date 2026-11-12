@@ -35,4 +35,18 @@
   --check-size: 16px;
   --kbd-h: 20px;
   --namefield-compact: 204px;
+
+  /* Tabs and the menu button (owner decision 2026-11-12; DEVIATIONS.md "Tabs"). The strip is
+     --tabstrip-h plus its 1 px line, as --topbar-h; no new colour: every tab colour is an editor
+     token. --topbar-btn (32 px) sizes the menu button. */
+  --tabstrip-h: 32px;
+  --tab-h: 28px;
+  --tab-min-w: 96px;
+  --tab-max-w: 200px;
+  --tab-close: 24px;
+  --tab-add: 28px;
+  --tab-scroll-w: 24px;
+  --dot-size: 6px;
+  /* Below 1100 px, with the menu button in the bar, option buttons are 28 wide (hit target >= 24) */
+  --option-btn-compact: 28px;
 }

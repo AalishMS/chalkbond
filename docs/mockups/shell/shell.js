@@ -2,6 +2,7 @@
 // coordinates on whole pixels:
 //   data-anchor="id" data-side="below"  a menu under a menu-bar item
 //   data-anchor="id" data-side="right"  a submenu beside its item (overlapping 4 px, as Windows)
+//   data-at="id"                        a menu or pointer at the middle of a control (a context menu)
 //   data-center="win"                   a message box centred over the window
 //   data-for="id" data-side="below"     an in-window tooltip under its control
 const doc = globalThis.document;
@@ -21,6 +22,13 @@ for (const el of doc.querySelectorAll('[data-anchor]')) {
     el.style.left = `${Math.round(a.left)}px`;
     el.style.top = `${Math.round(a.bottom)}px`;
   }
+}
+
+for (const el of doc.querySelectorAll('[data-at]')) {
+  const a = rectOf(el.dataset.at);
+  if (!a) continue;
+  el.style.left = `${Math.round(a.left + a.width / 2)}px`;
+  el.style.top = `${Math.round(a.top + a.height / 2 + 6)}px`;
 }
 
 for (const el of doc.querySelectorAll('[data-center]')) {

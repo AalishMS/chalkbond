@@ -219,6 +219,7 @@
               ><span class="rail-caption" aria-hidden="true">Text</span>
             </button>
           </nav>
+
           <main class="canvas" role="application" aria-label="Drawing canvas">
             <img class="canvas-art" src="canvas/scheme.svg" alt="" />
           </main>
@@ -237,11 +238,7 @@
                 <svg class="icon icon-16" aria-hidden="true">
                   <use href="../editor/icons.svg#zoom-out" />
                 </svg></button
-              ><button
-                class="btn btn-status btn-zoom"
-                id="zoom-100"
-                aria-label="Zoom to 100% (Ctrl+1)"
-              >
+              ><button class="btn btn-status btn-zoom" id="zoom-100" aria-label="Zoom to 100%">
                 117%</button
               ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
                 <svg class="icon icon-16" aria-hidden="true">
@@ -277,8 +274,13 @@
       </div>
     </div>
     <p class="native-note" style="top: 838px">
-      <b>Native, approximate:</b> title bar, menu bar and the message box (a Windows task dialog;
-      Chalkbond sets only the words, icon and buttons). The window contents are as built.
+      <b
+        >Superseded 2026-11-12, kept for the old wording (a named drawing now saves itself; closing
+        an unnamed one asks, A20).</b
+      >
+      Old chrome: native menu bar and no tab strip. <b>Native, approximate:</b> title bar and the
+      message box (a Windows task dialog; Chalkbond sets only the words, icon and buttons). The
+      window contents are as built.
     </p>
     <script src="shell.js"></script>
   </body>

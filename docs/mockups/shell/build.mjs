@@ -8,9 +8,10 @@
 //
 // Same approach as ../editor/build.mjs: canvas layers are real svg-render output mounted under one
 // `matrix(k 0 0 k panX panY)` group, overlays in screen px. The window here has a native title
-// bar (31 px) and menu bar (20 px) above the page, so the canvas is 51 px shorter than in the
-// editor mock-ups. Pages are served over HTTP from docs/mockups so `../editor/*` links and
-// `<use href="…svg#…">` work (Chromium blocks both on file://).
+// bar (31 px) and, until 2026-11-12, a menu bar (20 px) above the page. Since then the menu bar is
+// gone and a tab strip (33 px) sits above the canvas, so the canvas is 12 px shorter than it was
+// (the old size is kept for the superseded pages A04-A06, A09, A15-A15c). Pages are
+// served over HTTP from docs/mockups so `../editor/*` links and `<use href="…svg#…">` work (Chromium blocks both on file://).
 import { createServer as createHttpServer } from 'node:http';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
@@ -23,6 +24,9 @@ const root = resolve(here, '..', '..', '..');
 
 /** Native chrome above the page (px): Windows 11 title bar 31, menu bar 19 + 1 border. */
 const NATIVE = 31 + 20;
+/** From 2026-11-12: title bar only, and the tab strip (32 + 1 line) in the canvas column. */
+const NATIVE_TABS = 31;
+const STRIP = 33;
 /** Editor chrome around the canvas (px): rail 64 + 1, top bar 48 + 1, status bar 28 + 1. */
 const RAIL = 65;
 const TOP = 49;
@@ -38,9 +42,9 @@ const r4 = (v) => Math.round(v * 10000) / 10000;
 const scaleOf = (zoom) => r4((PT * zoom) / 100);
 
 /** Canvas size inside a window of the given outer size (or client size when `client`). */
-const canvasOf = (w, h, { client = false } = {}) => ({
+const canvasOf = (w, h, { client = false, tabs = false } = {}) => ({
   width: w - RAIL,
-  height: h - (client ? 0 : NATIVE) - TOP - STATUS,
+  height: h - (client ? 0 : tabs ? NATIVE_TABS : NATIVE) - TOP - STATUS - (tabs ? STRIP : 0),
 });
 
 function fitZoom(core, doc, { width, height }) {
@@ -285,6 +289,9 @@ function selected(view, sel, { rings = false } = {}) {
 const FULL = canvasOf(1280, 800);
 const MIN = canvasOf(960, 640);
 const MIN_PROPOSAL = canvasOf(960, 640, { client: true });
+// With tabs: a 1280 x 800 window; a 960 x 671 window = 960 x 640 client.
+const FULL_TABS = canvasOf(1280, 800, { tabs: true });
+const MIN_TABS = canvasOf(960, 671, { tabs: true });
 const CTX = { width: 600, height: 400 };
 
 function screens(core) {
@@ -296,6 +303,10 @@ function screens(core) {
   const scheme = schemeDoc(b);
   info.zoom = fitZoom(core, scheme, FULL);
   out.scheme = canvasSvg(core, { ...FULL, doc: scheme, zoom: info.zoom });
+  info.zoomTabs = fitZoom(core, scheme, FULL_TABS);
+  out['scheme-tabs'] = canvasSvg(core, { ...FULL_TABS, doc: scheme, zoom: info.zoomTabs });
+  info.zoomMin = fitZoom(core, scheme, MIN_TABS);
+  out['min-tabs'] = canvasSvg(core, { ...MIN_TABS, doc: scheme, zoom: info.zoomMin });
   out['min-proposal'] = canvasSvg(core, {
     ...MIN_PROPOSAL,
     doc: scheme,
@@ -311,6 +322,9 @@ function screens(core) {
   let eth;
   [pair, ring] = b.add(pair, 'benzene', { x: 0, y: 0 });
   [pair, eth] = b.add(pair, 'ethanol', { x: 4.2, y: 0.4 });
+  // The unnamed drawing of A20: benzene beside ethanol, nothing selected.
+  info.zoomUntitled = fitZoom(core, pair, FULL_TABS);
+  out.untitled = canvasSvg(core, { ...FULL_TABS, doc: pair, zoom: info.zoomUntitled });
   out.min = canvasSvg(core, {
     ...MIN,
     doc: pair,

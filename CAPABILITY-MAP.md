@@ -12,7 +12,7 @@ Status: **approved 2026-11-09**. Module ids are stable — do not rename.
 | `svg-render` | Document → SVG using a style preset (Slides, Journal/ACS-style). Single source of truth for screen, clipboard and export output | `doc-model`, `chem-core` | `SPEC-svg-render.md` |
 | `editor` | Interactive canvas and all drawing tools: bonds, atoms, chains, rings/templates (aliphatic + aromatic), selection/transform, reaction arrows + conditions + "Tidy reaction", curved electron-pushing arrows, annotations, keyboard shortcuts, zoom | `doc-model`, `chem-core`, `svg-render` | `SPEC-editor.md` |
 | `clipboard-export` | Copy selection/document to the Windows clipboard (PNG + SVG); export PNG/SVG/PDF; embed document so exported SVG/PNG can be reopened as editable | `doc-model`, `svg-render` | `SPEC-clipboard-export.md` |
-| `app-shell` | Electron main/preload, window, menus, file dialogs, recent files, settings, NSIS packaging for Windows x64 | all of the above | `SPEC-app-shell.md` |
+| `app-shell` | Electron main/preload, window, menus (☰ popup since 2026-11-12), tabs (one drawing per tab), file dialogs, auto-save of named files, the session store that restores every tab, recent files, settings, NSIS packaging for Windows x64 | all of the above | `SPEC-app-shell.md` |
 
 ```
 doc-model ──► chem-core ──► svg-render ──► editor ──────────┐

@@ -7,7 +7,7 @@ so the specs can be updated to match (or the mock-up reverted).
 Files: `shell-tokens.css` (new tokens only; the editor's `../editor/tokens.css` applies unchanged),
 `shell.css` (in-window UI, tokens only: exactly what will be built), `shell-icons.svg` (new icons,
 editor sprite rules), `native.css` + `native.svg` (Windows 11 stand-ins for the title bar, menu
-bar, popup menus and message boxes: not built, approximate), `icons-sheet.css` (sheet layout
+bar, popup menus and message boxes: not built, approximate), `icons-sheet.css` and `tabs-sheet.css` (sheet layout
 only), `app-icon*.svg` / `file-icon*.svg` (icon sources), `A*.html` (one per screen),
 `canvas/*.svg` (real svg-render output), `build.mjs` + `pages.mjs` (regenerate everything;
 `--png <dir>` screenshots every page with Playwright's Chromium at device scale 1; `--serve`
@@ -78,6 +78,48 @@ from `../editor/pages.mjs`, so the two sets cannot drift.
 | A16 sizes 16, 20, 24, 32, 48, 256 | adds 64; adds a light and a dark taskbar with stand-in tiles for Explorer, Word, PowerPoint, Excel and Edge (not their logos) | Task brief; judging the icon needs its neighbours |
 | (none) | A15b: the proposal for concerns 1 and 2; A08a: opened with Ctrl+E, so the chosen card shows its focus ring (A08b/c: chosen with the mouse) | So both can be judged |
 
+## Tabs and the menu button (owner decisions 2026-11-12; A01, A18-A21)
+
+The native menu bar is gone, a tab strip (one tab per drawing) sits under the top bar in the canvas
+column, and a menu button opens File, Edit, View and Help. These rows supersede SPEC-app-shell.md
+O3 (always-visible native menu bar) and the `*` title rule; the spec is not edited here.
+**Superseded pages are kept as they were**, each with a "Superseded" caption: A04-A06 (menus under
+the old menu bar; the trees are now reached from the menu button, A19), A09 (save-changes prompt: a
+named drawing saves itself; A20 is the prompt for an unnamed one), A15, A15b, A15c (minimum window;
+A21). Every other page (A01-A03, A08, A10-A14) was updated in place to the new chrome.
+
+| Topic | Mock-up | Why |
+|---|---|---|
+| Window chrome | Title bar 31 px only. Content 960 x 640 means a 960 x 671 window (A15b: 691). The page loses the 20 px menu bar and gains a 33 px strip: canvas 1215 x 658 at 1280 x 800 (was 671), 895 x 529 at the minimum | Owner decisions 1 and 2 |
+| Window title | `esterification - Chalkbond`: the active tab's name; a leading `*` means "not saved as a file" (W3), so an unnamed drawing with content reads `*Untitled 2 - Chalkbond` (A20) | Autosave: a drawing that has a file has no unsaved changes |
+| Strip | 32 px + 1 px line (33 px, as `--topbar-h`). Tabs 28 px high, 4 px under the top bar's line (breathing room, and the active tab reads as a tab); the active one is 29 px and covers the line. The rail runs down both rows, so its top meets the strip's top | Chrome's strip is 34 px; 32 px keeps 24 px hit targets and costs 12 px net against the old 20 px menu bar |
+| Tab | 96-200 px wide (200 by default), padding 12 left / 4 right, `--type-sm`, title cut with an ellipsis; 2 px gap and a faint 1 px divider between inactive tabs (hidden beside the active or a hovered tab) | 200 px holds "esterification" and most names; 96 px leaves about 6 letters, and 8 tabs still fit in the 895 px column of the minimum window |
+| Tab colours | Inactive: strip colour (`--chrome-bg`), `--text-muted` title (5.7 : 1). Hover `--hover-bg`, pressed `--pressed-bg`, title `--text`. Active: `--canvas-bg` so it runs into the canvas, `--text`, a 2 px `--accent` line on top. Keyboard focus: 2 px `--accent` ring, inset | The active tab differs from the strip by only 1.07 : 1, so the accent line is the non-colour cue (5.4 : 1), as the rail's accent bar. No new colour token |
+| Close cross | 24 x 24 button, 16 px glyph, on the active tab and on a hovered or keyboard-focused one (room always kept, so titles never move); hover `--pressed-bg`, pressed `--border` with a 1 px `--border-control` ring. Not a tab stop (tabindex -1); Ctrl+W and middle click close | Follows Firefox; fewer marks on a calm strip |
+| New tab | 28 x 28 button right after the last tab (pinned at the right end when the strip overflows), `add` icon 20 px, tooltip "New tab" Ctrl+T | Chrome position |
+| Saving | T5 and T6 of SPEC-app-shell.md. **A file tab shows nothing**, also while it writes (no "Saving..."). **Unsaved: a 6 px dot** (`--text-muted`, 5.7 : 1) before the title: an unnamed drawing with content, an edited picture tab, a kept copy; tooltip "Not saved as a file yet. Chalkbond keeps it for you. Press Ctrl+S to save it." **Unavailable file (AS6) or unkept drawing (SS6): the 16 px warning icon in `--warning` in the dot's place**; tooltips "Couldn't save this file. Check that its folder is still there, or use Save as." and "Chalkbond couldn't keep this drawing. Free some disk space, or save it with Save as." (verbatim from T5). An unnamed empty drawing shows nothing | One marker per problem: the dot is calm, the icon asks for action |
+| Overflow | Tabs shrink to 96 px, then the strip scrolls; two 24 x 28 chevrons appear at the ends, each only on a side that has more tabs; the wheel scrolls, and new and chosen tabs scroll into view | Chevrons are more discoverable for a non-technical user than a hidden wheel, and cost nothing until about 9 tabs. No tab-list dropdown (one more control) |
+| Drag to reorder | The tab lifts (`--shadow-2`) and follows the pointer, its place dims to 45 %, a 2 px `--accent` line shows the drop position | Needs only the position, not a live reflow |
+| Tab context menu | Native popup: New tab Ctrl+T, Close tab Ctrl+W, separator, Reopen closed tab Ctrl+Shift+T (no "Close other tabs" or "Close tabs to the right") | Spec |
+| Tab tooltip | Title = the full name; help "Switch tabs with Ctrl+Tab and Ctrl+Shift+Tab." | The only place the two keys are shown on screen |
+| Menu button | 32 x 32 (`--topbar-btn`), `menu` icon 20 px, first item of the top bar, 8 px before the name field; open: stays pressed (`aria-expanded`); tooltip "Menu (Alt or F10)". The popup lists File, Edit, View, Help as submenus; File is New tab Ctrl+T, Open... Ctrl+O, Open recent, Save, Save as..., Export..., Reopen closed tab Ctrl+Shift+T, Close tab Ctrl+W, Exit. Opened with the mouse, so access keys are not underlined (A04-A06 were opened with the keyboard). Ctrl+N stays as an alternative to New tab (listed in A12). New tab, Reopen closed tab and Close tab are approved | Owner decision 2 |
+| Close prompt (A20) | Message "Do you want to save “Untitled 2”?", detail "If you don't save, your drawing will be lost.", buttons Save, Don't save, Cancel; window title `*Untitled 2 - Chalkbond` | Spec; modelled on A09 |
+| Minimum window (A21) | The 960 px top bar had 2 px to spare in the Atom bar (A15b); the menu button takes 40 px, so below 1100 px option buttons are 28 px wide instead of 32 (`has-tabs` only; hit target 24 px or more). Every bar fits: Atom 16 px spare, Select with Expand 10 px, the rest more | The name field (204 px) and Copy (label-only) already gave all they could; narrower option buttons cost the least |
+
+## Decisions folded in (round 2) and what is left to sync
+
+1. Tidy reaction moved from Ctrl+Shift+T to **Ctrl+Shift+R** (A12). Ctrl+Shift+T is "Reopen closed tab".
+2. A12 "Tabs and files" section (was Files; ends with F10 Open the menu, F1): New tab Ctrl+T / Ctrl+N, Close tab, Reopen closed tab, Next tab / previous tab
+   Ctrl+Tab / Ctrl+Shift+Tab, Go to tab 1-8 Ctrl+1-8, Go to the last tab Ctrl+9. Ctrl+N New drawing is gone.
+3. **Zoom to 100% has no shortcut** (Ctrl+1 now goes to tab 1). A12 lists only keyed commands, so its
+   "Zoom to 100%" row is dropped; A06 and the status-bar zoom button show no key. (The editor mock-up
+   `pages.mjs` zoom button label lost its "(Ctrl+1)" too.) A19 shows only the File submenu, which has no zoom.
+4. Closing the last tab leaves one empty "Untitled" tab (A18 "One tab").
+5. **To sync at implementation:** `src/renderer/app/model/shortcuts.ts` must match the A12 `SHORTCUTS` rows,
+   otherwise `src/renderer/app/model/shortcuts.test.ts` (which mirrors `pages.mjs`) fails. The editor keymap
+   (Tidy) and the editor zoom tooltip text follow.
+6. Decided (R48, T12): "Reopen closed tab" also brings back an unnamed drawing closed with Don't save, for the current run (the last 10 closed tabs).
+
 ## New tokens (in `shell-tokens.css`; merge into `app-tokens.css` or `tokens.css`)
 
 From the spec, unchanged: `--primary-bg`, `--primary-hover-bg`, `--primary-pressed-bg`,
@@ -86,10 +128,15 @@ From the spec, unchanged: `--primary-bg`, `--primary-hover-bg`, `--primary-press
 
 New: `--shadow-dialog`, `--dialog-bottom` (32 px), `--control-h` (32 px, dialog buttons and
 segmented control), `--copy-compact-w` (56 px), `--namefield-compact` (204 px), `--kbd-h` (20 px).
+Tabs (2026-11-12, sizes only, no new colour): `--tabstrip-h` (32 px), `--tab-h` (28), `--tab-min-w`
+(96), `--tab-max-w` (200), `--tab-close` (24), `--tab-add` (28), `--tab-scroll-w` (24), `--dot-size` (6),
+`--option-btn-compact` (28).
 
 ## New icons (in `shell-icons.svg`; merge into the editor sprite / `icons.tsx`)
 
 `copy` and `check` (spec geometry), `info` (circle r 8.5, stem `M12 11V16.5`, dot at 12, 7.75).
+Tabs (2026-11-12): `menu` (three bars), `close` (cross, drawn at 16 px), `add` (plus), `chevron-left`,
+`chevron-right`; same 24 grid, stroke 1.5, round caps.
 
 ## Notes
 

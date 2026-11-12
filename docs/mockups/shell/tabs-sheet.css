@@ -1,0 +1,98 @@
+/* Layout of the tab-strip sheet (A18) and the menu-button states (A19) only. */
+
+.tabs-sheet {
+  padding-bottom: var(--space-7);
+}
+
+.tabs-sheet h2 {
+  margin: var(--space-6) 0 var(--space-2);
+}
+
+.tab-section {
+  position: relative;
+}
+
+.tabs-sheet .sheet-note {
+  margin: 0 0 var(--space-3);
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+/* A strip at real size: 65 px rail, 895 px canvas column (the 960 px minimum window). */
+.strip-frame {
+  position: relative;
+  display: grid;
+  grid-template-areas:
+    'top top'
+    'rail tabs'
+    'rail cv';
+  grid-template-columns: 65px 895px;
+  grid-template-rows: 12px 33px 14px;
+  width: 960px;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.sf-top {
+  grid-area: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.sf-rail {
+  grid-area: rail;
+  border-right: 1px solid var(--border);
+}
+
+.sf-canvas {
+  grid-area: cv;
+  background: var(--canvas-bg);
+}
+
+.cap-row {
+  display: flex;
+  gap: var(--space-1);
+  width: 960px;
+  padding: var(--space-2) 0 0 73px;
+  color: var(--text-muted);
+  font: var(--type-xs);
+}
+
+.cap-row span {
+  flex: none;
+  width: var(--cap-w);
+  padding-right: var(--space-3);
+}
+
+/* Menu button states (A19). */
+.ms-row {
+  position: absolute;
+  display: flex;
+  gap: var(--space-6);
+}
+
+.ms-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.ms-slot {
+  display: flex;
+  align-items: center;
+  width: 100px;
+  height: 48px;
+  padding-left: var(--space-4);
+  background: var(--chrome-bg);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.ms-tip {
+  display: flex;
+  width: 200px;
+  align-items: center;
+  height: 48px;
+}
+
+.cap-row + .strip-frame {
+  margin-top: var(--space-5);
+}

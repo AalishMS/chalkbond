@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tab strip states</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+    <link rel="stylesheet" href="../editor/specimen.css" />
+    <link rel="stylesheet" href="icons-sheet.css" />
+    <link rel="stylesheet" href="tabs-sheet.css" />
+  </head>
+  <body class="specimen shell-specimen tabs-sheet">
+    <h1>Tab strip</h1>
+    <section class="tab-section">
+      <h2>One tab</h2>
+      <p class="sheet-note">Always shown, even with one drawing, like a browser.</p>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div class="tab" role="tab" aria-selected="true" tabindex="0" aria-label="Untitled">
+              <span class="tab-title">Untitled</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 400px">
+        <span>Untitled: nothing drawn yet, so no dot</span>
+      </div>
+    </section>
+    <section class="tab-section">
+      <h2>Several tabs</h2>
+      <p class="sheet-note">Tabs are 200 px wide at most.</p>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              aria-label="esterification"
+            >
+              <span class="tab-title">esterification</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close esterification (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="ethanol">
+              <span class="tab-title">ethanol</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              aria-label="Untitled 2, not saved as a file yet"
+            >
+              <span class="tab-dot" aria-hidden="true"></span
+              ><span class="tab-title">Untitled 2</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 2 (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              aria-label="Aspirin synthesis from salicylic acid"
+            >
+              <span class="tab-title">Aspirin synthesis from salicylic acid</span
+              ><button
+                class="tab-close"
+                tabindex="-1"
+                aria-label="Close Aspirin synthesis from salicylic acid (Ctrl+W)"
+              >
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 200px">
+        <span>active</span><span>rest</span><span>unnamed, with content</span
+        ><span>long name: cut with …, full name in the tooltip</span>
+      </div>
+    </section>
+    <section class="tab-section">
+      <h2>States</h2>
+      <p class="sheet-note">
+        The cross is shown on the active tab and on a hovered or focused one; its room is always
+        kept, so a title never moves.
+      </p>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="Active"
+            >
+              <span class="tab-title">Active</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Active (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="Rest"
+            >
+              <span class="tab-title">Rest</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Rest (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab is-hover"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="Hover"
+            >
+              <span class="tab-title">Hover</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Hover (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab is-pressed"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="Pressed"
+            >
+              <span class="tab-title">Pressed</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Pressed (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab is-focus"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="Keyboard focus"
+            >
+              <span class="tab-title">Keyboard focus</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Keyboard focus (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="Cross hover"
+            >
+              <span class="tab-title">Cross hover</span
+              ><button
+                class="tab-close is-hover"
+                tabindex="-1"
+                aria-label="Close Cross hover (Ctrl+W)"
+              >
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="Cross pressed"
+            >
+              <span class="tab-title">Cross pressed</span
+              ><button
+                class="tab-close is-pressed"
+                tabindex="-1"
+                aria-label="Close Cross pressed (Ctrl+W)"
+              >
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 124px">
+        <span>active</span><span>rest</span><span>hover</span><span>pressed</span
+        ><span>keyboard focus</span><span>hover on ×</span><span>pressed ×</span>
+      </div>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              style="flex: none; min-width: 0; width: 124px"
+              aria-label="esterification"
+            >
+              <span class="tab-title">esterification</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close esterification (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-add is-hover" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 124px"><span></span><span>+ hover</span></div>
+    </section>
+    <section class="tab-section">
+      <h2>Saving</h2>
+      <p class="sheet-note">
+        Autosave is silent: a file tab shows nothing, even while it writes. A dot means unsaved
+        (unnamed with content, edited picture, kept copy); a warning icon in its place means the
+        file could not be saved or the drawing could not be kept.
+      </p>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              style="flex: none; min-width: 0; width: 200px"
+              aria-label="esterification"
+            >
+              <span class="tab-title">esterification</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close esterification (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              style="flex: none; min-width: 0; width: 200px"
+              aria-label="Untitled 2, not saved as a file yet"
+            >
+              <span class="tab-dot" aria-hidden="true"></span
+              ><span class="tab-title">Untitled 2</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 2 (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              style="flex: none; min-width: 0; width: 200px"
+              aria-label="ethanol, couldn't save"
+            >
+              <span class="tab-warn" aria-hidden="true"
+                ><svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#warning" /></svg></span
+              ><span class="tab-title">ethanol</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              style="flex: none; min-width: 0; width: 200px"
+              aria-label="Untitled 3, couldn't keep"
+            >
+              <span class="tab-warn" aria-hidden="true"
+                ><svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#warning" /></svg></span
+              ><span class="tab-title">Untitled 3</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 3 (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 198px">
+        <span>named file: saves itself, nothing shown (no “Saving…”)</span
+        ><span>unsaved (unnamed with content, edited picture, kept copy): the dot</span
+        ><span>unavailable file (could not save): warning icon in the dot’s place</span
+        ><span>unkept drawing (the app could not keep it, e.g. disk full): warning icon</span>
+      </div>
+    </section>
+    <section class="tab-section">
+      <h2>Many tabs</h2>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <button class="btn tab-scroll" tabindex="-1" aria-label="Scroll tabs left">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="shell-icons.svg#chevron-left" />
+            </svg>
+          </button>
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              style="margin-left: -52px"
+              aria-label="ethanol"
+            >
+              <span class="tab-title">ethanol</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              aria-label="Untitled 2, not saved as a file yet"
+            >
+              <span class="tab-dot" aria-hidden="true"></span
+              ><span class="tab-title">Untitled 2</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 2 (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="benzene">
+              <span class="tab-title">benzene</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close benzene (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="aspirin">
+              <span class="tab-title">aspirin</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close aspirin (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="alkenes">
+              <span class="tab-title">alkenes</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close alkenes (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="soap">
+              <span class="tab-title">soap</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close soap (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="polymers">
+              <span class="tab-title">polymers</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close polymers (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              aria-label="Untitled 3, not saved as a file yet"
+            >
+              <span class="tab-dot" aria-hidden="true"></span
+              ><span class="tab-title">Untitled 3</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 3 (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" aria-label="titration">
+              <span class="tab-title">titration</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close titration (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              aria-label="Grade 12 notes"
+            >
+              <span class="tab-title">Grade 12 notes</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Grade 12 notes (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-scroll" tabindex="-1" aria-label="Scroll tabs right">
+            <svg class="icon icon-16" aria-hidden="true">
+              <use href="shell-icons.svg#chevron-right" />
+            </svg></button
+          ><button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 800px">
+        <span
+          >11 tabs in 895 px: tabs shrink to 96 px, then the strip scrolls. The chevrons appear only
+          now, and each only on a side that has more. The mouse wheel scrolls too, and a new or
+          chosen tab scrolls into view.</span
+        >
+      </div>
+    </section>
+    <section class="tab-section">
+      <h2>Drag to reorder</h2>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              aria-label="esterification"
+            >
+              <span class="tab-title">esterification</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close esterification (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab is-lifted"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              aria-label="ethanol"
+            >
+              <span class="tab-title">ethanol</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              aria-label="Untitled 2, not saved as a file yet"
+            >
+              <span class="tab-dot" aria-hidden="true"></span
+              ><span class="tab-title">Untitled 2</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 2 (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+          <div class="tab-drop" style="left: 5px"></div>
+          <div
+            class="tab is-dragging"
+            role="tab"
+            aria-selected="false"
+            tabindex="-1"
+            style="left: 44px; top: 8px; flex: none; min-width: 0; width: 124px"
+            aria-label="ethanol"
+          >
+            <span class="tab-title">ethanol</span
+            ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+              <svg class="icon icon-16" aria-hidden="true">
+                <use href="shell-icons.svg#close" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 800px">
+        <span
+          >dragging “ethanol” to the front: the tab lifts and follows the pointer, its place dims, a
+          2 px accent line shows where it will land</span
+        >
+      </div>
+    </section>
+    <section class="tab-section tips-section">
+      <h2>Tooltips</h2>
+      <div class="spec-tips">
+        <div class="spec-tipbox">
+          <div class="tooltip static">
+            <div class="tooltip-title"><span>esterification</span></div>
+            <div class="tooltip-help">Switch tabs with Ctrl+Tab and Ctrl+Shift+Tab.</div>
+          </div>
+          <span class="spec-note">on a tab</span>
+        </div>
+        <div class="spec-tipbox">
+          <div class="tooltip static">
+            <div class="tooltip-title"><span>Untitled 2</span></div>
+            <div class="tooltip-help">
+              Not saved as a file yet. Chalkbond keeps it for you. Press Ctrl+S to save it.
+            </div>
+          </div>
+          <span class="spec-note">on an unsaved tab (the dot)</span>
+        </div>
+        <div class="spec-tipbox">
+          <div class="tooltip static">
+            <div class="tooltip-title"><span>ethanol</span></div>
+            <div class="tooltip-help">
+              Couldn't save this file. Check that its folder is still there, or use Save as.
+            </div>
+          </div>
+          <span class="spec-note">on an unavailable file tab (warning icon)</span>
+        </div>
+        <div class="spec-tipbox">
+          <div class="tooltip static">
+            <div class="tooltip-title"><span>Untitled 3</span></div>
+            <div class="tooltip-help">
+              Chalkbond couldn't keep this drawing. Free some disk space, or save it with Save as.
+            </div>
+          </div>
+          <span class="spec-note">on an unkept tab (warning icon)</span>
+        </div>
+        <div class="spec-tipbox">
+          <div class="tooltip static">
+            <div class="tooltip-title"><span>Close tab</span><kbd>Ctrl+W</kbd></div>
+          </div>
+          <span class="spec-note">on ×</span>
+        </div>
+        <div class="spec-tipbox">
+          <div class="tooltip static">
+            <div class="tooltip-title"><span>New tab</span><kbd>Ctrl+T</kbd></div>
+          </div>
+          <span class="spec-note">on +</span>
+        </div>
+      </div>
+    </section>
+    <section class="tab-section">
+      <h2>Right-click on a tab</h2>
+      <p class="sheet-note">
+        Native, approximate: a Windows popup menu, opened with the mouse (no underlined access
+        keys).
+      </p>
+      <div class="strip-frame">
+        <div class="sf-top"></div>
+        <div class="sf-rail"></div>
+        <div class="tabstrip">
+          <div class="tabs" role="tablist" aria-label="Open drawings">
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+              aria-label="esterification"
+            >
+              <span class="tab-title">esterification</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close esterification (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab is-hover"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              id="ctx-tab"
+              aria-label="ethanol"
+            >
+              <span class="tab-title">ethanol</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close ethanol (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+              aria-label="Untitled 2, not saved as a file yet"
+            >
+              <span class="tab-dot" aria-hidden="true"></span
+              ><span class="tab-title">Untitled 2</span
+              ><button class="tab-close" tabindex="-1" aria-label="Close Untitled 2 (Ctrl+W)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="shell-icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn tab-add" id="tab-add" aria-label="New tab (Ctrl+T)">
+            <svg class="icon icon-20" aria-hidden="true"><use href="shell-icons.svg#add" /></svg>
+          </button>
+        </div>
+        <div class="sf-canvas"></div>
+      </div>
+      <div class="cap-row" style="--cap-w: 800px">
+        <span>right-click on “ethanol” (the active tab does not change)</span>
+      </div>
+    </section>
+    <div class="menu" data-at="ctx-tab" role="menu" style="min-width: 0">
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">New tab</span><span class="accel">Ctrl+T</span
+        ><span class="more"></span>
+      </div>
+      <div class="menu-sep" role="separator"></div>
+      <div class="menu-item is-hover" role="menuitem">
+        <span class="mark"></span><span class="label">Close tab</span
+        ><span class="accel">Ctrl+W</span><span class="more"></span>
+      </div>
+      <div class="menu-sep" role="separator"></div>
+      <div class="menu-item" role="menuitem">
+        <span class="mark"></span><span class="label">Reopen closed tab</span
+        ><span class="accel">Ctrl+Shift+T</span><span class="more"></span>
+      </div>
+    </div>
+    <svg class="menu-pointer" data-at="ctx-tab" width="14" height="22" aria-hidden="true">
+      <path
+        d="M0.5 0.5V17.5L4.5 13.5L7.5 20L10 19L7.3 12.7H12.5Z"
+        fill="#FFFFFF"
+        stroke="#000000"
+        stroke-linejoin="round"
+      />
+    </svg>
+    <script src="shell.js"></script>
+  </body>
+</html>
