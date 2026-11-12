@@ -1,8 +1,8 @@
 /*
  * Tab strip (SPEC-app-shell.md T2-T6, T16; mock-up A18, copied from `docs/mockups/shell/shell.css`
  * "Tab strip"). Tokens only: sizes from shell-tokens.css, colours from the editor's tokens. The
- * strip sits in the editor's `.tabs-slot` (editor R56, which owns the grid row); drag, scroll
- * buttons and the lifted-tab styles of the mock-up are TB25's.
+ * strip sits in the editor's `.tabs-slot` (editor R56, which owns the grid row). TB25: the scroll
+ * buttons, the lifted tab, the drop line and the room the other tabs make (T13, T14).
  */
 
 .tabstrip {
@@ -33,6 +33,9 @@
   gap: var(--space-1);
   min-width: 0;
   overflow: hidden;
+  /* The offset parent of the tabs and the drop line (their offsets are the drag's slots). */
+  position: relative;
+  user-select: none;
 }
 
 .tab {
@@ -168,6 +171,57 @@
 
 .tab-add:hover {
   color: var(--text);
+}
+
+/* Scroll buttons (T14): only while the tabs overflow, each only on a side with more tabs. */
+.tab-scroll {
+  flex: none;
+  width: var(--tab-scroll-w);
+  height: var(--tab-add);
+  margin-bottom: 1px;
+  color: var(--text-muted);
+}
+
+.tab-scroll:hover {
+  color: var(--text);
+}
+
+/*
+ * Reorder (T13): the dragged tab is lifted and follows the pointer, the others make room, and a
+ * 2 px accent line shows where it will land (A18). The room is made at the motion token's speed,
+ * which is instant under `prefers-reduced-motion` (editor tokens), and the rule below says so too.
+ */
+.tabs.is-reordering {
+  cursor: grabbing;
+}
+
+.tabs.is-reordering .tab:not(.is-dragging) {
+  transition: transform var(--motion-pan);
+}
+
+.tab.is-dragging {
+  z-index: 3;
+  box-shadow: var(--shadow-2);
+  background: var(--canvas-bg);
+  color: var(--text);
+}
+
+.tab-drop {
+  position: absolute;
+  z-index: 3;
+  bottom: var(--space-1);
+  width: 2px;
+  height: var(--tab-close);
+  border-radius: 1px;
+  background: var(--accent);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs.is-reordering .tab:not(.is-dragging) {
+    transition: none;
+  }
 }
 
 /*

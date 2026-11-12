@@ -63,3 +63,28 @@ describe('tab-strip.css (tokens only)', () => {
     );
   });
 });
+
+describe('tab-strip.css reorder and overflow (TB25: T13, T14)', () => {
+  it('makes room at the motion token speed and turns the motion off under reduced motion', () => {
+    expect(css).toMatch(
+      /\.tabs\.is-reordering \.tab:not\(\.is-dragging\)\s*{[^}]*transition:\s*transform var\(--motion-pan\)/,
+    );
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*{\s*\.tabs\.is-reordering \.tab:not\(\.is-dragging\)\s*{\s*transition:\s*none;?\s*}\s*}/,
+    );
+  });
+  it('lifts the dragged tab with the elevation token and draws a 2 px accent drop line', () => {
+    expect(css).toMatch(/\.tab\.is-dragging\s*{[^}]*box-shadow:\s*var\(--shadow-2\)/);
+    expect(css).toMatch(
+      /\.tab-drop\s*{[^}]*width:\s*2px[^}]*height:\s*var\(--tab-close\)[^}]*background:\s*var\(--accent\)/,
+    );
+  });
+  it('the strip is the offset parent of the tabs (the drag measures offsetLeft)', () => {
+    expect(css).toMatch(/\.tabs\s*{[^}]*position:\s*relative/);
+  });
+  it('the scroll buttons are the A18 size', () => {
+    expect(css).toMatch(
+      /\.tab-scroll\s*{[^}]*width:\s*var\(--tab-scroll-w\)[^}]*height:\s*var\(--tab-add\)/,
+    );
+  });
+});

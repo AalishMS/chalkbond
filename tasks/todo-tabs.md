@@ -994,9 +994,9 @@ scrolled strip); markup tests for the chevrons (shown only on overflow, one side
 context-menu key handler table; reduced-motion CSS class; the e2e for these is TB27.
 
 **Acceptance criteria:**
-- [ ] Drag rules and cancel cases are tested as a pure model; the strip calls it
-- [ ] Overflow behaviour (shrink, scroll, chevrons, scroll into view) matches T14
-- [ ] The tab menu opens by right-click, the context-menu key and Shift+F10 and acts on that tab (a callback test)
+- [x] Drag rules and cancel cases are tested as a pure model; the strip calls it
+- [x] Overflow behaviour (shrink, scroll, chevrons, scroll into view) matches T14
+- [x] The tab menu opens by right-click, the context-menu key and Shift+F10 and acts on that tab (a callback test)
 
 **Verification:** `npm test -- src/renderer/app`, then `npm run check`.
 

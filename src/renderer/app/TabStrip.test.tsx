@@ -3,9 +3,12 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
+  ScrollButton,
   stripKey,
   tabDomId,
   tabHelp,
+  tabMenuKeyAction,
+  tabMenuMouseAction,
   tabName,
   TabStrip,
   type TabMarker,
@@ -27,6 +30,8 @@ const strip = (props: Partial<TabStripProps> = {}): string =>
       onActivate={noop}
       onClose={noop}
       onNew={noop}
+      onMove={noop}
+      onTabMenu={noop}
       {...props}
     />,
   );
@@ -101,7 +106,7 @@ describe('markers (T6) and accessible names (T16)', () => {
     ['none', 'ethanol', 'ethanol'],
     ['dot', 'Untitled 2', 'Untitled 2, not saved as a file yet'],
     ['unavailable', 'ethanol', "ethanol, couldn't save"],
-    ['unkept', 'Untitled 3', "Untitled 3, couldn't save"],
+    ['unkept', 'Untitled 3', "Untitled 3, couldn't keep"],
   ];
   for (const [marker, label, name] of states) {
     it(`${marker}: name "${name}"`, () => {
@@ -224,6 +229,80 @@ describe('keyboard table (T16)', () => {
     expect(stripKey('ArrowDown', 0, 4)).toBeNull();
     expect(stripKey('Tab', 0, 4)).toBeNull();
     expect(stripKey('ArrowRight', 0, 0)).toBeNull();
+  });
+});
+
+describe('the scroll buttons (T14)', () => {
+  it('a button is a class button, not a tab stop, named for its side, with the chevron icon', () => {
+    const left = renderToStaticMarkup(<ScrollButton side="left" onPress={noop} />);
+    expect(left).toContain('class="btn tab-scroll"');
+    expect(left).toContain('tabindex="-1"');
+    expect(left).toContain('type="button"');
+    expect(left).toContain('aria-label="Scroll tabs left"');
+    expect(left).toContain('data-testid="tab-scroll-left"');
+    expect(left).toContain('<use href="#chevron-left"></use>');
+    const right = renderToStaticMarkup(<ScrollButton side="right" onPress={noop} />);
+    expect(right).toContain('aria-label="Scroll tabs right"');
+    expect(right).toContain('data-testid="tab-scroll-right"');
+    expect(right).toContain('<use href="#chevron-right"></use>');
+  });
+  it('a strip that has not measured an overflow shows neither button, and keeps +', () => {
+    const html = strip({ tabs: several() });
+    expect(html).not.toContain('tab-scroll');
+    expect(html).toContain('data-testid="tab-add"');
+  });
+  it('a press calls back', () => {
+    let pressed = 0;
+    const button = ScrollButton({ side: 'left', onPress: () => (pressed += 1) });
+    (button.props as { onClick(): void }).onClick();
+    expect(pressed).toBe(1);
+  });
+});
+
+describe('reorder markup (T13)', () => {
+  it('a strip at rest has no lifted tab, no drop line and no reordering class', () => {
+    const html = strip({ tabs: several() });
+    expect(html).not.toContain('is-dragging');
+    expect(html).not.toContain('tab-drop');
+    expect(html).not.toContain('is-reordering');
+    expect(html).toContain('class="tabs"');
+  });
+});
+
+describe('the tab menu trigger (T15, CM4): a callback test', () => {
+  const key = (k: string, shiftKey = false): Parameters<typeof tabMenuKeyAction>[0] => ({
+    key: k,
+    shiftKey,
+    ctrlKey: false,
+    altKey: false,
+    metaKey: false,
+  });
+  const rect = { left: 40, bottom: 33 };
+  it('a right-click asks for the menu on that tab at the cursor (at: null)', () => {
+    const calls: [string, unknown][] = [];
+    let prevented = false;
+    tabMenuMouseAction('b', { preventDefault: () => (prevented = true) }, (id, at) =>
+      calls.push([id, at]),
+    );
+    expect(calls).toEqual([['b', null]]);
+    expect(prevented).toBe(true);
+  });
+  it('the context-menu key and Shift+F10 ask for it under the focused tab', () => {
+    const calls: [string, unknown][] = [];
+    const ask = (id: string, at: unknown): number => calls.push([id, at]);
+    expect(tabMenuKeyAction(key('ContextMenu'), 'c', rect, ask)).toBe(true);
+    expect(tabMenuKeyAction(key('F10', true), 'd', rect, ask)).toBe(true);
+    expect(calls).toEqual([
+      ['c', { x: 40, y: 33 }],
+      ['d', { x: 40, y: 33 }],
+    ]);
+  });
+  it('other keys, including a lone F10, do not', () => {
+    const calls: unknown[] = [];
+    const ask = (): number => calls.push(1);
+    expect(tabMenuKeyAction(key('F10'), 'a', rect, ask)).toBe(false);
+    expect(tabMenuKeyAction(key('Enter'), 'a', rect, ask)).toBe(false);
+    expect(calls).toEqual([]);
   });
 });
 
