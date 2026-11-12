@@ -1,7 +1,8 @@
 import { freeze } from 'immer';
 import { checkInvariants } from './invariants';
 import { CURRENT_SCHEMA_VERSION, MIGRATIONS, type Migrations } from './migrations';
-import { DOC_SCHEMA_V1 } from './schema';
+import type { z } from 'zod';
+import { DOC_SCHEMA_V1, DOC_SCHEMA_V2 } from './schema';
 import type { Doc } from './types';
 
 /** File format id in the `.chalk` envelope. */
@@ -40,8 +41,18 @@ const ID_KEY = /^[a-z]([1-9]\d*)$/;
  * records are ordered by id number, other keys by a fixed order then alphabetically.
  */
 export function serialize(doc: Doc): string {
-  const envelope = { format: FILE_FORMAT, schemaVersion: CURRENT_SCHEMA_VERSION, doc };
+  const version = fileVersion(doc);
+  const envelope = {
+    format: FILE_FORMAT,
+    schemaVersion: version,
+    doc: { ...doc, schemaVersion: version },
+  };
   return `${JSON.stringify(canonical(envelope), null, 2)}\n`;
+}
+
+/** D1: the lowest version that holds the document, so a skeletal doc stays v1 byte for byte. */
+function fileVersion(doc: Doc): 1 | 2 {
+  return doc.style.formula === undefined ? 1 : 2;
 }
 
 function canonical(value: unknown): unknown {
@@ -69,11 +80,20 @@ export function parse(text: string): Result<Doc, ParseError> {
   return parseWith(text, MIGRATIONS, CURRENT_SCHEMA_VERSION);
 }
 
-/** `parse` with an explicit migration table and current version (for testing migrations). */
+/** One strict schema per file version (D1). */
+export type Schemas = Readonly<Record<number, z.ZodType>>;
+const SCHEMAS: Schemas = { 1: DOC_SCHEMA_V1, 2: DOC_SCHEMA_V2 };
+
+/**
+ * `parse` with an explicit migration table, current version and schema per version (for testing
+ * migrations). A file is validated with the schema of its own version, then migrated, then
+ * validated once more with `schemas[currentVersion]`.
+ */
 export function parseWith(
   text: string,
   migrations: Migrations,
   currentVersion: number,
+  schemas: Schemas = SCHEMAS,
 ): Result<Doc, ParseError> {
   if (utf8Length(text, MAX_FILE_BYTES) > MAX_FILE_BYTES) {
     return fail('too-large', `File is larger than ${MAX_FILE_BYTES / (1024 * 1024)} MB.`);
@@ -97,7 +117,12 @@ export function parseWith(
     return fail('newer-version', 'This file was created by a newer version of Chalkbond.');
   }
 
-  let doc: unknown = json['doc'];
+  const ownSchema = schemas[version];
+  if (!ownSchema) return fail('unsupported-version', `Unsupported schemaVersion: ${version}.`);
+  const own = ownSchema.safeParse(json['doc']);
+  if (!own.success) return schemaFailure(own.error);
+
+  let doc: unknown = own.data;
   for (let v = version; v < currentVersion; v++) {
     const migrate = migrations[v];
     if (!migrate) return fail('unsupported-version', `No migration from schemaVersion ${v}.`);
@@ -111,13 +136,12 @@ export function parseWith(
     }
   }
 
-  const parsed = DOC_SCHEMA_V1.safeParse(doc);
-  if (!parsed.success) {
-    const details = parsed.error.issues
-      .slice(0, MAX_LISTED)
-      .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
-    return fail('schema', 'The document does not match the Chalkbond format.', details);
+  const currentSchema = schemas[currentVersion];
+  if (!currentSchema) {
+    return fail('unsupported-version', `No schema for schemaVersion ${currentVersion}.`);
   }
+  const parsed = currentSchema.safeParse(doc);
+  if (!parsed.success) return schemaFailure(parsed.error);
 
   const violations = checkInvariants(parsed.data as Doc);
   if (violations.length > 0) {
@@ -129,6 +153,13 @@ export function parseWith(
     );
   }
   return { ok: true, value: freeze(parsed.data as Doc, true) };
+}
+
+function schemaFailure(error: z.ZodError): Result<Doc, ParseError> {
+  const details = error.issues
+    .slice(0, MAX_LISTED)
+    .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
+  return fail('schema', 'The document does not match the Chalkbond format.', details);
 }
 
 function fail(

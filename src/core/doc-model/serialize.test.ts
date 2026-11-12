@@ -1,12 +1,30 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { kitchenSinkDoc } from './__fixtures__/kitchen-sink';
 import v0Ethanol from './__fixtures__/v0-ethanol.chalk?raw';
 import { emptyDoc } from './doc';
 import type { Migrations } from './migrations';
+import { DOC_SCHEMA_V1, DOC_SCHEMA_V2 } from './schema';
 import { MAX_FILE_BYTES, parse, parseWith, serialize, type ParseErrorCode } from './serialize';
 import type { Doc } from './types';
 
 const NOW = '2026-11-09T00:00:00.000Z';
+
+// Every committed .chalk file: doc-model's fixtures and svg-render's frozen golden inputs.
+const FIXTURE_FILES = import.meta.glob('./__fixtures__/*.chalk', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const GOLDEN_INPUT_FILES = import.meta.glob('../svg-render/__golden__/inputs/*.chalk', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+// v0-ethanol.chalk is a deliberately unsupported version-0 file (see 'migrations').
+const COMMITTED = Object.entries({ ...FIXTURE_FILES, ...GOLDEN_INPUT_FILES }).filter(
+  ([path]) => !path.endsWith('v0-ethanol.chalk'),
+);
 
 /** Same doc, every record and object rebuilt with keys in reverse insertion order. */
 function reversedKeys<T>(v: T): T {
@@ -132,7 +150,7 @@ describe('parse', () => {
     ],
     [
       'newer schemaVersion',
-      JSON.stringify({ format: 'chalkbond', schemaVersion: 2, doc: {} }),
+      JSON.stringify({ format: 'chalkbond', schemaVersion: 3, doc: {} }),
       'newer-version',
     ],
   ])('rejects %s', (_name, text, code) => {
@@ -147,6 +165,7 @@ describe('parse', () => {
 
   it('rejects schema violations with readable details', () => {
     const doc = JSON.parse(JSON.stringify(kitchenSinkDoc()));
+    doc.schemaVersion = 1; // the file() helper writes a v1 envelope; the v1 schema pins its literal
     delete doc.atoms.a1.element;
     doc.bonds.b4.order = 4;
     doc.objects.o6.colour = '#000000'; // unknown key
@@ -163,12 +182,14 @@ describe('parse', () => {
 
   it('lists at most 10 schema issues', () => {
     const doc = JSON.parse(JSON.stringify(emptyDoc(NOW)));
+    doc.schemaVersion = 1; // see above: the file() helper writes a v1 envelope
     for (let i = 1; i <= 15; i++) doc.atoms[`a${i}`] = { id: `a${i}` };
     expect(parseError(file(doc)).details).toHaveLength(10);
   });
 
   it('rejects invariant violations, listing the first 10', () => {
     const doc = JSON.parse(JSON.stringify(emptyDoc(NOW)));
+    doc.schemaVersion = 1; // see above: the file() helper writes a v1 envelope
     doc.nextId = 100;
     for (let i = 1; i <= 12; i++) {
       doc.bonds[`b${i}`] = {
@@ -199,6 +220,8 @@ describe('parse', () => {
 });
 
 describe('migrations', () => {
+  // The v0 shape is not a Doc, so its entry is permissive; the real schemas follow it.
+  const V0_SCHEMAS = { 0: z.unknown(), 1: DOC_SCHEMA_V1, 2: DOC_SCHEMA_V2 };
   // A synthetic v0 format: arrays instead of records, optional fields omitted, no counter.
   type V0 = {
     atoms: { id: string; x: number; y: number; element: string; charge?: number }[];
@@ -225,7 +248,7 @@ describe('migrations', () => {
   };
 
   it('runs a v0 file through v0 → v1 and parses it', () => {
-    const r = parseWith(v0Ethanol, { 0: v0ToV1 }, 1);
+    const r = parseWith(v0Ethanol, { 0: v0ToV1 }, 1, V0_SCHEMAS);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(Object.keys(r.value.atoms)).toEqual(['a1', 'a2', 'a3']);
@@ -245,7 +268,7 @@ describe('migrations', () => {
       1: (d) => (calls.push(1), d),
     };
     const text = JSON.stringify({ format: 'chalkbond', schemaVersion: 0, doc: kitchenSinkDoc() });
-    expect(parseWith(text, chain, 2).ok).toBe(true);
+    expect(parseWith(text, chain, 2, V0_SCHEMAS).ok).toBe(true);
     expect(calls).toEqual([0, 1]);
   });
 
@@ -258,6 +281,7 @@ describe('migrations', () => {
         },
       },
       1,
+      V0_SCHEMAS,
     );
     expect(r.ok === false && r.error).toMatchObject({
       code: 'migration-failed',
@@ -266,11 +290,112 @@ describe('migrations', () => {
   });
 
   it('validates the migrated result against the current schema', () => {
-    const r = parseWith(v0Ethanol, { 0: (d) => d }, 1);
+    const r = parseWith(v0Ethanol, { 0: (d) => d }, 1, V0_SCHEMAS);
     expect(r.ok === false && r.error.code).toBe('schema');
   });
 
   it('the shipped v0 fixture is rejected by this build (no real v0 migration)', () => {
     expect(parseError(v0Ethanol).code).toBe('unsupported-version');
+  });
+});
+
+describe('schema v2 (D1)', () => {
+  const structural = (): Doc => {
+    const doc = kitchenSinkDoc();
+    return { ...doc, style: { ...doc.style, formula: 'structural' } };
+  };
+  const v1Text = (): string => serialize(kitchenSinkDoc());
+  const v2Text = (): string => serialize(structural());
+
+  it('has committed files to check (fixtures and golden inputs)', () => {
+    expect(COMMITTED.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it.each(COMMITTED)('%s parses to a v2 doc and serialises byte-identically', (_path, text) => {
+    const r = parse(text);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.schemaVersion).toBe(2);
+    expect(r.value.style.formula).toBeUndefined();
+    expect(serialize(r.value)).toBe(text);
+  });
+
+  it('writes schemaVersion 1 twice for a doc without formula', () => {
+    const text = v1Text();
+    expect(text.match(/"schemaVersion": 1,/g)).toHaveLength(2);
+    expect(text).not.toContain('formula');
+  });
+
+  it('writes schemaVersion 2 twice and the formula key for a structural doc', () => {
+    const text = v2Text();
+    expect(text.match(/"schemaVersion": 2,/g)).toHaveLength(2);
+    expect(text).toContain('"style": {\n      "formula": "structural",\n      "overrides"');
+  });
+
+  it('round-trips a structural doc losslessly, byte for byte', () => {
+    const doc = structural();
+    const r = parse(serialize(doc));
+    expect(r).toEqual({ ok: true, value: doc });
+    expect(r.ok && serialize(r.value)).toBe(serialize(doc));
+  });
+
+  it('parses a v1 file to an in-memory v2 doc without formula', () => {
+    const r = parse(v1Text());
+    expect(r.ok && r.value.schemaVersion).toBe(2);
+    expect(r.ok && 'formula' in r.value.style).toBe(false);
+  });
+
+  it('rejects a v1 file that carries formula (validated by its own version)', () => {
+    const json = JSON.parse(v1Text());
+    json.doc.style.formula = 'structural';
+    const err = parseError(JSON.stringify(json));
+    expect(err.code).toBe('schema');
+    expect(err.details?.join('\n')).toMatch(/style:.*formula/);
+  });
+
+  it('rejects a v1 envelope around a doc that says schemaVersion 2, and the reverse', () => {
+    const v1 = JSON.parse(v1Text());
+    v1.doc.schemaVersion = 2;
+    expect(parseError(JSON.stringify(v1)).code).toBe('schema');
+    const v2 = JSON.parse(v2Text());
+    v2.doc.schemaVersion = 1;
+    expect(parseError(JSON.stringify(v2)).code).toBe('schema');
+  });
+
+  it.each(['skeletal', 'x', '', 1, null])('rejects a v2 file with formula %j', (formula) => {
+    const json = JSON.parse(v2Text());
+    json.doc.style.formula = formula;
+    expect(parseError(JSON.stringify(json)).code).toBe('schema');
+  });
+
+  it('rejects a v2 file with an unknown style key', () => {
+    const json = JSON.parse(v2Text());
+    json.doc.style.formulae = 'structural';
+    expect(parseError(JSON.stringify(json)).code).toBe('schema');
+  });
+
+  it('rejects version 3 as newer-version, even for a valid v2 document body', () => {
+    const json = JSON.parse(v2Text());
+    json.schemaVersion = 3;
+    expect(parseError(JSON.stringify(json)).code).toBe('newer-version');
+  });
+
+  it('accepts a v2 file without formula (a v2 envelope is valid for any v2 doc)', () => {
+    const json = JSON.parse(v1Text());
+    json.schemaVersion = 2;
+    json.doc.schemaVersion = 2;
+    const r = parse(JSON.stringify(json));
+    expect(r).toEqual({ ok: true, value: kitchenSinkDoc() });
+  });
+
+  it('parseWith: a version with no schema entry is unsupported-version', () => {
+    const r = parseWith(v1Text(), { 1: (d) => d }, 2, { 2: DOC_SCHEMA_V2 });
+    expect(r.ok === false && r.error.code).toBe('unsupported-version');
+  });
+
+  it('parseWith: the final pass uses the schema of the current version', () => {
+    // A migration that returns a doc the v2 schema refuses is caught by the final pass.
+    const r = parseWith(v1Text(), { 1: (d) => ({ ...(d as object), schemaVersion: 5 }) }, 2);
+    expect(r.ok === false && r.error.code).toBe('schema');
   });
 });

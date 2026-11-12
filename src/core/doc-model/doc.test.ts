@@ -6,10 +6,10 @@ import { idNumber, makeId } from './ids';
 import * as publicApi from './index';
 
 describe('emptyDoc', () => {
-  it('is an empty v1 doc stamped with the given time', () => {
+  it('is an empty v2 doc stamped with the given time', () => {
     const now = '2026-11-09T12:00:00.000Z';
     expect(emptyDoc(now)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       atoms: {},
       bonds: {},
       objects: {},

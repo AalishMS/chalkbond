@@ -202,7 +202,8 @@ export interface DocMeta {
 }
 
 export interface Doc {
-  readonly schemaVersion: 1;
+  /** In memory always 2; a file may say 1 (`SPEC-doc-model.md` File Format, D1). */
+  readonly schemaVersion: 2;
   readonly atoms: Readonly<Record<AtomId, Atom>>;
   readonly bonds: Readonly<Record<BondId, Bond>>;
   readonly objects: Readonly<Record<ObjectId, DrawObject>>;
@@ -217,6 +218,11 @@ export interface Doc {
   readonly style: {
     readonly preset: StylePreset;
     readonly overrides: Partial<StyleSettings>;
+    /**
+     * Schema v2 (D1). Absent means the skeletal formula; `'structural'` shows every atom and
+     * hydrogen. One value, so one state has one representation (never `'skeletal'`).
+     */
+    readonly formula?: 'structural';
   };
   readonly meta: DocMeta;
 }

@@ -7,6 +7,7 @@ import { rotation, scaling, translation } from '../geometry';
 import { redo, transact, undo, type History } from '../history';
 import { mergeAtoms } from '../merge';
 import { addObject, updateObject, type ObjectInit, type ObjectPatch } from '../objects';
+import { setStyle } from '../style';
 import { extract, insert } from '../subdoc';
 import { transformItems } from '../transform';
 import type {
@@ -168,6 +169,13 @@ export const editCommand = fc.oneof(
     arbitrary: fc.record({ op: fc.constant('updateObject' as const), i: idx, to: point, runs }),
   },
   { weight: 2, arbitrary: fc.record({ op: fc.constant('delete' as const), picks }) },
+  {
+    weight: 1,
+    arbitrary: fc.record({
+      op: fc.constant('setFormula' as const),
+      formula: fc.constantFrom('skeletal' as const, 'structural' as const),
+    }),
+  },
   { weight: 1, arbitrary: fc.record({ op: fc.constant('merge' as const), i: idx, j: idx }) },
   { weight: 2, arbitrary: fc.record({ op: fc.constant('transform' as const), picks, m: affine }) },
   { weight: 1, arbitrary: fc.record({ op: fc.constant('paste' as const), picks, at: point }) },
@@ -300,6 +308,8 @@ function recipe(c: EditCommand): (d: Doc) => Doc {
                 : null;
         return patch ? updateObject(d, id, patch) : d;
       };
+    case 'setFormula':
+      return (d) => setStyle(d, { formula: c.formula });
     case 'delete':
       return (d) => deleteItems(d, select(d, c.picks));
     case 'merge':

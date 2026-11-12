@@ -66,10 +66,10 @@ records no step. `doc-model.prop.test.ts`: the generator test asserts the formul
 round-trip and undo properties pass unchanged in `numRuns`.
 
 **Acceptance criteria:**
-- [ ] v1 files parse; `serialize` of every committed fixture and golden input is byte-identical to the file
-- [ ] structural docs are written as v2 and round-trip; v2 schema rejects any `formula` but `'structural'`
-- [ ] `setStyle` formula: one undo step; switching back deep-equals the start
-- [ ] doc-model ≥ 95 % lines; property `numRuns` unchanged
+- [x] v1 files parse; `serialize` of every committed fixture and golden input is byte-identical to the file
+- [x] structural docs are written as v2 and round-trip; v2 schema rejects any `formula` but `'structural'`
+- [x] `setStyle` formula: one undo step; switching back deep-equals the start
+- [x] doc-model ≥ 95 % lines; property `numRuns` unchanged
 
 **Verification:** `npx vitest run --project unit src/core/doc-model` then `npm run check`
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { AtomId, BondId, Color, Doc, GroupId, ObjectId } from './types';
 
-// Zod schema for a v1 `Doc`: the single source of file validation. Structure, enums and
+// Zod schemas for the v1 and v2 `.chalk` docs: the single source of file validation. Structure, enums and
 // per-field ranges live here; cross-references and invariants are checked by checkInvariants.
 // Objects are strict: unknown keys are rejected so a file is never silently truncated.
 
@@ -128,19 +128,35 @@ const styleSettings = z.strictObject({
   fontSize: z.number().positive().optional(),
 });
 
-export const DOC_SCHEMA_V1 = z.strictObject({
-  schemaVersion: z.literal(1),
+const docBody = {
   atoms: z.record(atomId, atom),
   bonds: z.record(bondId, bond),
   objects: z.record(objectId, drawObject),
   zOrder: z.array(objectId).readonly(),
   groups: z.record(groupId, group),
   nextId: z.number().int().positive(),
-  style: z.strictObject({ preset: z.enum(['slides', 'journal']), overrides: styleSettings }),
   meta: z.strictObject({
     title: z.string().optional(),
     created: z.string(),
     modified: z.string(),
+  }),
+};
+
+/** Version 1 (1.0.0), unchanged: no `style.formula`. A file is validated with its own version. */
+export const DOC_SCHEMA_V1 = z.strictObject({
+  schemaVersion: z.literal(1),
+  ...docBody,
+  style: z.strictObject({ preset: z.enum(['slides', 'journal']), overrides: styleSettings }),
+});
+
+/** Version 2 (D1): differs from v1 only by the version literal and `style.formula`. */
+export const DOC_SCHEMA_V2 = z.strictObject({
+  schemaVersion: z.literal(2),
+  ...docBody,
+  style: z.strictObject({
+    preset: z.enum(['slides', 'journal']),
+    overrides: styleSettings,
+    formula: z.literal('structural').optional(),
   }),
 });
 
@@ -153,8 +169,21 @@ type DeepReadonly<T> = T extends string | number | boolean | undefined
 // Identity check (stricter than mutual assignability, which misses a dropped optional field).
 type Equals<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+// The v1 file shape is a private type: `Doc` is always v2 in memory.
+interface DocV1 extends Omit<Doc, 'schemaVersion' | 'style'> {
+  readonly schemaVersion: 1;
+  readonly style: {
+    readonly preset: Doc['style']['preset'];
+    readonly overrides: Doc['style']['overrides'];
+  };
+}
 const schemaMatchesDoc: Equals<
-  DeepReadonly<z.infer<typeof DOC_SCHEMA_V1>>,
+  DeepReadonly<z.infer<typeof DOC_SCHEMA_V2>>,
   DeepReadonly<Doc>
 > = true;
+const schemaV1MatchesDocV1: Equals<
+  DeepReadonly<z.infer<typeof DOC_SCHEMA_V1>>,
+  DeepReadonly<DocV1>
+> = true;
 void schemaMatchesDoc;
+void schemaV1MatchesDocV1;

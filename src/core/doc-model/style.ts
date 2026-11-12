@@ -6,6 +6,8 @@ import type { Doc, StylePreset, StyleSettings } from './types';
 export interface StylePatch {
   readonly preset?: StylePreset;
   readonly overrides?: Partial<StyleSettings>;
+  /** `'structural'` sets `style.formula`; `'skeletal'` removes the key (D1). */
+  readonly formula?: 'skeletal' | 'structural';
 }
 
 const KEYS: ReadonlySet<string> = new Set([
@@ -42,16 +44,29 @@ function checkOverrides(value: unknown): Partial<StyleSettings> {
 /**
  * Sets the style preset and/or replaces the per-document overrides. Throws
  * `DocError('invalid-value')` for an unknown preset or an invalid overrides object; nothing is
- * changed in that case. An empty patch is a no-op.
+ * changed in that case. An empty patch is a no-op. `formula` sets (`'structural'`) or deletes
+ * (`'skeletal'`) the key; a patch that changes nothing records no history step.
  */
 export function setStyle(doc: Doc, patch: StylePatch): Doc {
   if (patch.preset !== undefined && patch.preset !== 'slides' && patch.preset !== 'journal') {
     invalid(`unknown preset ${String(patch.preset)}`);
   }
+  if (
+    patch.formula !== undefined &&
+    patch.formula !== 'skeletal' &&
+    patch.formula !== 'structural'
+  ) {
+    invalid(`unknown formula ${String(patch.formula)}`);
+  }
   const overrides = patch.overrides === undefined ? undefined : checkOverrides(patch.overrides);
   const [next] = edit(doc, (d) => {
     if (patch.preset !== undefined) d.style.preset = patch.preset;
     if (overrides !== undefined) d.style.overrides = overrides;
+    if (patch.formula === 'structural') {
+      if (d.style.formula !== 'structural') d.style.formula = 'structural';
+    } else if (patch.formula === 'skeletal' && 'formula' in d.style) {
+      delete d.style.formula;
+    }
   });
   return next;
 }

@@ -262,7 +262,7 @@ function asDoc(sub: SubDoc): Doc {
     for (const id of Object.keys(rec)) max = Math.max(max, Number(id.slice(1)) || 0);
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     ...sub,
     nextId: max + 1,
     style: { preset: 'slides', overrides: {} },

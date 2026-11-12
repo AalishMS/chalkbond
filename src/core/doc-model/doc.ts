@@ -3,7 +3,7 @@ import type { Doc } from './types';
 /** A new, empty document. `now` is an ISO 8601 timestamp (injected to keep this pure). */
 export function emptyDoc(now: string): Doc {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     atoms: {},
     bonds: {},
     objects: {},

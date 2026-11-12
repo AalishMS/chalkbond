@@ -55,6 +55,7 @@ describe('the command generator', () => {
       'addObject',
       'updateObject',
       'delete',
+      'setFormula',
       'merge',
       'transform',
       'paste',

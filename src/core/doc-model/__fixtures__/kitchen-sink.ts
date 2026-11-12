@@ -11,7 +11,7 @@ const g = (n: number) => `g${n}` as GroupId;
  */
 export function kitchenSinkDoc(): Doc {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     atoms: {
       [a(1)]: { id: a(1), x: 0, y: 0, element: 'C', charge: 0, radical: 0 },
       [a(2)]: { id: a(2), x: 0.866, y: -0.5, element: 'C', charge: 0, radical: 0 },

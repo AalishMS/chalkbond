@@ -51,6 +51,56 @@ describe('setStyle', () => {
     expect(d.style).toEqual({ preset: 'journal', overrides: { fontFamily: 'Arial' } });
   });
 
+  it('formula structural is one undo step; skeletal afterwards deep-equals the start', () => {
+    const start = emptyDoc(NOW);
+    const h1 = transact(createHistory(start), 'Formula', (d) =>
+      setStyle(d, { formula: 'structural' }),
+    );
+    expect(current(h1).style.formula).toBe('structural');
+    const h2 = transact(h1, 'Formula', (d) => setStyle(d, { formula: 'skeletal' }));
+    expect(current(h2).style).toEqual(start.style);
+    expect('formula' in current(h2).style).toBe(false);
+    expect({ ...current(h2), meta: start.meta }).toEqual(start); // history stamps meta.modified
+    const h3 = undo(undo(h2));
+    expect(current(h3)).toEqual(start);
+    expect(canUndo(h3)).toBe(false);
+  });
+
+  it('formula changes on a frozen doc without touching the input, and is a v2 file', () => {
+    const doc = frozen();
+    const next = setStyle(doc, { formula: 'structural' });
+    expect(next.style.formula).toBe('structural');
+    expect('formula' in doc.style).toBe(false);
+    expect(checkInvariants(next)).toEqual([]);
+    const r = parse(serialize(next));
+    expect(r.ok && r.value).toEqual(next);
+    expect(setStyle(next, { formula: 'skeletal' })).toEqual(doc);
+  });
+
+  it('formula combines with preset and overrides in one patch', () => {
+    const d = setStyle(frozen(), {
+      preset: 'journal',
+      overrides: { bondLength: 30 },
+      formula: 'structural',
+    });
+    expect(d.style).toEqual({
+      preset: 'journal',
+      overrides: { bondLength: 30 },
+      formula: 'structural',
+    });
+  });
+
+  it('a formula patch that changes nothing records no history step', () => {
+    const skeletal = createHistory(frozen());
+    expect(canUndo(transact(skeletal, 'Noop', (d) => setStyle(d, { formula: 'skeletal' })))).toBe(
+      false,
+    );
+    const structural = createHistory(setStyle(frozen(), { formula: 'structural' }));
+    expect(
+      canUndo(transact(structural, 'Noop', (d) => setStyle(d, { formula: 'structural' }))),
+    ).toBe(false);
+  });
+
   it('an empty patch changes nothing and records no history step', () => {
     const doc = frozen();
     expect(setStyle(doc, {})).toBe(doc);
@@ -70,6 +120,10 @@ describe('setStyle', () => {
     ['unknown key', { overrides: { colour: 'red' } }],
     ['overrides null', { overrides: null }],
     ['overrides array', { overrides: [] }],
+    ['formula x', { formula: 'x' }],
+    ['formula empty', { formula: '' }],
+    ['formula null', { formula: null }],
+    ['formula number', { formula: 1 }],
   ];
   it.each(bad)('%s throws invalid-value and leaves the doc unchanged', (_name, patch) => {
     const doc = frozen();
