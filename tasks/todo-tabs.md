@@ -370,9 +370,9 @@ the file write and the index write leaves no stale written hash), different -> c
 missing, read error -> unreadable.
 
 **Acceptance criteria:**
-- [ ] SS3's index and SS11's classification exist as pure functions with the tests above
-- [ ] The registry covers every I12 reason and AS5's outcomes (AS8's "never writes a path not `same`" is expressible from its results)
-- [ ] `src/main/model` coverage >= 90 % lines; the model lint block and `tests/tooling/app-lint.test.ts` pass
+- [x] SS3's index and SS11's classification exist as pure functions with the tests above
+- [x] The registry covers every I12 reason and AS5's outcomes (AS8's "never writes a path not `same`" is expressible from its results)
+- [x] `src/main/model` coverage >= 90 % lines; the model lint block and `tests/tooling/app-lint.test.ts` pass
 
 **Verification:** `npm test -- src/main/model`, then `npm run check`.
 
