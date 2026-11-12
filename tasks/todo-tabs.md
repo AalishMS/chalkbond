@@ -1262,8 +1262,8 @@ Export changes no tab, record or file; tab keys do nothing while the Export dial
 **Tests first:** the spec files are the tests.
 
 **Acceptance criteria:**
-- [ ] Each R13 sentence and each R37 sentence above has an assertion; both files end with `blockedRequests === 0`
-- [ ] No existing clipboard-export or app e2e spec is changed except by TB20
+- [x] Each R13 sentence and each R37 sentence above has an assertion; both files end with `blockedRequests === 0`
+- [x] No existing clipboard-export or app e2e spec is changed except by TB20
 
 **Verification:** `npx playwright test --project=e2e e2e/app-open-tabs.spec.ts e2e/clipboard-tabs.spec.ts`, then `npm run check`.
 
