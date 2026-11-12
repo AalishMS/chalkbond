@@ -29,11 +29,11 @@ function unionOf(boxes: readonly (Rect | undefined)[]): Rect | null {
 
 /** The ink (pt) of some atoms: their vertices and label extents, and the bonds between them. */
 function atomsInk(doc: Doc, scene: Scene, atoms: ReadonlySet<AtomId>): (Rect | undefined)[] {
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   const boxes: (Rect | undefined)[] = [];
   for (const id of atoms) {
     const atom = doc.atoms[id];
-    if (atom) boxes.push({ x: atom.x * bl, y: atom.y * bl, w: 0, h: 0 });
+    if (atom) boxes.push({ x: atom.x * ppb, y: atom.y * ppb, w: 0, h: 0 });
     boxes.push(scene.extents[`atom:${id}`]);
   }
   for (const bond of Object.values(doc.bonds)) {

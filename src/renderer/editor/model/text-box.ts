@@ -17,7 +17,7 @@ export function labelBox(doc: Doc, scene: Scene, viewport: Viewport, id: AtomId)
   const atom = doc.atoms[id];
   if (!atom) return null;
   return {
-    at: bluToScreen(viewport, atom, scene.style.bondLength),
+    at: bluToScreen(viewport, atom, scene.style.ptPerBlu),
     fontPx: scene.style.fontSize * viewport.zoom * PX_PER_PT,
   };
 }
@@ -42,7 +42,7 @@ export function textPlace(
     target.kind === 'new' ? { at: target.fresh.at, align: target.fresh.align } : stored;
   if (source === null) return null;
   return {
-    at: bluToScreen(viewport, source.at, scene.style.bondLength),
+    at: bluToScreen(viewport, source.at, scene.style.ptPerBlu),
     align: source.align,
     fontPx: scene.style.fontSize * viewport.zoom * PX_PER_PT,
   };

@@ -43,14 +43,14 @@ export function screenToPt(v: Viewport, s: Point): Point {
   return { x: (s.x - v.pan.x) / k(v), y: (s.y - v.pan.y) / k(v) };
 }
 
-/** `bondLength` is the style's bond length in pt. */
-export function bluToScreen(v: Viewport, p: Point, bondLength: number): Point {
-  return ptToScreen(v, { x: p.x * bondLength, y: p.y * bondLength });
+/** `ptPerBlu` is the scene's pt per BLU (`scene.style.ptPerBlu`: the bond length, doubled in structural mode). */
+export function bluToScreen(v: Viewport, p: Point, ptPerBlu: number): Point {
+  return ptToScreen(v, { x: p.x * ptPerBlu, y: p.y * ptPerBlu });
 }
 
-export function screenToBlu(v: Viewport, s: Point, bondLength: number): Point {
+export function screenToBlu(v: Viewport, s: Point, ptPerBlu: number): Point {
   const pt = screenToPt(v, s);
-  return { x: pt.x / bondLength, y: pt.y / bondLength };
+  return { x: pt.x / ptPerBlu, y: pt.y / ptPerBlu };
 }
 
 const centreOf = (size: Size): Point => ({ x: size.w / 2, y: size.h / 2 });

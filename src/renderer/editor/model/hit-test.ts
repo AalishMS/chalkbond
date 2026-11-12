@@ -1,7 +1,6 @@
 // Hit-testing (SPEC-editor.md "Hit-testing", rules H1-H4): pure, a linear scan, tolerances in
 // screen px so they are the same at every zoom.
 import {
-  resolveAnchor,
   type AtomId,
   type BondId,
   type Doc,
@@ -24,6 +23,7 @@ import {
   type Rect,
 } from './geometry';
 import { sideOf } from './conditions';
+import { anchorBlu } from './structural-offsets';
 import { bluToScreen, ptToScreen, screenToBlu, type Viewport } from './viewport';
 
 /** What the pointer is over. */
@@ -131,17 +131,18 @@ function pathOf(
   doc: Doc,
   obj: DrawObject,
   v: Viewport,
-  bondLength: number,
+  style: Scene['style'],
 ): { from: Point; to: Point; controls?: readonly [Point, Point] } | null {
+  const { ptPerBlu } = style;
   if (obj.type === 'arrow') {
     return {
-      from: bluToScreen(v, obj.from, bondLength),
-      to: bluToScreen(v, obj.to, bondLength),
+      from: bluToScreen(v, obj.from, ptPerBlu),
+      to: bluToScreen(v, obj.to, ptPerBlu),
     };
   }
   if (obj.type === 'curved-arrow') {
-    const from = bluToScreen(v, resolveAnchor(doc, obj.from), bondLength);
-    const to = bluToScreen(v, resolveAnchor(doc, obj.to), bondLength);
+    const from = bluToScreen(v, anchorBlu(doc, obj.from, style), ptPerBlu);
+    const to = bluToScreen(v, anchorBlu(doc, obj.to, style), ptPerBlu);
     const [, c1, c2] = curveControls(from, to, obj.bend);
     return { from, to, controls: [c1, c2] };
   }
@@ -156,7 +157,7 @@ function objectDistance(
   p: Point,
   obj: DrawObject,
 ): number | null {
-  const path = pathOf(doc, obj, v, scene.style.bondLength);
+  const path = pathOf(doc, obj, v, scene.style);
   if (path !== null) {
     const d =
       path.controls === undefined
@@ -192,12 +193,12 @@ function objectHit(doc: Doc, scene: Scene, v: Viewport, p: Point, filter: HitFil
  * goes to the lower id.
  */
 export function slotHit(doc: Doc, scene: Scene, v: Viewport, p: Point): Hit | null {
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   let best: Candidate<{ id: ObjectId; slot: 'above' | 'below' }> | null = null;
   for (const obj of Object.values(doc.objects)) {
     if (obj.type !== 'arrow') continue;
-    const a = bluToScreen(v, obj.from, bl);
-    const b = bluToScreen(v, obj.to, bl);
+    const a = bluToScreen(v, obj.from, ppb);
+    const b = bluToScreen(v, obj.to, ppb);
     const shaft = sub(b, a);
     const len2 = shaft.x * shaft.x + shaft.y * shaft.y;
     if (len2 === 0) continue;
@@ -206,9 +207,9 @@ export function slotHit(doc: Doc, scene: Scene, v: Viewport, p: Point): Hit | nu
     const d = distToSegment(p, a, b);
     const reach =
       SLOT_REACH_BLU *
-      distance(bluToScreen(v, { x: 0, y: 0 }, bl), bluToScreen(v, { x: 1, y: 0 }, bl));
+      distance(bluToScreen(v, { x: 0, y: 0 }, ppb), bluToScreen(v, { x: 1, y: 0 }, ppb));
     if (d > reach) continue;
-    best = keepBetter(best, { id: obj.id, slot: sideOf(obj, screenToBlu(v, p, bl)) }, d);
+    best = keepBetter(best, { id: obj.id, slot: sideOf(obj, screenToBlu(v, p, ppb)) }, d);
   }
   return best === null ? null : { kind: 'slot', arrow: best.value.id, slot: best.value.slot };
 }
@@ -225,11 +226,11 @@ export function hitTest(
   p: Point,
   filter: HitFilter = HIT_ALL,
 ): Hit | null {
-  const bondLength = scene.style.bondLength;
+  const ptPerBlu = scene.style.ptPerBlu;
   if (filter.atoms) {
     let best: Candidate<{ id: AtomId }> | null = null;
     for (const atom of Object.values(doc.atoms)) {
-      const d = distance(p, bluToScreen(viewport, atom, bondLength));
+      const d = distance(p, bluToScreen(viewport, atom, ptPerBlu));
       const ink = scene.extents[`atom:${atom.id}`];
       const inside =
         ink !== undefined && rectContains(growRect(screenRect(viewport, ink), LABEL_GROW), p);
@@ -245,8 +246,8 @@ export function hitTest(
       if (!a1 || !a2) continue;
       const d = distToSegment(
         p,
-        bluToScreen(viewport, a1, bondLength),
-        bluToScreen(viewport, a2, bondLength),
+        bluToScreen(viewport, a1, ptPerBlu),
+        bluToScreen(viewport, a2, ptPerBlu),
       );
       if (d <= LINE_PX) best = keepBetter(best, bond, d);
     }
@@ -277,16 +278,16 @@ export function mergeTarget(
   p: Point,
   exclude: ReadonlySet<AtomId>,
 ): AtomId | null {
-  const bondLength = resolveStyle(doc.style).bondLength;
+  const ptPerBlu = resolveStyle(doc.style).ptPerBlu;
   const bluPx = distance(
-    bluToScreen(viewport, { x: 0, y: 0 }, bondLength),
-    bluToScreen(viewport, { x: MERGE_BLU, y: 0 }, bondLength),
+    bluToScreen(viewport, { x: 0, y: 0 }, ptPerBlu),
+    bluToScreen(viewport, { x: MERGE_BLU, y: 0 }, ptPerBlu),
   );
   const reach = Math.max(MERGE_PX, bluPx);
   let best: Candidate<{ id: AtomId }> | null = null;
   for (const atom of Object.values(doc.atoms)) {
     if (exclude.has(atom.id)) continue;
-    const d = distance(p, bluToScreen(viewport, atom, bondLength));
+    const d = distance(p, bluToScreen(viewport, atom, ptPerBlu));
     if (d <= reach) best = keepBetter(best, atom, d);
   }
   return best === null ? null : best.value.id;
@@ -306,7 +307,7 @@ export function marqueeSelection(doc: Doc, scene: Scene, rect: Rect): Selection 
     if (atoms.has(bond.a1) && atoms.has(bond.a2)) bonds.add(bond.id);
   }
   const objects = new Set<ObjectId>();
-  const k = 1 / scene.style.bondLength;
+  const k = 1 / scene.style.ptPerBlu;
   for (const obj of Object.values(doc.objects)) {
     const ink = scene.extents[`obj:${obj.id}`];
     if (ink === undefined) continue;

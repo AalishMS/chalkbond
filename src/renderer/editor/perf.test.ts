@@ -1,6 +1,14 @@
 // SPEC-editor.md "Performance" budgets (medians; timing assertions are skipped under coverage).
 import { createNameIndex } from '@core/chem-core';
-import { addAtom, addBond, current, emptyDoc, type AtomId, type Doc } from '@core/doc-model';
+import {
+  addAtom,
+  addBond,
+  current,
+  emptyDoc,
+  setStyle,
+  type AtomId,
+  type Doc,
+} from '@core/doc-model';
 import { render } from '@core/svg-render';
 import { expect, it } from 'vitest';
 import compounds from '../../../resources/compounds/compounds.json';
@@ -51,8 +59,8 @@ function chain(n: number): Doc {
   return doc;
 }
 
-budget('hitTest on a 500-atom document takes under 0.5 ms (median)', () => {
-  const doc = chain(500);
+function hitTestMedian(formula: 'skeletal' | 'structural'): number {
+  const doc = formula === 'structural' ? setStyle(chain(500), { formula }) : chain(500);
   expect(Object.keys(doc.atoms)).toHaveLength(500);
   const scene = render(doc);
   const viewport: Viewport = { zoom: 1.5, pan: { x: 100, y: 100 }, size: { w: 1200, h: 700 } };
@@ -67,8 +75,16 @@ budget('hitTest on a 500-atom document takes under 0.5 ms (median)', () => {
   const ms = time(500, () => {
     hitTest(doc, scene, viewport, points[k++ % points.length] as { x: number; y: number }, HIT_ALL);
   });
-  console.log(`PERF hitTest, 500 atoms: median ${ms.toFixed(3)} ms`);
-  expect(ms).toBeLessThan(0.5);
+  console.log(`PERF hitTest, 500 atoms, ${formula}: median ${ms.toFixed(3)} ms`);
+  return ms;
+}
+
+budget('hitTest on a 500-atom document takes under 0.5 ms (median)', () => {
+  expect(hitTestMedian('skeletal')).toBeLessThan(0.5);
+});
+
+budget('hitTest on a 500-atom structural document takes under 0.5 ms (median)', () => {
+  expect(hitTestMedian('structural')).toBeLessThan(0.5);
 });
 
 // ---- the SPEC-editor.md "Performance" node budgets ---------------------------------------------
@@ -77,8 +93,8 @@ const ctx = testContext();
 const SIZE = { w: 1280, h: 722 };
 
 /** The 40-atom scheme: eight molecules, an arrow and pluses, on a sized canvas. */
-function scheme40(): EditorState {
-  const doc = drawn(
+function scheme40(formula: 'skeletal' | 'structural' = 'skeletal'): EditorState {
+  const plain = drawn(
     { name: 'ethanol', x: 0, y: 0 },
     { name: 'acetic acid', x: 4, y: 0 },
     { name: 'ethyl acetate', x: 9, y: 0 },
@@ -89,15 +105,16 @@ function scheme40(): EditorState {
     { name: 'pentane', x: 15, y: 5 },
     { name: 'benzene', x: 20, y: 5 },
   );
+  const doc = formula === 'structural' ? setStyle(plain, { formula }) : plain;
   return reduce(freshState(doc), { type: 'canvas-resized', size: SIZE }, ctx);
 }
 
-budget('one bond-drag preview step on the 40-atom scheme takes under 10 ms (median)', () => {
-  const start = scheme40();
+function bondDragMedian(formula: 'skeletal' | 'structural'): number {
+  const start = scheme40(formula);
   const doc = current(start.history);
   expect(Object.keys(doc.atoms).length).toBeGreaterThanOrEqual(40);
   const { scene } = ctx.derive.committed(doc);
-  const bl = scene.style.bondLength;
+  const bl = scene.style.ptPerBlu;
   const first = Object.values(doc.atoms).reduce((a, b) => (b.x < a.x ? b : a));
   if (first === undefined) throw new Error('no atom');
   const at = bluToScreen(start.viewport, first, bl);
@@ -128,9 +145,20 @@ budget('one bond-drag preview step on the 40-atom scheme takes under 10 ms (medi
     drawn = planPatch(mounted, parts).length;
   });
   expect(drawn).toBeGreaterThan(0);
-  console.log(`PERF bond-drag preview step: median ${ms.toFixed(3)} ms`);
-  expect(ms).toBeLessThan(10);
+  console.log(`PERF bond-drag preview step, ${formula}: median ${ms.toFixed(3)} ms`);
+  return ms;
+}
+
+budget('one bond-drag preview step on the 40-atom scheme takes under 10 ms (median)', () => {
+  expect(bondDragMedian('skeletal')).toBeLessThan(10);
 });
+
+budget(
+  'one bond-drag preview step on the structural 40-atom scheme takes under 10 ms (median)',
+  () => {
+    expect(bondDragMedian('structural')).toBeLessThan(10);
+  },
+);
 
 budget('tidyReaction on the 4-molecule scheme takes under 25 ms (median)', () => {
   const start = reduce(freshState(messyScheme().doc), { type: 'canvas-resized', size: SIZE }, ctx);

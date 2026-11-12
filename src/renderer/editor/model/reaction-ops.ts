@@ -210,12 +210,12 @@ export function snapPlus(
   p: Point,
   pxPerPt: number,
 ): { readonly at: Point; readonly guides: readonly Guide[] } {
-  const bl = scene.style.bondLength;
-  const moving = { x: p.x * bl, y: p.y * bl, w: 0, h: 0 };
+  const ppb = scene.style.ptPerBlu;
+  const moving = { x: p.x * ppb, y: p.y * ppb, w: 0, h: 0 };
   const others = itemBoxes(doc, scene).map((b) => b.box);
   const snapped = snapMove(moving, others, { x: 0, y: 0 }, pxPerPt, { x: false, y: false });
   return {
-    at: { x: p.x + snapped.d.x / bl, y: p.y + snapped.d.y / bl },
+    at: { x: p.x + snapped.d.x / ppb, y: p.y + snapped.d.y / ppb },
     guides: snapped.guides,
   };
 }

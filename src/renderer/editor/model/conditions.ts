@@ -91,7 +91,10 @@ export function placeCondition(
   slot: Slot,
   runs: readonly TextRun[],
 ): ConditionPlace | null {
-  const bl = resolveStyle(doc.style).bondLength;
+  const style = resolveStyle(doc.style);
+  // R54: positions are at ptPerBlu, but the gap and the text's offset from the arrow are the
+  // style's (svg-render S2): `at` = midpoint + the pt offset / bondLength.
+  const { bondLength: bl, ptPerBlu } = style;
   const dx = arrow.to.x - arrow.from.x;
   const dy = arrow.to.y - arrow.from.y;
   const len = Math.hypot(dx, dy);
@@ -100,7 +103,7 @@ export function placeCondition(
   const above = aboveNormal(arrow.from, arrow.to);
   const e = slot === 'above' ? above : { x: -above.x, y: -above.y };
   const mid = { x: (arrow.from.x + arrow.to.x) / 2, y: (arrow.from.y + arrow.to.y) / 2 };
-  const midPt = { x: mid.x * bl, y: mid.y * bl };
+  const midPt = { x: mid.x * ptPerBlu, y: mid.y * ptPerBlu };
 
   // Pass 1: place the text on the midpoint and render the arrow and the text.
   const s = scratch(doc, arrow, { at: mid, runs, align: 'center' });

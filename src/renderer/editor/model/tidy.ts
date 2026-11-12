@@ -58,11 +58,11 @@ type RowItem =
   | { readonly kind: 'fragment'; readonly atoms: readonly AtomId[]; readonly ink: Rect }
   | { readonly kind: 'arrow' | 'plus' | 'text'; readonly id: ObjectId; readonly ink: Rect };
 
-const inkBlu = (r: Rect, bl: number): Rect => ({
-  x: r.x / bl,
-  y: r.y / bl,
-  w: r.w / bl,
-  h: r.h / bl,
+const inkBlu = (r: Rect, ppb: number): Rect => ({
+  x: r.x / ppb,
+  y: r.y / ppb,
+  w: r.w / ppb,
+  h: r.h / ppb,
 });
 const centreY = (r: Rect): number => r.y + r.h / 2;
 const centreX = (r: Rect): number => r.x + r.w / 2;
@@ -120,7 +120,7 @@ export function planTidy(doc: Doc, sel: Selection): TidyPlan | null {
   const arrows = arrowsIn(doc, sel);
   if (arrows.length === 0) return null;
   const scene0 = render(doc);
-  const bl = scene0.style.bondLength;
+  const ppb = scene0.style.ptPerBlu;
   const whole = isEmptySelection(sel);
   const expanded = expandSelection(doc, sel);
   const arrowIds = new Set(arrows.map((a) => a.id));
@@ -131,7 +131,7 @@ export function planTidy(doc: Doc, sel: Selection): TidyPlan | null {
   const hi = Math.max(...mids) + TIDY_BAND;
   const inBand = (ink: Rect | undefined): boolean => {
     if (ink === undefined) return false;
-    const b = inkBlu(ink, bl);
+    const b = inkBlu(ink, ppb);
     return b.y + b.h >= lo && b.y <= hi;
   };
 
@@ -150,7 +150,7 @@ export function planTidy(doc: Doc, sel: Selection): TidyPlan | null {
     if (!(whole ? inBand(objectInk(scene0, o.id)) : expanded.objects.has(o.id))) continue;
     const ink = objectInk(scene0, o.id);
     if (ink === undefined) continue;
-    const b = inkBlu(ink, bl);
+    const b = inkBlu(ink, ppb);
     const found = conditionFor(arrows, { x: centreX(b), y: centreY(b) });
     if (found === null || taken.has(`${found.arrow}:${found.slot}`)) continue;
     taken.add(`${found.arrow}:${found.slot}`);
@@ -165,7 +165,7 @@ export function planTidy(doc: Doc, sel: Selection): TidyPlan | null {
     const arrow = text.attachedTo?.arrow ?? attach.find((t) => t.id === id)?.arrow;
     const ink = objectInk(scene0, id);
     if (arrow === undefined || ink === undefined) continue;
-    widest.set(arrow, Math.max(widest.get(arrow) ?? 0, ink.w / bl));
+    widest.set(arrow, Math.max(widest.get(arrow) ?? 0, ink.w / ppb));
   }
   const plannedArrows = arrows.map((a) => {
     const length = Math.max(TIDY_MIN_ARROW, (widest.get(a.id) ?? 0) + TIDY_ARROW_PAD);
@@ -193,7 +193,7 @@ export function planTidy(doc: Doc, sel: Selection): TidyPlan | null {
   // The row: fragments, arrows, plus signs and free texts of the scope, by ink box.
   const row: RowItem[] = [];
   for (const item of itemBoxes(arrangedDoc, scene1)) {
-    const ink = inkBlu(item.box, bl);
+    const ink = inkBlu(item.box, ppb);
     if (item.object === undefined) {
       const inScope = whole ? inBand(item.box) : item.atoms.some((id) => expanded.atoms.has(id));
       if (inScope) row.push({ kind: 'fragment', atoms: item.atoms, ink });

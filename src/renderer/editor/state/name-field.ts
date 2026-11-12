@@ -89,7 +89,7 @@ function insertDone(
 /** The point of the document under the canvas centre, BLU. */
 function canvasCentre(state: EditorState, scene: Scene): Point {
   const { size } = state.viewport;
-  return screenToBlu(state.viewport, { x: size.w / 2, y: size.h / 2 }, scene.style.bondLength);
+  return screenToBlu(state.viewport, { x: size.w / 2, y: size.h / 2 }, scene.style.ptPerBlu);
 }
 
 /**

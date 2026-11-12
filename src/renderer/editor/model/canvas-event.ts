@@ -33,7 +33,7 @@ export type MoveEvent = Extract<CanvasEvent, { type: 'down' | 'move' | 'up' }> &
 };
 
 /**
- * `origin` is the canvas's top-left in client px; `bondLength` is the style's, in pt.
+ * `origin` is the canvas's top-left in client px; `ptPerBlu` is the scene's, in pt.
  * Tolerances stay in screen px, so `screen` travels with `p`.
  */
 export function canvasEvent(
@@ -41,13 +41,13 @@ export function canvasEvent(
   raw: RawPointer,
   origin: Point,
   viewport: Viewport,
-  bondLength: number,
+  ptPerBlu: number,
 ): CanvasEvent {
   const screen = { x: raw.clientX - origin.x, y: raw.clientY - origin.y };
   const button = raw.button === 1 || raw.button === 2 ? raw.button : 0;
   return {
     type,
-    p: screenToBlu(viewport, screen, bondLength),
+    p: screenToBlu(viewport, screen, ptPerBlu),
     screen,
     button,
     mods: { shift: raw.shiftKey, alt: raw.altKey, ctrl: raw.ctrlKey },

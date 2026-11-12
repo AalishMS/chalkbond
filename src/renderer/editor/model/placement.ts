@@ -25,12 +25,12 @@ const scaled = (r: Rect, k: number): Rect => ({ x: r.x * k, y: r.y * k, w: r.w *
 export function subInk(sub: SubDoc, style: Doc['style'], now: string): Rect | null {
   const host = { ...emptyDoc(now), style };
   const scene = render(insert(host, sub, { x: 0, y: 0 })[0]);
-  return scene.bounds === null ? null : scaled(scene.bounds, 1 / scene.style.bondLength);
+  return scene.bounds === null ? null : scaled(scene.bounds, 1 / scene.style.ptPerBlu);
 }
 
 /** Ink boxes (BLU) of each fragment and each object of `doc`. */
 function itemBoxes(doc: Doc, scene: Scene): Rect[] {
-  const k = 1 / scene.style.bondLength;
+  const k = 1 / scene.style.ptPerBlu;
   const boxes: Rect[] = [];
   for (const atoms of fragments(doc)) {
     let box: Rect | null = null;
@@ -69,7 +69,7 @@ export function insertPosition(doc: Doc, scene: Scene, sub: SubDoc, canvasCentre
   if (scene.bounds === null || boxes.length === 0) {
     return { x: canvasCentre.x - inkCentre.x, y: canvasCentre.y - inkCentre.y };
   }
-  const bounds = scaled(scene.bounds, 1 / scene.style.bondLength);
+  const bounds = scaled(scene.bounds, 1 / scene.style.ptPerBlu);
   let rightmost = boxes[0] as Rect;
   for (const box of boxes) if (box.x + box.w > rightmost.x + rightmost.w) rightmost = box;
   return {

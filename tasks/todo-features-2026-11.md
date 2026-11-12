@@ -380,9 +380,9 @@ on-screen length. Every existing editor test passes unchanged (skeletal `ptPerBl
 `bondLength`). Perf: the structural `hitTest` and bond-drag scenes meet the existing budgets.
 
 **Acceptance criteria:**
-- [ ] no BLU ↔ pt conversion in `src/renderer/editor` uses `bondLength` (a grep in the commit message lists the remaining `bondLength` reads and why each is the style's)
-- [ ] the structural RED cases pass; every existing editor test passes unedited
-- [ ] perf budgets unchanged and met; editor ≥ 70 % lines
+- [x] no BLU ↔ pt conversion in `src/renderer/editor` uses `bondLength` (a grep in the commit message lists the remaining `bondLength` reads and why each is the style's)
+- [x] the structural RED cases pass; every existing editor test passes unedited
+- [x] perf budgets unchanged and met; editor ≥ 70 % lines
 
 **Verification:** `npx vitest run --project unit src/renderer/editor`, `npx vitest run --project perf src/renderer/editor/perf.test.ts`, then `npm run check`
 

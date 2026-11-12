@@ -1,13 +1,7 @@
 // Overlay shapes (SPEC-editor.md "Canvas appearance", "Rendering" step 5): pure data in screen
 // px, drawn by `view/Overlay.tsx`. Hover, selection with its frame, marquee, snapping guides and
 // the merge target exist so far; ghosts and warnings arrive with their tasks.
-import {
-  resolveAnchor,
-  type AtomId,
-  type Doc,
-  type ObjectId,
-  type Selection,
-} from '@core/doc-model';
+import { type AtomId, type Doc, type ObjectId, type Selection } from '@core/doc-model';
 import type { Perception } from '@core/chem-core';
 import { curveControls, type Scene } from '@core/svg-render';
 import type { GestureState, Hit, Preview, ToolId } from '../state/editor-state';
@@ -16,6 +10,7 @@ import { FRAME_GROW, frameRect, screenRect, selectionInk } from './frame';
 import { growRect, type Point, type Rect } from './geometry';
 import { selectionHandles } from './handles';
 import { isEmptySelection } from './selection';
+import { anchorBlu } from './structural-offsets';
 import { warningGroups } from './warnings';
 import { bluToScreen, PX_PER_PT, ptToScreen, type Viewport } from './viewport';
 
@@ -117,14 +112,14 @@ export function atomDrawsLabel(scene: Scene, id: AtomId): boolean {
 
 /** The shape that highlights `hit`, or null when the item is gone or has none. */
 function hoverShape(hit: Hit, doc: Doc, scene: Scene, v: Viewport): OverlayShape | null {
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   switch (hit.kind) {
     case 'atom': {
       const atom = doc.atoms[hit.id];
       if (!atom) return null;
       const ink = scene.extents[`atom:${hit.id}`];
       return ink === undefined
-        ? { kind: 'circle', c: bluToScreen(v, atom, bl), r: HOVER_CIRCLE_R }
+        ? { kind: 'circle', c: bluToScreen(v, atom, ppb), r: HOVER_CIRCLE_R }
         : boxShape(v, ink, HOVER_LABEL_GROW);
     }
     case 'bond': {
@@ -134,8 +129,8 @@ function hoverShape(hit: Hit, doc: Doc, scene: Scene, v: Viewport): OverlayShape
       if (!a1 || !a2) return null;
       return {
         kind: 'band',
-        from: bluToScreen(v, a1, bl),
-        to: bluToScreen(v, a2, bl),
+        from: bluToScreen(v, a1, ppb),
+        to: bluToScreen(v, a2, ppb),
         width: HOVER_BAND,
       };
     }
@@ -145,14 +140,14 @@ function hoverShape(hit: Hit, doc: Doc, scene: Scene, v: Viewport): OverlayShape
       if (obj.type === 'arrow') {
         return {
           kind: 'band',
-          from: bluToScreen(v, obj.from, bl),
-          to: bluToScreen(v, obj.to, bl),
+          from: bluToScreen(v, obj.from, ppb),
+          to: bluToScreen(v, obj.to, ppb),
           width: HOVER_BAND,
         };
       }
       if (obj.type === 'curved-arrow') {
-        const from = bluToScreen(v, resolveAnchor(doc, obj.from), bl);
-        const to = bluToScreen(v, resolveAnchor(doc, obj.to), bl);
+        const from = bluToScreen(v, anchorBlu(doc, obj.from, scene.style), ppb);
+        const to = bluToScreen(v, anchorBlu(doc, obj.to, scene.style), ppb);
         const [, c1, c2] = curveControls(from, to, obj.bend);
         return { kind: 'band', from, to, controls: [c1, c2], width: HOVER_BAND };
       }
@@ -261,7 +256,7 @@ export function selectionGroups(
   offset: Point = { x: 0, y: 0 },
 ): OverlayGroup[] {
   if (isEmptySelection(sel)) return [];
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   const shapes: OverlayShape[] = [];
   const covered = new Set<AtomId>();
   for (const id of sel.bonds) {
@@ -273,8 +268,8 @@ export function selectionGroups(
     covered.add(bond.a2);
     shapes.push({
       kind: 'band',
-      from: bluToScreen(v, a1, bl),
-      to: bluToScreen(v, a2, bl),
+      from: bluToScreen(v, a1, ppb),
+      to: bluToScreen(v, a2, ppb),
       width: SELECT_BAND,
     });
   }
@@ -284,7 +279,7 @@ export function selectionGroups(
     const ink = scene.extents[`atom:${id}`];
     if (ink !== undefined) shapes.push(boxShape(v, ink, SELECT_ATOM_GROW));
     else if (!covered.has(id)) {
-      shapes.push({ kind: 'circle', c: bluToScreen(v, atom, bl), r: SELECT_CIRCLE_R });
+      shapes.push({ kind: 'circle', c: bluToScreen(v, atom, ppb), r: SELECT_CIRCLE_R });
     }
   }
   for (const id of sel.objects) {
@@ -357,8 +352,8 @@ export function canvasOverlay(view: OverlayView): OverlayGroup[] {
   }
   const marquee = gesture?.overlay?.marquee;
   if (marquee !== undefined) {
-    const a = bluToScreen(v, marquee.from, scene.style.bondLength);
-    const b = bluToScreen(v, marquee.to, scene.style.bondLength);
+    const a = bluToScreen(v, marquee.from, scene.style.ptPerBlu);
+    const b = bluToScreen(v, marquee.to, scene.style.ptPerBlu);
     const rect = {
       x: Math.min(a.x, b.x),
       y: Math.min(a.y, b.y),

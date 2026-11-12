@@ -26,7 +26,7 @@ export function warningGroups(
   scene: Scene,
   viewport: Viewport,
 ): OverlayGroup[] {
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   const atomShapes: OverlayShape[] = [];
   const bondShapes: OverlayShape[] = [];
   const seenAtoms = new Set<string>();
@@ -40,7 +40,7 @@ export function warningGroups(
         const ink = scene.extents[`atom:${id}`];
         atomShapes.push(
           ink === undefined
-            ? { kind: 'circle', c: bluToScreen(viewport, atom, bl), r: WARNING_CIRCLE_R }
+            ? { kind: 'circle', c: bluToScreen(viewport, atom, ppb), r: WARNING_CIRCLE_R }
             : {
                 kind: 'box',
                 rect: growRect(screenRect(viewport, ink), WARNING_LABEL_GROW),
@@ -57,8 +57,8 @@ export function warningGroups(
       seenBonds.add(id);
       bondShapes.push({
         kind: 'line',
-        from: bluToScreen(viewport, a1, bl),
-        to: bluToScreen(viewport, a2, bl),
+        from: bluToScreen(viewport, a1, ppb),
+        to: bluToScreen(viewport, a2, ppb),
       });
     }
   }
@@ -112,13 +112,13 @@ export function warningAnchor(
   viewport: Viewport,
   hit: Hit | null,
 ): Rect | null {
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   if (hit?.kind === 'atom') {
     const atom = doc.atoms[hit.id];
     if (!atom) return null;
     const ink = scene.extents[`atom:${hit.id}`];
     if (ink !== undefined) return growRect(screenRect(viewport, ink), WARNING_LABEL_GROW);
-    const c = bluToScreen(viewport, atom, bl);
+    const c = bluToScreen(viewport, atom, ppb);
     return {
       x: c.x - WARNING_CIRCLE_R,
       y: c.y - WARNING_CIRCLE_R,
@@ -131,8 +131,8 @@ export function warningAnchor(
     const a1 = bond && doc.atoms[bond.a1];
     const a2 = bond && doc.atoms[bond.a2];
     if (!a1 || !a2) return null;
-    const p = bluToScreen(viewport, a1, bl);
-    const q = bluToScreen(viewport, a2, bl);
+    const p = bluToScreen(viewport, a1, ppb);
+    const q = bluToScreen(viewport, a2, ppb);
     return {
       x: Math.min(p.x, q.x),
       y: Math.min(p.y, q.y),

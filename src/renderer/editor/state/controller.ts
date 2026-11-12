@@ -334,13 +334,13 @@ export function createEditorController(options: EditorOptions): EditorController
     refreshHover() {
       const state = store.getState();
       if (pointerAt === null || state.gesture !== null) return;
-      const bondLength = derive.committed(current(state.history)).scene.style.bondLength;
+      const ptPerBlu = derive.committed(current(state.history)).scene.style.ptPerBlu;
       store.dispatch({
         type: 'hover-move',
         event: {
           type: 'move',
           screen: pointerAt,
-          p: screenToBlu(state.viewport, pointerAt, bondLength),
+          p: screenToBlu(state.viewport, pointerAt, ptPerBlu),
           button: 0,
           mods: { shift: false, alt: false, ctrl: false },
         },

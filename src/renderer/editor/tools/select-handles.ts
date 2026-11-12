@@ -2,7 +2,6 @@
 // frame centre, moving one end of an arrow, re-anchoring one end of a curved arrow, bending it.
 // Each previews the changed document every frame and commits once on release.
 import {
-  resolveAnchor,
   rotation,
   transformItems,
   updateObject,
@@ -18,6 +17,8 @@ import { selectionCentre } from '../model/frame';
 import { distance, snapAngle, type Point } from '../model/geometry';
 import type { HandleHit } from '../model/handles';
 import { hitTest, hoverFilter } from '../model/hit-test';
+import { anchorBlu } from '../model/structural-offsets';
+import type { Scene } from '@core/svg-render';
 import type { GestureState } from '../state/editor-state';
 import type { ToolContext, ToolStep } from './tool';
 
@@ -70,8 +71,8 @@ export function startHandle(hit: HandleHit, ev: PointerEv, ctx: ToolContext): Ha
   if (hit.handle === 'rotate') {
     const centre = selectionCentre(ctx.doc, ctx.scene, ctx.selection);
     if (centre === null) return null;
-    const bl = ctx.scene.style.bondLength;
-    const c = { x: centre.x / bl, y: centre.y / bl };
+    const ppb = ctx.scene.style.ptPerBlu;
+    const c = { x: centre.x / ppb, y: centre.y / ppb };
     return {
       kind: 'select-rotate',
       centre: c,
@@ -121,11 +122,11 @@ function anchorAt(ev: PointerEv, ctx: ToolContext): Anchor {
 }
 
 /** S6: the bend that puts the curve's middle at the pointer (d off the chord, left normal). */
-function bendFor(doc: Doc, id: ObjectId, p: Point): number | null {
+function bendFor(doc: Doc, style: Scene['style'], id: ObjectId, p: Point): number | null {
   const obj = doc.objects[id];
   if (obj?.type !== 'curved-arrow') return null;
-  const from = resolveAnchor(doc, obj.from);
-  const to = resolveAnchor(doc, obj.to);
+  const from = anchorBlu(doc, obj.from, style);
+  const to = anchorBlu(doc, obj.to, style);
   const chord = distance(from, to);
   if (chord === 0) return null;
   const u = { x: (to.x - from.x) / chord, y: (to.y - from.y) / chord };
@@ -146,7 +147,7 @@ function arrowPoint(g: ArrowEnd, ev: PointerEv, ctx: ToolContext): Point | null 
 /** The change for `ev`, or null when there is none to make. */
 function curvePatch(g: CurveHandle, ev: PointerEv, ctx: ToolContext): ObjectPatch | null {
   if (g.handle === 'curve-bend') {
-    const bend = bendFor(ctx.doc, g.id, ev.p);
+    const bend = bendFor(ctx.doc, ctx.scene.style, g.id, ev.p);
     return bend === null ? null : { bend };
   }
   return g.handle === 'curve-from' ? { from: anchorAt(ev, ctx) } : { to: anchorAt(ev, ctx) };

@@ -84,8 +84,8 @@ export function useCanvasInput(
     const toEvent = (type: 'down' | 'move' | 'up', e: PointerEvent): CanvasEvent => {
       const state = store.getState();
       const rect = el.getBoundingClientRect();
-      const bondLength = derive.committed(current(state.history)).scene.style.bondLength;
-      return canvasEvent(type, e, { x: rect.left, y: rect.top }, state.viewport, bondLength);
+      const ptPerBlu = derive.committed(current(state.history)).scene.style.ptPerBlu;
+      return canvasEvent(type, e, { x: rect.left, y: rect.top }, state.viewport, ptPerBlu);
     };
     const moves = createCoalescer<CanvasEvent>(
       nextFrame,

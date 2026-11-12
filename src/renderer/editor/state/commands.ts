@@ -7,7 +7,6 @@ import {
   insert,
   scaling,
   transformItems,
-  translation,
   updateAtom,
   type Doc,
   type Selection,
@@ -20,6 +19,7 @@ import { selectionCentre } from '../model/frame';
 import type { Point } from '../model/geometry';
 import type { HoverEdit } from '../model/keymap';
 import { isEmptySelection, selectAll } from '../model/selection';
+import { moveItems } from '../model/structural-offsets';
 import { reveal, screenToBlu } from '../model/viewport';
 import { EMPTY_SELECTION, type EditorState, type Hit } from './editor-state';
 import { openLabelEditor } from './editing';
@@ -115,7 +115,7 @@ export function nudgeSelection(
   return commit(state, {
     type: 'commit',
     label: 'Nudge',
-    recipe: (doc) => transformItems(doc, sel, translation(dx, dy)),
+    recipe: (doc) => moveItems(doc, sel, dx, dy),
     coalesceKey: 'nudge',
   });
 }
@@ -138,8 +138,8 @@ export function flipSelection(
   const { scene } = derive.committed(doc);
   const centre = selectionCentre(doc, scene, state.selection);
   if (centre === null) return state;
-  const bl = scene.style.bondLength;
-  const c = { x: centre.x / bl, y: centre.y / bl };
+  const ppb = scene.style.ptPerBlu;
+  const c = { x: centre.x / ppb, y: centre.y / ppb };
   const m = axis === 'h' ? scaling(-1, 1, c) : scaling(1, -1, c);
   const sel = state.selection;
   return commit(state, {
@@ -236,7 +236,7 @@ export function pasteFragment(
   const source = sub === undefined && at === null ? state.clipboardSource : null;
   const target =
     source === null
-      ? screenToBlu(state.viewport, at ?? { x: size.w / 2, y: size.h / 2 }, scene.style.bondLength)
+      ? screenToBlu(state.viewport, at ?? { x: size.w / 2, y: size.h / 2 }, scene.style.ptPerBlu)
       : { x: source.centre.x + source.next, y: source.centre.y + source.next };
   const done = commit(state, {
     type: 'commit',

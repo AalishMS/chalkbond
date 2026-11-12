@@ -21,7 +21,7 @@ export function screenRect(v: Viewport, ink: Rect): Rect {
  * including the atoms of selected bonds; null when it has none.
  */
 export function selectionInk(doc: Doc, scene: Scene, sel: Selection): Rect | null {
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   const { atoms, objects } = expandSelection(doc, sel);
   let ink: Rect | null = null;
   const add = (r: Rect | undefined): void => {
@@ -29,7 +29,7 @@ export function selectionInk(doc: Doc, scene: Scene, sel: Selection): Rect | nul
   };
   for (const id of atoms) {
     const atom = doc.atoms[id];
-    if (atom) add({ x: atom.x * bl, y: atom.y * bl, w: 0, h: 0 });
+    if (atom) add({ x: atom.x * ppb, y: atom.y * ppb, w: 0, h: 0 });
     add(scene.extents[`atom:${id}`]);
   }
   for (const id of sel.bonds) add(scene.extents[`bond:${id}`]);

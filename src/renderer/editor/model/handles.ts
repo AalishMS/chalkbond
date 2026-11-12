@@ -1,13 +1,14 @@
 // Handles of the selection (SPEC-editor.md "Canvas appearance", S5, S6, H2): the rotate handle
 // above the frame, the end handles of a selected arrow, the end and bend handles of a selected
 // curved arrow. Pure data in screen px; handles are tested before every other hit (H2).
-import { resolveAnchor, type Doc, type Selection } from '@core/doc-model';
+import type { Doc, Selection } from '@core/doc-model';
 import { curveControls, type Scene } from '@core/svg-render';
 import { frameRect, selectionInk } from './frame';
 import { cubicAt, distance, type Point } from './geometry';
 import type { Hit } from './hit-test';
 import type { OverlayShape } from './overlay';
 import { isEmptySelection } from './selection';
+import { anchorBlu } from './structural-offsets';
 import { bluToScreen, type Viewport } from './viewport';
 
 /** The rotate handle: circle radius, distance of its centre above the frame, stem length. */
@@ -45,7 +46,7 @@ export function selectionHandles(
   offset: Point = { x: 0, y: 0 },
 ): Handle[] {
   if (isEmptySelection(sel)) return [];
-  const bl = scene.style.bondLength;
+  const ppb = scene.style.ptPerBlu;
   const handles: Handle[] = [];
   const ink = selectionInk(doc, scene, sel);
   if (ink !== null) {
@@ -68,7 +69,7 @@ export function selectionHandles(
     const obj = doc.objects[id];
     if (obj?.type === 'arrow') {
       const square = (handle: 'arrow-from' | 'arrow-to', p: Point): Handle => {
-        const at = shift(bluToScreen(v, p, bl));
+        const at = shift(bluToScreen(v, p, ppb));
         return {
           hit: { kind: 'handle', handle, id },
           at,
@@ -84,8 +85,8 @@ export function selectionHandles(
       };
       handles.push(square('arrow-from', obj.from), square('arrow-to', obj.to));
     } else if (obj?.type === 'curved-arrow') {
-      const from = shift(bluToScreen(v, resolveAnchor(doc, obj.from), bl));
-      const to = shift(bluToScreen(v, resolveAnchor(doc, obj.to), bl));
+      const from = shift(bluToScreen(v, anchorBlu(doc, obj.from, scene.style), ppb));
+      const to = shift(bluToScreen(v, anchorBlu(doc, obj.to, scene.style), ppb));
       // The drawn curve's t = 0.5 point (svg-render `curveControls`): its apex.
       const [p0, c1, c2, p3] = curveControls(from, to, obj.bend);
       const mid = cubicAt(p0, c1, c2, p3, 0.5);

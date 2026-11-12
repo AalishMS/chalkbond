@@ -211,12 +211,12 @@ export function buildScheme(
   const plan = planTidy(scratch, EMPTY_SELECTION);
   const final = plan === null ? scratch : applyTidy(scratch, plan);
   const finalScene = render(final);
-  const k = 1 / finalScene.style.bondLength;
+  const k = 1 / finalScene.style.ptPerBlu;
   const ink = finalScene.bounds === null ? null : scaled(finalScene.bounds, k);
 
   let shift: Point = { x: 0, y: 0 };
   if (ink !== null) {
-    const bounds = scene.bounds === null ? null : scaled(scene.bounds, 1 / scene.style.bondLength);
+    const bounds = scene.bounds === null ? null : scaled(scene.bounds, 1 / scene.style.ptPerBlu);
     shift =
       bounds === null || Object.keys(doc.atoms).length + Object.keys(doc.objects).length === 0
         ? { x: canvasCentre.x - rectCenter(ink).x, y: canvasCentre.y - rectCenter(ink).y }

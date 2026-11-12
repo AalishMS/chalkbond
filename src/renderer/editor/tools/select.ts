@@ -1,13 +1,7 @@
 // The Select tool (SPEC-editor.md S1-S4, H4): a state machine over canvas events. Idle -> press ->
 // click (selection by S1), marquee (H4) or move (S2-S4). A move previews without touching history
 // and commits once on release.
-import {
-  mergeAtoms,
-  transformItems,
-  translation,
-  type AtomId,
-  type Selection,
-} from '@core/doc-model';
+import { mergeAtoms, type AtomId, type Selection } from '@core/doc-model';
 import type { CanvasEvent } from '../model/canvas-event';
 import { distance, type Point, type Rect } from '../model/geometry';
 import { marqueeSelection, mergeTarget } from '../model/hit-test';
@@ -19,6 +13,7 @@ import {
   unionSelection,
 } from '../model/selection';
 import { snapMove } from '../model/snap';
+import { moveItems } from '../model/structural-offsets';
 import { bluToScreen, PX_PER_PT } from '../model/viewport';
 import {
   EMPTY_SELECTION,
@@ -142,10 +137,10 @@ function startMove(g: Press, ctx: ToolContext): Move | null {
 
 /** The move for the pointer at `ev`: Shift constraint, merge target or centre snapping. */
 function dragged(g: Move, ev: PointerEv, ctx: ToolContext): Move {
-  const bl = ctx.scene.style.bondLength;
+  const ppb = ctx.scene.style.ptPerBlu;
   const pxPerPt = ctx.viewport.zoom * PX_PER_PT;
-  let dx = (ev.p.x - g.start.x) * bl;
-  let dy = (ev.p.y - g.start.y) * bl;
+  let dx = (ev.p.x - g.start.x) * ppb;
+  let dy = (ev.p.y - g.start.y) * ppb;
   const lock = { x: false, y: false };
   if (ev.mods.shift) {
     if (Math.abs(dx) >= Math.abs(dy)) {
@@ -160,7 +155,7 @@ function dragged(g: Move, ev: PointerEv, ctx: ToolContext): Move {
   const atom = g.single === null ? undefined : ctx.doc.atoms[g.single];
   if (g.single !== null && atom !== undefined) {
     // The atom itself, not the pointer, is what lands on the target.
-    const at = bluToScreen(ctx.viewport, { x: atom.x + dx / bl, y: atom.y + dy / bl }, bl);
+    const at = bluToScreen(ctx.viewport, { x: atom.x + dx / ppb, y: atom.y + dy / ppb }, ppb);
     target = mergeTarget(ctx.doc, ctx.viewport, at, new Set([g.single]));
   }
   let guides: GestureOverlay['guides'] = [];
@@ -170,23 +165,23 @@ function dragged(g: Move, ev: PointerEv, ctx: ToolContext): Move {
     dy = snapped.d.y;
     guides = snapped.guides;
   }
-  return { ...g, overlay: { guides }, delta: { x: dx / bl, y: dy / bl }, target };
+  return { ...g, overlay: { guides }, delta: { x: dx / ppb, y: dy / ppb }, target };
 }
 
 /** The preview of a move: a translation of the moving parts, or the moved document. */
 function movePreview(g: Move, ctx: ToolContext): Preview {
-  const bl = ctx.scene.style.bondLength;
+  const ppb = ctx.scene.style.ptPerBlu;
   const merge = g.target === null ? {} : { mergeTarget: g.target };
   if (g.plan.translate) {
     return {
       doc: ctx.doc,
       added: new Set<string>(),
-      translate: { keys: g.plan.keys, dx: g.delta.x * bl, dy: g.delta.y * bl },
+      translate: { keys: g.plan.keys, dx: g.delta.x * ppb, dy: g.delta.y * ppb },
       ...merge,
     };
   }
   return {
-    doc: transformItems(ctx.doc, g.moving, translation(g.delta.x, g.delta.y)),
+    doc: moveItems(ctx.doc, g.moving, g.delta.x, g.delta.y),
     added: new Set<string>(),
     ...merge,
   };
@@ -230,21 +225,20 @@ function up(g: Exclude<SelectGesture, HandleGesture>, ev: PointerEv, ctx: ToolCo
   if (g.kind === 'select-move') {
     const { delta, target, single, moving } = dragged(g, ev, ctx);
     if (delta.x === 0 && delta.y === 0) return { gesture: null, preview: null };
-    const shift = translation(delta.x, delta.y);
     if (target !== null && single !== null) {
       return {
         gesture: null,
         preview: null,
         commit: {
           label: 'Join atoms',
-          recipe: (doc) => mergeAtoms(transformItems(doc, moving, shift), target, single),
+          recipe: (doc) => mergeAtoms(moveItems(doc, moving, delta.x, delta.y), target, single),
         },
       };
     }
     return {
       gesture: null,
       preview: null,
-      commit: { label: 'Move', recipe: (doc) => transformItems(doc, moving, shift) },
+      commit: { label: 'Move', recipe: (doc) => moveItems(doc, moving, delta.x, delta.y) },
     };
   }
   const marquee = g.overlay.marquee;
