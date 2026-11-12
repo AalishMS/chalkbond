@@ -184,8 +184,8 @@ function statesSheet() {
       note: 'rail: name, number key, letter key, help (R50)',
     }),
     tip('Show structural formula', {
-      help: 'Writes every carbon with its hydrogens (CH3, CH2, CH) in the whole drawing.',
-      note: 'R51 formula switch (a key chip only if U7 is approved)',
+      help: 'Writes the carbons outside rings with their hydrogens (CH3, CH2, CH); bonds become twice as long.',
+      note: 'R51 formula switch, help text R53 U15 (a key chip only if U7 is approved)',
     }),
     tip('Cyclopentane', { note: 'option: name only' }),
     tip('Flip horizontal', { help: 'Select a molecule first.', note: 'disabled: says why' }),

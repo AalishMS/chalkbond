@@ -3,7 +3,8 @@
 Shared stack, commands, style and boundaries: see `SPEC.md`. Module map: `CAPABILITY-MAP.md`.
 Depends on: `doc-model`, `chem-core` (public entries only). Status: **approved 2026-11-10**
 (reviewed and approved by the delegated reviewer; see "Decisions"). Amended 2026-11-12 for the
-structural formula display (Decision 15; its layout is open, question S1).
+structural formula display (Decision 15; its layout was question S1, answered 2026-11-12 by
+Decision 16: bonds twice as long, rings drawn as in skeletal mode).
 
 Audience: a teacher of grade 11–12 chemistry in Nepal (NEB curriculum) building slides and
 worksheets on Windows with Office 2021. Output must look like a textbook figure with no manual
@@ -43,7 +44,7 @@ are bundled or loaded); any DOM, canvas or network use; a memoising renderer (de
 
 | Fact | Consequence |
 |---|---|
-| Coordinates are BLU, y down, bond length 1.0 (`SPEC-doc-model.md`) | SVG user unit = **point (pt)**: `pt = BLU × bondLength`. No y flip |
+| Coordinates are BLU, y down, bond length 1.0 (`SPEC-doc-model.md`) | SVG user unit = **point (pt)**: `pt = BLU × ptPerBlu`, where `ptPerBlu` = `bondLength` in skeletal mode and `2 × bondLength` in structural mode (Decision 16). No y flip |
 | `bounds(doc, sel)` is the geometric hull and excludes label and stroke extents | This module computes the real ink extents (below); `bounds` is used only in tests as a lower bound |
 | Rings are not stored; aromaticity is `order: 1.5`. chem-core exports no ring information (`Perception` has per-atom/bond flags and fragments only) and its `BondInfo.aromatic` follows OCL, not the stored order | Ring finding for circles and double-bond side is done here (`rings.ts`) on stored bond orders, as `SPEC-doc-model.md` prescribes |
 | `perceive(doc)` gives `AtomInfo.implicitH` (= `explicitH` when set); abbreviation and unknown-label atoms report `implicitH: 0` | Atom text is built from `implicitH`; no chemistry here |
@@ -81,7 +82,9 @@ render. `fontFamily` is sanitised (see "Output safety").
 
 Everything else is **derived** from the scale fields, so a style change rescales the figure
 consistently. Let `L` = bondLength, `fs` = fontSize. Initial values; a tuning change regenerates
-the goldens and is reviewed visually:
+the goldens and is reviewed visually. Every derived value is computed from the style's `L` (preset
+and overrides) and **never** from `ptPerBlu`, so structural mode (Decision 16) leaves all of them
+exactly as in skeletal mode:
 
 | Derived (`ResolvedStyle`) | Value |
 |---|---|
@@ -100,6 +103,7 @@ the goldens and is reviewed visually:
 | `subScale`, `subShift` (down), `supShift` (up) | `0.7`, `0.2·fs`, `0.4·fs` (fs of the parent run) |
 | `satelliteScale` (sign and number text), `satelliteGap` (box to nearest satellite ink), `dotRadius`, `pairSeparation` (centre to centre of a lone pair's dots) | `0.7`, `0.10·fs`, `0.05·fs`, `0.24·fs` |
 | `capHeight`, `lineHeight` (multi-line text) | `0.716·fs`, `1.2·fs` |
+| `ptPerBlu` (2026-11-12, Decision 16: pt per BLU, the only factor that turns coordinates into pt) | `L` when `style.formula` is absent (it **is** the `bondLength` value, so skeletal arithmetic is unchanged); `STRUCTURAL_SCALE · L` = `2·L` when `style.formula` is `'structural'` |
 
 The default colour of anything without a `color` is the constant `INK = '#000000'`.
 
@@ -168,7 +172,41 @@ Resolved during review (they replace the draft's open questions); binding until 
     (question S1, for the orchestrator):** the existing rules do **not** give a legible picture
     for the reference molecules (bonds vanish, labels collide); the numbers and the options are in
     "Structural formula display" below. No layout rule for structural mode is specified until S1
-    is answered; the F2 rendering tasks wait for it.
+    is answered; the F2 rendering tasks wait for it. **(2026-11-12: S1 is answered by Decision 16,
+    which supersedes the sentence of (b) on aromatic ring carbons: ring carbons are not written.)**
+
+16. **Structural layout: bonds twice as long, rings as they are (2026-11-12; answers S1).** The
+    owner was shown option A (hydrogens above or below the carbon, same size) and option B
+    (ordinary labels, bonds twice as long) as prototype pictures and answered: *"Definately B. Also
+    no need for the benzene rings to show its structural formula. Rings can stay how they are."*
+    Decided:
+    (a) **Factor (orchestrator's model of option B):** a structural document is drawn as if every
+    coordinate were multiplied by exactly `STRUCTURAL_SCALE` = 2, with the style unchanged, in
+    both presets and with overrides. Everything that comes from coordinates doubles (bond
+    lengths, ring size and with it the aromatic circle, arrow lengths, positions and
+    coordinate-stored sizes of objects, distances between molecules); everything that comes from
+    the style stays exactly as in skeletal mode (font size, line width, double-bond gap, wedge
+    width, hash spacing, label padding and bond trimming, arrowhead size, charge and lone-pair
+    offsets …). The stored coordinates never change; switching back gives the skeletal picture
+    byte for byte. The quantity-by-quantity classification is in "Structural formula display",
+    "The layout (Decision 16)". The factor reaches the renderer only through `ptPerBlu` (Style,
+    Public API).
+    (b) **Rings (orchestrator's reading of "Rings can stay how they are"):** in structural mode a
+    carbon that is a member of any ring (aromatic or not, any size) is **not** written; ring atoms
+    and ring bonds are drawn exactly by the skeletal rules (aromatic circle, Kekulé bonds, hetero
+    atoms in rings as today). A carbon outside a ring is written even when it is attached to a
+    ring (the methyl of toluene is `CH3`). Ring membership: "Ring atoms" below.
+    (c) **Written carbons use the existing label rules unchanged** (Decision 15 (b): the rules for
+    an atom that shows its symbol).
+    (d) **Consequences, decided with the answer:** the clipboard bitmap margin stays `0.25 ×` the
+    preset's `bondLength` (not doubled; `SPEC-clipboard-export.md` R10, R12); pictures of a
+    structural drawing are correspondingly larger and "1 unit = 1 pt, true size" holds for the
+    doubled drawing; performance budgets, coverage thresholds and `numRuns` are unchanged; no
+    existing golden changes.
+    (e) **No separate visual decision was needed:** every quantity in the code is settled by (a)
+    or by "as in skeletal mode" (the classification table). Two coordinate-stored offsets that
+    point at style-sized ink follow (a) literally and give a visible side effect; they are open
+    question **S2** ("Structural formula display").
 
 ## Data Model
 
@@ -178,7 +216,8 @@ import type {
 } from '../doc-model';
 import type { Perception } from '../chem-core';
 
-type ResolvedStyle = Readonly<StyleSettings & { /* every derived value in the table above */ }>;
+type ResolvedStyle = Readonly<StyleSettings & { /* every derived value in the table above,
+                                     including ptPerBlu (Decision 16) */ }>;
 
 type ItemKey =                       // stable across renders of the same ids
   | `atom:${string}` | `bond:${string}` | `obj:${string}`
@@ -223,9 +262,10 @@ All functions are pure (no clock, no randomness, no I/O, no DOM) and never mutat
 ```ts
 // style
 STYLE_PRESETS: Readonly<Record<StylePreset, StyleSettings>>
-resolveStyle(style: Doc['style']): ResolvedStyle
-bluToPt(p: Point, style: ResolvedStyle): Point         // × bondLength
-ptToBlu(p: Point, style: ResolvedStyle): Point
+STRUCTURAL_SCALE: 2                                     // Decision 16
+resolveStyle(style: Doc['style']): ResolvedStyle       // reads style.formula only for ptPerBlu
+bluToPt(p: Point, style: ResolvedStyle): Point         // × ptPerBlu (= bondLength when skeletal)
+ptToBlu(p: Point, style: ResolvedStyle): Point         // ÷ ptPerBlu
 
 // rendering
 render(doc: Doc, opts?: RenderOptions): Scene
@@ -237,11 +277,16 @@ renderSvg(doc: Doc, opts?: RenderOptions & SvgOptions): SvgDocument
 curveControls(from: Point, to: Point, bend: number): [Point, Point, Point, Point]
     // the cubic control points of a curved arrow's whole (unclipped) curve between its resolved
     // anchors, in any one unit; for |bend| ≤ 0.5 the degree-raised quadratic (same point set)
-isLabelled(atom: Atom, bondCount: number, formula?: 'skeletal' | 'structural'): boolean
+isLabelled(atom: Atom, bondCount: number, formula?: 'skeletal' | 'structural',
+           inRing?: boolean): boolean
     // whether the atom is drawn with a text label (so curved-arrow ends are clipped out of it):
     // element ≠ C, a custom label, an isotope, explicit H, or no bonds; and, with formula
-    // 'structural' (Decision 15; default 'skeletal' = the behaviour before F2), every carbon.
-    // Callers pass `doc.style.formula ?? 'skeletal'`
+    // 'structural' (Decision 15; default 'skeletal' = the behaviour before F2), every carbon
+    // that is not a ring atom (Decision 16; inRing default false). Callers pass
+    // `doc.style.formula ?? 'skeletal'` and `ringAtoms(doc).has(atom.id)`
+ringAtoms(doc: Doc): ReadonlySet<AtomId>
+    // Decision 16: the atoms that lie on a cycle of the bond graph ("Ring atoms"); pure, any
+    // ring size, independent of bond orders and of the 3–8 ring finder of `rings.ts`
 ```
 
 `render` of an empty document (or an empty subset) gives `parts: []`, `bounds: null`; `toSvg`
@@ -279,8 +324,9 @@ defaults (`fill="none"`, round caps and joins); every filled element and `<text>
 
 An atom is **labelled** (its text is drawn) when: element ≠ `C`; or it has a `label`; or
 `isotope` or `explicitH` is set; or it has no bonds; or the document's `style.formula` is
-`'structural'` (Decision 15: then every carbon is labelled, so the skeleton vertex does not
-occur). Otherwise it is a skeleton vertex: no letter, no H. Charge, radical, lone pairs, partial
+`'structural'` and the atom is not a ring atom (Decisions 15, 16: then every carbon outside a ring
+is labelled; ring carbons stay skeleton vertices exactly as in skeletal mode). Otherwise it is a
+skeleton vertex: no letter, no H. Charge, radical, lone pairs, partial
 charge and `number` never force a letter.
 
 | Part | Rule |
@@ -406,9 +452,13 @@ Text positions `at` are in BLU and become pt. Text, caption, callout and bracket
 | `bracket` | `square`: two sides at `rect.x` and `rect.x + w`, spanning `y … y+h`, serifs `bracketSerif` (clamped to `w/2`) pointing inwards. `round`: arcs bulging outwards by `roundBulge`. `curly`: four-cubic braces, tip depth `curlyDepth`. `corner` runs: left edge `cornerGap` right of the right bracket; baseline at `y+h`, unless the first run is `sup`, then cap top at `y` |
 | `shape` | `rect` / `ellipse` of `rect`; `fill` with `fillOpacity` (clamped to 0–1, `fill-opacity`), `stroke` at `lineWidth`; neither → nothing drawn. Painted in the beneath layer |
 
-## Structural formula display (Decision 15; layout open, question S1)
+## Structural formula display (Decision 15; layout decided by Decision 16)
 
-**What is decided** is in Decision 15. **What is open** is the layout: the orchestrator required
+**S1 is answered (2026-11-12, Decision 16):** option 1 below at ×2, with ring carbons not
+written. The analysis and options that follow are kept as the history of the question; the rules
+are in "The layout (Decision 16)" at the end of this section.
+
+**What is decided** is in Decision 15. **What was open** is the layout: the orchestrator required
 an analysis with numbers before any rendering rule is written, and a stop if the existing rules
 are not legible. They are not.
 
@@ -467,6 +517,149 @@ are barely visible.
 rules (the risk the orchestrator named) and keeps the zig-zag and the angles; its cost, a larger
 picture, is visible and easy to explain. Option 2 is the better-looking one if the owner prefers
 the drawing to keep its size; it needs a new rule and a visual review.
+
+(History ends here. The prototype that drew the owner's comparison pictures doubled
+`labelMargin` together with the bond; its ×2 numbers above (15.45 pt and 3.48 pt) are therefore
+not the numbers of Decision 16, which keeps `labelMargin` from the style. Recomputed below.)
+
+### The layout (Decision 16)
+
+**How the factor reaches the renderer (requirement on the public surface).**
+
+1. `resolveStyle(doc.style)` returns `ptPerBlu`: exactly the `bondLength` value when
+   `style.formula` is absent, `STRUCTURAL_SCALE × bondLength` (2·L) when it is `'structural'`.
+   Every other field of `ResolvedStyle`, `bondLength` included, is computed exactly as before
+   from the preset and overrides; none of them reads `formula` or `ptPerBlu`.
+2. `bluToPt` and `ptToBlu` multiply and divide by `ptPerBlu`. Every coordinate the renderer turns
+   into pt (atom positions, ring centroids, arrow ends, anchors and their offsets, text and callout
+   positions, bracket and shape rectangles) goes through `bluToPt`; no rendering code multiplies
+   by `bondLength` to place anything. `bondLength` is read only for the derived decoration sizes
+   and the double-bond shortening cap (classification below).
+3. Labelling: `render` labels an atom by `isLabelled(atom, n, formula, ringAtoms(doc).has(id))`.
+4. With `formula` absent the arithmetic is literally today's (`x × bondLength`), so every pre-F2
+   golden is byte-identical. Multiplying by 2 is exact in binary floating point, so `x × (2·L)`
+   equals `(2·x) × L` bit for bit. This gives the **Decision 16 oracle** the tests use: the
+   structural render of `d` has exactly the same parts (keys and bytes), extents and bounds as
+   the skeletal render of `d₂`, where `d₂` is `d` with every coordinate doubled (atom `x`, `y`;
+   arrow `from`, `to`; plus, text and callout `at`; bracket and shape `rect`, all four numbers;
+   point anchors `p`; atom-anchor `offset`) and every written carbon (a carbon outside a ring
+   without `label`, `isotope` or `explicitH`) given `explicitH` = its perceived `implicitH`, and
+   `style.formula` removed. `bend` and a bond anchor's `t` are ratios and do not change.
+5. `Scene.style.ptPerBlu` is what the editor uses to convert between BLU and pt
+   (`SPEC-editor.md` R53); `bondLength` stays the style's value everywhere (viewport defaults,
+   the clipboard margin).
+
+**Classification of every quantity that depends on the bond length or the preset** (read from
+`style.ts`, `render.ts`, `bonds.ts`, `circles.ts`, `rings.ts`, `atom-label.ts`, `satellites.ts`,
+`arrows.ts`, `curved-arrow.ts`, `objects.ts`, `text-objects.ts`, `brackets.ts`, `shapes.ts` on
+2026-11-12). "Doubles" = follows the coordinates (×2 through `ptPerBlu`); "stays" = from the
+style, identical to skeletal mode. The renderer gets every skeletal value from `ResolvedStyle`
+exactly as today, because the derived values are computed from the style's `bondLength`, which
+is not doubled.
+
+| Quantity | Comes from | Structural |
+|---|---|---|
+| Atom positions, bond lengths | `bluToPt` | doubles (angles unchanged) |
+| Ring centroid; aromatic circle radius = `circleRatio` × mean distance from the centroid to the bond midpoints | `bluToPt` of BLU points | doubles (ratio 0.65 unchanged) |
+| Double-bond side (smallest ring's centroid, neighbour counts) | geometry | same decision (same directions) |
+| `doubleGap` (`doubleBondSpacing·L`); second-line shortening `doubleGap·cot(φ/2)` | style | stays |
+| Cap on a second line's total shortening, `0.5·L` | `0.5 * style.bondLength` | stays (the style's `0.5·L`: each corner looks exactly as in skeletal mode) |
+| 1.5 bond dashes `dashOn`, `dashOff` | style | stays (about twice as many dashes on the longer bond) |
+| Wedge wide end `wedgeWide`; bold width `boldWidth` | style | stays (a wedge is twice as long and as wide at its end) |
+| `hashSpacing`; hash count `max(3, round(len / hashSpacing))`; hash half-length `wedgeWide/2 · t` | style; `len` from geometry | spacing and widths stay; the count about doubles |
+| `wavyAmplitude`, `wavyLength`; half-wave count `2·round(len / wavyLength / 2)` | style; `len` from geometry | amplitude and wave length stay; the count about doubles |
+| `lineWidth` of every stroke | style | stays |
+| Label text, `fontSize`, `subScale`, `subShift`, `supShift`, `capHeight`, anchor, text and ink boxes | style, `font-metrics.ts` | stays (the box follows the atom position) |
+| `labelMargin` (bond trimming at a label) | style | stays |
+| Satellites: `satelliteGap`, `dotRadius`, `pairSeparation`, `satelliteScale`, slide and crowding steps; the charge's shift beside an E dot | style | stays |
+| Arrow `from`, `to`; shaft length | `bluToPt` | doubles |
+| `arrowHeadLength`, `arrowHeadHalfWidth`, `equilibriumGap`, `noGoHalf` | style | stays |
+| Head-length clamp `0.5 ×` (resonance `0.25 ×`) the arrow length | geometry | rule unchanged (the length doubles) |
+| `plusArm` | style | stays (the position doubles) |
+| Curved-arrow anchors (atom position, bond `t`, point `p`); chord; control points from `bend × |c|` | `bluToPt`; ratios | doubles (same shape, twice the size) |
+| Curved-arrow atom-anchor `offset` (BLU) | `bluToPt(resolveAnchor(…))` | doubles (Decision 16 (a) literally; open question S2) |
+| `curvedGap`; curved head clamp `0.5 ×` the clipped chord | style; geometry | stays; rule unchanged |
+| Text and callout `at`; `lineHeight`; alignment | `bluToPt`; style | position doubles; the text's own layout stays |
+| A condition text's offset from its arrow (stored in its `at`) | `bluToPt` | doubles (literally; open question S2) |
+| `captionGap` (`0.5·L`); caption centred under the target atoms' ink | style; ink | gap stays; follows the doubled atoms |
+| `calloutPad`; the leader line | style; geometry | pad stays; the line follows `at` and the anchor |
+| Bracket `rect`; `bracketSerif` (clamped to `w/2`), `roundBulge`, `curlyDepth`, `cornerGap` | `bluToPt`; style | rect doubles; the rest stays |
+| Shape `rect`; its stroke | `bluToPt`; style | rect doubles; stroke stays |
+| Extents, `bounds` | the drawn ink | follow what is drawn (no extra rule) |
+| `toSvg` `padding` | the caller | the caller's value (`clipboard-export` passes `0.25 × bondLength`, not doubled) |
+
+**Ring atoms (Decision 16 (b)).** `ringAtoms(doc)` is computed in svg-render from the document's
+bond graph alone (doc-model types; chem-core exports no ring information, see "Facts relied on"),
+independent of bond orders, of aromaticity and of the 3–8 ring finder of `rings.ts` (which keeps
+its own job: circles and the double-bond side). **Definition:** an atom is a ring atom when it
+lies on a cycle of the graph whose vertices are the document's atoms and whose edges are its
+bonds (a bond with `a1 = a2` or a missing atom is ignored); equivalently, it is an end of a bond
+that is not a bridge. Consequences, each a unit test: in fused rings (naphthalene, decalin) every
+atom is a ring atom, the shared ones included; a spiro atom is a ring atom; a macrocycle of any
+size (cyclodecane, an 18-ring) counts, although `rings.ts` draws no circle there; a chain carbon
+between two rings (the `CH2` of diphenylmethane) and a carbon attached to a ring (the methyl of
+toluene) are not ring atoms; a ring carbon with a `label`, `isotope` or `explicitH` is labelled,
+because the skeletal rule already labels it (structural mode adds nothing); a charged or radical
+ring carbon without those stays a skeleton vertex with its sign or dot as a satellite (Decision 1),
+exactly as in skeletal mode; hetero atoms in rings are drawn as today. Membership is decided on
+the **whole** document, also for a subset render ("Subsets"), so a ring carbon stays unwritten in
+a pasted fragment that holds only part of its ring. Computation: one iterative bridge-finding pass
+(no recursion), atoms and neighbours visited in ascending id order; the result is a set, so the
+order cannot change the output.
+
+**Legibility criteria (svg-render SC14; computed 2026-11-12 by W12 with the committed renderer
+and `font-metrics.ts`).** Method: the committed renderer, run on each reference molecule through
+the Decision 16 oracle (coordinates doubled, written carbons given `explicitH` = `implicitH`,
+style unchanged). "Visible" = the longest straight segment of the bond's drawn part (for a double
+bond, its main line); "gap" = the smallest distance between the cap-height boxes of the glyph
+runs of two labels (each `<text>`: its advance width, `0.716 × font-size` above its baseline). The
+same script, run at ×1, reproduces the table of the history above exactly. Molecules: ethanol,
+`alkene-trans`, toluene, acetic acid (the golden inputs), benzene (doc-model fixture), propane,
+isobutane (both geometries), methylcyclohexane, cyclohexanol and ethyl ethanoate (zig-zags at
+1.0 BLU, 30°).
+
+| Preset | Shortest visible bond with a labelled end | Smallest gap between two labels |
+|---|---|---|
+| Slides (`ptPerBlu` 80 pt) | **29.33 pt**, 0.37 of the bond (`CH2`–`CH3` in ethanol, propane, ethyl ethanoate) | **31.05 pt** (the same pair) |
+| Handout (`ptPerBlu` 28.8 pt) | **8.47 pt**, 0.29 of the bond (the same bonds) | **8.43 pt** (the same pair) |
+
+Other bonds with a labelled end: Slides 38.93 pt (isobutane's down-right `CH`–`CH3`) to 67.01 pt
+(ring to `CH3` or `OH` in methylcyclohexane and cyclohexanol; toluene's methyl 64.91 pt); Handout
+12.48 pt to 23.64 pt. Ring bonds have no labelled end and are the skeletal bonds at twice the
+length. **Thresholds**, asserted for every structural golden scene in both presets: **(L1)** every
+bond with at least one labelled end draws a straight segment of at least `0.25 × ptPerBlu`
+(Slides 20 pt, Handout 7.2 pt); **(L2)** no two labels' cap-height glyph boxes, of any two atoms of
+the scene, overlap or come closer than `0.5 × fontSize` (Slides 12 pt, Handout 5 pt); **(L3)** no
+bond is skipped as "bond has no visible length". The worst measured cases clear L1 by 9.3 pt and
+1.3 pt and L2 by 19.1 pt and 3.4 pt.
+
+**Structural golden scenes** (both presets, `<scene>-structural.<preset>.svg`, frozen v2 inputs
+`__golden__/inputs/<scene>-structural.chalk` with `"formula": "structural"`; new files only):
+`ethanol`, `propane`, `isobutane`, `alkene-trans` (trans-but-2-ene), `toluene`,
+`methylcyclohexane`, `cyclohexanol`, `acetic-acid` (drawn with atoms), `esterification` (the row
+ethanoic acid + ethanol → ethyl ethanoate + water: four structures, two pluses and one forward
+arrow laid out by the editor's TR2–TR5 rules in structural mode, no condition text, see S2), and
+`benzene` (rings unchanged: no letters, everything twice as large), `acetic-acid-co2h` (the `CO2H`
+label as in skeletal mode), `carbocation` and `methyl-radical` (a written carbon with its charge or
+dot, by the existing label and satellite rules). Inputs reuse the existing inputs' coordinates
+where one exists (only `style.formula` added) and otherwise are built once by a script from
+chem-core's parsers, then frozen.
+
+**Open question S2 (for the orchestrator; Decision 16 (a) applies literally until it is
+answered).** Two stored offsets are coordinates, so they double, but they point at ink whose size
+comes from the style: (i) a curved arrow's atom-anchor `offset` (an arrow that starts at a lone
+pair): the dots stay where they are and the tail moves out to twice the offset, about 12 pt
+beyond the dots at Slides (offset ≈ 0.3 BLU) and 4 pt at Handout; (ii) a condition text's `at`,
+placed by the editor's T3 with an ink gap of `0.2 × bondLength`: placed in skeletal mode, its gap
+to the arrow grows in structural mode from 8 pt to about 33 pt (Handout 2.9 pt to 12.7 pt); placed
+in structural mode (Tidy there), it overlaps the arrow by about 4 pt after switching back to
+skeletal. Options: **A** keep the literal rule (simplest; Tidy again after switching);
+**B** draw an atom-anchor `offset` and a condition text's offset from its arrow's midpoint at
+style scale (`× bondLength`, not `× ptPerBlu`), the editor inverting the same mapping where it
+places or moves them (skeletal bytes unchanged; touches editor T3, S3, S6 and hit-testing);
+**C** A plus re-placing attached texts by T3 on every formula switch (changes coordinates, against
+editor R51; not recommended). W12 recommends **B**. No structural golden scene depends on the
+answer (none has a lone-pair arrow or a condition text).
 
 ## Text measurement (no DOM)
 
@@ -589,7 +782,9 @@ The editor owns the canvas; this module supplies the following and nothing more.
    bond whose markup changed because a neighbour moved). `parts.map(p => p.svg).join('\n')`
    inside a translated `<g>` is exactly the export content.
 2. **Coordinates.** Parts are in document pt (`bluToPt`); no zoom. The editor applies pan/zoom
-   with its own `transform` on a wrapping element. Pointer → BLU is `ptToBlu`.
+   with its own `transform` on a wrapping element. Pointer → BLU is `ptToBlu`. The factor is
+   `Scene.style.ptPerBlu` (Decision 16: `2 × bondLength` in structural mode), never
+   `style.bondLength`, which stays the style's value for decoration sizes and viewport defaults.
 3. **Extents.** `extents[key]` gives each item's ink box for hit-testing, marquee selection and
    selection halos. Finer hit-testing (distance to a bond segment, arrow path) is the editor's,
    using document geometry.
@@ -606,6 +801,7 @@ The editor owns the canvas; this module supplies the following and nothing more.
 | Module | Change | Needed? |
 |---|---|---|
 | `doc-model` (2026-11-12, F2) | Schema v2 `style.formula?: 'structural'` and `setStyle`'s `formula` patch (`SPEC-doc-model.md` D1). `StyleSettings` is unchanged | Yes (doc-model task first) |
+| `editor` (2026-11-12, Decision 16) | Convert BLU ↔ pt with `scene.style.ptPerBlu` (or `resolveStyle(doc.style).ptPerBlu`) wherever it does so today with `bondLength`; pass `ringAtoms(doc).has(id)` to `isLabelled` (`SPEC-editor.md` R53) | Yes (editor task N6) |
 | `doc-model` | `StyleSettings` **stays** in `doc-model/types.ts` and in the `.chalk` schema (moving it would make `doc-model` import a downstream module, which the capability map forbids). Its five fields are final: **no code, schema or `schemaVersion` change.** Docs only: "(provisional; svg-render's spec owns it)" in `SPEC-doc-model.md` becomes "(final; meaning defined in `SPEC-svg-render.md`)" (done at approval); the "Provisional field set" JSDoc in `types.ts` gets the same wording in the first implementation task | Docs only |
 | `chem-core` | None. Consumes `perceive`, `Perception`, `AtomInfo.implicitH`, `ABBREVIATIONS` (display-table coverage test) | No |
 | Tooling | ESLint block for `src/core/svg-render/**` banning the non-deterministic APIs above (the boundary entry already exists); `.gitattributes` golden line; `scripts/build-font-metrics.mjs`; `scripts/golden-sheet.mjs` + `npm run golden:sheet` (reads the committed `__golden__/*.svg`, writes `out/golden-sheet.html`, not committed; optional `--png <file>` screenshots it with Playwright's Chromium into `<file>-slides.png` and `<file>-journal.png`, numbered when a preset needs several pages; goldens are named `<scene>.<preset>.svg`, every scene in both presets); `.prettierignore` entry for `font-metrics.ts`; the calibration test under `e2e/` | Yes |
@@ -653,7 +849,9 @@ The editor owns the canvas; this module supplies the following and nothing more.
   4. subset: each part of `render(doc, { only })` equals the same-key part of `render(doc)`;
   5. bounds: `bounds` equals the union of `extents`; contains the pt image of doc-model's
      `bounds` of the drawn items (the selection of keys that produced parts); translating the
-     whole doc by `(dx,dy)` BLU translates `bounds` by `(dx,dy)·L` with the same size (±0.002 pt);
+     whole doc by `(dx,dy)` BLU translates `bounds` by `(dx,dy)·ptPerBlu` (= `·L` when skeletal,
+     Decision 16) with the same size (±0.002 pt); the pt image of doc-model's `bounds` uses
+     `ptPerBlu` too;
   6. uniform scale: scaling `bondLength`, `lineWidth`, `fontSize` by a power of two `k` scales
      `bounds` by `k` (±0.005·k pt);
   7. safety: runs, labels, `number` and `metadata` drawn from arbitrary Unicode (including
@@ -669,19 +867,32 @@ The editor owns the canvas; this module supplies the following and nothing more.
 - **Perf** (separate perf project like the other modules, skipped under `--coverage`; `perception`
   supplied, since `perceive` has its own budget): slide-sized scheme (4 molecules ≈ 40 atoms, 3
   arrows, 6 texts) `render` < 8 ms median; 500-atom single fragment + 20 objects < 40 ms median.
-  Decision 15 adds the same two scenes in structural mode with the **same** budgets; a miss is a
-  request for `createRenderer` (spec first), never a looser budget.
+  Decision 15 adds the same two scenes in structural mode with the **same** budgets (Decision 16
+  adds `ringAtoms`, one linear pass, inside those budgets); a miss is a request for
+  `createRenderer` (spec first), never a looser budget.
 - **Structural mode (Decision 15)** — tests that do not depend on S1: every existing golden is
   byte-identical (no `-u`); `render` of a doc and of the same doc with `style.formula` absent are
   equal (skeletal is the absence of the key); `isLabelled(atom, n, 'structural')` is true for
   every carbon and `isLabelled(atom, n)` equals the pre-F2 rule; in structural mode atoms with a
   `label` and non-carbon atoms give parts byte-identical to skeletal mode **unless a neighbour's
-  label changes their trimming** (bond parts may change, atom parts may not); properties 1–7 run
-  with `style.formula` drawn from the generator too (`numRuns` unchanged). New golden scenes,
-  `<scene>-structural.<preset>.svg` for ethanol, propane, isobutane, but-2-ene, benzene,
-  toluene, acetic acid (atoms), acetic acid with `CO2H`, a carbocation and a methyl radical, are
-  written **after S1 is answered** and reviewed on the golden sheet; never by re-recording an
-  existing golden.
+  label changes their trimming** (bond parts may change, atom parts may not; this holds while
+  only Decision 15 is implemented, task N2; from task N3a on, with every coordinate doubled, the
+  Decision 16 oracle replaces it: the same parts are byte-identical to those of the skeletal
+  render of `d₂`); properties 1–7 run
+  with `style.formula` drawn from the generator too (`numRuns` unchanged). New golden scenes:
+  see "The layout (Decision 16)"; reviewed on the golden sheet; never by re-recording an existing
+  golden.
+- **Structural layout (Decision 16):** `resolveStyle` gives `ptPerBlu` = `bondLength` (skeletal,
+  same number) and `2 × bondLength` (structural, both presets, with an override) and every other
+  field identical in both modes; `bluToPt`/`ptToBlu` use it; `ringAtoms` for every case listed
+  under "Ring atoms" (benzene, toluene's methyl not a member, naphthalene, decalin, spiro, an
+  18-ring, diphenylmethane, a self-bond and a bond to a missing atom ignored, empty doc);
+  `isLabelled(c, n, 'structural', true)` is false for a plain ring carbon and true with a label,
+  isotope or explicit H; the **Decision 16 oracle** (item 4 of "The layout") for every golden
+  input, doc-model's fixtures and as a property over generated documents (`numRuns` as property 2);
+  a subset render of part of a ring keeps the ring carbons unwritten; the legibility thresholds
+  L1–L3 for every structural golden scene in both presets; the structural goldens pass the
+  ink-scan bounds check (SC5).
 - **Coverage:** `src/core/svg-render` line coverage ≥ 90 % (`SPEC.md` target; the generated metrics
   table and `__golden__/` excluded).
 
@@ -717,12 +928,14 @@ The editor owns the canvas; this module supplies the following and nothing more.
 13. Text measurement: the table test passes; the calibration e2e test agrees with real Arial
     within 1 % on Windows.
 14. (F2, 2026-11-12; automated) Skeletal output unchanged: every golden committed before F2 passes
-    byte for byte with no `-u`. Structural mode: the tests listed under Testing pass; once S1 is
-    answered, its golden scenes exist, pass the ink-scan bounds check (SC5), and in both presets
-    **no bond between two labelled atoms vanishes and no two bonded labels' glyph boxes overlap**
-    for the seven reference molecules of "Structural formula display" (a unit test measures it as
-    the analysis did); the visual look is a human check on the golden sheet and in Office
-    (`docs/windows-checklist.md` "Re-checks after the 2026-11-12 feature set").
+    byte for byte with no `-u`. Structural mode (Decisions 15, 16): the tests listed under Testing
+    pass; the structural golden scenes of "The layout (Decision 16)" exist in both presets, pass
+    the ink-scan bounds check (SC5) and the legibility thresholds **L1** (every bond with a
+    labelled end keeps a segment ≥ `0.25 × ptPerBlu`: 20 pt Slides, 7.2 pt Handout), **L2** (no two
+    labels' cap-height glyph boxes closer than `0.5 × fontSize`: 12 pt, 5 pt) and **L3** (no bond
+    skipped); the Decision 16 oracle holds; ring carbons are never written; the visual look is a
+    human check on the golden sheet and in Office (`docs/windows-checklist.md` "Re-checks after
+    the 2026-11-12 feature set").
 
 ## Boundaries (module-specific)
 
