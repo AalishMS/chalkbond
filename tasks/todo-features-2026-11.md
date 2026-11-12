@@ -618,9 +618,9 @@ day New copies that style; no RED is expected for it and the report says so). Sh
 (mock-up A12).
 
 **Acceptance criteria:**
-- [ ] shortcuts and menu tests pass; the dialog shows digit then letter
-- [ ] files e2e passes (v1/v2, New skeletal); every e2e file ends with `blockedRequests === 0`
-- [ ] `src/renderer/app/model` and `src/main/model` ≥ 90 % lines; shot compared with `out/mockups-shell/A12-shortcuts.png`
+- [x] shortcuts and menu tests pass; the dialog shows digit then letter
+- [x] files e2e passes (v1/v2, New skeletal); every e2e file ends with `blockedRequests === 0`
+- [x] `src/renderer/app/model` and `src/main/model` ≥ 90 % lines (checked in the final coverage run); shot compared with `out/mockups-shell/A12-shortcuts.png`
 
 **Verification:** `npx vitest run --project unit src/renderer/app src/main`, `npm run test:e2e -- e2e/app-files.spec.ts`, `npm run shots -- N10`, then `npm run check`
 

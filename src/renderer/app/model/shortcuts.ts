@@ -1,6 +1,6 @@
 // The Keyboard shortcuts dialog's content (SPEC-app-shell.md "Keyboard shortcuts dialog"; A12):
-// exactly the rows of `docs/mockups/shell/pages.mjs` SHORTCUTS. `shortcuts.test.ts` checks each
-// row against the editor keymap, the editor's K3 keys and the host's K1.
+// exactly the rows of `docs/mockups/shell/pages.mjs` SHORTCUTS (R27: a tool's digit, then its
+// letter). `shortcuts.test.ts` checks each row against the editor keymap, the editor's K3 keys and the host's K1.
 
 export interface ShortcutRow {
   /** Alternatives shown side by side; a combination is written `Ctrl+Shift+L`. */
@@ -19,16 +19,16 @@ export const SHORTCUTS: readonly ShortcutSection[] = [
   {
     section: 'Tools',
     rows: [
-      row(['V'], 'Select'),
-      row(['E'], 'Erase'),
-      row(['B'], 'Bond'),
-      row(['Z'], 'Chain'),
-      row(['R'], 'Ring'),
-      row(['L'], 'Atom'),
-      row(['A'], 'Arrow'),
-      row(['+'], 'Plus'),
-      row(['M'], 'Curved arrow'),
-      row(['T'], 'Text'),
+      row(['1', 'V'], 'Select'),
+      row(['2', 'E'], 'Erase'),
+      row(['3', 'B'], 'Bond'),
+      row(['4', 'Z'], 'Chain'),
+      row(['5', 'R'], 'Ring'),
+      row(['6', 'L'], 'Atom'),
+      row(['7', 'A'], 'Arrow'),
+      row(['8', '+'], 'Plus'),
+      row(['9', 'M'], 'Curved arrow'),
+      row(['0', 'T'], 'Text'),
     ],
   },
   {

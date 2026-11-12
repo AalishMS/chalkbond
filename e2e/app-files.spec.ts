@@ -4,9 +4,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import { serialize } from '../src/core/doc-model';
+import { addAtom, serialize, setStyle } from '../src/core/doc-model';
 import { loadScheme } from './fixtures';
-import { expectNoNetwork, openApp, readDocument } from './harness';
+import { expectNoNetwork, loadDocument, openApp, readDocument } from './harness';
 
 type DialogLog = { method: string; options: Record<string, unknown> }[];
 const dialogLog = async (app: ElectronApplication): Promise<DialogLog> =>
@@ -230,6 +230,67 @@ test('a save into a deleted folder: the folder-gone box, the title keeps its *',
     });
     await expect.poll(() => title(app)).toBe('*Untitled - Chalkbond');
     expect(serialize(await readDocument(page))).toBe(before);
+  } finally {
+    await app.close();
+  }
+});
+
+test('N10: a structural drawing is saved as v2 and reopens structural; a skeletal one is v1', async () => {
+  const structural = join(dir, 'structural.chalk');
+  const skeletal = join(dir, 'skeletal.chalk');
+  const { app, page } = await openApp({
+    launch: {
+      dialogs: [
+        { canceled: false, filePath: structural }, // Ctrl+S on the structural drawing
+        { canceled: false, filePath: skeletal }, // Ctrl+S on the skeletal one
+        { canceled: false, filePaths: [structural] }, // Ctrl+O
+      ],
+    },
+  });
+  try {
+    const base = await readDocument(page);
+    const [withAtom] = addAtom(base, { element: 'C', x: 0, y: 0 });
+    const structuralDoc = setStyle(withAtom, { formula: 'structural' });
+    await loadDocument(page, structuralDoc);
+    await expect.poll(async () => (await readDocument(page)).style.formula).toBe('structural');
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+s');
+    await expect.poll(() => title(app)).toBe('structural - Chalkbond');
+    const text = readFileSync(structural, 'utf8');
+    expect(text).toContain('"schemaVersion": 2');
+    expect(text).toContain('"formula": "structural"');
+    expect(text).toBe(serialize(structuralDoc));
+
+    await loadDocument(page, setStyle(withAtom, { formula: 'skeletal' }));
+    await expect.poll(async () => (await readDocument(page)).style.formula).toBeUndefined();
+    await page.keyboard.press('Control+s');
+    await expect.poll(() => title(app)).toBe('skeletal - Chalkbond');
+    const v1 = readFileSync(skeletal, 'utf8');
+    expect(v1).toContain('"schemaVersion": 1');
+    expect(v1).not.toContain('formula');
+
+    await page.keyboard.press('Control+o');
+    await expect.poll(() => title(app)).toBe('structural - Chalkbond');
+    expect((await readDocument(page)).style.formula).toBe('structural');
+    await expectNoNetwork(app);
+  } finally {
+    await app.close();
+  }
+});
+
+test('N10 R28: File > New with a saved structural drawing open gives a skeletal empty drawing', async () => {
+  const { app, page } = await openApp({ launch: { dialogs: [] } });
+  try {
+    await loadDocument(page, setStyle(await readDocument(page), { formula: 'structural' }));
+    await expect.poll(async () => (await readDocument(page)).style.formula).toBe('structural');
+    await page.getByTestId('canvas').focus();
+    await page.keyboard.press('Control+n'); // the drawing is clean (no edit since load): no prompt
+    await expect.poll(() => title(app)).toBe('Untitled - Chalkbond');
+    const fresh = await readDocument(page);
+    expect(Object.keys(fresh.atoms)).toHaveLength(0);
+    expect('formula' in fresh.style).toBe(false);
+    expect((await dialogLog(app)).length).toBe(0);
+    await expectNoNetwork(app);
   } finally {
     await app.close();
   }

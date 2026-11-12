@@ -218,6 +218,19 @@ describe('F1 New', () => {
     expect(r.titles.at(-1)).toBe('Untitled - Chalkbond');
   });
 
+  it('R28: New from a structural drawing gives a skeletal one (the formula is not remembered)', async () => {
+    const structural = setStyle(setStyle(emptyDoc(NOW), { preset: 'journal' }), {
+      formula: 'structural',
+    });
+    const r = rig({}, structural);
+    r.controller.markSaved();
+    await r.flows.newDrawing();
+    const loaded = r.controller.load.mock.calls[0]?.[0];
+    expect(loaded?.style.formula).toBeUndefined();
+    expect(loaded && 'formula' in loaded.style).toBe(false);
+    expect(loaded).toEqual(setStyle(emptyDoc(NOW), { preset: 'slides' }));
+  });
+
   it("dirty + Cancel keeps the drawing; Don't save replaces it", async () => {
     const r = rig({ answers: ['cancel', 'discard'] });
     r.controller.edit();

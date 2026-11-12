@@ -49,7 +49,11 @@ describe('ShortcutsDialog markup', () => {
     );
     // A lone + is a key, not a joiner.
     expect(html).toContain(
-      '<span class="keys"><kbd class="key">+</kbd></span><span class="sc-meaning">Plus</span>',
+      '<span class="keys"><kbd class="key">8</kbd><kbd class="key">+</kbd></span><span class="sc-meaning">Plus</span>',
+    );
+    // R27: a tool row shows the digit, then the letter.
+    expect(html).toContain(
+      '<span class="keys"><kbd class="key">1</kbd><kbd class="key">V</kbd></span><span class="sc-meaning">Select</span>',
     );
   });
 

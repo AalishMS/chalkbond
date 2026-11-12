@@ -60,16 +60,16 @@ describe('SHORTCUTS', () => {
     );
     expect(rows).toEqual({
       Tools: [
-        ['V', 'Select'],
-        ['E', 'Erase'],
-        ['B', 'Bond'],
-        ['Z', 'Chain'],
-        ['R', 'Ring'],
-        ['L', 'Atom'],
-        ['A', 'Arrow'],
-        ['+', 'Plus'],
-        ['M', 'Curved arrow'],
-        ['T', 'Text'],
+        ['1 V', 'Select'],
+        ['2 E', 'Erase'],
+        ['3 B', 'Bond'],
+        ['4 Z', 'Chain'],
+        ['5 R', 'Ring'],
+        ['6 L', 'Atom'],
+        ['7 A', 'Arrow'],
+        ['8 +', 'Plus'],
+        ['9 M', 'Curved arrow'],
+        ['0 T', 'Text'],
       ],
       'Pointing at an atom': [
         ['C H N O S P F I', 'Change it to that element'],
@@ -180,6 +180,28 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
         type: 'select-tool',
         tool: tools[row.meaning],
       });
+    expect(keys('Tools').map(([k]) => k)).toEqual([
+      '1',
+      'V',
+      '2',
+      'E',
+      '3',
+      'B',
+      '4',
+      'Z',
+      '5',
+      'R',
+      '6',
+      'L',
+      '7',
+      'A',
+      '8',
+      '+',
+      '9',
+      'M',
+      '0',
+      'T',
+    ]);
   });
 
   it('Pointing at an atom: hover keys on an atom', () => {
@@ -297,6 +319,7 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
 
   it('every editor K1, K2 and tool key and every host K1 key is listed at least once', () => {
     const listed = new Set(SHORTCUTS.flatMap((s) => s.rows.flatMap((r) => r.keys)));
+    const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
     const editorK1 = [
       'Ctrl+Z',
       'Ctrl+Y',
@@ -340,7 +363,7 @@ describe('every row is a key the app has (editor keymap, K3 or host K1)', () => 
       'Enter',
       'W',
     ];
-    const toolKeys = ['V', 'E', 'B', 'Z', 'R', 'L', 'A', '+', 'M', 'T'];
+    const toolKeys = ['V', 'E', 'B', 'Z', 'R', 'L', 'A', '+', 'M', 'T', ...digits];
     const editorK3 = [
       'Enter',
       'Shift+Enter',
