@@ -338,3 +338,78 @@ describe('A14 N3 recovery:write and N4 recovery:clear', () => {
     bad(schemas.clearRecoverySchema, null);
   });
 });
+
+describe('TB9 I11 session:read-tab, N7 session:write-tab, N8 session:index', () => {
+  const MIB64 = 64 * 1024 * 1024;
+  it('I11 takes a uuid tab id only (SEC8: no other part of a store path)', () => {
+    ok(schemas.readTabRecordSchema, { tabId: ID });
+    for (const v of [
+      {},
+      { tabId: '../index' },
+      { tabId: `${ID}/../x` },
+      { tabId: 'C:\\x' },
+      { tabId: ID, path: '/x' },
+      { tabId: 3 },
+      null,
+    ])
+      bad(schemas.readTabRecordSchema, v);
+  });
+
+  it('N7 takes a uuid and text starting "{" of up to 64 MiB of UTF-8', () => {
+    ok(schemas.writeTabRecordSchema, { tabId: ID, text: '{}' });
+    ok(schemas.writeTabRecordSchema, { tabId: ID, text: `{${'x'.repeat(MIB64 - 1)}` });
+    for (const v of [
+      { tabId: ID },
+      { tabId: ID, text: '' },
+      { tabId: ID, text: '[1]' },
+      { tabId: ID, text: ' {}' },
+      { tabId: ID, text: `{${'x'.repeat(MIB64)}` },
+      { tabId: ID, text: `{${'é'.repeat(MIB64 / 2)}` },
+      { tabId: '../x', text: '{}' },
+      { tabId: ID, text: '{}', name: 'a' },
+    ])
+      bad(schemas.writeTabRecordSchema, v);
+  });
+
+  const TAB = {
+    id: ID,
+    kind: 'chalk',
+    name: 'esterification (your changes)',
+    view: { zoom: 1.5, centre: { x: -3, y: 4.25 } },
+    unsaved: false,
+    warning: true,
+  };
+  const OTHER = '6a1f0c2d-3b4e-4f5a-9b6c-7d8e9f0a1b2c';
+  const update = { tabs: [TAB], active: ID, discarded: [OTHER] };
+
+  it('N8 takes the renderer fields of each tab, the active id and the discarded ids', () => {
+    ok(schemas.sessionIndexSchema, update);
+    ok(schemas.sessionIndexSchema, { ...update, tabs: [{ ...TAB, view: null }], discarded: [] });
+    for (const kind of ['untitled', 'picture', 'kept']) {
+      ok(schemas.sessionIndexSchema, { ...update, tabs: [{ ...TAB, kind }] });
+    }
+  });
+
+  it('N8 rejects a path or hash from the renderer, bad ids, names and views', () => {
+    for (const v of [
+      { ...update, tabs: [{ ...TAB, path: '/x/a.chalk' }] },
+      { ...update, tabs: [{ ...TAB, fileHash: 'a'.repeat(64) }] },
+      { ...update, tabs: [{ ...TAB, written: 'a'.repeat(64) }] },
+      { ...update, tabs: [{ ...TAB, writing: 'a'.repeat(64) }] },
+      { ...update, tabs: [{ ...TAB, id: 'tab-1' }] },
+      { ...update, tabs: [{ ...TAB, kind: 'recovered' }] },
+      { ...update, tabs: [{ ...TAB, name: 'C:\\x\\a.chalk' }] },
+      { ...update, tabs: [{ ...TAB, name: 'x'.repeat(256) }] },
+      { ...update, tabs: [{ ...TAB, view: { zoom: Number.NaN, centre: { x: 0, y: 0 } } }] },
+      { ...update, tabs: [{ ...TAB, view: { zoom: 1, centre: { x: Infinity, y: 0 } } }] },
+      { ...update, tabs: [{ ...TAB, view: { zoom: 1 } }] },
+      { ...update, tabs: [{ ...TAB, unsaved: 'yes' }] },
+      { ...update, active: 'x' },
+      { ...update, discarded: ['x'] },
+      { ...update, extra: 1 },
+      { tabs: [TAB], active: ID },
+      null,
+    ])
+      bad(schemas.sessionIndexSchema, v);
+  });
+});

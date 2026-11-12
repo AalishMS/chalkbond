@@ -185,3 +185,37 @@ export const clearRecoverySchema = z.object({}).strict();
 // A15 (SPEC-app-shell.md I3, SEC14): the one request that carries a path, sent by the preload
 // from `webUtils.getPathForFile` (`''` for a JS-made File, which main answers `unsupported`).
 export const fileDroppedSchema = z.object({ path: z.string().max(4096) }).strict();
+
+// TB9 (SPEC-app-shell.md I11, N7, N8; SS2-SS4, SEC8, SEC9): a tab id is a uuid (the only part of a
+// store path the renderer names); a record is text main checks only for its `{` signature and its
+// size (at most 64 MiB of UTF-8); the index update carries no path and no hash (R8, N8).
+const maxRecordBytes = 64 * 1024 * 1024;
+const tabId = z.uuid();
+export const readTabRecordSchema = z.object({ tabId }).strict();
+export const writeTabRecordSchema = z
+  .object({
+    tabId,
+    text: z
+      .string()
+      .max(maxRecordBytes)
+      .startsWith('{')
+      .refine((text) => Buffer.byteLength(text, 'utf8') <= maxRecordBytes),
+  })
+  .strict();
+const finite = z.number().refine(Number.isFinite);
+const sessionTabSchema = z
+  .object({
+    id: tabId,
+    kind: z.enum(['chalk', 'untitled', 'picture', 'kept']),
+    name: baseName,
+    view: z
+      .object({ zoom: finite, centre: z.object({ x: finite, y: finite }).strict() })
+      .strict()
+      .nullable(),
+    unsaved: z.boolean(),
+    warning: z.boolean(),
+  })
+  .strict();
+export const sessionIndexSchema = z
+  .object({ tabs: z.array(sessionTabSchema), active: tabId, discarded: z.array(tabId) })
+  .strict();

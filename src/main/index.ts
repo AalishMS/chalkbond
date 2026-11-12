@@ -32,6 +32,8 @@ import { fileArg, testFlags } from './model/args';
 import { kindOfPath } from './model/file-refs';
 import { guardClose, installQuitFlush } from './lifecycle';
 import { createRecovery } from './recovery';
+import { createSessionStore } from './session-store';
+import { pathKeyOf } from './model/tab-registry';
 import { createRecent } from './model/recent';
 import { createOpenRequests } from './model/open-requests';
 
@@ -59,6 +61,9 @@ import {
   writeRecoverySchema,
   clearRecoverySchema,
   fileDroppedSchema,
+  readTabRecordSchema,
+  writeTabRecordSchema,
+  sessionIndexSchema,
 } from './ipc-schemas';
 import { createLogger } from './log';
 import { createAppMenu, createContextMenus } from './menu';
@@ -333,11 +338,31 @@ async function startApp(): Promise<void> {
   });
   ipc.on(CHANNELS.writeRecovery, writeRecoverySchema, (value) => void recovery.write(value));
   ipc.on(CHANNELS.clearRecovery, clearRecoverySchema, () => void recovery.clear());
-  // Quit waits for one flush of settings (a change younger than 500 ms, e.g. the window bounds)
-  // and of the recovery chain.
+  // Session store (SS2, SS5, SS11): userData/session, one ordered chain; the start-up read runs
+  // first on it (damaged files moved aside, discarded records deleted after a valid read). The old
+  // userData/recovery folder is neither read nor deleted by it. Nothing in the renderer calls these
+  // channels yet (TB20); I7 returns `restored()` from TB12 on.
+  const sessionStore = createSessionStore({
+    folder: join(app.getPath('userData'), 'session'),
+    log: (message) => log('session', message),
+    normalizePath: pathKeyOf(process.platform === 'win32'),
+  });
+  ipc.handle(CHANNELS.readTabRecord, readTabRecordSchema, ({ tabId }) =>
+    sessionStore.readRecord(tabId),
+  );
+  ipc.handle(CHANNELS.writeTabRecord, writeTabRecordSchema, (request) =>
+    sessionStore.writeRecord(request),
+  );
+  ipc.on(
+    CHANNELS.updateSessionIndex,
+    sessionIndexSchema,
+    (update) => void sessionStore.updateIndex(update),
+  );
+  // Quit waits for one flush of settings (a change younger than 500 ms, e.g. the window bounds),
+  // of the recovery chain and of the session chain.
   installQuitFlush(app, {
-    pending: () => store.pending() || recovery.busy(),
-    flush: () => Promise.all([store.flush(), recovery.idle()]),
+    pending: () => store.pending() || recovery.busy() || sessionStore.busy(),
+    flush: () => Promise.all([store.flush(), recovery.idle(), sessionStore.idle()]),
     log: (message) => log('quit', message),
   });
   // I7 with ST2: the renderer's view only (no path, folder, window or recent list). The recovery

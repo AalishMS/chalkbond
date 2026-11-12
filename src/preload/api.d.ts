@@ -14,7 +14,11 @@ import type {
   PrintPdfRequest,
   PrintPdfResponse,
   ReadFileResponse,
+  ReadTabRecordResponse,
+  SessionIndexUpdate,
   WriteFileResponse,
+  WriteTabRecordRequest,
+  WriteTabRecordResponse,
   MainEvent,
   RendererSettings,
   StartupResponse,
@@ -62,6 +66,15 @@ export interface ChalkbondApi {
   sessionFile(ref: FileRef | null): void;
   /** N5: the renderer agreed to close (F13); main closes the window. */
   closeOk(): void;
+  /** I11 (SS7): a tab's session record by tab id (main checks only size and signature). */
+  readTabRecord(tabId: string): Promise<ReadTabRecordResponse>;
+  /**
+   * N7 (SS4, SS6): writes a tab's record atomically on the session chain; a failure keeps the
+   * previous record and answers the problem (the tab is then unkept).
+   */
+  writeTabRecord(value: WriteTabRecordRequest): Promise<WriteTabRecordResponse>;
+  /** N8 (SS4): the renderer's part of the session index; main merges its paths and hashes. */
+  updateSessionIndex(value: SessionIndexUpdate): void;
   /** N3 (RC1): writes the recovery file (main queues it, RC6). */
   writeRecovery(value: WriteRecoveryRequest): void;
   /** N4 (RC2): removes the recovery file (queued after every earlier write). */

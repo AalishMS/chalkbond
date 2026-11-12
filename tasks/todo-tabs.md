@@ -454,10 +454,10 @@ touched; orphans reported; `discarded` ids' records deleted only after a validly
 `.chalk` or picture file is never touched; `ipc-schemas` for I11, N7, N8.
 
 **Acceptance criteria:**
-- [ ] All SS2, SS5 (order) and SS11 behaviours above, with SEC8's path rule tested
-- [ ] A write killed halfway (temp file left behind) does not damage the previous record; stale temp files are ignored at start
-- [ ] Preload key list and SEC5 test updated; `userData/session/` is the only folder written
-- [ ] `src/main/model` coverage >= 90 % lines (pure parts live in TB8's model)
+- [x] All SS2, SS5 (order) and SS11 behaviours above, with SEC8's path rule tested
+- [x] A write killed halfway (temp file left behind) does not damage the previous record; stale temp files are ignored at start
+- [x] Preload key list and SEC5 test updated; `userData/session/` is the only folder written
+- [x] `src/main/model` coverage >= 90 % lines (pure parts live in TB8's model)
 
 **Verification:** `npm test -- src/main src/preload`, then `npm run check`.
 

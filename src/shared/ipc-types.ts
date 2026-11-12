@@ -25,6 +25,9 @@ export interface IpcRequestMap {
   'session:update': SessionUpdate;
   'session:file': { ref: string | null };
   'app:close-ok': Record<string, never>;
+  'session:read-tab': ReadTabRecordRequest;
+  'session:write-tab': WriteTabRecordRequest;
+  'session:index': SessionIndexUpdate;
   'recovery:write': WriteRecoveryRequest;
   'recovery:clear': Record<string, never>;
 }
@@ -139,3 +142,44 @@ export interface WriteRecoveryRequest {
   /** A base name (no `/` or `\`). */
   name: string;
 }
+
+/** A tab's kind (SPEC-app-shell.md Terms): a file tab, new, opened from a picture, or kept. */
+export type SessionTabKind = 'chalk' | 'untitled' | 'picture' | 'kept';
+/** Zoom (0.25…8) and the drawing point at the canvas centre (BLU): the only stored view (SS3). */
+export interface SessionTabView {
+  zoom: number;
+  centre: { x: number; y: number };
+}
+/** N8 and I7: a tab as the renderer decides and sees it (no path, no hash; R8). */
+export interface SessionTab {
+  /** `crypto.randomUUID()` made by the renderer (T1). */
+  id: string;
+  kind: SessionTabKind;
+  /** The tab's label (T3): a base name of at most 255 characters. */
+  name: string;
+  view: SessionTabView | null;
+  /** T6's marker for a tab that is not loaded yet in a later run. */
+  unsaved: boolean;
+  warning: boolean;
+}
+/** N8 (SS4): the renderer's part of the index; main merges its own paths and hashes. */
+export interface SessionIndexUpdate {
+  tabs: SessionTab[];
+  active: string;
+  /** Closed tabs whose records main deletes later (SS3); ids are never reused. */
+  discarded: string[];
+}
+/** I11 (SS7): a tab's record by tab id. */
+export interface ReadTabRecordRequest {
+  tabId: string;
+}
+/** I11: the record's text (main checked only size and signature), or why not. */
+export type ReadTabRecordResponse =
+  { ok: true; text: string } | { ok: false; problem: 'missing' | 'unreadable' | 'too-large' };
+/** N7 (SS4): a tab's record text, at most 64 MiB of UTF-8, starting "{". */
+export interface WriteTabRecordRequest {
+  tabId: string;
+  text: string;
+}
+/** N7's answer (SS6): a failed write keeps the previous record and says why (the tab is unkept). */
+export type WriteTabRecordResponse = WriteFileResponse;
