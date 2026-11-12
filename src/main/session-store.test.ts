@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import {
   mkdir,
   mkdtemp,
+  realpath,
   readFile,
   readdir,
   rm,
@@ -16,7 +17,10 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { symlinkSync } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { realPathOf } from './files';
+import { openTarget } from './model/open-requests';
 import { createSessionStore, MAX_RECORD_BYTES, type SessionStoreOptions } from './session-store';
 
 const A = '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e';
@@ -1245,5 +1249,113 @@ describe('auto-save writer (TB10)', () => {
     await writeFile(ester, '{"secret":"benzene"}');
     await store.autoSave({ tabId: A, text: '{"secret":"toluene"}' });
     expect(logged.join('\n')).not.toMatch(/benzene|toluene/);
+  });
+});
+
+describe('opening a path bound to a tab (TB12: T17, R37)', () => {
+  const sha = (text: string): string => createHash('sha256').update(text).digest('hex');
+  const TEXT = '{"drawing":"ester"}';
+  const tab = (id: string, kind: 'chalk' | 'picture' | 'untitled' = 'chalk') => ({
+    id,
+    kind,
+    name: 'Esterification.chalk',
+    view: null,
+    unsaved: false,
+    warning: false,
+  });
+  let docs = '';
+  let ester = '';
+
+  beforeEach(async () => {
+    docs = join(root, 'docs');
+    ester = join(docs, 'Esterification.chalk');
+    await mkdir(docs, { recursive: true });
+    await writeFile(ester, TEXT);
+  });
+
+  /** A started store with tab A open on the real path of `ester`, bound as main's I12 binds it. */
+  async function boundStore() {
+    const store = make();
+    await store.restored();
+    await store.updateIndex({ tabs: [tab(A), tab(B, 'untitled')], active: A, discarded: [] });
+    const bound = await store.bind({
+      reason: 'open',
+      tabId: A,
+      path: await realPathOf(ester),
+      kind: 'chalk',
+      fileHash: sha(TEXT),
+      written: sha(TEXT),
+    });
+    expect(bound).toEqual({ ok: true });
+    return store;
+  }
+
+  /** What main does for a second launch, I1 or I3: the real path, the registry, else a ref. */
+  const target = (store: ReturnType<typeof make>, path: string, open: () => Promise<string>) =>
+    openTarget(path, { realPath: realPathOf, tabOf: (real) => store.tabOf(real), open });
+
+  it('a second launch with the path of tab A answers { focus: A } and opens (reads) nothing', async () => {
+    const store = await boundStore();
+    const open = vi.fn(() => Promise.resolve('ref'));
+    expect(await target(store, ester, open)).toEqual({ focus: A });
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('a differently-cased path, or one through a linked folder, is the same tab', async () => {
+    const store = await boundStore();
+    const open = vi.fn(() => Promise.resolve('ref'));
+    expect(await target(store, join(docs, 'ESTERIFICATION.CHALK'), open)).toEqual({ focus: A });
+    symlinkSync(docs, join(root, 'link'), 'junction');
+    expect(await target(store, join(root, 'link', 'Esterification.chalk'), open)).toEqual({
+      focus: A,
+    });
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('a path no open tab is bound to is opened; a closed tab keeps its binding but does not hold the file', async () => {
+    const store = await boundStore();
+    const open = vi.fn(() => Promise.resolve('ref'));
+    await writeFile(join(docs, 'other.chalk'), TEXT);
+    expect(await target(store, join(docs, 'other.chalk'), open)).toBe('ref');
+    await store.updateIndex({ tabs: [tab(B, 'untitled')], active: B, discarded: [A] });
+    expect(await target(store, ester, open)).toBe('ref');
+    expect(open).toHaveBeenCalledTimes(2);
+  });
+
+  it('a picture tab is bound to its picture', async () => {
+    const store = make();
+    await store.restored();
+    const picture = join(docs, 'Ester.png');
+    await writeFile(picture, 'png');
+    await store.updateIndex({ tabs: [tab(D, 'picture')], active: D, discarded: [] });
+    await store.bind({
+      reason: 'open',
+      tabId: D,
+      path: await realPathOf(picture),
+      kind: 'picture',
+      fileHash: null,
+      written: null,
+    });
+    expect(await store.tabOf(await realpath(picture))).toBe(D);
+    expect(await target(store, join(docs, 'ester.PNG'), () => Promise.resolve('ref'))).toEqual({
+      focus: D,
+    });
+  });
+
+  it('the lookup runs on the chain: a bind sent before it is seen', async () => {
+    const store = make();
+    await store.restored();
+    await store.updateIndex({ tabs: [tab(A)], active: A, discarded: [] });
+    const real = await realPathOf(ester);
+    const bound = store.bind({
+      reason: 'open',
+      tabId: A,
+      path: real,
+      kind: 'chalk',
+      fileHash: sha(TEXT),
+      written: sha(TEXT),
+    });
+    const looked = store.tabOf(real);
+    expect(await Promise.all([bound, looked])).toEqual([{ ok: true }, A]);
   });
 });

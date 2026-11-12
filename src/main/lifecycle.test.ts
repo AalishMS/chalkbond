@@ -61,6 +61,23 @@ describe('guardClose (F13, RC2, RC5)', () => {
     expect(closing).not.toHaveBeenCalled();
   });
 
+  it('R37: with a close queue the request goes to it (behind earlier opens), not straight to the renderer', () => {
+    const requestClose = vi.fn();
+    const make = () => {
+      const win = fakeWindow();
+      const ports = { closing: vi.fn(), recoveryIdle: () => Promise.resolve(), requestClose };
+      return { win, guard: guardClose(win, ports) };
+    };
+    const early = make();
+    expect(early.win.close().prevented).toBe(false); // before N1: closes at once, nothing queued
+    expect(requestClose).not.toHaveBeenCalled();
+    const ready = make();
+    ready.guard.rendererReady();
+    expect(ready.win.close().prevented).toBe(true);
+    expect(requestClose).toHaveBeenCalledTimes(1);
+    expect(ready.win.sent).toEqual([]);
+  });
+
   it('N5 closes only after the recovery chain is idle (the N4 sent before it is done), once', async () => {
     const { win, guard, closing, recoveryIdle, flush } = setup();
     guard.rendererReady();

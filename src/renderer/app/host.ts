@@ -265,8 +265,10 @@ export async function createWindowHost(
     if (modal()) return;
     try {
       const result = await main.openDroppedFile(file);
-      if (result.ok) await fileFlows.openRef(result.ref);
-      else await main.showFileError(result.problem, result.name || file.name);
+      // T17's `{ focus }` needs a bound tab, which nothing makes before TB17.
+      if (result.ok) {
+        if ('ref' in result) await fileFlows.openRef(result.ref);
+      } else await main.showFileError(result.problem, result.name || file.name);
     } catch (error) {
       main.logError(`Drop failed: ${String(error)}`);
     }

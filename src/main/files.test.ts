@@ -1,6 +1,6 @@
 // SEC7 reads, SEC8 + F9 atomic writes (SPEC-app-shell.md), in a real temp folder.
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
-import { open, writeFile } from 'node:fs/promises';
+import { open, realpath, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import {
   MAX_PICTURE_READ_BYTES,
   MAX_READ_BYTES,
   MAX_WRITE_BYTES,
+  realPathOf,
   sha256Hex,
 } from './files';
 import type { FileEntry } from './model/file-refs';
@@ -319,5 +320,27 @@ describe('inspect (I3 drop, SEC7)', () => {
       problem: 'too-large',
       name: 'big.pdf',
     });
+  });
+});
+
+describe('realPathOf (T17, R37: the path a binding is keyed by)', () => {
+  it('a file reached through a linked folder is its real path; a differently-cased name is the same file', async () => {
+    mkdirSync(join(dir, 'real'));
+    await writeFile(join(dir, 'real', 'Ethanol.chalk'), CHALK);
+    symlinkSync(join(dir, 'real'), join(dir, 'link'), 'junction');
+    const real = await realpath(join(dir, 'real', 'Ethanol.chalk'));
+    expect(await realPathOf(join(dir, 'link', 'Ethanol.chalk'))).toBe(real);
+    // Windows: the on-disk name; elsewhere (case-sensitive) the name is kept under the real folder.
+    expect(await realPathOf(join(dir, 'link', 'ETHANOL.chalk'))).toBe(
+      process.platform === 'win32'
+        ? real
+        : join(await realpath(join(dir, 'real')), 'ETHANOL.chalk'),
+    );
+  });
+
+  it('a missing file keeps its name under its real folder; a missing folder keeps the path', async () => {
+    expect(await realPathOf(join(dir, 'gone.chalk'))).toBe(join(await realpath(dir), 'gone.chalk'));
+    const nowhere = join(dir, 'no-folder', 'gone.chalk');
+    expect(await realPathOf(nowhere)).toBe(nowhere);
   });
 });

@@ -10,6 +10,8 @@ test('startup defaults, native title, minimum content, and isolated editor zoom'
         export: { format: 'png', pngDpi: 300, pngWhite: false },
       },
       recovery: null,
+      // SS7 (TB12): a first run restores no session.
+      session: null,
       open: null,
     });
     const title = () =>

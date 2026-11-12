@@ -16,6 +16,7 @@ import type {
   AskRequest,
   FileProblem,
   FileRef,
+  OpenTarget,
   ReadFileResponse,
   StartupResponse,
   WriteFileResponse,
@@ -25,7 +26,8 @@ import { displayName, fileSession, recoveredSession, saveAsName, type Session } 
 
 /** The preload functions the flows use (`window.chalkbond`). */
 export interface FlowMain {
-  chooseOpen(): Promise<FileRef | null>;
+  /** I1; `{ focus }` (a file open in a tab, T17) cannot happen before tabs are bound (TB17). */
+  chooseOpen(): Promise<OpenTarget | null>;
   readFile(ref: FileRef): Promise<ReadFileResponse>;
   chooseSave(format: 'chalk', suggestedName: string): Promise<FileRef | null>;
   writeFile(ref: FileRef, data: Uint8Array): Promise<WriteFileResponse>;
@@ -209,7 +211,9 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
    * wins); Recover keeps the recovered drawing and names the latest in N-A2; Delete, or a file that
    * does not parse, opens only the latest. Recovery tracking resumes once the offer is answered.
    */
-  async function startNow({ recovery, open }: Startup): Promise<void> {
+  async function startNow({ recovery, open: target }: Startup): Promise<void> {
+    // T17's `{ focus }` needs a bound tab, which no flow makes before TB17.
+    const open = target !== null && 'id' in target ? target : null;
     if (recovery === null) {
       if (open !== null) await openNow(open);
       return;
@@ -297,7 +301,7 @@ export function createFileFlows(o: FileFlowOptions): FileFlows {
         ? Promise.resolve()
         : run(async () => {
             const ref = await main.chooseOpen();
-            if (ref !== null) await openNow(ref);
+            if (ref !== null && 'id' in ref) await openNow(ref);
           }),
     openRef(ref) {
       if (offering) {

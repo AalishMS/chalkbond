@@ -5,7 +5,9 @@ export type MainEvent =
   | { type: 'command'; command: AppCommand }
   | { type: 'open'; ref: { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' } }
   | { type: 'close-requested' }
-  | { type: 'flush-recovery' };
+  | { type: 'flush-recovery' }
+  /** T17 (R37): a main-chosen open (F10, F11) of a path already open in this tab: focus it. */
+  | { type: 'focus-tab'; tabId: string };
 export interface IpcRequestMap {
   'clipboard:write': ClipboardWriteRequest;
   'clipboard:read': Record<string, never>;
@@ -37,6 +39,10 @@ export interface IpcRequestMap {
   'recovery:clear': Record<string, never>;
 }
 export type FileRef = { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' };
+/** T17 (R37): the path is open in this tab (main compared real paths); nothing was read. */
+export type FocusTab = { focus: string };
+/** I1, I7 `open`: a ref to open, or the tab that already holds the file. */
+export type OpenTarget = FileRef | FocusTab;
 export interface RendererSettings {
   newDrawingStyle: 'slides' | 'journal';
   export: { format: 'png' | 'svg' | 'pdf'; pngDpi: 150 | 300 | 600; pngWhite: boolean };
@@ -44,7 +50,15 @@ export interface RendererSettings {
 export interface StartupResponse {
   settings: RendererSettings;
   recovery: { text: string; name: string } | null;
-  open: FileRef | null;
+  /** SS7 (TB12): the restored tabs as the renderer may see them; null on a first run. */
+  session: StartupSession | null;
+  /** F11: the launch's file, opened after the session is restored (T17). */
+  open: OpenTarget | null;
+}
+/** SS7, I7: the session index without paths or hashes (R8). */
+export interface StartupSession {
+  tabs: SessionTab[];
+  active: string;
 }
 export interface SessionUpdate {
   title: string;
@@ -76,6 +90,8 @@ export interface FileDroppedRequest {
 /** I3: a ref for the dropped file, or why not (with its base name for the F14 box). */
 export type FileDroppedResponse =
   | { ok: true; ref: FileRef }
+  /** T17 (R37): the file is open in this tab; it was not checked or read. */
+  | { ok: true; focus: string }
   | { ok: false; problem: 'unsupported' | 'missing' | 'too-large'; name: string };
 /** F14 write problems (C4). */
 export type WriteProblem = 'write-denied' | 'disk-full' | 'busy' | 'folder-gone' | 'write-failed';

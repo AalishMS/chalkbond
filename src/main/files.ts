@@ -1,7 +1,8 @@
 // File I/O (SPEC-app-shell.md SEC7 reads, SEC8 + F9 atomic writes). Main parses nothing beyond
 // size and signature (SEC9); the renderer decides what the bytes mean.
 import { createHash, randomBytes } from 'node:crypto';
-import { open, readFile, rename as fsRename, stat, unlink } from 'node:fs/promises';
+import { open, readFile, realpath, rename as fsRename, stat, unlink } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
 import type { ReadProblem, WriteFileResponse } from '../shared/ipc-types';
 import { baseName, kindOfPath, type FileEntry, type FileKind } from './model/file-refs';
 import { readProblem, writeProblem } from './model/write-problem';
@@ -49,6 +50,24 @@ const codeOf = (error: unknown): string | undefined =>
 /** AS5, I12, I13: SHA-256 of bytes as lowercase hex; main hashes bytes and never parses them (SEC9). */
 export function sha256Hex(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex');
+}
+
+/**
+ * T17 (R37): the path a tab binding is keyed by. `fs/promises` `realpath` has the semantics of
+ * `fs.realpath.native` (links resolved; on Windows the on-disk spelling). A file that does not
+ * exist (yet: a Save-as target) keeps its name under its real folder; a missing folder keeps the
+ * path as given. Never throws.
+ */
+export async function realPathOf(path: string): Promise<string> {
+  try {
+    return await realpath(path);
+  } catch {
+    try {
+      return join(await realpath(dirname(path)), basename(path));
+    } catch {
+      return path;
+    }
+  }
 }
 
 export function createFiles(options: FilesOptions = {}) {

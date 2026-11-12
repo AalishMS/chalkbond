@@ -557,6 +557,19 @@ export function createSessionStore(options: SessionStoreOptions) {
     },
 
     /**
+     * T17 (R37, TB12): the open tab a real path (`files.ts` `realPathOf`) is bound to, compared
+     * through `normalizePath`; a picture tab is bound to its picture; a closed tab holds nothing.
+     * On the chain, so a bind sent before it is seen. Reads no file.
+     */
+    tabOf(realPath: string): Promise<string | null> {
+      return enqueue(
+        'Tab lookup',
+        () => Promise.resolve(openIn(registry, normalizePath(realPath), openTabs())),
+        null,
+      );
+    },
+
+    /**
      * F6: the C4 write of a Save-as ref has finished. Success: the bytes written become the file
      * hash. Failure: the tab's previous binding comes back (a failed Save as changes nothing).
      * Answers whether `ref` was a pending Save-as (main then updates the folders and recent list).

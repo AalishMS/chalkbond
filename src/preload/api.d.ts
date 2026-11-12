@@ -17,6 +17,7 @@ import type {
   FileProblem,
   FileRef,
   KeepProblem,
+  OpenTarget,
   PrintPdfRequest,
   PrintPdfResponse,
   ReadFileResponse,
@@ -37,13 +38,14 @@ import type {
 export interface ChalkbondApi {
   clipboardWrite(value: ClipboardWriteRequest): Promise<{ ok: boolean }>;
   clipboardRead(): Promise<ClipboardReadResponse>;
-  /** I1: the Open dialog; null when cancelled. */
-  chooseOpen(): Promise<FileRef | null>;
+  /** I1: the Open dialog; null when cancelled; `{ focus }` when the file is open in a tab (T17). */
+  chooseOpen(): Promise<OpenTarget | null>;
   /** I2: the bytes of a ref main handed out. */
   readFile(ref: FileRef): Promise<ReadFileResponse>;
   /**
    * I3 (F12, SEC14): a dropped file; the preload reads its path (`webUtils.getPathForFile`) and
-   * main checks it. A ref to open, or why not (`unsupported` with an empty name for a JS-made File).
+   * main checks it. A ref to open, the tab that holds the file (`{ ok: true, focus }`, T17), or why
+   * not (`unsupported` with an empty name for a JS-made File).
    */
   openDroppedFile(file: File): Promise<FileDroppedResponse>;
   /** C3: the Save dialog for `format`; `suggestedName` is a base name. Null when cancelled. */
@@ -64,6 +66,7 @@ export interface ChalkbondApi {
   showContextMenu(request: ContextMenuRequest): Promise<ContextMenuAnswer>;
   /** I10 (T15, CM4): the tab menu at the cursor (`at` null) or at a point; the chosen item or null. */
   showTabMenu(request: TabMenuRequest): Promise<TabMenuAnswer>;
+  /** I7: settings, the restored session (SS7) and the launch's file (a ref or `{ focus }`). */
   startup(): Promise<StartupResponse>;
   /** I8: remembers renderer settings (ST1 style, Export choices); main writes settings.json. */
   setSettings(value: Partial<RendererSettings>): Promise<void>;

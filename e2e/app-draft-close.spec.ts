@@ -154,7 +154,8 @@ test('main hands over a file (open event) while a label is typed: finished, then
     await openEthanol(app, page);
     // An opaque ref from main's registry (the page never names a path), as F11 / F12 hand over.
     const ref = await page.evaluate(() => window.chalkbond.chooseOpen());
-    expect(ref?.name).toBe('toluene.chalk');
+    // A ref, not T17's `{ focus }`: no tab is bound to toluene.chalk.
+    expect(ref !== null && 'name' in ref ? ref.name : null).toBe('toluene.chalk');
     await typeLabel(page, 'Cl');
     await app.evaluate(({ BrowserWindow }, r) => {
       BrowserWindow.getAllWindows()[0]?.webContents.send('main:event', { type: 'open', ref: r });

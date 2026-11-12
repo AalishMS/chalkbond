@@ -4,7 +4,8 @@
 // or a close after Windows' `session-end` (irrevocable, RC5, R24) closes without the prompt and
 // never clears recovery. `query-session-end` is only a question (the shutdown can still be
 // cancelled): it asks the renderer for a best-effort flush and changes no guard state. Quit waits
-// for one flush of settings and recovery (not run at a Windows session end).
+// for one flush of settings and recovery (not run at a Windows session end). R37: the
+// `close-requested` waits in the open-request queue behind earlier opens when one is given.
 import { CHANNELS } from '../shared/channels';
 import type { MainEvent } from '../shared/ipc-types';
 
@@ -32,6 +33,11 @@ export interface CloseGuardPorts {
   closing(): void;
   /** Settles when every recovery write and clear queued so far has run (RC6). */
   recoveryIdle(): Promise<void>;
+  /**
+   * R37: hands `close-requested` to the open-request queue, so it is sent behind every open that
+   * arrived before it (`model/open-requests.ts`). Without it the request is sent at once.
+   */
+  requestClose?(): void;
 }
 
 export function guardClose(win: GuardedWindow, ports: CloseGuardPorts) {
@@ -59,7 +65,8 @@ export function guardClose(win: GuardedWindow, ports: CloseGuardPorts) {
       return;
     }
     event.preventDefault();
-    send({ type: 'close-requested' });
+    if (ports.requestClose) ports.requestClose();
+    else send({ type: 'close-requested' });
   });
   return {
     /** N1 arrived: the renderer listens for main events now. */

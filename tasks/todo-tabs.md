@@ -537,10 +537,10 @@ answers); `e2e/app-instance.spec.ts` and `app-drop.spec.ts` stay green (they sti
 single-tab behaviour; their rewrite is TB30).
 
 **Acceptance criteria:**
-- [ ] Opens queue first in, first out, at most 20; a close request is unchanged
-- [ ] An open of a bound path answers the tab id and never reads the file
-- [ ] I7 carries `session` and `open`; the old `recovery` still works
-- [ ] `src/main/model` coverage >= 90 % lines; existing e2e unchanged and green
+- [x] Opens queue first in, first out, at most 20; a close request is unchanged
+- [x] An open of a bound path answers the tab id and never reads the file
+- [x] I7 carries `session` and `open`; the old `recovery` still works
+- [x] `src/main/model` coverage >= 90 % lines; existing e2e unchanged and green
 
 **Verification:** `npm test -- src/main src/preload`, `npx playwright test --project=e2e e2e/app-instance.spec.ts e2e/app-drop.spec.ts`, then `npm run check`.
 

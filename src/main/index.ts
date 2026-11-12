@@ -17,7 +17,7 @@ import {
 import packageJson from '../../package.json';
 import { createAbout } from './about';
 import { createDialogs } from './dialogs';
-import { createFiles, sha256Hex } from './files';
+import { createFiles, realPathOf, sha256Hex } from './files';
 import { createFileRefs } from './model/file-refs';
 import { createSessionFolders } from './model/session-folders';
 import {
@@ -27,7 +27,15 @@ import {
 } from './model/window-bounds';
 import { rendererSettings, withRendererSettings } from './model/settings';
 import { createSettingsStore } from './settings-io';
-import type { BindTabResponse, ReadFileResponse, StartupResponse } from '../shared/ipc-types';
+import type {
+  BindTabResponse,
+  FileDroppedResponse,
+  FileRef,
+  MainEvent,
+  OpenTarget,
+  ReadFileResponse,
+  StartupResponse,
+} from '../shared/ipc-types';
 import { fileArg, testFlags } from './model/args';
 import { kindOfPath } from './model/file-refs';
 import { guardClose, installQuitFlush } from './lifecycle';
@@ -35,7 +43,7 @@ import { createRecovery } from './recovery';
 import { createSessionStore } from './session-store';
 import { pathKeyOf } from './model/tab-registry';
 import { createRecent } from './model/recent';
-import { createOpenRequests } from './model/open-requests';
+import { createOpenRequests, openTarget, type OpenRequest } from './model/open-requests';
 
 import { pathToFileURL } from 'node:url';
 import { CHANNELS } from '../shared/channels';
@@ -149,10 +157,16 @@ if (flags.hooks) {
 
 app.setAppUserModelId(APP_ID);
 
-// F11: a file a launch asks to open (the first launch's command line, then each second launch's),
-// handed to I7 or sent as `main:event {open}` once the renderer listens (latest wins).
-let sendOpen: (path: string) => void = () => undefined;
-const openRequests = createOpenRequests(fileArg(process.argv), (path) => sendOpen(path));
+// F11, R37: a file a launch asks to open (the first launch's command line, then each second
+// launch's, and Open recent) waits in a first-in-first-out queue of at most 20: the first before I7
+// is I7's `open`, the rest go by `main:event` once the renderer listens, one at a time and in order;
+// F13's `close-requested` waits in the same queue behind earlier opens.
+let deliverRequest: (request: OpenRequest) => Promise<void> = () => Promise.resolve();
+let logRequest: (message: string) => void = () => undefined;
+const openRequests = createOpenRequests(fileArg(process.argv), {
+  deliver: (request) => deliverRequest(request),
+  log: (message) => logRequest(message),
+});
 
 // F11 single instance: the lock lives in userData, set above (TH1). A second process hands its
 // command line to this one through `second-instance` and quits with code 0, without a window.
@@ -173,6 +187,7 @@ if (!app.requestSingleInstanceLock()) {
 
 async function startApp(): Promise<void> {
   const log = createLogger(app.getPath('userData'));
+  logRequest = (message) => log('open', message);
   // M1–M3 (O3): our menu replaces Electron's default, whose registered accelerators (Ctrl+0,
   // Ctrl+=) would zoom the page and steal editor keys. Installed before the window exists, so W6
   // measures the frame with the menu bar in it.
@@ -183,8 +198,9 @@ async function startApp(): Promise<void> {
     text: (method) => mainWindow?.webContents[method](),
     exit: () => mainWindow?.close(),
     about: () => void about.show(),
-    // F10, R21: the path captured when the clicked menu was built; F3 runs in the renderer.
-    openRecent: (path) => sendOpen(path),
+    // F10, R21: the path captured when the clicked menu was built; it waits in the open queue
+    // (R37) and then opens by T17 in the renderer.
+    openRecent: (path) => openRequests.request(path),
     clearRecent: () => recent.clear(),
   });
   appMenu.apply(appMenu.state());
@@ -248,6 +264,24 @@ async function startApp(): Promise<void> {
     if (!entry) throw new Error('Unknown file ref');
     return entry;
   };
+  /**
+   * T17 (R37): the tab `path` is open in (its `fs.realpath.native` path compared through the
+   * registry, case-insensitively on Windows; a picture tab is bound to its picture), else `open()`.
+   * Nothing is read for a bound path.
+   */
+  const targetOf = <R>(path: string, open: () => R | Promise<R>) =>
+    openTarget(path, {
+      realPath: realPathOf,
+      tabOf: (real) => sessionStore.tabOf(real),
+      open,
+    });
+  /** An opened ref for a path main chose (F10, F11), or the tab that holds it; null: no Open kind. */
+  const openedTarget = (path: string): Promise<OpenTarget | null> => {
+    const kind = kindOfPath(path);
+    return kind === null
+      ? Promise.resolve(null)
+      : targetOf<FileRef>(path, () => refs.add(path, kind, 'opened'));
+  };
   // Session store (SS2, SS5, SS11): userData/session, one ordered chain; the start-up read runs
   // first on it (damaged files moved aside, discarded records deleted after a valid read). The old
   // userData/recovery folder is neither read nor deleted by it. TB10 adds the tab bindings (I12),
@@ -281,7 +315,11 @@ async function startApp(): Promise<void> {
     // N2 decides the folders for this run (A10 persists them).
     folders: { open: () => folders.openFolder(), save: (format) => folders.saveFolder(format) },
   });
-  ipc.handle(CHANNELS.chooseOpen, chooseOpenSchema, () => dialogs.chooseOpen());
+  // I1 (T17): a chosen file already open in a tab answers that tab; nothing is read.
+  ipc.handle(CHANNELS.chooseOpen, chooseOpenSchema, async (): Promise<OpenTarget | null> => {
+    const ref = await dialogs.chooseOpen();
+    return ref === null ? null : targetOf(entryOf(ref.id).path, () => ref);
+  });
   ipc.handle(CHANNELS.readFile, readFileSchema, async ({ ref }): Promise<ReadFileResponse> => {
     const path = entryOf(ref).path;
     const result = await files.read(path);
@@ -338,7 +376,8 @@ async function startApp(): Promise<void> {
         const answer = await sessionStore.bind({
           reason: 'open',
           tabId,
-          path: entry.path,
+          // T17: bindings are keyed by the real path, as `targetOf` looks them up.
+          path: await realPathOf(entry.path),
           kind: entry.kind === 'chalk' ? 'chalk' : 'picture',
           fileHash: refs.hashOf(ref),
           written: request.written ?? null,
@@ -357,7 +396,7 @@ async function startApp(): Promise<void> {
         return sessionStore.bind({
           reason: 'save-as',
           tabId,
-          path: entry.path,
+          path: await realPathOf(entry.path),
           written: given(request.written),
           ref,
         });
@@ -385,17 +424,34 @@ async function startApp(): Promise<void> {
     acceptOutsideSchema,
     (value) => void sessionStore.acceptOutside(value),
   );
-  // I3 (F12, SEC14): a dropped file's path, read by the preload; checked as SEC7, then a ref.
-  ipc.handle(CHANNELS.fileDropped, fileDroppedSchema, async ({ path }) => {
-    const result = await files.inspect(path);
-    return result.ok ? { ok: true as const, ref: refs.add(path, result.kind, 'opened') } : result;
-  });
-  // F10, F11: an opened ref for a path main chose (Open recent, a second launch), sent to F3.
-  sendOpen = (path) => {
-    const kind = kindOfPath(path);
+  // I3 (F12, SEC14): a dropped file's path, read by the preload; a file open in a tab answers that
+  // tab unchecked (T17); else checked as SEC7, then a ref.
+  ipc.handle(
+    CHANNELS.fileDropped,
+    fileDroppedSchema,
+    async ({ path }): Promise<FileDroppedResponse> => {
+      const target = await targetOf(path, () => files.inspect(path));
+      if ('focus' in target) return { ok: true, focus: target.focus };
+      return target.ok ? { ok: true, ref: refs.add(path, target.kind, 'opened') } : target;
+    },
+  );
+  // F10, F11, F13 (R37): the open queue's deliveries, one at a time. An open becomes a ref for F3,
+  // or `focus-tab` for a file already open in a tab; a close is F13's `close-requested`.
+  const sendEvent = (event: MainEvent): void => {
     const win = mainWindow;
-    if (kind === null || !win || win.isDestroyed()) return;
-    win.webContents.send(CHANNELS.mainEvent, { type: 'open', ref: refs.add(path, kind, 'opened') });
+    if (win && !win.isDestroyed()) win.webContents.send(CHANNELS.mainEvent, event);
+  };
+  deliverRequest = async (request) => {
+    if (request.kind === 'close') return sendEvent({ type: 'close-requested' });
+    const win = mainWindow;
+    if (!win || win.isDestroyed()) return;
+    const target = await openedTarget(request.path);
+    if (target === null) return;
+    sendEvent(
+      'focus' in target
+        ? { type: 'focus-tab', tabId: target.focus }
+        : { type: 'open', ref: target },
+    );
   };
   // C5 (PD1): a hidden window prints the export SVG; window and temp folder go in a finally.
   ipc.handle(
@@ -459,14 +515,17 @@ async function startApp(): Promise<void> {
     log: (message) => log('quit', message),
   });
   // I7 with ST2: the renderer's view only (no path, folder, window or recent list). The recovery
-  // file is checked for size and signature here; the renderer parses it (RC3).
+  // file is checked for size and signature here; the renderer parses it (RC3). SS7 (TB12): the
+  // restored session from the store's start-up read; the launch's file is looked up after it, so a
+  // file a restored tab holds answers that tab (T17). The renderer ignores `session` until TB20.
   ipc.handle(CHANNELS.startup, startupSchema, async (): Promise<StartupResponse> => {
     const path = openRequests.takeStartup();
-    const kind = path === null ? null : kindOfPath(path);
+    const session = await sessionStore.restored();
     return {
       settings: rendererSettings(store.get()),
       recovery: await recovery.read(),
-      open: path === null || kind === null ? null : refs.add(path, kind, 'opened'),
+      session,
+      open: path === null ? null : await openedTarget(path),
     };
   });
   // I8: a strict partial RendererSettings (preset switches, Export choices).
@@ -509,6 +568,8 @@ async function startApp(): Promise<void> {
     closing = guardClose(win, {
       closing: () => rememberWindow(win),
       recoveryIdle: () => recovery.idle(),
+      // R37: `close-requested` waits behind every open that arrived before it.
+      requestClose: () => openRequests.close(),
     });
     // CM3 (R3): editable targets only; the canvas prevents the DOM event, so it never gets here.
     win.webContents.on('context-menu', (_event, params) => contextMenus.text(params));
