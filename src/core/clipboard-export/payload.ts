@@ -24,5 +24,12 @@ export function pictureSelection(doc: Doc, selection: Selection): Selection {
 export function pictureDoc(doc: Doc, selection: Selection | null): Doc {
   if (selection === null) return doc;
   const [taken] = insert(emptyDoc(doc.meta.created), extract(doc, selection), { x: 0, y: 0 });
-  return { ...setStyle(taken, doc.style), meta: { ...doc.meta } };
+  return {
+    ...setStyle(taken, {
+      preset: doc.style.preset,
+      overrides: doc.style.overrides,
+      formula: doc.style.formula ?? 'skeletal',
+    }),
+    meta: { ...doc.meta },
+  };
 }

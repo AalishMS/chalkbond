@@ -584,15 +584,15 @@ the file ends with `expectBlockedRequests(app, 0)`. Property: `parse(drawingPayl
 `formula` in the generator (`numRuns` unchanged).
 
 **Acceptance criteria:**
-- [ ] tests pass; skeletal payload bytes unchanged
-- [ ] structural PNG, SVG and PDF exports reopen structural (e2e)
-- [ ] `src/core/clipboard-export` ≥ 90 % lines
+- [x] tests pass; skeletal payload bytes unchanged (`picture.test.ts`, 2026-11-12, W17)
+- [x] structural PNG, SVG and PDF exports reopen structural (`e2e/export-structural.spec.ts`, 3 passed, 2026-11-12, W17)
+- [x] `src/core/clipboard-export` ≥ 90 % lines (`npm test -- --coverage` exit 0, 2026-11-12, W17)
 
 **Verification:** `npx vitest run --project unit src/core/clipboard-export`, `npm run test:e2e -- e2e/export-structural.spec.ts`, then `npm run check`
 
 **Dependencies:** N1 (N3a for the R12 guards to mean anything; they may be written before it)
 
-**Files:** `src/core/clipboard-export/{payload.ts,embedding.test.ts or picture.test.ts}` (+ the property test file), `e2e/export-structural.spec.ts`
+**Files:** `src/core/clipboard-export/{payload.ts,picture.test.ts}` (the property test in `embedding.test.ts` already had `formula` in its generator), `e2e/export-structural.spec.ts`
 
 **Scope:** XS. Cross-platform. Must not change: `drawingPayload`'s format, `numRuns`.
 
