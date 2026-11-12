@@ -296,7 +296,9 @@ pictureDoc(doc: Doc, selection: Selection | null): Doc
 exportSvg(doc: Doc, selection: Selection | null, opts?: { embed?: boolean; padding?: number }): SvgDocument
     // renderSvg(doc, { only: sel && pictureSelection(doc, sel), padding: opts.padding ?? 0,
     //   metadata: embed !== false && payload.length <= MAX_FILE_BYTES ? payload : undefined })
-    // payload = drawingPayload(pictureDoc(doc, sel)); one renderSvg call. C9: if the metadata was
+    // payload = drawingPayload(pictureDoc(doc, sel)), computed only when opts.embed !== false (with
+    // embed: false it is skipped: the clipboard bitmap's second call must not serialise the whole
+    // document again, SC12; the output is the same either way); one renderSvg call. C9: if the metadata was
     // added and the SVG is over MAX_PICTURE_BYTES UTF-8 bytes, its <metadata id="chalkbond"> line
     // is removed again (the result is then exactly the embed: false SVG). `padding` (pt, R10) is
     // used only for the clipboard bitmap's source; every other caller passes none (0, tight)
@@ -453,7 +455,9 @@ check, size limits). Request limits are enforced by the schema.
   Selection empty → `copyPicture(doc, null, 'all')` without touching the editor.
 - **CB-C2** `copyPicture(doc, sel, what)`: `svg = exportSvg(doc, sel)` (the SVG entry:
   transparent, tight, with the drawing in its metadata); `bitmapSvg = exportSvg(doc, sel, {
-  embed: false, padding: clipboardBitmapPadding(doc) })`; `png = rasterise(bitmapSvg, 300, true)`
+  embed: false, padding: clipboardBitmapPadding(doc) })` (a second `renderSvg`, but no second
+  `drawingPayload`: `exportSvg` skips the payload when `embed` is false; today's code computes and discards it, which task N8 removes because
+  SC12's 500 ms budget is shared by both renders); `png = rasterise(bitmapSvg, 300, true)`
   (R10: white, margin; the bitmap carries no `tEXt` drawing, which Windows drops anyway, R9, and
   keeps its `pHYs`); payload computed once (from `svg`) and reused for the SVG metadata and the
   drawing entry; C1.
@@ -609,9 +613,10 @@ assertion is deleted or weakened, each old expectation is replaced by the new ru
 | `src/core/clipboard-export/picture.test.ts` | add: `exportSvg` with `padding` (equals `renderSvg` with that padding; default 0 unchanged); `clipboardBitmapPadding` for Slides, Handout and a `bondLength` override |
 | `src/core/clipboard-export/payload.test.ts` (or wherever `pictureDoc` is tested) | add: `pictureDoc` copies `style.formula`; a skeletal selection's payload equals the pre-F2 bytes |
 | `src/renderer/clipboard-export/model/copy-flow.test.ts` | the expectation `rasterise(svg, 300, false)` becomes `rasterise(exportSvg(doc, sel, { embed: false, padding: clipboardBitmapPadding(doc) }), 300, true)`; the SVG entry and the drawing entry keep their expectations (tight SVG, payload from it) |
-| `e2e/win/clipboard-copy.spec.ts` | SC3's PNG size becomes `ceil((W + 2m)·300/72) × ceil((H + 2m)·300/72)`; add SC14's pixel checks (opaque white corners, all alpha 255, toluene ink box `m` from each edge within 2 px); the SVG stream assertion stays as it is |
+| `e2e/win/clipboard-copy.spec.ts` | SC3's PNG size becomes the padded SVG's `ceil(w·300/72) × ceil(h·300/72)` (SC3's exact formula); add SC14's pixel checks (opaque white corners, all alpha 255, toluene ink box `m` from each edge within 2 px, ink defined in SC14); the SVG stream assertion stays as it is |
 | `e2e/win/windows-clipboard.ts` | a helper that decodes the native PNG to RGBA in the page (Image + canvas), if none exists |
 | `e2e/clipboard-ui.spec.ts`, `e2e/clipboard-perf.spec.ts`, `e2e/clipboard-provenance.spec.ts`, `e2e/win/clipboard-perf.spec.ts`, `e2e/shots/C8.shot.ts`, `e2e/shots/C9.shot.ts` | run unchanged; change only an assertion that pins the old bitmap size or transparency (none known on 2026-11-12). SC12's 500 ms budget is unchanged: the second `renderSvg` must fit in it |
+| `e2e/export-structural.spec.ts` (new, R11) | a structural drawing exported as PNG, SVG and PDF reopens structural (SC15); a new file, no existing assertion changes |
 | `src/renderer/clipboard-export/rasterise.test.ts`, `model/export-flow.test.ts`, `e2e/export-*.spec.ts` | **unchanged** (they prove Export did not change) |
 
 ## Windows checks (for `docs/windows-checklist.md`, section "Clipboard and export")
@@ -653,9 +658,7 @@ Each names the test or check that proves it.
 3. After the Copy button with nothing selected, the Windows clipboard lists the CB-W1 formats and
    no text format (P2b check inside `e2e/win/clipboard-copy.spec.ts`); the native SVG stream equals
    `exportSvg(doc, null).svg`; the drawing entry parses to a document whose `serialize` equals
-   `serialize(doc)`; the native PNG is `ceil((W + 2m)·300/72) × ceil((H + 2m)·300/72)` pixels,
-   `W`, `H` the tight SVG's size and `m = clipboardBitmapPadding(doc)` (R10; before 2026-11-12:
-   `ceil(W·300/72) × ceil(H·300/72)`) (its `pHYs` is Chromium's to drop, Decision R9; `pHYs`
+   `serialize(doc)`; the native PNG is `Math.max(1, Math.ceil((w * 300) / 72))` × `Math.max(1, Math.ceil((h * 300) / 72))` pixels (the expression of `pngPixelSize`), where `w` and `h` are the `width` and `height` of `exportSvg(doc, null, { embed: false, padding: m })` with `m = clipboardBitmapPadding(doc)`; `toSvg` computes them as `Number(fmt(bounds.w + 2 * m))`, so the 3-decimal rounding applies to the padded sum, not to the tight width before `2m` is added (R10; before 2026-11-12: `ceil(W·300/72) × ceil(H·300/72)` for the tight size) (its `pHYs` is Chromium's to drop, Decision R9; `pHYs`
    11811 is asserted on exported files and in unit tests).
 4. Copy of a selection: the drawing entry equals `drawingPayload(pictureDoc(doc, selection))`
    (unit + `clipboard-copy.spec.ts`).
@@ -685,8 +688,10 @@ Each names the test or check that proves it.
 14. (F3, R10; automated) The clipboard bitmap is white-backed with its margin: in
     `e2e/win/clipboard-copy.spec.ts` the native PNG (decoded in the page) has its four corner
     pixels opaque `#ffffff`, every pixel alpha 255, the size of SC3, and for the toluene golden
-    input (no text, so the ink is tight) the box of non-white pixels starts `m·300/72` px from
-    each edge within 2 px (Slides 41.67 px, Handout 15 px); the native SVG stream is still byte-
+    input (no text, so the ink is tight) the box of ink pixels starts `m·300/72` px from
+    each edge within 2 px, where a pixel is **ink** when `min(R, G, B) < 128` (a colour test: alpha is 255
+    everywhere by the previous check, so there is no alpha threshold; the 128 cut leaves out the faint
+    anti-aliasing fringe, which is at most about 1 px wide, inside the 2 px tolerance) (Slides 41.67 px, Handout 15 px); the native SVG stream is still byte-
     identical to `exportSvg(doc, null).svg` (transparent, tight). Unit: `clipboardBitmapPadding`
     (Slides 10, Handout 3.6, a `bondLength` override), `exportSvg` with `padding` equals
     `renderSvg` with that padding, `copy-flow` rasterises `exportSvg(doc, sel, { embed: false,
@@ -696,7 +701,9 @@ Each names the test or check that proves it.
     PowerPoint slide still shows no box (re-check section of `docs/windows-checklist.md`).
 15. (F2, R11; automated) `pictureDoc` copies `style.formula`; a structural selection's payload
     parses to a structural doc; a skeletal payload is byte-identical to the one before F2 (D1);
-    pasting a structural fragment into a skeletal document draws it skeletal.
+    pasting a structural fragment into a skeletal document draws it skeletal. Exports carry the
+    setting too: a structural drawing exported as PNG, SVG and PDF and reopened through File >
+    Open is structural again, with `serialize` equal to the original's (`e2e/export-structural.spec.ts`, task N9).
 
 ## Boundaries (module-specific)
 

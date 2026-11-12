@@ -229,7 +229,7 @@ current(h): Doc;   canUndo(h); canRedo(h); undoLabel(h); redoLabel(h)
 
 // persistence
 serialize(doc): string                          // stable key order, 2-space JSON
-parse(text: string): Result<Doc, ParseError>    // Zod-validated, runs migrations, checks invariants
+parse(text: string): Result<Doc, ParseError>    // validates with the file's own version's schema, runs migrations, re-validates, checks invariants (D1)
 // Result = { ok: true; value } | { ok: false; error }; ParseError = { code, message, details? }
 // codes: too-large | invalid-json | not-chalkbond | newer-version | unsupported-version |
 //        migration-failed | schema | invariants  (details: first 10 issues/violations)
@@ -290,6 +290,25 @@ leaves its group.
   its `newer-version` message (app-shell F14 "made with a newer version of Chalkbond"; clipboard
   N-P3), which is true and changes nothing. `parse(serialize(doc))` deep-equals `doc` for both
   versions (a v1 file parses to an in-memory v2 doc without `formula`).
+- **Where a file is validated (D1):** a file is validated with the strict schema of **its own
+  version**, and only then migrated: `parse` reads the envelope, checks the version (`unsupported-version`,
+  `newer-version`), validates `doc` with `schemas[version]` (v1 → the v1 schema, v2 → the v2
+  schema; each pins `schemaVersion` to its own literal, so an envelope and a doc that disagree are
+  a `schema` error), runs `migrations[version]` … `migrations[CURRENT_SCHEMA_VERSION - 1]` in sequence, and validates the
+  result once more with the current schema (this second pass catches a faulty migration,
+  `migration-failed` is for a migration that throws). Validating only after migration would be
+  wrong: a v1 file that carries `formula` would migrate to v2 and pass, although v1 has no such
+  key. `parseWith(text, migrations, currentVersion, schemas)` is the test harness with a schema
+  per version: `schemas` is a `Readonly<Record<number, ZodType>>` that defaults to the real table
+  (`{ 1: DOC_SCHEMA_V1, 2: DOC_SCHEMA_V2 }`); a version with no entry is `unsupported-version`; a
+  test that runs a synthetic v0 passes its own table (the v0 shape is not a `Doc`, so its entry is
+  a permissive `z.unknown()` and the real v1 and v2 schemas follow) and the final pass uses
+  `schemas[currentVersion]`.
+- **`CURRENT_SCHEMA_VERSION` (D1) is 2:** the newest version this build reads and the
+  `schemaVersion` of every in-memory `Doc`; `parse` rejects anything above it as `newer-version`.
+  It is no longer what `serialize` writes: `serialize` writes `1` or `2` by the rule above (an
+  internal `fileVersion(doc)`, not exported; the public surface keeps its names), in the envelope
+  and in the written `doc`.
 - `serialize` is deterministic: same doc → byte-identical output (stable diffs, golden tests).
   Record entries are ordered by id number; other keys lead with `format, schemaVersion, id,
   type, kind, x, y, w, h`, then alphabetical; `-0` is written as `0`; trailing newline.
@@ -328,7 +347,8 @@ Each violation is `{ invariant: 1…8, code, id?, message }`; `code` is a stable
   `__golden__/inputs/*.chalk`) parses, and `serialize` of the result is byte-identical to the
   file; a v2 file with `formula: 'structural'` round-trips; a v1 file with a `formula` key, a v2
   file with `formula: 'skeletal'` or any other value, and `schemaVersion: 3` are rejected with
-  `schema` / `newer-version`;
+  `schema` / `newer-version` (the v1-with-`formula` case proves the own-version validation rule: a
+  migrate-then-validate `parse` would accept it);
   `setStyle` with `formula` inside `transact` is one undo step and its reverse returns a doc
   deep-equal to the start; the property-test command generator gains the `formula` patch of
   `setStyle` (round-trip and undo properties then cover v2; `numRuns` unchanged).
@@ -338,6 +358,23 @@ Each violation is `{ invariant: 1…8, code, id?, message }`; `code` is a stable
 - The generator test asserts every op actually applies (not just gets generated) many times.
 - Perf check (unit test with timing budget): `transact` on a 500-atom doc < 2 ms median;
   `fragments` on 500 atoms < 1 ms.
+
+**Test and code changes that follow from D1 (2026-11-12).** They follow the spec change; no
+assertion is deleted or weakened, each old expectation is replaced by the new rule's. Checked
+against the tree at `469f371`.
+
+| File | Change |
+|---|---|
+| `types.ts` | `Doc.schemaVersion: 2` (was `1`) |
+| `schema.ts` | the v1 schema stays exactly as it is (it is tied to a private `DocV1` type, no longer to `Doc`); a v2 schema is added and the compile-time identity check ties it to `Doc` |
+| `migrations.ts` | `CURRENT_SCHEMA_VERSION = 2`; `MIGRATIONS[1]` (v1 to v2, sets `schemaVersion: 2`) |
+| `serialize.ts` | `parseWith` gains the `schemas` parameter and validates by own version (File Format); `serialize` writes `fileVersion(doc)` instead of `CURRENT_SCHEMA_VERSION` |
+| `doc.ts` | `emptyDoc` literal `schemaVersion: 2` |
+| `subdoc.ts` | `asDoc` builds its `Doc` literal with `schemaVersion: 2` |
+| `__fixtures__/kitchen-sink.ts` | the `Doc` literal `schemaVersion: 2` (it serialises as v1, no `formula`) |
+| `doc.test.ts` | the `emptyDoc` expectation `schemaVersion: 1` becomes `2` (title "an empty v2 doc"); the public-surface list is unchanged (the name `CURRENT_SCHEMA_VERSION` stays exported) |
+| `serialize.test.ts` | "newer schemaVersion" pins `schemaVersion: 2` as `newer-version`: it becomes `3`; the tests that wrap an in-memory doc in the `file()` helper's v1 envelope (the schema-violation tests that list issue details) set `doc.schemaVersion = 1` first, since the v1 schema pins its literal (otherwise the details gain a `schemaVersion` issue); the migration-harness tests pass a `schemas` table (synthetic v0: `z.unknown()`); the first test ("writes the envelope", `emptyDoc` has no `formula`) keeps its v1 bytes unchanged and now also proves D1 |
+| unchanged, proving v1 bytes did not move | every other `serialize` expectation, `file-flows.test.ts`, `copy-flow.test.ts`, `recovery.test.ts` and the e2e files that replace `"schemaVersion": 1` by `999` (a skeletal doc is still written as v1) |
 
 ## Success Criteria
 

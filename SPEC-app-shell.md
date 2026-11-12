@@ -831,8 +831,8 @@ not unticked.
     the "every key is listed" test includes the ten digits; the menu model tests show no new
     item (R28); F1 New gives a skeletal document even after a structural one was open; a
     structural drawing saved and reopened keeps `formula: 'structural'` and is written as v2,
-    a skeletal one as v1 (`e2e/app-files.spec.ts`); shots `F1/shortcuts-dialog.png` and
-    `F2/min-window-select-960.png` match mock-ups A12 and A15c by eye (human).
+    a skeletal one as v1 (`e2e/app-files.spec.ts`); shot `N10/shortcuts-dialog.png` matches mock-up A12 by eye (human); the 960 shot
+    of A15c is `N7/select-bar-960.png` (editor task N7).
 
 ## Boundaries (module-specific)
 

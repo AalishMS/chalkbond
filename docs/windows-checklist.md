@@ -92,6 +92,12 @@ Hand checks (installed final build):
 - [ ] Paste on a dark PowerPoint slide background: still no white or black box (Office takes the transparent SVG).
 - [ ] A `.chalk` file saved by the tested 1.0.0 build (installer built at `956a4a4`) opens in the final build, unchanged, and a skeletal drawing saved by the final build opens in the 1.0.0 build if it is still installed somewhere (optional; write down whether it was tried).
 - [ ] Install the final installer over the tested 1.0.0 on the development machine and on a clean Windows 11 account (SmartScreen steps as in "App shell and installer"); Help > About shows the final version.
+- [ ] A structural drawing exported as PNG, SVG and PDF (Export dialog) reopens through File > Open as the same structural drawing (`CH3`, `CH2` written, editable), no error box; a structural `.chalk` file saved and reopened, also by double-click in Explorer, comes back structural.
+- [ ] Recovery of a structural drawing: draw, switch to structural, wait 15 s, end Chalkbond in Task Manager, start it again: the recovery box appears and the drawing comes back structural.
+- [ ] Paste the white picture back into Chalkbond: copy a drawing with the Copy button, press Ctrl+V in Chalkbond. Expected (`SPEC-clipboard-export.md` CB-P1): the clipboard carries the drawing entry, so it pastes as the editable drawing (a fragment, no white box and no picture). A bitmap alone, with no drawing entry (for example one copied from a browser), shows the notice "Only drawings copied from Chalkbond can be pasted here." and changes nothing.
+- [ ] Narrator on a tool-rail button: it reads the tool name alone ("Bond") and the keys "3 B" once (`aria-keyshortcuts`), not the badge or the caption twice; write down what Narrator said.
+- [ ] The rail digit badges at 125 % and at 150 % display scaling: each badge is crisp, inside its button, does not touch the icon or the caption, and the rail does not change size.
+- [ ] Digits typed with the Devanagari IME in the label editor (and in the text editor) stay text and pick no tool; with the canvas focused and the IME on, write down whether the digit keys pick tools (the spec does not say; this is an observation, not a pass criterion).
 
 ## Checkpoint A — scaffold and tooling
 

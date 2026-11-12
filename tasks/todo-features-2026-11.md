@@ -34,8 +34,15 @@ name ends in `-960`). Reference PNGs: `node docs/mockups/editor/build.mjs --png 
 2`, `style.formula?: 'structural'`. In `schema.ts`: keep the v1 strict schema exactly as it is;
 add a v2 strict schema that differs only by `style.formula: z.literal('structural').optional()`
 and `schemaVersion: z.literal(2)`; the compile-time identity check ties the v2 schema to `Doc`.
-In `migrations.ts`: `migrations[1]` sets `schemaVersion` to 2 (nothing else). `parse` accepts v1
-(migrated) and v2, rejects 3+ as `newer-version`. `serialize` writes `schemaVersion: 1` in the
+In `migrations.ts`: `migrations[1]` sets `schemaVersion` to 2 (nothing else);
+`CURRENT_SCHEMA_VERSION` is 2 (the newest version read and the version of every in-memory `Doc`,
+no longer what `serialize` writes). `parse` accepts v1 (migrated) and v2, rejects 3+ as
+`newer-version`. **Validation rule (`SPEC-doc-model.md` File Format, D1):** a file is validated
+with the strict schema of its own version and only then migrated, and the migrated result is
+validated once more with the current schema; `parseWith(text, migrations, currentVersion,
+schemas)` takes a schema per version (default: the real v1 and v2 table; no entry is
+`unsupported-version`). Without this a v1 file carrying `formula` would migrate to v2 and pass.
+`serialize` writes `schemaVersion: 1` in the
 envelope and the doc when `style.formula` is absent, else 2 (key order rules unchanged; `formula`
 sorts alphabetically inside `style`). `emptyDoc` returns a v2 doc without `formula`. `setStyle`
 (`style.ts`) takes `formula?: 'skeletal' | 'structural'`: `'structural'` sets the key, `'skeletal'`
@@ -43,11 +50,15 @@ deletes it (draft-aware `delete`), anything else throws `DocError('invalid-value
 changes nothing records no step. `__fixtures__/arbitraries.ts`: the `setStyle` command may carry a
 `formula` patch.
 
-**Tests first:** `serialize.test.ts`: every committed `.chalk` under `src/core/doc-model/__fixtures__/`
+**Tests first:** `serialize.test.ts` (changes to existing tests: see "Test and code changes that
+follow from D1" in `SPEC-doc-model.md`; the version-3 expectation, the `file()` helper's doc
+version and the harness `schemas` tables are the existing assertions that change): every committed `.chalk` under `src/core/doc-model/__fixtures__/`
 and `src/core/svg-render/__golden__/inputs/` parses and re-serialises byte-identically (RED only
 for the parts that need the new code: a v1 file parses to `schemaVersion: 2` in memory); a doc
 with `formula: 'structural'` serialises with `"schemaVersion": 2` twice and round-trips; a v1 file
-with a `formula` key → `schema`; a v2 file with `formula: 'skeletal'` or `'x'` → `schema`; version
+with a `formula` key → `schema` (RED: today it migrates and passes); a v1 envelope around a doc that says
+`schemaVersion: 2` → `schema`; `parseWith` with a `schemas` table: a version without an entry →
+`unsupported-version`, a synthetic v0 (`z.unknown()`) still migrates and is checked by the final pass; a v2 file with `formula: 'skeletal'` or `'x'` → `schema`; version
 3 → `newer-version`. `style.test.ts`: `formula: 'structural'` inside `transact` is one undo step;
 `'skeletal'` afterwards gives a doc deep-equal to the start (no `formula` key at all); an
 invalid value throws and leaves the doc unchanged; `{ formula: 'skeletal' }` on a skeletal doc
@@ -64,9 +75,10 @@ round-trip and undo properties pass unchanged in `numRuns`.
 
 **Dependencies:** None
 
-**Files:** `src/core/doc-model/{types.ts,schema.ts,migrations.ts,serialize.ts,doc.ts,style.ts,index.ts}`,
-tests `src/core/doc-model/{serialize.test.ts,style.test.ts,doc-model.prop.test.ts}`,
-`src/core/doc-model/__fixtures__/arbitraries.ts` (and whichever module holds `emptyDoc`)
+**Files:** `src/core/doc-model/{types.ts,schema.ts,migrations.ts,serialize.ts,doc.ts,subdoc.ts,style.ts,index.ts}`
+(`doc.ts` holds `emptyDoc`; `subdoc.ts` `asDoc` builds a `Doc` literal), tests
+`src/core/doc-model/{doc.test.ts,serialize.test.ts,style.test.ts,doc-model.prop.test.ts}`,
+`src/core/doc-model/__fixtures__/{arbitraries.ts,kitchen-sink.ts}`, `SPEC-doc-model.md` (already amended)
 
 **Scope:** M. Cross-platform (core). Must not change: any committed fixture byte, `numRuns`, the
 95 % threshold.
@@ -85,7 +97,11 @@ the old rule for every case of the existing table; `isLabelled(c, n, 'structural
 carbon with 0–4 bonds, with and without charge/radical (RED: third parameter ignored).
 `render.test.ts`: for a structural ethanol, `atom:` parts exist for both carbons with texts `CH2`
 and `CH3`, the `O` part is byte-identical to skeletal mode; for every golden input,
-`render(doc)` equals `render` of the same doc after `setStyle(doc, { formula: 'skeletal' })`.
+`render(doc)` equals `render(setStyle(doc, { formula: 'skeletal' }))` (this passes before any code
+and guards the unchanged skeletal output); and the check that can fail: for each golden input,
+`render(setStyle(doc, { formula: 'structural' }))` has an `atom:` part for every carbon (RED:
+none of the unlabelled carbons has one) and its parts for every atom that is not a carbon are
+byte-identical to those of the skeletal render.
 `svg-render.prop.test.ts`: properties 1–7 run on docs whose generator may set `formula`
 (`numRuns` unchanged). `golden.test.ts` is **not** edited: it must pass byte for byte.
 
@@ -203,6 +219,44 @@ bond (toluene, SC2). Shots `e2e/shots/N5.shot.ts`: `N5/rail-badges.png` (Select 
 **Scope:** S. Cross-platform. Must not change: `view/tokens.css`, `view/icons.svg` (already lifted),
 rail sizes, the 24 px hit targets.
 
+## N5b: number-key edge cases (tests N4 and N5 did not write)
+
+**Description:** `SPEC-editor.md` SC13 promises tests that N4 and N5 left out: a held digit, digits
+in text targets, numpad digits and the shifted-digit-row layouts. The keymap matches
+`KeyboardEvent.key` (R6; `KeyInfo` has no `code`), so the rule is: a digit acts when `key` is
+`'0'`…`'9'`, whatever the physical key (the main row or the numpad with NumLock on); Shift is
+ignored (R6). On a layout whose digit row gives symbols unshifted (French AZERTY: `&é"'(-è_çà`),
+the digit is reached with Shift, and `Shift+&` arrives as `key: '1'`, so it picks a tool; the
+unshifted symbol (`'&'`) does nothing there. There is no fallback on `event.code`: it would pick
+the tool of a key whose character the user did not type (it would also make `Shift+Digit1` on a
+QWERTY layout, `!`, count as `1`, which R6 does not want). This rule is stated in `SPEC-editor.md`
+R50. **Code changes only if a test fails.**
+
+**Tests first:** `model/keymap.test.ts`: `key: '&'`, `'é'`, `'"'` and `'!'` (unshifted AZERTY row,
+Shift+1 on QWERTY) → null; `{ key: '1', shiftKey: true }` → select (the AZERTY Shift case);
+numpad: `key: '1'`…`'0'` from the numpad are `key` digits, so the same table as the main row
+(documented by one test that feeds the digits with `code: 'Numpad1'` in the event object and
+asserts the tool). E2E `e2e/editor-keyboard.spec.ts`: with the canvas focused, a digit sent with
+`repeat: true` (dispatch a `keydown` with `repeat`, or `keyboard.down` twice without `up`) picks the
+tool once and a second digit held does nothing; digits typed in the name field, in the label
+editor (open on an atom with Enter) and in the text editor (Text tool, click) appear as text and
+leave the tool unchanged (`aria-pressed`); a numpad digit (`Numpad3` through Playwright) picks
+Bond. IME: digits typed with the Devanagari IME in the label editor stay text (hand check, in the
+Windows checklist).
+
+**Acceptance criteria:**
+- [ ] every test above exists and passes (RED shown if any fails, then the fix)
+- [x] the shifted-digit-row rule is written in `SPEC-editor.md` R50 (with the task list correction of 2026-11-12)
+
+**Verification:** `npx vitest run --project unit src/renderer/editor/model/keymap.test.ts`, `npm run test:e2e -- e2e/editor-keyboard.spec.ts`, then `npm run check`
+
+**Dependencies:** N4, N5
+
+**Files:** `src/renderer/editor/model/keymap.test.ts`, `e2e/editor-keyboard.spec.ts`
+(`keymap.ts` or `Editor.tsx` only if a test fails)
+
+**Scope:** XS. Cross-platform. Must not change: R5, R6, K1 bindings.
+
 ## N6: `toggle-formula` command and the editor consequences of structural mode
 
 **Description:** `SPEC-editor.md` R51, R52, C7, L1. `EditorCommand` gains `'toggle-formula'`;
@@ -283,7 +337,9 @@ boxes asserted by `editor-layout.spec.ts`, the lifted tokens and icons.
 **Description:** `SPEC-clipboard-export.md` R10, PI3, CB-C2, Public surface, SC3, SC14, "Test
 changes that follow from R10 and R11". Core: `CLIPBOARD_MARGIN = 0.25`,
 `clipboardBitmapPadding(doc)` (`picture.ts`, exported from `index.ts`), `exportSvg` takes an
-optional `padding` (default 0). Renderer `model/copy-flow.ts`: the SVG entry stays `exportSvg(doc,
+optional `padding` (default 0) and skips `drawingPayload` when `embed` is `false` (today it computes the payload and
+discards it; the second render of a copy must not serialise the document again, SC12; the output is
+unchanged, so only the measured copy time shows it). Renderer `model/copy-flow.ts`: the SVG entry stays `exportSvg(doc,
 sel)`; the bitmap is `rasterise(exportSvg(doc, sel, { embed: false, padding:
 clipboardBitmapPadding(doc) }), 300, true)`. Export untouched.
 
@@ -292,9 +348,11 @@ padding: 10 })` equals `renderSvg(doc, { padding: 10, metadata })` and the defau
 `clipboardBitmapPadding` is 10 for Slides, 3.6 for Handout, `0.25 × bondLength` with an override.
 `model/copy-flow.test.ts`: the expectation `rasterise(svg, 300, false)` becomes the padded,
 unembedded SVG at 300 with white `true`; the C1 SVG and drawing entries are unchanged.
-Windows-only `e2e/win/clipboard-copy.spec.ts`: SC3's PNG size becomes `ceil((W + 2m)·300/72) ×
-ceil((H + 2m)·300/72)`; new SC14 checks on the native PNG decoded in the page (four corners opaque
-`#ffffff`, every alpha 255; for the toluene golden input the non-white box starts `m·300/72` px
+Windows-only `e2e/win/clipboard-copy.spec.ts`: SC3's PNG size becomes `ceil(w·300/72) × ceil(h·300/72)` with `w`, `h` the
+`width` and `height` of `exportSvg(doc, null, { embed: false, padding: m })` (`toSvg` rounds the
+padded sum to 3 decimals, so this is not `W + 2m` computed from the tight width); new SC14 checks on the native PNG decoded in the page (four corners opaque
+`#ffffff`, every alpha 255; for the toluene golden input the box of ink pixels (`min(R, G, B) < 128`;
+alpha is 255 everywhere, so the test is colour, not alpha) starts `m·300/72` px
 from each edge within 2 px); the native SVG stream assertion unchanged. `e2e/win/windows-clipboard.ts`:
 a PNG-to-RGBA helper if none exists. `rasterise.test.ts`, `model/export-flow.test.ts`,
 `e2e/export-*.spec.ts`: run **unchanged** (proof that Export did not change).
@@ -319,24 +377,30 @@ change: `formats.ts` keys, the SVG entry, Export, the raster caps, SC12's budget
 ## N9: `pictureDoc` copies the formula setting
 
 **Description:** `SPEC-clipboard-export.md` R11, SC15. `pictureDoc` passes `formula:
-doc.style.formula ?? 'skeletal'` to `setStyle` along with `preset` and `overrides`.
+doc.style.formula ?? 'skeletal'` to `setStyle` along with `preset` and `overrides`. Exports use
+`pictureDoc`, so a structural drawing's PNG, SVG and PDF carry the setting; N9 proves it.
 
 **Tests first:** in the existing `pictureDoc` tests (`embedding.test.ts` or `picture.test.ts`;
 RED: formula dropped): a structural doc's `pictureDoc(doc, sel)` is structural and its payload
 parses to a structural doc; a skeletal selection's payload is byte-identical to the expected pre-F2
 string (v1); `pasteAction` with a structural payload gives a fragment whose `SubDoc` carries no
-style (the target's setting applies). Property: `parse(drawingPayload(d))` deep-equals `d` with
+style (the target's setting applies). E2E new `e2e/export-structural.spec.ts` (RED: reopened
+exports are skeletal): `loadDocument` a structural drawing (a v2 document; it needs only N1), export
+PNG, SVG and PDF through the Export dialog (`e2e/export-steps.ts`), reopen each through File >
+Open: `readDocument` has `style.formula === 'structural'` and `serialize` equals the original's;
+the file ends with `expectBlockedRequests(app, 0)`. Property: `parse(drawingPayload(d))` deep-equals `d` with
 `formula` in the generator (`numRuns` unchanged).
 
 **Acceptance criteria:**
 - [ ] tests pass; skeletal payload bytes unchanged
+- [ ] structural PNG, SVG and PDF exports reopen structural (e2e)
 - [ ] `src/core/clipboard-export` ≥ 90 % lines
 
-**Verification:** `npx vitest run --project unit src/core/clipboard-export` then `npm run check`
+**Verification:** `npx vitest run --project unit src/core/clipboard-export`, `npm run test:e2e -- e2e/export-structural.spec.ts`, then `npm run check`
 
 **Dependencies:** N1
 
-**Files:** `src/core/clipboard-export/{payload.ts,embedding.test.ts or picture.test.ts}` (+ the property test file)
+**Files:** `src/core/clipboard-export/{payload.ts,embedding.test.ts or picture.test.ts}` (+ the property test file), `e2e/export-structural.spec.ts`
 
 **Scope:** XS. Cross-platform. Must not change: `drawingPayload`'s format, `numRuns`.
 
@@ -345,15 +409,20 @@ style (the target's setting applies). Property: `parse(drawingPayload(d))` deep-
 **Description:** `SPEC-app-shell.md` R27, R28, SC15; mock-up A12. `src/renderer/app/model/shortcuts.ts`:
 the Tools rows become `['1', 'V']` … `['0', 'T']` exactly as `docs/mockups/shell/pages.mjs`
 `SHORTCUTS`. No menu change. F1 New: `setStyle(emptyDoc(clock()), { preset })` already gives a
-skeletal doc; prove it after a structural drawing was open.
+skeletal doc; the test must start from a structural document so it can fail (below).
 
 **Tests first:** `shortcuts.test.ts` (RED: rows lack digits): the exact-rows expectation gets the
 new Tools rows; "Tools: each key selects that tool" covers digits through `hoverKeys`; the "every
 key is listed" test adds the ten digits to the tool keys. `src/main/model/menu-model.test.ts` (or
 the menu model test file) unchanged and passing (R28: no new item). E2E `e2e/app-files.spec.ts`:
-a structural drawing saved then reopened keeps `formula: 'structural'` and its file has
-`"schemaVersion": 2`; a skeletal one is written with `"schemaVersion": 1`; File > New after a
-structural drawing gives a skeletal one. Shot `e2e/shots/N10.shot.ts`: `N10/shortcuts-dialog.png`
+a structural drawing (loaded with `loadDocument`) saved then reopened keeps `formula: 'structural'` and its file has
+`"schemaVersion": 2`; a skeletal one is written with `"schemaVersion": 1`; File > New with a
+structural drawing open (saved first, so no prompt) gives an empty drawing whose `readDocument` has
+no `style.formula` (and a model-level test in `file-flows.test.ts`: the New flow's result for a
+flow whose current document is structural has no `formula`; a regression guard that passes before any
+code, because `file-flows.ts` builds `setStyle(emptyDoc(clock()), { preset: newDrawingStyle() })`
+and never reads the open document's style; it starts from a structural document, so it fails the
+day New copies that style; no RED is expected for it and the report says so). Shot `e2e/shots/N10.shot.ts`: `N10/shortcuts-dialog.png`
 (mock-up A12).
 
 **Acceptance criteria:**

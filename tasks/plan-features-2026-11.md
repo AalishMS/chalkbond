@@ -45,7 +45,7 @@ N1 doc-model v2 ──► N2 svg-render switch ──► N3 S1 layout + goldens 
    │                    └──► N6 editor formula command ──► N7 formula button ──┐
    ├──► N9 pictureDoc formula (clipboard-export)                                │
    │                                                                            │
-N4 keymap digits ──► N5 rail badges ──────────────────────────────────────────┤
+N4 keymap digits ──► N5 rail badges ──► N5b edge-case tests ───────────────────┤
 N8 white clipboard bitmap (independent) ──────────────────────────────────────┤
 N10 app-shell list and files (needs N4, N6) ───────────────────────────────────┤
                                                                                ▼
@@ -69,6 +69,7 @@ answered; N12 cannot finish without N3.
 ### Phase 2: editor (F1 and F2)
 - [ ] N4: number keys in the keymap (R50)
 - [ ] N5: rail badges, `aria-keyshortcuts`, two-key tooltips (R50, U1, U2)
+- [ ] N5b: number-key edge cases: held digit, text targets, numpad, shifted-digit-row layouts (SC13)
 - [ ] N6: `toggle-formula` command, C7 reducer, R52 consequences (R37 bend, U11 label editor), perf variant
 - [ ] N7: the formula switch in the options bar, icon-only below 1100 px (R51, U5, U6, U8)
 
@@ -78,7 +79,7 @@ answered; N12 cannot finish without N3.
 
 ### Phase 3: clipboard and shell (F3, F2 carriers, F1 list)
 - [ ] N8: white-backed clipboard bitmap with margin (R10)
-- [ ] N9: `pictureDoc` copies `style.formula` (R11)
+- [ ] N9: `pictureDoc` copies `style.formula` (R11); a structural export reopens structural
 - [ ] N10: shortcuts list with digits (R27); New is skeletal, v1/v2 files (R28)
 
 ### Checkpoint F-c — integration
@@ -92,11 +93,11 @@ answered; N12 cannot finish without N3.
 
 | Criterion | Task(s) |
 |---|---|
-| editor SC13 (number keys) | N4, N5 |
+| editor SC13 (number keys) | N4, N5, N5b (held digit, text targets, numpad, layouts) |
 | editor SC14 (formula switch) | N6, N7 |
 | doc-model D1 tests (Testing "Schema v2") | N1 |
 | svg-render SC14 (skeletal unchanged; structural legible) | N2 (unchanged part), N3 (legible part) |
-| clipboard-export SC14 (white bitmap), SC15 (formula travels) | N8, N9 |
+| clipboard-export SC14 (white bitmap), SC15 (formula travels, incl. a structural export reopens structural) | N8, N9 |
 | app-shell SC15 (list, New, v1/v2 files) | N10 |
 | `SPEC.md` SC9 | all; N12 |
 | Windows re-check section | N12 (automated gates by the orchestrator on Windows; hand checks by the owner) |
