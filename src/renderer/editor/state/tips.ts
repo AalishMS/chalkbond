@@ -70,3 +70,32 @@ export const STATUS_TIPS = {
   zoomIn: { title: 'Zoom in', key: 'Ctrl+=' },
   zoomFit: { title: 'Zoom to fit', key: 'Ctrl+0' },
 } as const satisfies Record<string, TipContent>;
+
+/** R51 U5, U6, R53 U15: the formula switch's name, tooltip and (while skeletal and empty) help. */
+export function formulaSwitch(
+  structural: boolean,
+  enabled: boolean,
+): { label: string; icon: string; ariaLabel: string; tip: TipContent } {
+  if (structural) {
+    return {
+      label: 'Show skeletal',
+      icon: 'show-skeletal',
+      ariaLabel: 'Show skeletal formula',
+      tip: {
+        title: 'Show skeletal formula',
+        help: 'Draws carbons as corners and line ends again, in the whole drawing.',
+      },
+    };
+  }
+  return {
+    label: 'Show structural',
+    icon: 'show-structural',
+    ariaLabel: 'Show structural formula',
+    tip: {
+      title: 'Show structural formula',
+      help: enabled
+        ? 'Writes the carbons outside rings with their hydrogens (CH3, CH2, CH); bonds become twice as long.'
+        : 'Draw a molecule first.',
+    },
+  };
+}

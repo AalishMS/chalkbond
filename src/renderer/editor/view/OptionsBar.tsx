@@ -8,7 +8,15 @@ import {
   type SelectionScope,
 } from '../state/selection-actions';
 import { scriptAtCaret } from '../model/text-edit';
-import { actionTip, optionTip, TEXT_OPTION_TIPS } from '../state/tips';
+import { current } from '@core/doc-model';
+import { canToggleFormula } from '../state/formula';
+import {
+  actionTip,
+  formulaSwitch,
+  optionTip,
+  TEXT_OPTION_TIPS,
+  type TipContent,
+} from '../state/tips';
 import { Icon } from './Icon';
 import { pressKeepsFocus } from './press';
 import { tipProps } from './Tooltip';
@@ -34,18 +42,23 @@ function ActionButton(props: {
   /** Shortcut shown in the tooltip. */
   shortcut?: string;
   className?: string;
+  /** An accessible name that differs from the visible label (it contains it, WCAG 2.5.3). */
+  ariaLabel?: string;
+  /** A tooltip other than the label with the disabled state's help. */
+  tip?: TipContent;
   /** Runs when the button is pressed and enabled. */
   onPress?: () => void;
 }): React.JSX.Element {
-  const { id, icon, label, state, roving, shortcut, className, onPress } = props;
+  const { id, icon, label, state, roving, shortcut, className, ariaLabel, tip, onPress } = props;
   return (
     <button
       type="button"
       className={className === undefined ? 'btn btn-action' : `btn btn-action ${className}`}
       data-testid={id}
+      aria-label={ariaLabel}
       aria-disabled={state.enabled ? undefined : true}
       {...roving.item(id)}
-      {...tipProps(actionTip(label, shortcut, state), 'below')}
+      {...tipProps(tip ?? actionTip(label, shortcut, state), 'below')}
       onClick={() => {
         // A disabled button stays focusable (aria-disabled), so the click is checked here.
         if (state.enabled) onPress?.();
@@ -86,14 +99,22 @@ function FlipButton(props: {
 
 function SelectionBar({
   scope,
+  structural,
+  hasDrawing,
   roving,
   dispatch,
 }: {
   scope: SelectionScope;
+  /** The document is drawn in structural mode (R51). */
+  structural: boolean;
+  /** Show structural has something to show (U6). */
+  hasDrawing: boolean;
   roving: Roving;
   dispatch: (action: EditorAction) => void;
 }): React.JSX.Element {
   const a = selectionActions(scope);
+  const enabled = structural || hasDrawing;
+  const formula = formulaSwitch(structural, enabled);
   return (
     <>
       <ActionButton
@@ -114,6 +135,17 @@ function SelectionBar({
         shortcut="Ctrl+Shift+K"
         className="btn-kekule"
         onPress={() => dispatch({ type: 'toggle-kekule' })}
+      />
+      <ActionButton
+        id="act-formula"
+        icon={formula.icon}
+        label={formula.label}
+        ariaLabel={formula.ariaLabel}
+        tip={formula.tip}
+        state={{ enabled, help: formula.tip.help ?? '' }}
+        roving={roving}
+        className="btn-formula"
+        onPress={() => dispatch({ type: 'toggle-formula' })}
       />
       <ActionButton
         id="act-tidy"
@@ -249,6 +281,7 @@ function TextOptions({
  */
 export function OptionsBar({ state, scope, dispatch }: OptionsBarProps): React.JSX.Element {
   const tool = state.tool;
+  const doc = current(state.history);
   const variant = isVariantTool(tool) ? state.variants[tool] : '';
   const textEditing = state.editing?.kind === 'text' ? state.editing : null;
   const roving = useRoving(
@@ -269,7 +302,13 @@ export function OptionsBar({ state, scope, dispatch }: OptionsBarProps): React.J
         <TextOptions editing={textEditing} roving={roving} dispatch={dispatch} />
       )}
       {textEditing === null && tool === 'select' && (
-        <SelectionBar scope={scope} roving={roving} dispatch={dispatch} />
+        <SelectionBar
+          scope={scope}
+          structural={doc.style.formula === 'structural'}
+          hasDrawing={canToggleFormula(doc)}
+          roving={roving}
+          dispatch={dispatch}
+        />
       )}
       {textEditing === null &&
         isVariantTool(tool) &&

@@ -427,7 +427,7 @@ Enter unchanged → no history step; a ring carbon opens with `C`.
 **Acceptance criteria:**
 - [x] command, reducer, overlay, bend and label-editor tests pass (2026-11-12, W16)
 - [x] perf budgets unchanged and met, structural variants included (timings skipped under `--coverage` as before) (`vitest --project perf`, 2026-11-12, W16)
-- [ ] editor ≥ 70 % lines
+- [x] editor ≥ 70 % lines (`npm test -- --coverage` exit 0, 2026-11-12, W16)
 
 **Verification:** `npx vitest run --project unit src/renderer/editor`, `npx vitest run --project perf src/renderer/editor/perf.test.ts`, then `npm run check`
 
@@ -470,9 +470,9 @@ pointer maps through `ptPerBlu`); every file ends with `expectBlockedRequests(ap
 after "Show structural", compared with the structural goldens on the golden sheet).
 
 **Acceptance criteria:**
-- [ ] markup and e2e tests pass; no overflow at 960×640 with Expand
-- [ ] shots exist and match mock-ups 03, 03b, 10 (tooltip text) and shell A15c by eye; the structural canvas shot matches the golden sheet
-- [ ] no key bound for the switch unless U7 is approved (then a separate spec change and task)
+- [x] markup and e2e tests pass; no overflow at 960×640 with Expand (`e2e/editor-formula.spec.ts`, `e2e/editor-layout.spec.ts`, 2026-11-12, W16)
+- [x] shots exist and match mock-ups 03, 03b, 10 (tooltip text) and shell A15c by eye; the structural canvas shot matches the golden sheet (looked at, 2026-11-12, W16)
+- [x] no key bound for the switch unless U7 is approved (then a separate spec change and task)
 
 **Verification:** `npx vitest run --project unit src/renderer/editor/view`, `npm run test:e2e -- e2e/editor-formula.spec.ts e2e/editor-layout.spec.ts`, `npm run shots -- N7`, then `npm run check`
 

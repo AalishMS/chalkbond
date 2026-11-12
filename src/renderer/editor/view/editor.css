@@ -282,6 +282,32 @@
   padding-right: var(--space-2);
 }
 
+/* R51: fixed to the longer label ("Show structural") so the bar never jumps when it flips. */
+.btn-formula {
+  justify-content: flex-start;
+  width: var(--formula-btn-w);
+  min-width: var(--formula-btn-w);
+  padding-right: var(--space-2);
+}
+
+/*
+ * R51 (U8): below 1100 px content width (the shell's compact top bar) the switch is icon-only,
+ * 32 x 32 like an option button, so the Select bar still fits at 960 px beside the Copy button.
+ * Its aria-label and tooltip are unchanged.
+ */
+@media (max-width: calc(1099.98 * 1px)) {
+  .btn-formula {
+    justify-content: center;
+    width: var(--option-btn);
+    min-width: var(--option-btn);
+    padding: 0;
+  }
+
+  .btn-formula span {
+    display: none;
+  }
+}
+
 .rail > .btn {
   flex: none;
 }
