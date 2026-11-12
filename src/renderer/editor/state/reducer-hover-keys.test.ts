@@ -15,7 +15,9 @@ import {
 } from '@core/doc-model';
 import { describe, expect, it } from 'vitest';
 import compounds from '../../../../resources/compounds/compounds.json';
-import type { HoverEdit } from '../model/keymap';
+import type { CanvasEvent } from '../model/canvas-event';
+import { hoverKeys, type HoverEdit, type KeyInfo } from '../model/keymap';
+import { screenToBlu } from '../model/viewport';
 import type { EditorState, Hit } from './editor-state';
 import { reduce, type EditorAction } from './reducer';
 import { drawn, freshState, labelEditing, testContext } from './testing';
@@ -157,5 +159,42 @@ describe('hover keys need something to act on', () => {
     const s = hovering(doc, { kind: 'bond', id: bond });
     expect(edit(s, { kind: 'element', element: 'O' })).toBe(s);
     expect(canUndo(s.history)).toBe(false);
+  });
+});
+
+describe('a digit during a drag (R50, G3)', () => {
+  it('cancels the Bond drag and switches the tool, as a letter does', () => {
+    const NONE = { shift: false, alt: false, ctrl: false };
+    const at = (s: EditorState, type: 'down' | 'move', x: number, y: number): EditorAction => {
+      const screen = { x, y };
+      const event: CanvasEvent = {
+        type,
+        screen,
+        p: screenToBlu(s.viewport, screen, 40),
+        button: 0,
+        mods: NONE,
+      };
+      return { type: 'pointer', event };
+    };
+    const keyInfo = (k: string): KeyInfo => ({
+      key: k,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+    });
+    for (const k of ['5', 'r']) {
+      let s = run(freshState(), { type: 'canvas-resized', size: { w: 1200, h: 700 } });
+      s = run(s, at(s, 'down', 500, 300));
+      s = run(s, at(s, 'move', 560, 250));
+      expect(s.gesture?.kind).toBe('bond-drag');
+      const action = hoverKeys(keyInfo(k), s.hover, s.tool);
+      expect(action).toEqual({ type: 'select-tool', tool: 'ring' });
+      if (action === null) throw new Error('no action');
+      s = run(s, action);
+      expect(s.tool).toBe('ring');
+      expect(s.gesture).toBeNull();
+      expect(s.history.past).toHaveLength(0);
+    }
   });
 });

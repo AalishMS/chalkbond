@@ -83,4 +83,9 @@ describe('catalogue', () => {
     ]);
     expect(TOOLS.map((t) => t.key)).toEqual(['V', 'E', 'B', 'Z', 'R', 'L', 'A', '+', 'M', 'T']);
   });
+
+  it('numbers the tools 1..9, 0 in rail order, each digit once (R50)', () => {
+    expect(TOOLS.map((t) => t.digit)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']);
+    expect(new Set(TOOLS.map((t) => t.digit)).size).toBe(10);
+  });
 });

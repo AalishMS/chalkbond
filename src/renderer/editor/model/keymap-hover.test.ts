@@ -86,7 +86,7 @@ describe('K2 hover keys on an atom', () => {
   });
 
   it('other keys do nothing', () => {
-    for (const k of ['q', 'x', 'y', '5', 'ArrowLeft', 'Tab', ' ']) {
+    for (const k of ['q', 'x', 'y', 'ArrowLeft', 'Tab', ' ']) {
       expect(press(k, ATOM)).toBeNull();
     }
   });
@@ -148,8 +148,8 @@ describe('K2 tool keys with nothing hovered', () => {
     expect(press('b', arrow)).toEqual(tool('bond'));
   });
 
-  it('digits, = and element letters do nothing with nothing hovered', () => {
-    for (const k of ['1', '2', '3', '=', '-', 'o', 'n']) expect(press(k, null)).toBeNull();
+  it('= and element letters do nothing with nothing hovered (digits pick tools, R50)', () => {
+    for (const k of ['=', '-', 'o', 'n']) expect(press(k, null)).toBeNull();
   });
 });
 
@@ -158,7 +158,7 @@ describe('K2 hover keys are off with Erase and Text, but tool keys still work', 
     for (const id of ['erase', 'text'] as ToolId[]) {
       expect(press('b', ATOM, id)).toEqual(tool('bond'));
       expect(press('o', ATOM, id)).toBeNull();
-      expect(press('1', BOND, id)).toBeNull();
+      expect(press('1', BOND, id)).toEqual(tool('select'));
     }
   });
 

@@ -6,7 +6,10 @@ export interface ToolDef {
   label: string;
   /** One-word caption under the rail icon. */
   caption: string;
+  /** The letter key. */
   key: string;
+  /** The number key and rail badge (R50): 1..9, 0 in rail order. The only digit table. */
+  digit: string;
   group: 'pick' | 'structure' | 'reaction';
   /** Sprite symbol; variant tools show their current option instead. */
   icon: string;
@@ -14,44 +17,96 @@ export interface ToolDef {
 
 /** SPEC-editor.md "Tool rail", in rail order. */
 export const TOOLS: readonly ToolDef[] = [
-  { id: 'select', label: 'Select', caption: 'Select', key: 'V', group: 'pick', icon: 'select' },
-  { id: 'erase', label: 'Erase', caption: 'Erase', key: 'E', group: 'pick', icon: 'erase' },
+  {
+    id: 'select',
+    label: 'Select',
+    caption: 'Select',
+    key: 'V',
+    digit: '1',
+    group: 'pick',
+    icon: 'select',
+  },
+  {
+    id: 'erase',
+    label: 'Erase',
+    caption: 'Erase',
+    key: 'E',
+    digit: '2',
+    group: 'pick',
+    icon: 'erase',
+  },
   {
     id: 'bond',
     label: 'Bond',
     caption: 'Bond',
     key: 'B',
+    digit: '3',
     group: 'structure',
     icon: 'bond-single',
   },
-  { id: 'chain', label: 'Chain', caption: 'Chain', key: 'Z', group: 'structure', icon: 'chain' },
+  {
+    id: 'chain',
+    label: 'Chain',
+    caption: 'Chain',
+    key: 'Z',
+    digit: '4',
+    group: 'structure',
+    icon: 'chain',
+  },
   {
     id: 'ring',
     label: 'Ring',
     caption: 'Ring',
     key: 'R',
+    digit: '5',
     group: 'structure',
     icon: 'ring-benzene',
   },
-  { id: 'atom', label: 'Atom', caption: 'Atom', key: 'L', group: 'structure', icon: 'mark-plus' },
+  {
+    id: 'atom',
+    label: 'Atom',
+    caption: 'Atom',
+    key: 'L',
+    digit: '6',
+    group: 'structure',
+    icon: 'mark-plus',
+  },
   {
     id: 'arrow',
     label: 'Arrow',
     caption: 'Arrow',
     key: 'A',
+    digit: '7',
     group: 'reaction',
     icon: 'arrow-forward',
   },
-  { id: 'plus', label: 'Plus', caption: 'Plus', key: '+', group: 'reaction', icon: 'plus' },
+  {
+    id: 'plus',
+    label: 'Plus',
+    caption: 'Plus',
+    key: '+',
+    digit: '8',
+    group: 'reaction',
+    icon: 'plus',
+  },
   {
     id: 'curved',
     label: 'Curved arrow',
     caption: 'Curly',
     key: 'M',
+    digit: '9',
     group: 'reaction',
     icon: 'curved-full',
   },
-  { id: 'text', label: 'Text', caption: 'Text', key: 'T', group: 'reaction', icon: 'text' },
+  {
+    id: 'text',
+    label: 'Text',
+    caption: 'Text',
+    key: 'T',
+    digit: '0',
+    group: 'reaction',
+    icon: 'text',
+  },
 ];
 
 export interface OptionDef {

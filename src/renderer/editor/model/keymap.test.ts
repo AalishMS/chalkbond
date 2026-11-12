@@ -1,5 +1,8 @@
+import type { AtomId, BondId, ObjectId } from '@core/doc-model';
 import { describe, expect, it } from 'vitest';
-import { canvasKey, fieldCommand, globalCommand, type KeyInfo } from './keymap';
+import { TOOLS } from '../state/catalog';
+import type { Hit, ToolId } from '../state/editor-state';
+import { canvasKey, fieldCommand, globalCommand, hoverKeys, type KeyInfo } from './keymap';
 
 const key = (k: string, over: Partial<KeyInfo> = {}): KeyInfo => ({
   key: k,
@@ -141,5 +144,74 @@ describe('K1 nudge keys', () => {
   it('Ctrl, Alt or Meta with an arrow is not a nudge', () => {
     expect(canvasKey(arrow('ArrowUp', { ctrlKey: true }))).toBeNull();
     expect(canvasKey(arrow('ArrowUp', { altKey: true }))).toBeNull();
+  });
+});
+
+// R50: the digits 1..9, 0 pick the ten rail tools in rail order; 1/2/3 keep R5 over an atom or bond.
+describe('R50 number keys', () => {
+  const plain = (k: string, over: Partial<KeyInfo> = {}): KeyInfo =>
+    key(k, { ctrlKey: false, ...over });
+  const ATOM: Hit = { kind: 'atom', id: 'a1' as AtomId };
+  const BOND: Hit = { kind: 'bond', id: 'b3' as BondId };
+  const OBJECT: Hit = { kind: 'object', id: 'o1' as ObjectId, type: 'arrow' };
+  const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+  const pick = (t: ToolId): object => ({ type: 'select-tool', tool: t });
+  const toolOf = (digit: string): ToolId => {
+    const tool = TOOLS[DIGITS.indexOf(digit)];
+    if (!tool) throw new Error('no tool');
+    return tool.id;
+  };
+
+  it('with no hover and over an object, each digit picks its tool', () => {
+    for (const d of DIGITS) {
+      expect(hoverKeys(plain(d), null, 'bond')).toEqual(pick(toolOf(d)));
+      expect(hoverKeys(plain(d), OBJECT, 'bond')).toEqual(pick(toolOf(d)));
+    }
+  });
+
+  it('under Erase and Text a digit over an atom or a bond picks a tool', () => {
+    for (const t of ['erase', 'text'] as const) {
+      for (const hit of [ATOM, BOND]) {
+        for (const d of DIGITS) {
+          expect(hoverKeys(plain(d), hit, t)).toEqual(pick(toolOf(d)));
+        }
+      }
+    }
+  });
+
+  it('1 2 3 keep R5 over an atom or a bond with each of the other eight tools', () => {
+    for (const t of TOOLS.map((x) => x.id).filter((x) => x !== 'erase' && x !== 'text')) {
+      for (const n of [1, 2, 3] as const) {
+        expect(hoverKeys(plain(String(n)), ATOM, t)).toEqual({
+          type: 'hover-edit',
+          edit: { kind: 'sprout', order: n },
+        });
+        expect(hoverKeys(plain(String(n)), BOND, t)).toEqual({
+          type: 'hover-edit',
+          edit: { kind: 'order', order: n },
+        });
+      }
+    }
+  });
+
+  it('4 .. 0 over an atom or a bond pick their tool, whatever tool is active', () => {
+    for (const t of TOOLS.map((x) => x.id)) {
+      for (const d of DIGITS.slice(3)) {
+        expect(hoverKeys(plain(d), ATOM, t)).toEqual(pick(toolOf(d)));
+        expect(hoverKeys(plain(d), BOND, t)).toEqual(pick(toolOf(d)));
+      }
+    }
+  });
+
+  it('Ctrl+1 and Ctrl+0 stay zoom; Ctrl, Alt or Meta make hoverKeys ignore a digit', () => {
+    expect(globalCommand(key('1'), 'all')).toBe('zoom-reset');
+    expect(globalCommand(key('0'), 'all')).toBe('zoom-fit');
+    for (const over of [{ ctrlKey: true }, { altKey: true }, { metaKey: true }]) {
+      for (const d of DIGITS) expect(hoverKeys(plain(d, over), null, 'bond')).toBeNull();
+    }
+  });
+
+  it('Shift is ignored', () => {
+    expect(hoverKeys(plain('1', { shiftKey: true }), null, 'bond')).toEqual(pick('select'));
   });
 });

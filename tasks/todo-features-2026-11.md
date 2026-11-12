@@ -154,9 +154,9 @@ held → null; Shift is ignored (`key: '1', shiftKey: true` → select). `catalo
 during a Bond drag cancels the gesture and switches the tool (G3), as a letter does.
 
 **Acceptance criteria:**
-- [ ] every digit × hover × tool case above passes; letters unchanged
-- [ ] the digit table lives in `catalog.ts` only
-- [ ] editor ≥ 70 % lines
+- [x] every digit × hover × tool case above passes; letters unchanged
+- [x] the digit table lives in `catalog.ts` only
+- [x] editor ≥ 70 % lines
 
 **Verification:** `npx vitest run --project unit src/renderer/editor/model/keymap.test.ts src/renderer/editor/state` then `npm run check`
 

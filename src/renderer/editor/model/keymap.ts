@@ -1,5 +1,6 @@
 // Key event -> command (SPEC-editor.md K1 "Global shortcuts"). Pure: it reads a plain key record.
 import type { ElementSymbol } from '@core/doc-model';
+import { TOOLS } from '../state/catalog';
 import type { EditorCommand } from '../state/controller';
 import type { Hit, ToolId } from '../state/editor-state';
 import type { EditorAction } from '../state/reducer';
@@ -104,8 +105,9 @@ const ELEMENT_KEYS: Readonly<Record<string, ElementSymbol>> = {
   b: 'Br',
 };
 
-/** K2: tool keys, used when no hover key claims the press. */
+/** K2: tool keys, used when no hover key claims the press. The digits (R50) come from `TOOLS`. */
 const TOOL_KEYS: Readonly<Record<string, ToolId>> = {
+  ...Object.fromEntries(TOOLS.map((t) => [t.digit, t.id])),
   v: 'select',
   e: 'erase',
   b: 'bond',
