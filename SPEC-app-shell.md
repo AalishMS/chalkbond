@@ -782,7 +782,7 @@ validation rejects and is logged). C1–C5 are clipboard-export's (its "IPC chan
 | N2 | `session:file` / `sessionFile` | `{ ref: uuid \| null }` (null: New, an Untitled session) | the session file for F6's folder; last open folder (an opened ref) or last save folder (a Save-as ref); recent list (F10, A15). An unknown id is ignored and logged |
 | N3 | `recovery:write` / `writeRecovery` | `{ text: string ≤ 20 MB starting "{", name: string ≤ 255 }` | RC1, RC6 (**removed 2026-11-12, R35**) |
 | N4 | `recovery:clear` / `clearRecovery` | `{}` | RC2, RC6 (**removed 2026-11-12, R35**) |
-| N7 (2026-11-12) | `session:write-tab` / `writeTabRecord` | `{ tabId: uuid, text: string ≤ 64 MiB starting "{" }` | SS4, SS5 |
+| N7 (2026-11-12) | `session:write-tab` / `writeTabRecord` | `{ tabId: uuid, text: string ≤ 64 MiB starting "{" }` | SS4, SS5. **An `invoke`, not a send (TB9, 2026-11-12):** it answers `{ ok: true }` or `{ ok: false, problem: WriteProblem }`, because SS6 marks a tab unkept from the result |
 | N8 | `session:index` / `updateSessionIndex` | `{ tabs: { id, kind, name, view, unsaved, warning }[], active: uuid, discarded: uuid[] }` | merged with main's paths and written hashes; SS4, SS5 |
 | N9 | `file:accept-outside` / `acceptOutsideChange` | `{ tabId: uuid, written: sha256 }` | the file's current bytes become the file hash and `written` the written hash (AS7(a)) |
 | N5 | `app:close-ok` / `closeOk` | `{}` | closes the window (F13) |
