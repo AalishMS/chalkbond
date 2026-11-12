@@ -84,7 +84,8 @@ it, who verified it).
 Automated gates (PowerShell, from a clean clone of the final commit):
 
 - [x] `npm ci`, then `npm run check` (exit 0; write the file and test counts)
-  - Result 2026-11-12, run by the orchestrator on the Windows 11 machine at `e34414b`: `npm run check` exit 0, 239 files, 4606 tests. `npm ci` and a clean clone were not part of this run (the working tree of the development machine was used); that part of the box is not claimed.
+  - Result 2026-11-12, run by the orchestrator on the Windows 11 machine at `e34414b`: `npm run check` exit 0, 239 files, 4606 tests. 
+  - Result 2026-11-12, orchestrator, at `8233ea9`: `npm ci` exit 0 (a clean install of the locked dependencies; `package.json` and `package-lock.json` are unchanged since the `npm ci` of 2026-11-11 at `956a4a4`), then `npm run check` exit 0, 240 files, 4614 tests. After the install the Electron binary is present and `e2e/app-window.spec.ts` passes (1 passed). It was run in the development machine's working tree, not in a fresh clone.
 - [x] `npm run test:e2e` (builds first; includes `e2e/win/`; exit 0, count written)
   - Result 2026-11-12, orchestrator, `e34414b`: 342 passed, 0 failed, 6.8 min, including `e2e/win/`. Copy of the 40-atom scheme to the Windows clipboard: median 62.1 ms (samples 100.1, 62.1, 58.4, 60.1, 63.8; budget 500 ms); in-memory transport 33.3 ms. The first full run of the day, at `3047d36`, had 333 passed and 9 failed (the small-screen helper defect, fixed in `74b9290`, a test-harness fix; see the Decisions Log); the run above is the second.
 - [x] `npm run test:e2e:os-input` (do not touch the mouse while it runs)
