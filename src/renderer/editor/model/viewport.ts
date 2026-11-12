@@ -182,6 +182,19 @@ export function clampPan(v: Viewport, content: Rect | null): Viewport {
 }
 
 /**
+ * U13 (R53): after a formula switch (or its undo or redo) the zoom stays and the pan moves so the
+ * centre of the drawing's ink box is at the screen point where the old box's centre was. Both
+ * boxes are in pt; with nothing drawn on either side the view is left alone.
+ */
+export function keepInkCentre(v: Viewport, before: Rect | null, after: Rect | null): Viewport {
+  if (before === null || after === null) return v;
+  const target = ptToScreen(v, inkCentre(before));
+  const c = inkCentre(after);
+  const s = k(v);
+  return { ...v, pan: { x: target.x - c.x * s, y: target.y - c.y * s } };
+}
+
+/**
  * V6: after a preset switch the drawing keeps its on-screen size: zoom x old / new bond length
  * (clamped, not snapped), and the drawing point at the canvas centre stays there.
  */

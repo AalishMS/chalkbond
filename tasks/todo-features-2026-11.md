@@ -425,8 +425,8 @@ carbon it is the skeleton value in both. `state/reducer-label.test.ts`: U11 fill
 Enter unchanged → no history step; a ring carbon opens with `C`.
 
 **Acceptance criteria:**
-- [ ] command, reducer, overlay, bend and label-editor tests pass
-- [ ] perf budgets unchanged and met, structural variants included (timings skipped under `--coverage` as before)
+- [x] command, reducer, overlay, bend and label-editor tests pass (2026-11-12, W16)
+- [x] perf budgets unchanged and met, structural variants included (timings skipped under `--coverage` as before) (`vitest --project perf`, 2026-11-12, W16)
 - [ ] editor ≥ 70 % lines
 
 **Verification:** `npx vitest run --project unit src/renderer/editor`, `npx vitest run --project perf src/renderer/editor/perf.test.ts`, then `npm run check`

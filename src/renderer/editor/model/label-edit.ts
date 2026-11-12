@@ -2,6 +2,7 @@
 // committing it does to the atom. Pure: values in, a document (or null for "no change") out.
 import { interpretLabel, perceive } from '@core/chem-core';
 import { updateAtom, type Atom, type AtomId, type Doc } from '@core/doc-model';
+import { ringAtoms } from '@core/svg-render';
 
 /** L1: the atom's label, else its element with the H count (when explicit) and the charge. */
 export function labelPrefill(atom: Atom): string {
@@ -15,6 +16,25 @@ export function labelPrefill(atom: Atom): string {
     text += Math.abs(atom.charge) === 1 ? sign : `${sign}${Math.abs(atom.charge)}`;
   }
   return text;
+}
+
+/**
+ * L1 in the document's setting: in structural mode a carbon outside a ring with no label opens
+ * with the text it shows, the element and its perceived H count (`CH3`, R52 U11); everything else
+ * (a ring carbon, any carbon in skeletal mode, a labelled atom) as `labelPrefill`.
+ */
+export function labelPrefillIn(doc: Doc, atom: Atom): string {
+  const written =
+    doc.style.formula === 'structural' &&
+    atom.element === 'C' &&
+    (atom.label === undefined || atom.label === '') &&
+    !ringAtoms(doc).has(atom.id);
+  if (!written) return labelPrefill(atom);
+  const h = Math.max(0, Math.floor(perceive(doc).atoms[atom.id]?.implicitH ?? 0));
+  const text = `C${h === 0 ? '' : h === 1 ? 'H' : `H${h}`}`;
+  if (atom.charge === 0) return text;
+  const sign = atom.charge > 0 ? '+' : '-';
+  return Math.abs(atom.charge) === 1 ? `${text}${sign}` : `${text}${sign}${Math.abs(atom.charge)}`;
 }
 
 /** L2: the caption turns into the "drawn as typed" warning when the text is not understood. */

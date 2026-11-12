@@ -13,7 +13,7 @@ import {
   type Doc,
   type ObjectId,
 } from '@core/doc-model';
-import { isLabelled, type Scene } from '@core/svg-render';
+import { isLabelled, ringAtoms, type Scene } from '@core/svg-render';
 import type { Guide } from '../state/editor-state';
 import { distance, dot, snapAngle, type Point } from './geometry';
 import { itemBoxes } from './move';
@@ -114,7 +114,11 @@ export function defaultBendSize(chord: number, labelled = false): number {
 function onLabel(doc: Doc, anchor: Anchor): boolean {
   if (anchor.kind !== 'atom') return false;
   const atom = doc.atoms[anchor.atom];
-  return atom !== undefined && isLabelled(atom, neighbors(doc, atom.id).length);
+  if (atom === undefined) return false;
+  const formula = doc.style.formula ?? 'skeletal';
+  // R53: a ring carbon stays a skeleton vertex in structural mode.
+  const inRing = formula === 'structural' && ringAtoms(doc).has(atom.id);
+  return isLabelled(atom, neighbors(doc, atom.id).length, formula, inRing);
 }
 
 /** The atoms an anchor stands on: its atom, or both atoms of its bond. */

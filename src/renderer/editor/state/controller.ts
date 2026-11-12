@@ -24,6 +24,7 @@ import { HIT_ALL, hitTest } from '../model/hit-test';
 import { clickSelection, selectionHolds } from '../model/selection';
 import { selectionScope } from '../model/scope';
 import { canCopy, canDelete, canPaste } from './commands';
+import { canToggleFormula } from './formula';
 import { isDirty, type ReducerContext } from './reducer';
 import { selectionActions } from './selection-actions';
 import { createStore, type Store } from './store';
@@ -46,6 +47,7 @@ export type EditorCommand =
   | 'toggle-kekulé'
   | 'tidy-reaction'
   | 'focus-name-field'
+  | 'toggle-formula'
   | { type: 'set-preset'; preset: StylePreset }
   | { type: 'paste-sub'; sub: SubDoc }
   | { type: 'insert-text'; text: string };
@@ -224,6 +226,8 @@ export function createEditorController(options: EditorOptions): EditorController
       case 'tidy-reaction':
         // With no arrow in scope the command says so (TR1), so it runs whenever the editor is idle.
         return s.gesture === null && s.editing === null;
+      case 'toggle-formula':
+        return s.gesture === null && s.editing === null && canToggleFormula(current(s.history));
       case 'clean-up':
       case 'toggle-kekulé': {
         if (s.gesture !== null || s.editing !== null) return false;
@@ -304,6 +308,9 @@ export function createEditorController(options: EditorOptions): EditorController
           break;
         case 'toggle-kekulé':
           store.dispatch({ type: 'toggle-kekule' });
+          break;
+        case 'toggle-formula':
+          store.dispatch({ type: 'toggle-formula' });
           break;
         case 'tidy-reaction':
           store.dispatch({ type: 'tidy' });

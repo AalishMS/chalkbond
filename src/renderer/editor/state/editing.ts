@@ -1,7 +1,7 @@
 // The label and text editors in the state (SPEC-editor.md "Label editor", rule R7): opening one,
 // replacing its model and closing it by commit or cancel. The document changes only on commit.
 import { current } from '@core/doc-model';
-import { labelCommit, labelPrefill } from '../model/label-edit';
+import { labelCommit, labelPrefillIn } from '../model/label-edit';
 import {
   fromText,
   insertPlain,
@@ -20,14 +20,15 @@ type Commit = Extract<EditorAction, { type: 'commit' }>;
 /** L1: the label editor on `atom`, filled with its label or element and all selected. */
 export function openLabelEditor(state: EditorState, atom: AtomId): EditorState {
   if (state.editing !== null || state.gesture !== null) return state;
-  const found = current(state.history).atoms[atom];
+  const doc = current(state.history);
+  const found = doc.atoms[atom];
   if (!found) return state;
   return {
     ...state,
     hover: null,
     preview: null,
     notice: null,
-    editing: { kind: 'label', atom, edit: fromText(labelPrefill(found)) },
+    editing: { kind: 'label', atom, edit: fromText(labelPrefillIn(doc, found)) },
   };
 }
 

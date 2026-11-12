@@ -1,4 +1,13 @@
-import { canRedo, canUndo, current, undoLabel, type AtomId, type Doc } from '@core/doc-model';
+import {
+  canRedo,
+  canUndo,
+  current,
+  setStyle,
+  undoLabel,
+  type AtomId,
+  type Doc,
+} from '@core/doc-model';
+import { ringAtoms } from '@core/svg-render';
 import { describe, expect, it } from 'vitest';
 import type { CanvasEvent } from '../model/canvas-event';
 import { fromText, insertText, selectionOf, textOf } from '../model/text-edit';
@@ -170,5 +179,57 @@ describe('cancelling', () => {
   it('the Esc ladder also closes the editor', () => {
     const { s, o } = ethanol();
     expect(run(open(s, o), { type: 'escape' }).editing).toBeNull();
+  });
+});
+
+describe('the label editor in structural mode (L1, R52 U11, R53)', () => {
+  const structural = (name: string): { s: EditorState } => {
+    const s = run(freshState(setStyle(drawn({ name, x: 0, y: 0 }), { formula: 'structural' })), {
+      type: 'canvas-resized',
+      size: { w: 1200, h: 700 },
+    });
+    return { s };
+  };
+  const carbons = (s: EditorState): Doc['atoms'][AtomId][] =>
+    Object.values(docOf(s).atoms).filter((a) => a.element === 'C');
+
+  it('a chain carbon opens filled with the text it shows: CH3 for the methyl, CH2 for the next', () => {
+    const { s } = structural('ethanol');
+    const texts = carbons(s).map((a) => textOf(open(s, a.id).editing?.edit as never));
+    expect(texts.sort()).toEqual(['CH2', 'CH3']);
+  });
+
+  it('the same carbon opens as C in skeletal mode', () => {
+    const base = ethanol().s;
+    for (const a of carbons(base)) {
+      expect(textOf(open(base, a.id).editing?.edit as never)).toBe('C');
+    }
+  });
+
+  it('Enter on the unchanged text records no history step', () => {
+    const { s } = structural('ethanol');
+    for (const a of carbons(s)) {
+      const next = run(open(s, a.id), { type: 'edit-commit' });
+      expect(next.editing).toBeNull();
+      expect(next.history).toBe(s.history);
+    }
+  });
+
+  it('a ring carbon of toluene opens with C; the methyl with CH3', () => {
+    const { s } = structural('toluene');
+    const doc = docOf(s);
+    const rings = ringAtoms(doc);
+    const ring = carbons(s).filter((a) => rings.has(a.id));
+    const chain = carbons(s).filter((a) => !rings.has(a.id));
+    expect(ring).toHaveLength(6);
+    for (const a of ring) expect(textOf(open(s, a.id).editing?.edit as never)).toBe('C');
+    expect(chain).toHaveLength(1);
+    expect(textOf(open(s, chain[0]!.id).editing?.edit as never)).toBe('CH3');
+  });
+
+  it('a carbon with a label opens with the label; a heteroatom as before', () => {
+    const { s } = structural('ethanol');
+    const o = Object.values(docOf(s).atoms).find((a) => a.element === 'O')!;
+    expect(textOf(open(s, o.id).editing?.edit as never)).toBe('O');
   });
 });

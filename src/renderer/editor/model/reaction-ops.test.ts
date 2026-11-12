@@ -3,6 +3,7 @@ import {
   addBond,
   fragments,
   resolveAnchor,
+  setStyle,
   type Anchor,
   type ArrowObject,
   type AtomId,
@@ -357,5 +358,40 @@ describe('default bend over short chords: which ends are labelled (R37)', () => 
     const { doc, o, c } = alkoxide();
     const bend = curvedBend(doc, { kind: 'atom', atom: o }, { kind: 'atom', atom: c });
     expect(Math.abs(bend)).toBeCloseTo(0.9, 9);
+  });
+});
+
+describe('default bend and the formula setting (R37, R52, R53)', () => {
+  // A CH(CH3)2-O- chain: the bond C-C to its own carbon is a "bare end" in skeletal mode.
+  const C30b = Math.cos(Math.PI / 6);
+  function chainDoc(): { doc: Doc; c: AtomId; cc: BondId } {
+    const [d1, c1] = addAtom(drawn(), { element: 'C', x: 0, y: 0 });
+    const [d2, c] = addAtom(d1, { element: 'C', x: C30b, y: -0.5 });
+    const [d3, c3] = addAtom(d2, { element: 'C', x: C30b, y: -1.5 });
+    const [d4, cc] = addBond(d3, c1, c);
+    const [doc] = addBond(d4, c, c3);
+    return { doc, c, cc };
+  }
+  const structural = (doc: Doc): Doc => setStyle(doc, { formula: 'structural' });
+
+  it('from a chain carbon the structural value is the labelled-atom one, the skeletal the skeleton one', () => {
+    const { doc, c, cc } = chainDoc();
+    const from = { kind: 'bond', bond: cc, t: 0.5 } as const;
+    const to = { kind: 'atom', atom: c } as const;
+    expect(Math.abs(curvedBend(doc, from, to))).toBeCloseTo(1.8, 9);
+    expect(Math.abs(curvedBend(structural(doc), from, to))).toBeCloseTo(2.6, 9);
+  });
+
+  it('from a ring carbon it is the skeleton value in both modes', () => {
+    const doc = drawn({ name: 'benzene', x: 0, y: 0 });
+    const bond = Object.values(doc.bonds)[0] as Bond;
+    const from = { kind: 'bond', bond: bond.id, t: 0.5 } as const;
+    const to = { kind: 'atom', atom: bond.a1 } as const;
+    const skeletal = curvedBend(doc, from, to);
+    expect(curvedBend(structural(doc), from, to)).toBe(skeletal);
+    expect(Math.abs(skeletal)).toBeCloseTo(
+      defaultBendSize(distance(resolveAnchor(doc, from), resolveAnchor(doc, to))),
+      9,
+    );
   });
 });

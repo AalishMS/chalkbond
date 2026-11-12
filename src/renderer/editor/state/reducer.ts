@@ -45,6 +45,7 @@ import {
 } from './commands';
 import { differs } from './dirty';
 import { showNotice } from './notice';
+import { followFormula, toggleFormula } from './formula';
 import { setPreset } from './preset';
 import {
   cleanUp,
@@ -132,6 +133,8 @@ export type EditorAction =
   | { type: 'clean-up' }
   /** C3: Show Kekulé or Show circle, whichever the scope offers. */
   | { type: 'toggle-kekule' }
+  /** R51, C7: Show structural | Show skeletal on the whole document, then U13. */
+  | { type: 'toggle-formula' }
   /** TR1-TR6: Tidy reaction on the scope (the selection, else everything near the arrows). */
   | { type: 'tidy' }
   /** C2: Expand the abbreviations in the selection. */
@@ -246,10 +249,20 @@ function stepHistory(state: EditorState, dir: 'undo' | 'redo', ctx: ReducerConte
   const history = dir === 'undo' ? undo(state.history) : redo(state.history);
   const stepped = { ...settled(state), history, notice: null };
   // PR1: the viewport follows the style's bond length (a preset switch undone or redone).
-  const was = ctx.derive.committed(docOf(state)).scene.style.bondLength;
-  const now = ctx.derive.committed(current(history)).scene.style.bondLength;
-  if (was === now) return stepped;
-  return { ...stepped, viewport: switchPreset(state.viewport, was, now) };
+  const was = ctx.derive.committed(docOf(state)).scene.style;
+  const now = ctx.derive.committed(current(history)).scene.style;
+  if (was.bondLength !== now.bondLength) {
+    return {
+      ...stepped,
+      viewport: switchPreset(state.viewport, was.bondLength, now.bondLength),
+    };
+  }
+  // U13: a formula switch undone or redone keeps the zoom and the drawing's centre.
+  if (was.ptPerBlu === now.ptPerBlu) return stepped;
+  return {
+    ...stepped,
+    viewport: followFormula(state.viewport, docOf(state), current(history), ctx.derive),
+  };
 }
 
 /** Ink bounds (pt) and bond length (pt) of a document's scene. */
@@ -353,6 +366,8 @@ export function reduce(state: EditorState, action: EditorAction, ctx: ReducerCon
       return cleanUp(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'toggle-kekule':
       return toggleKekule(state, ctx.derive, (s, a) => commit(s, a, ctx));
+    case 'toggle-formula':
+      return toggleFormula(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'tidy':
       return tidyReaction(state, ctx.derive, (s, a) => commit(s, a, ctx));
     case 'expand':

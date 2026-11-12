@@ -1,6 +1,15 @@
 // Every host command has a canRun and a run that agree (SPEC-editor.md "Seam to the host"):
 // when canRun is false, run changes nothing; when it is true, run has the documented effect.
-import { addAtom, addBond, everything, extract, type AtomId, type Doc } from '@core/doc-model';
+import {
+  addAtom,
+  addBond,
+  addObject,
+  everything,
+  extract,
+  setStyle,
+  type AtomId,
+  type Doc,
+} from '@core/doc-model';
 import { describe, expect, it } from 'vitest';
 import { messyScheme } from '../model/tidy-fixtures';
 import { createEditorController, type EditorCommand, type EditorController } from './controller';
@@ -235,6 +244,30 @@ const COMMAND_CASES: readonly CommandCase[] = [
     effect: (c) => expect(c.undoLabel()).toBe('Show Kekulé'),
   },
   {
+    name: 'toggle-formula',
+    cmd: 'toggle-formula',
+    blocked: sized,
+    ready: ethane,
+    effect: (c) => {
+      expect(c.undoLabel()).toBe('Show structural formula');
+      expect(c.getDoc().style.formula).toBe('structural');
+    },
+  },
+  {
+    name: 'toggle-formula (editor open)',
+    cmd: 'toggle-formula',
+    blocked: () => withEditorOpen(ethane()),
+    ready: ethane,
+    effect: (c) => expect(c.getDoc().style.formula).toBe('structural'),
+  },
+  {
+    name: 'toggle-formula (gesture running)',
+    cmd: 'toggle-formula',
+    blocked: () => withGesture(ethane()),
+    ready: ethane,
+    effect: (c) => expect(c.getDoc().style.formula).toBe('structural'),
+  },
+  {
     name: 'tidy-reaction',
     cmd: 'tidy-reaction',
     blocked: () => withEditorOpen(ethane()),
@@ -302,6 +335,7 @@ const HOST_COMMANDS = [
   'zoom-reset',
   'clean-up',
   'toggle-kekulé',
+  'toggle-formula',
   'tidy-reaction',
   'focus-name-field',
   'set-preset',
@@ -359,6 +393,30 @@ describe('every host command has a canRun and a run that agree', () => {
     expect(c.canRun('focus-name-field')).toBe(false);
     c.run('focus-name-field');
     expect(c.store.getState().focusRequest).toBe(2);
+  });
+
+  it('toggle-formula on a structural document can run even when it is empty, and goes back (C7)', () => {
+    const c = sized();
+    expect(c.canRun('toggle-formula')).toBe(false);
+    c.store.dispatch({
+      type: 'commit',
+      label: 'Show structural formula',
+      recipe: (d) => setStyle(d, { formula: 'structural' }),
+    });
+    expect(c.canRun('toggle-formula')).toBe(true);
+    c.run('toggle-formula');
+    expect(c.getDoc().style.formula).toBeUndefined();
+    expect(c.undoLabel()).toBe('Show skeletal formula');
+  });
+
+  it('toggle-formula on a document with only an object can run (non-empty)', () => {
+    const c = sized();
+    c.store.dispatch({
+      type: 'commit',
+      label: 'Add plus',
+      recipe: (d) => addObject(d, { type: 'plus', at: { x: 0, y: 0 } })[0],
+    });
+    expect(c.canRun('toggle-formula')).toBe(true);
   });
 
   it('set-preset to the preset the document has can run and records nothing (PR1)', () => {
