@@ -1275,7 +1275,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
    closest first ("ethanl" → ethanol), reaction text builds a tidy scheme (unit + e2e).
    **Proven:** `state/reducer-name.test.ts`, `e2e/editor-name.spec.ts`, `e2e/editor-reactions.spec.ts`.
 10. Performance budgets met on Windows and node perf budgets pass.
-   **Partly proven:** `src/renderer/editor/perf.test.ts` (node) and `e2e/editor-perf.spec.ts` on the development machine (table in "Performance"). **Manual, pending:** the owner's laptop (`docs/windows-checklist.md` E32 and Checkpoint R, unticked); not claimed.
+   **Partly proven:** `src/renderer/editor/perf.test.ts` (node) and `e2e/editor-perf.spec.ts` on the development machine (table in "Performance"). **Manual, pending:** the owner's laptop (`docs/windows-checklist.md` E32 and Checkpoint R, unticked); not claimed. Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop, so the E32 run on that laptop stays open.
 11. `npm run check` green; `src/renderer/editor` ≥ 70 % line coverage; the DOM-free lint block
     and boundary probes pass.
    **Proven:** `npm run check` green; `npm test -- --coverage` reports `src/renderer/editor` at 85.5 % lines (model 99.4, state 99.5, tools 98.7, view 27.1) with a 70 % threshold enforced in `vitest.config.mts`; lint probes in `tests/tooling/`.

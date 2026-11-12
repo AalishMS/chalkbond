@@ -8,7 +8,7 @@ main folders). Written together with `SPEC-clipboard-export.md`; the two share o
 (drafted in commit 4dd7d48; reviewed and approved by the delegated reviewer with the shell
 mock-ups of commit d3abe4b as the visual source of truth; see "Decisions").
 
-Audience: a grade 11–12 chemistry teacher in Nepal on a Windows 10/11 laptop (often 1366×768),
+Audience: a grade 11–12 chemistry teacher in Nepal on a Windows 10/11 laptop (often 1366×768; Windows 10 was not tested by hand before 1.0.0 (owner decision 2026-11-12)),
 Office 2021, no network, power cuts common, not a power user. The test for every choice: *what
 would this teacher expect?* The window must stay calm: fewer controls done well.
 
@@ -760,9 +760,10 @@ Coverage: `src/main/model/**` and `src/renderer/app/model/**` ≥ 90 % lines (th
 Human-only: native chrome, other programs, a clean machine.
 
 - [x] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1). Done 2026-11-11 (`dist:win` exit 0 at `956a4a4`): installer 109,915,593 bytes (104.8 MiB), unpacked `dist/win-unpacked` 347,499,681 bytes (331.4 MiB, 21 files), installed 347,681,841 bytes (331.6 MiB, 24 files, measured 2026-11-11 after installing on the development machine); all three are in `SPEC-app-shell.md` I1.
-- [ ] On a clean Windows 10 and a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
-  - Observed 2026-11-11 on the development machine only (Windows 11 Pro 26300, not a clean account): installed from `dist/Chalkbond-1.0.0-setup.exe` (the folder `%LOCALAPPDATA%\Programs\Chalkbond` did not exist before), "Chalkbond Setup, Installing, please wait...", Chalkbond opened by itself, no admin or UAC prompt, no SmartScreen box (the installer was built locally and has no Mark of the Web, so this says nothing about a downloaded or copied installer), desktop shortcut (in the OneDrive-redirected Desktop folder) and Start-menu shortcut "Chalkbond" with the green icon, `HKCU\Software\Classes\.chalk` is "Chalkbond drawing", `Chalkbond.exe` ProductVersion 1.0.0.0. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots, the installed folder, the shortcut files and the registry. Still open: SmartScreen, the installs on clean Windows 10 and Windows 11 accounts without admin rights, network disconnected.
+- [ ] On a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
+  - Observed 2026-11-11 on the development machine only (Windows 11 Pro 26300, not a clean account): installed from `dist/Chalkbond-1.0.0-setup.exe` (the folder `%LOCALAPPDATA%\Programs\Chalkbond` did not exist before), "Chalkbond Setup, Installing, please wait...", Chalkbond opened by itself, no admin or UAC prompt, no SmartScreen box (the installer was built locally and has no Mark of the Web, so this says nothing about a downloaded or copied installer), desktop shortcut (in the OneDrive-redirected Desktop folder) and Start-menu shortcut "Chalkbond" with the green icon, `HKCU\Software\Classes\.chalk` is "Chalkbond drawing", `Chalkbond.exe` ProductVersion 1.0.0.0. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots, the installed folder, the shortcut files and the registry. Still open: SmartScreen, the installs on clean Windows 10 and Windows 11 accounts without admin rights, network disconnected. Update 2026-11-12 (owner decision, the orchestrator's reading of "no we dont need that"): the Windows 10 install is waived; this box is run on a clean Windows 11 account only, and Windows 10 is untested by hand for 1.0.0.
 - [ ] Cold start of the installed app to a usable canvas is under 3 s on the teacher's laptop (`SPEC.md` SC1).
+  - Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop ("no this laptop is not the one the teacher will use"), so this box cannot be done here and stays open.
 - [ ] Save `test.chalk` on the desktop: Explorer shows the A16 file icon and type "Chalkbond drawing"; double-clicking opens it; double-clicking a second `.chalk` while Chalkbond has unsaved changes shows the save prompt, then opens it in the same window.
 - [ ] Menus look like A04–A06 and the context menus like A07 (sentence case, access keys underlined after Alt, shortcuts shown); Alt then F opens File, arrows and Enter work; every shown shortcut works from the canvas; Ctrl+C / Ctrl+V / Ctrl+Z inside the name field act on its text; right-click in the name field shows Cut / Copy / Paste / Select all.
 - [ ] Alt+click an atom with Select, release Alt, press B: the Bond tool is chosen and the menu bar is not focused (K3).
@@ -813,7 +814,7 @@ Human-only: native chrome, other programs, a clean machine.
     largest 256 (tooling test); `npm run dist:win` succeeds and the packaged app launches
     (`e2e/packaged/app.packaged.ts`, Playwright project `packaged`, run by `npm run test:packaged` after `npm run dist:win`).
 14. The shots of every UI task match their mock-up by eye at the phase checkpoint; the Windows
-    checks above are ticked on Windows 10 and 11 (human).
+    checks above are ticked on Windows 11 (human; Windows 10 waived by the owner on 2026-11-12, untested by hand for 1.0.0).
 
 ## Boundaries (module-specific)
 

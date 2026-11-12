@@ -4,7 +4,7 @@ Chalkbond is a Windows desktop app for drawing chemical structures (aliphatic an
 reaction schemes for teaching. It is built for one primary user: a chemistry teacher in Nepal
 preparing slides and worksheets for grade 11-12 (NEB curriculum), mostly basic organic chemistry
 with IUPAC and common names. The aim is a figure you can paste into PowerPoint or Word as a crisp,
-transparent image. The app works fully offline. Target platform is Windows 10/11 x64; the
+transparent image. The app works fully offline. Target platform is Windows 10/11 x64 (Windows 10 was not tested by hand before 1.0.0 (owner decision 2026-11-12)); the
 code is kept green on Linux as well.
 
 The product spec is `SPEC.md`. Chalkbond is a personal project (`UNLICENSED`, private).
@@ -26,7 +26,10 @@ Version 1.0.0 is prepared. It is not released: the automated Windows gates passe
 the installer was installed on the development machine, and the paste and export round trips in
 PowerPoint and Word passed there. Still open in `docs/windows-checklist.md` (Checkpoint Z): a `CO₂H`
 label, a chat-app paste, the PDF in Edge and Acrobat Reader and on paper, the rest of "App shell and
-installer", the clean Windows 10 and 11 installs with SmartScreen, and Checkpoints K, E32 and R.
+installer", the clean Windows 11 install with SmartScreen, and Checkpoints K, E32 and R. Owner decisions
+2026-11-12: the human checks run on Windows 11 only (Windows 10 is untested by hand for 1.0.0); the
+Office on the development machine (Office 2016) is accepted for the Office checks; the development
+machine is not the teacher's laptop, so the teacher's-laptop checks (cold start, E32) stay open.
 
 ## The editor
 
@@ -43,7 +46,7 @@ from `node docs/mockups/editor/build.mjs --png out/mockups`.
 ## Install (Windows 10/11 x64)
 
 These steps describe the installer built by `npm run dist:win` (below). The installer has been
-built on Windows, but these steps have not been tried yet.
+built on Windows, but these steps have not been tried yet. Windows 10 was not tested by hand before 1.0.0 (owner decision 2026-11-12).
 
 1. Copy `Chalkbond-1.0.0-setup.exe` to the computer. No network and no administrator rights are needed.
 2. Run it. The installer is unsigned, so Windows shows "Windows protected your PC": choose
@@ -69,7 +72,7 @@ built on Windows, but these steps have not been tried yet.
 ## Prerequisites
 
 - Node.js and npm. Development has been done on Node 26.3 and npm 11.16.
-- Windows 10/11 x64 for the app and installer. Commands are PowerShell-safe.
+- Windows 10/11 x64 for the app and installer (Windows 10 was not tested by hand before 1.0.0 (owner decision 2026-11-12)). Commands are PowerShell-safe.
 - `npm install` downloads the Electron binary (postinstall runs `install-electron`).
 
 ## Commands

@@ -10,9 +10,15 @@ restart and paste-back round trip, the refused foreign picture, and the PNG and 
 their reopening) and the first box of "App shell and installer". Open in "Clipboard and export":
 the labels box (a `CO₂H` label is still to be checked; reopened in batch 2), the chat-app paste
 (only Paint was seen) and the PDF in Edge, in Adobe Acrobat Reader and on A4 paper (only pdf.js and
-xpdf were tried). Open elsewhere: the clean-account installs and SmartScreen, the other boxes of
+xpdf were tried). Open elsewhere: the clean-account install and SmartScreen, the other boxes of
 "App shell and installer", and Checkpoints K, E32 and R. The release is not declared until they
 pass.
+
+## Owner decisions of 2026-11-12
+
+1. **Teacher's laptop.** Asked "Is this laptop the one the teacher will use?", the owner answered "no this laptop is not the one the teacher will use". Checkpoint E32 and the box "Cold start of the installed app to a usable canvas is under 3 s on the teacher's laptop" cannot be done on the development machine. They stay open and unticked; what they require is unchanged.
+2. **Office.** Asked whether the Office on the development machine is acceptable in place of Office 2021, the owner answered "sure it will work in it". That Office is Microsoft Office Professional Plus 2016 as its Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel. Every Office check below (Checkpoint K, "Clipboard and export") may be run with it. The boxes keep their wording; each recorded result names the Office actually used.
+3. **Windows 10.** Asked "Do you have a Windows 10 machine or VM? Without one, the Windows 10 install check can't be done and the release can't be declared as the checklist stands.", the owner answered "no we dont need that". The orchestrator's reading: the owner waives the Windows 10 human checks. The human sections and the clean-account install run on Windows 11 only, and Windows 10 is untested by hand for 1.0.0.
 
 Run on the Windows machine (PowerShell) at each checkpoint. Tick items in the commit that
 records the checkpoint.
@@ -30,7 +36,7 @@ the commit that ticks the boxes.
 6. `npm run dist:win` (needs network once for the NSIS download)
 7. `npm run test:packaged` (against `dist/win-unpacked`)
 8. Write the installer size and the installed size into `SPEC-app-shell.md`, packaging item I1.
-9. The human sections below ("Clipboard and export" and "App shell and installer"), on Windows 10 and Windows 11.
+9. The human sections below ("Clipboard and export" and "App shell and installer"), on Windows 11 only (Windows 10 waived by the owner on 2026-11-12, untested by hand for 1.0.0).
 
 State on 2026-11-11, at `956a4a4`, on Windows 11 Pro 26300 (Node 26.3.0, npm 11.16.0, Electron 45.2.3,
 i5-11400H, 16 GB, display at 125 % with a second monitor). Run and read by the orchestrator:
@@ -71,6 +77,8 @@ If something fails, fix it in that session and add a row to the Decisions Log in
 
 Run on the Windows machine with Office 2021 installed.
 
+Note 2026-11-12 (owner decision): the Office 2016 on the development machine (Version 2610 Click-to-Run) is accepted in place of Office 2021 for the boxes below.
+
 ```powershell
 npm run golden:sheet
 npm run test:e2e
@@ -91,6 +99,8 @@ Open `src/core/svg-render/__golden__/` and paste three goldens into PowerPoint a
 ## Checkpoint E32 — editor performance
 
 Run on the owner's laptop (the machine the teacher uses), with the app built (`npm run build`):
+
+Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop ("no this laptop is not the one the teacher will use"), so this checkpoint cannot be done on it and stays open.
 
 ```
 npx vitest run --project perf
@@ -122,7 +132,7 @@ checks above belong to this checkpoint too.
 
 ## Clipboard and export (clipboard-export, `SPEC-clipboard-export.md` "Windows checks")
 
-Human-only: Office, other applications, eyes. Run with the installed app and Office 2021.
+Human-only: Office, other applications, eyes. Run with the installed app and Office 2021. Note 2026-11-12 (owner decision): the Office 2016 on the development machine is accepted in place of Office 2021.
 
 Automated checks that only run on Windows (ticked from the orchestrator's run of 2026-11-11):
 
@@ -130,7 +140,7 @@ Automated checks that only run on Windows (ticked from the orchestrator's run of
 - [x] `e2e/win/clipboard-perf.spec.ts` passes: copy of the 40-atom scheme reaches the real clipboard in at most 500 ms (median of 5; SC12). Append the measured number to `docs/editor-perf.md` as the Windows row. (Median 47.4 ms in the full run, orchestrator, 2026-11-11; 50.9 ms alone; both rows are in `docs/editor-perf.md`.)
 - [x] Look at the C8 and C10 shots (`npm run shots -- C8`, `npm run shots -- C10`) beside the mock-ups A01, A02, A15b and A08a-c (`node docs/mockups/shell/build.mjs --png out/mockups-shell`): the Copy button states, the Export dialog and its three formats match by eye at 1280x800 and 960x640 (SC10). (Compared by the orchestrator on 2026-11-11 against A01, A02, A15b and A08a-c; they match, and the PDF note differs from A08c only in the PDF-A outcome wording, as the spec provides.)
 
-Human-only checks, with the installed app and Office 2021 (SC13: write down which format Office took, SVG drawing or picture):
+Human-only checks, with the installed app and Office 2021 (owner decision 2026-11-12: the installed Office 2016 is accepted) (SC13: write down which format Office took, SVG drawing or picture):
 
 - [x] Draw the SC3 scheme (Slides), press Copy, Ctrl+V on a blank PowerPoint slide: it arrives as a drawing (ribbon **Graphics Format** = SVG) or a picture (**Picture Format**); write down which. At 400 % zoom lines and text are sharp. Result 2026-11-11: it arrived as the SVG drawing (ribbon **Graphics Format**; SC13: SVG drawing in PowerPoint and Word, Click-to-Run Version 2610); lines and text sharp at 400 %. Scheme "ethanol + acetic acid -> ethyl acetate + water" plus a text "H2SO4" above the arrow. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and files. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
 - [x] The pasted bonds measure 1.41 cm (40 pt) in PowerPoint (Format > Size against a known bond count); labels match 24 pt slide text. If Office took the PNG and it is about 3× too big, write down "300 dpi ignored" (accepted for v1, O5). Result 2026-11-11: PowerPoint shows Height 1.21", Width 8.69"; the SVG exported from the same drawing is 625.597 x 86.808 pt (8.689 x 1.206 in), so the paste is at true size; bond segments 40.00 pt (1.41 cm), label font 24 pt (subscripts 16.8 pt). Office took the SVG, so "300 dpi ignored" does not apply. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and the exported SVG. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
@@ -150,12 +160,13 @@ Human-only checks, with the installed app and Office 2021 (SC13: write down whic
 
 ## App shell and installer (app-shell, `SPEC-app-shell.md` "Windows checks")
 
-Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 10 and a clean Windows 11 account. The automated steps built the installer and smoke-tested the unpacked app; the first human batch (2026-11-11, development machine, by a computer-use agent, verified by the orchestrator) ticked the first box and left a note under the second; everything else is open.
+Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 11 account (Windows 10 waived by the owner on 2026-11-12). The automated steps built the installer and smoke-tested the unpacked app; the first human batch (2026-11-11, development machine, by a computer-use agent, verified by the orchestrator) ticked the first box and left a note under the second; everything else is open.
 
 - [x] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1). Done 2026-11-11 (`dist:win` exit 0 at `956a4a4`): installer 109,915,593 bytes (104.8 MiB), unpacked `dist/win-unpacked` 347,499,681 bytes (331.4 MiB, 21 files), installed 347,681,841 bytes (331.6 MiB, 24 files, measured 2026-11-11 after installing on the development machine); all three are in `SPEC-app-shell.md` I1.
-- [ ] On a clean Windows 10 and a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
-  - Observed 2026-11-11 on the development machine only (Windows 11 Pro 26300, not a clean account): installed from `dist/Chalkbond-1.0.0-setup.exe` (the folder `%LOCALAPPDATA%\Programs\Chalkbond` did not exist before), "Chalkbond Setup, Installing, please wait...", Chalkbond opened by itself, no admin or UAC prompt, no SmartScreen box (the installer was built locally and has no Mark of the Web, so this says nothing about a downloaded or copied installer), desktop shortcut (in the OneDrive-redirected Desktop folder) and Start-menu shortcut "Chalkbond" with the green icon, `HKCU\Software\Classes\.chalk` is "Chalkbond drawing", `Chalkbond.exe` ProductVersion 1.0.0.0. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots, the installed folder, the shortcut files and the registry. Still open: SmartScreen, the installs on clean Windows 10 and Windows 11 accounts without admin rights, network disconnected.
+- [ ] On a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
+  - Observed 2026-11-11 on the development machine only (Windows 11 Pro 26300, not a clean account): installed from `dist/Chalkbond-1.0.0-setup.exe` (the folder `%LOCALAPPDATA%\Programs\Chalkbond` did not exist before), "Chalkbond Setup, Installing, please wait...", Chalkbond opened by itself, no admin or UAC prompt, no SmartScreen box (the installer was built locally and has no Mark of the Web, so this says nothing about a downloaded or copied installer), desktop shortcut (in the OneDrive-redirected Desktop folder) and Start-menu shortcut "Chalkbond" with the green icon, `HKCU\Software\Classes\.chalk` is "Chalkbond drawing", `Chalkbond.exe` ProductVersion 1.0.0.0. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots, the installed folder, the shortcut files and the registry. Still open: SmartScreen, the installs on clean Windows 10 and Windows 11 accounts without admin rights, network disconnected. Update 2026-11-12 (owner decision, the orchestrator's reading of "no we dont need that"): the Windows 10 install is waived; this box is run on a clean Windows 11 account only, and Windows 10 is untested by hand for 1.0.0.
 - [ ] Cold start of the installed app to a usable canvas is under 3 s on the teacher's laptop (`SPEC.md` SC1).
+  - Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop, so this box cannot be done here and stays open.
 - [ ] Save `test.chalk` on the desktop: Explorer shows the A16 file icon and type "Chalkbond drawing"; double-clicking opens it; double-clicking a second `.chalk` while Chalkbond has unsaved changes shows the save prompt, then opens it in the same window.
 - [ ] Menus look like A04–A06 and the context menus like A07 (sentence case, access keys underlined after Alt, shortcuts shown); Alt then F opens File, arrows and Enter work; every shown shortcut works from the canvas; Ctrl+C / Ctrl+V / Ctrl+Z inside the name field act on its text; right-click in the name field shows Cut / Copy / Paste / Select all.
 - [ ] Alt+click an atom with Select, release Alt, press B: the Bond tool is chosen and the menu bar is not focused (K3).

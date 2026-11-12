@@ -377,6 +377,7 @@ elements for a fixed corpus (Latin, digits, `−`, Greek, bold) at font-size 100
 `Arial, Helvetica, sans-serif`, compares `getComputedTextLength()` with the table (≤ 1 %, 20 px).
 `docs/windows-checklist.md` gains a "Checkpoint K — svg-render" section (paste three goldens into
 PowerPoint and Word 2021, check labels, bond ends, circles; run `npm run test:e2e`). Coverage run.
+(Owner decision 2026-11-12: the Office 2016 on the development machine is accepted for the Office checks.)
 
 **Tests first:** the perf and e2e tests themselves; the coverage report decides what else needs a
 test.

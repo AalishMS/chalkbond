@@ -39,7 +39,7 @@ spare. The cold start includes launching Electron and resizing the window.
 ## Not measured here
 
 Raster and compositing time, and the frame rate on the owner's laptop: `docs/windows-checklist.md`
-"Checkpoint E32" asks for the run there.
+"Checkpoint E32" asks for the run there. Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop ("no this laptop is not the one the teacher will use"), so that run stays open.
 
 ## Checkpoint S corrective profiling (Linux, 2026-11-10)
 

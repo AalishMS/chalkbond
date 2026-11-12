@@ -58,6 +58,10 @@ Target platform: **Windows 10/11 x64 only**, personal use. Specs were written on
 development, testing and installer builds continue natively on the user's Windows machine.
 Reference Office version: **Office 2021**. The installer is **unsigned** (SmartScreen warning on
 first run is accepted).
+Owner decisions 2026-11-12 (Decisions Log): Windows 10 stays a target but was not tested by hand before
+1.0.0 (the human checks run on Windows 11 only); Office 2021 stays the reference, and the Office on the
+development machine (Office Professional Plus 2016, Version 2610) is accepted for every Office check;
+the development machine is not the teacher's laptop, so the teacher's-laptop checks stay open.
 
 ## Commands
 
@@ -183,14 +187,16 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 ## Success Criteria (whole app)
 
 1. Windows installer installs and launches on Windows 10/11 x64; cold start to usable canvas
-   < 3 s on a typical laptop.
+   < 3 s on a typical laptop. (Windows 10 was not tested by hand before 1.0.0, owner decision
+   2026-11-12; the cold-start check on the teacher's laptop stays open, the development machine is not that laptop.)
 2. Toluene drawable in ≤ 3 actions (benzene template, click ring atom, done).
 3. "ethanol + acetic acid → ethyl acetate + water, H₂SO₄ above arrow, Δ below" buildable in
    ≤ 15 user actions using name insert + arrow + Tidy reaction, ending perfectly aligned.
 4. Copy → paste into PowerPoint/Word 2021 on Windows yields an image that stays sharp at 400%
    zoom (vector SVG where Office accepts it from the clipboard, otherwise a high-resolution PNG
    — to be confirmed on Office 2021 during `clipboard-export`), transparent background, bounds
-   that contain all ink (exact for non-text, bounded slack around text).
+   that contain all ink (exact for non-text, bounded slack around text). (Owner decision 2026-11-12:
+   the Office 2016 on the development machine is accepted for this check.)
 5. Export PNG (default 300 dpi, transparent), SVG, PDF; output matches on-screen rendering.
 6. Formula and MW for a reference set of ≥ 30 compounds match PubChem values (MW to 0.01).
 7. Every edit is undoable/redoable; save → open round-trip is lossless.
@@ -281,6 +287,9 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-11 | app-shell W1 (product defect, `533a77d`): on a fractional display scale (125 %) the first-launch window had content 1281x801 instead of 1280x800, because the frame measured in DIPs is rounded up. Found by the second Windows e2e run, after the display setup changed. Fix: after `setBounds`, a first launch that is not maximized calls `setContentSize(1280, 800)`. Regression test `e2e/app-settings.spec.ts` "W1: a first launch has a content area of exactly 1280 x 800 at the display scale" runs at the real display scale; it asserts the content size when not maximized and that the work area cannot hold the window when maximized. |
 | 2026-11-11 | Checkpoint Z human batch 1 (development laptop, Windows 11 Pro 26300, Office Professional Plus 2016 Click-to-Run Version 2610; performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and an exported SVG): the first Windows paste into PowerPoint and Word arrives as the SVG drawing (ribbon Graphics Format) at true size: PowerPoint 8.69 x 1.21 in against the exported SVG's 625.597 x 86.808 pt (8.689 x 1.206 in), bonds 40.00 pt, labels 24 pt; Word (Handout) 3.16 x 0.46 in. So the missing `pHYs` on the clipboard bitmap (Decision R9 of clipboard-export) does not affect Office; a bitmap-only target (Paint) gets the 300 dpi pixels (2607 x 362 px). Installed size 347,681,841 bytes (24 files) written in `SPEC-app-shell.md` I1. |
 | 2026-11-11 | Checkpoint Z human batch 2 (same machine, Office and way of working as batch 1; performed by a computer-use agent, verified by the orchestrator against screenshots and by parsing the exported files): the exported files work on Windows. PNG at Print is 948 x 137 px with `pHYs` 11811 (300 dpi), transparent, and Word's Insert > Pictures honours the 300 dpi (0.46 x 3.16 in, equal to the pasted SVG); SVG is identical to the paste in PowerPoint; PDF is one page of the drawing's size (625.92 x 87.12 pt) with embedded ArialMT and a valid incremental update (two classic xref sections), read by pdf.js and by xpdf without error; all three reopen in Chalkbond as editable drawings. A drawing copied and pasted back after a restart is editable, and a PowerPoint picture is refused with the standard notice. Microsoft Edge and Adobe Acrobat Reader were not tried (Edge would not launch, Acrobat Reader is not installed) and nothing was printed on A4, so the PDF box stays open. The labels box ticked in batch 1 is reopened: `CO₂H` was never drawn and the font name inside Office was not read. |
+| 2026-11-12 | Owner decision (teacher's laptop): asked "Is this laptop the one the teacher will use?", the owner answered "no this laptop is not the one the teacher will use". The checks specified for the teacher's or owner's laptop (Checkpoint E32 in `docs/windows-checklist.md` and the app-shell box "Cold start of the installed app to a usable canvas is under 3 s on the teacher's laptop", SC1) cannot be done on the development machine; they stay open and unticked and their requirements are unchanged. |
+| 2026-11-12 | Owner decision (Office): asked whether the Office on the development machine is acceptable in place of Office 2021, the owner answered "sure it will work in it". That Office is Microsoft Office Professional Plus 2016 as its Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel. Every Office check (Checkpoint K, "Clipboard and export", SC4) may be run with it. The wording of the boxes is unchanged; each recorded result names the Office actually used. Office 2021 stays the reference version (2026-11-09). |
+| 2026-11-12 | Owner decision (Windows 10), the orchestrator's reading: asked "Do you have a Windows 10 machine or VM? Without one, the Windows 10 install check can't be done and the release can't be declared as the checklist stands.", the owner answered "no we dont need that". Read as: the owner waives the Windows 10 human checks; the human sections and the clean-account install run on Windows 11 only. Windows 10/11 x64 stays the target, and Windows 10 is untested by hand for 1.0.0. |
 
 ## Open Questions
 

@@ -961,6 +961,7 @@ proposal in the report and stop (R19); never loosen a budget.
 - [x] Node perf budgets pass (timings skipped under `--coverage`)
 - [x] e2e budgets measured on this machine and recorded in `docs/editor-perf.md`; any miss recorded with the proposed svg-render change, budgets unchanged (no miss)
 - [x] A Windows checklist item asks for the run on the owner's laptop
+  - Note 2026-11-12 (owner decision): the development machine is not the teacher's laptop; that run stays open in `docs/windows-checklist.md` (E32).
 
 **Verification:** `npm test`, `npm run test:e2e`
 

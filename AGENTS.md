@@ -26,8 +26,11 @@ installed size is written (`SPEC-app-shell.md` I1). In "Clipboard and export" th
 round trips passed on the development machine (Office 2016 Click-to-Run Version 2610; run by a
 computer-use agent, verified by the orchestrator): nine of the twelve human boxes are ticked. Open
 there: a `CO₂H` label, a chat-app paste, and the PDF in Edge, in Adobe Acrobat Reader and on paper.
-Open elsewhere: all of "App shell and installer" except the first box, the clean Windows 10 and 11
-installs with SmartScreen, and Checkpoints K, E32 and R. The release is not declared.
+Open elsewhere: all of "App shell and installer" except the first box, the clean Windows 11 install
+with SmartScreen, and Checkpoints K, E32 and R. Owner decisions 2026-11-12: the human checks run on
+Windows 11 only (Windows 10 waived, so untested by hand for 1.0.0); the Office on the development
+machine (Office 2016) is accepted for the Office checks; the teacher's-laptop checks (the cold start
+box and E32) are open because the development machine is not that laptop. The release is not declared.
 
 ## Workflow
 
@@ -314,12 +317,17 @@ and `npm run shots`. Step 8 is done: installer, unpacked and installed sizes are
 "Clipboard and export" boxes (paste, restart round trip, PNG, SVG and PDF export and reopening, on
 the development machine) and the first "App shell and installer" box are ticked. What is open: a
 `CO₂H` label, a chat-app paste, the PDF in Edge and Acrobat Reader and on paper; the other "App shell
-and installer" boxes; the clean-account installs and SmartScreen; and Checkpoints K, E32 and R.
-Version 1.0.0 is not declared released until they pass.
+and installer" boxes; the clean Windows 11 install and SmartScreen; and Checkpoints K, E32 and R.
+Owner decisions 2026-11-12 (`SPEC.md` Decisions Log): Windows 11 only for the human checks, the
+installed Office 2016 accepted for the Office checks, and the teacher's-laptop checks (cold start,
+E32) open because the development machine is not that laptop. Version 1.0.0 is not declared released
+until the rest pass.
 
-- Windows gates still open: clean-account installs and SmartScreen, IME, shutdown, display scaling,
+- Windows gates still open: clean-account install and SmartScreen, IME, shutdown, display scaling,
   Office checks for svg-render (Checkpoint K), Edge and Acrobat Reader for the PDF export and the
-  other human checks in the checklist, on Windows 10 and 11.
+  other human checks in the checklist, on Windows 11 only (Windows 10 waived, owner decision
+  2026-11-12). The teacher's-laptop checks (cold start, E32) are open because the development
+  machine is not that laptop.
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
   the code and tests. Decisions of later dates supersede older text anywhere (including this file).
 - A bug found in a finished module: add a failing regression test first. A property-test failure
