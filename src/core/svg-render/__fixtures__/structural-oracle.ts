@@ -7,7 +7,10 @@
 //   midpoint, which is what the renderer draws once its factor is applied (`/ 2` and `* 2` are
 //   exact in binary floating point);
 // - every written carbon (a carbon outside a ring without `label`, `isotope` or `explicitH`) is
-//   given `explicitH` = its perceived `implicitH`, so today's rules write it;
+//   given `explicitH` = its perceived `implicitH`, so today's rules write it; so is every other
+//   atom the structural render labels (seed 3343550): a fixed H count enters chem-core's Kekulé
+//   matching (C2), so pinning only the carbons could change a neighbouring heteroatom's H, which
+//   Decision 15 (b) keeps as skeletal mode draws it; plain ring carbons stay unpinned (unlabelled);
 // - `style.formula` is removed.
 import { perceive } from '../../chem-core';
 import type { Anchor, Atom, AtomId, Doc, DrawObject, Point, Rect } from '../../doc-model';
@@ -23,14 +26,14 @@ export function structuralOracle(doc: Doc): Doc {
   const perception = perceive(doc);
   const atoms: Record<string, Atom> = {};
   for (const [id, atom] of Object.entries(doc.atoms)) {
-    const written =
+    const skeleton =
       atom.element === 'C' &&
       (atom.label === undefined || atom.label === '') &&
       atom.isotope === undefined &&
-      atom.explicitH === undefined &&
-      !ring.has(id as AtomId);
+      ring.has(id as AtomId);
+    const pinned = atom.explicitH === undefined && !skeleton;
     const at = { ...atom, x: 2 * atom.x, y: 2 * atom.y };
-    atoms[id] = written ? { ...at, explicitH: perception.atoms[id as AtomId]?.implicitH ?? 0 } : at;
+    atoms[id] = pinned ? { ...at, explicitH: perception.atoms[id as AtomId]?.implicitH ?? 0 } : at;
   }
 
   const textAt = (o: Extract<DrawObject, { type: 'text' }>): Point => {

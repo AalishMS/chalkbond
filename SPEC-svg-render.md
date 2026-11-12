@@ -549,6 +549,17 @@ not the numbers of Decision 16, which keeps `labelMargin` from the style. Recomp
    condition text, which follows item 6) and every written carbon (a carbon outside a ring
    without `label`, `isotope` or `explicitH`) given `explicitH` = its perceived `implicitH`, and
    `style.formula` removed. `bend` and a bond anchor's `t` are ratios and do not change.
+   **Every other atom the structural render labels** (non-carbon atoms, carbons with a `label` or
+   `isotope`) that has no `explicitH` is given `explicitH` = its perceived `implicitH` in `d₂` as
+   well (2026-11-12, property 8 seed 3343550). Reason: a fixed H count is part of chem-core's
+   σ valence (`SPEC-chem-core.md` C2), so pinning a written carbon can change the Kekulé
+   assignment of a 1.5 system it belongs to. In C–N–N⁺ joined by 1.5 bonds the system cannot be
+   kekulized and every atom is filled as if singly bonded (CH₃, NH, NH₃⁺); with the carbon pinned
+   at 3 H it leaves the π matching, N=N⁺ resolves and `d₂` would draw N and NH₂⁺, while
+   Decision 15 (b) requires the structural render to draw non-carbon atoms as skeletal mode does
+   (NH, NH₃⁺). Pinning every labelled atom's H at its perceived value fixes what `d₂` draws to
+   `perceive(d)` (which does not read `style`); unlabelled ring carbons are not pinned (that
+   would label them) and their H is never drawn. The renderer and chem-core are unchanged.
 5. `Scene.style.ptPerBlu` is what the editor uses to convert between BLU and pt
    (`SPEC-editor.md` R53); `bondLength` stays the style's value everywhere (viewport defaults,
    the clipboard margin).

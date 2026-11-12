@@ -480,6 +480,45 @@ describe('property 7: arbitrary Unicode in runs, labels, numbers and metadata is
 });
 
 describe('property 8: the structural render equals the render of its oracle', () => {
+  it('pins the H of the labelled atoms around an acyclic 1.5 chain (seed 3343550)', () => {
+    // C–N–N⁺ joined by 1.5 bonds (all at the origin, plus two lone carbons): the end carbon and
+    // the N⁺ both need the one π bond the middle N can give, so the system cannot be kekulized and
+    // every atom is filled as if singly bonded (CH3, NH, NH3⁺, as the skeletal render shows them).
+    // Pinning only the written carbon (CH3 is saturated, so it leaves the π matching) would let
+    // N=N⁺ resolve and draw N and NH2⁺ in the oracle: the heteroatoms' H must be pinned too.
+    let doc = emptyDoc(NOW);
+    const ids: AtomId[] = [];
+    for (const [element, charge] of [
+      ['C', 0],
+      ['N', 1],
+      ['C', 0],
+      ['N', 0],
+      ['C', 0],
+    ] as const) {
+      const [next, id] = addAtom(doc, { element, charge, x: 0, y: 0 });
+      doc = next;
+      ids.push(id);
+    }
+    const [c1, n2, , n4] = ids as [AtomId, AtomId, AtomId, AtomId, AtomId];
+    [doc] = addBond(doc, c1, n4, { order: 1.5 });
+    [doc] = addBond(doc, n4, n2, { order: 1.5 });
+    const structural = setStyle(doc, { formula: 'structural' });
+    const got = render(structural);
+    const want = render(structuralOracle(structural));
+    expect(got.parts).toEqual(want.parts);
+    expect(got.extents).toEqual(want.extents);
+    expect(got.bounds).toEqual(want.bounds);
+    expect(got.notices).toEqual(want.notices);
+    // Structural mode draws the heteroatoms as the skeletal render does (Decision 15 (b)); at the
+    // origin doubling moves nothing, so their parts are byte-identical.
+    const skeletal = render(doc).parts;
+    for (const id of [n2, n4]) {
+      const part = (parts: Scene['parts']) => parts.find((p) => p.key === `atom:${id}`)?.svg;
+      expect(part(got.parts)).toBeDefined();
+      expect(part(got.parts)).toEqual(part(skeletal));
+    }
+  });
+
   it(
     'same parts, extents, bounds and notices as the skeletal document with the written carbons given explicit H',
     { timeout: TIMEOUT },
