@@ -1,6 +1,15 @@
 // Native box texts (SPEC-app-shell.md F14, A09 prompt, RC3 recover, F8 replace; SEC15).
 import { describe, expect, it } from 'vitest';
-import { FILE_PROBLEMS, fileErrorBox, recoverBox, replaceBox, saveChangesBox } from './messages';
+import {
+  autoSaveBox,
+  errorBox,
+  FILE_PROBLEMS,
+  fileErrorBox,
+  keepBox,
+  recoverBox,
+  replaceBox,
+  saveChangesBox,
+} from './messages';
 
 const box = (message: string, detail: string) => ({
   type: 'error',
@@ -68,6 +77,11 @@ describe('fileErrorBox (F14, every row)', () => {
       "Couldn't save “ethanol.chalk”.",
       'Something went wrong while saving. Try again, or choose another folder.',
     ],
+    [
+      'open-in-tab',
+      '“ethanol.chalk” is open in another tab.',
+      'Close that tab first, or choose another name.',
+    ],
   ] as const)('%s', (problem, message, detail) => {
     expect(fileErrorBox(problem, 'ethanol.chalk')).toEqual(box(message, detail));
   });
@@ -87,6 +101,7 @@ describe('fileErrorBox (F14, every row)', () => {
         'busy',
         'folder-gone',
         'write-failed',
+        'open-in-tab',
       ].sort(),
     );
   });
@@ -99,18 +114,18 @@ describe('fileErrorBox (F14, every row)', () => {
 });
 
 describe('the question boxes', () => {
-  it('save changes (A09, I4)', () => {
-    expect(saveChangesBox('esterification')).toEqual({
+  it('save changes (T9, A20, I4)', () => {
+    expect(saveChangesBox('Untitled 2')).toEqual({
       type: 'warning',
       title: 'Chalkbond',
-      message: 'Do you want to save changes to “esterification”?',
-      detail: "If you don't save, your changes will be lost.",
+      message: 'Do you want to save “Untitled 2”?',
+      detail: "If you don't save, your drawing will be lost.",
       buttons: ['Save', "Don't save", 'Cancel'],
       defaultId: 0,
       cancelId: 2,
       noLink: true,
     });
-    expect(saveChangesBox('Untitled').message).toBe('Do you want to save changes to “Untitled”?');
+    expect(saveChangesBox('toluene.png').message).toBe('Do you want to save “toluene.png”?');
   });
 
   it('recover (A11, RC3): closing the box recovers', () => {
@@ -136,5 +151,81 @@ describe('the question boxes', () => {
       cancelId: 1,
       noLink: true,
     });
+  });
+});
+
+const warning = (message: string, detail: string) => ({
+  type: 'warning',
+  title: 'Chalkbond',
+  message,
+  detail,
+  buttons: ['OK'],
+});
+const TRY_AGAIN = 'Chalkbond keeps your drawing and will try again. You can also use Save as.';
+
+describe('the auto-save boxes (AS6, AS7)', () => {
+  it.each([
+    ['write-denied', "Chalkbond isn't allowed to save in this folder. Choose another folder."],
+    ['disk-full', 'The disk is full. Free some space or choose another drive.'],
+    ['busy', 'The file is open in another program. Close it and try again.'],
+    ['folder-gone', 'The folder no longer exists. Choose another folder.'],
+    ['write-failed', 'Something went wrong while saving. Try again, or choose another folder.'],
+    ['missing', 'It may have been moved, renamed or deleted, or its USB drive was removed.'],
+  ] as const)('a failed auto-save: %s', (problem, detail) => {
+    expect(autoSaveBox(problem, 'ethanol.chalk')).toEqual(
+      warning("Couldn't save “ethanol.chalk”.", `${detail} ${TRY_AGAIN}`),
+    );
+  });
+
+  it('changed outside with unwritten changes, the changed file open next to it', () => {
+    expect(autoSaveBox('changed-outside', 'ethanol.chalk')).toEqual(
+      warning(
+        '“ethanol.chalk” was changed outside Chalkbond.',
+        'Your changes are in the tab “ethanol (your changes)”. The changed file is open in the tab next to it.',
+      ),
+    );
+  });
+
+  it('changed outside, the changed file can not be opened', () => {
+    expect(autoSaveBox('changed-outside-unopenable', 'ethanol.chalk')).toEqual(
+      warning(
+        '“ethanol.chalk” was changed outside Chalkbond.',
+        "Chalkbond can't open the changed file. Your changes are in the tab “ethanol (your changes)”.",
+      ),
+    );
+  });
+
+  it('the tab name drops only a .chalk extension, in any case', () => {
+    expect(autoSaveBox('changed-outside', 'A.b.CHALK').detail).toContain('“A.b (your changes)”');
+    expect(autoSaveBox('changed-outside', 'noext').detail).toContain('“noext (your changes)”');
+  });
+});
+
+describe('the keep box (SS6)', () => {
+  it.each([
+    ['disk-full', 'The disk is full. Free some space.'],
+    ['write-denied', "Chalkbond isn't allowed to save in this folder. Choose another folder."],
+    ['write-failed', 'Something went wrong while saving. Try again, or choose another folder.'],
+  ] as const)('%s', (problem, detail) => {
+    expect(keepBox(problem, 'Untitled 2')).toEqual(
+      warning(
+        "Chalkbond couldn't keep “Untitled 2”.",
+        `${detail} Until it can, save this drawing with Save as.`,
+      ),
+    );
+  });
+});
+
+describe('errorBox (I5 dispatch)', () => {
+  it('routes by context', () => {
+    expect(errorBox({ problem: 'missing', name: 'a.chalk' })).toEqual(
+      fileErrorBox('missing', 'a.chalk'),
+    );
+    expect(errorBox({ context: 'auto-save', problem: 'busy', name: 'a.chalk' })).toEqual(
+      autoSaveBox('busy', 'a.chalk'),
+    );
+    expect(errorBox({ context: 'keep', problem: 'disk-full', name: 'Untitled' })).toEqual(
+      keepBox('disk-full', 'Untitled'),
+    );
   });
 });

@@ -3,7 +3,14 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createDialogs, type DialogPort } from './dialogs';
 import { createFileRefs } from './model/file-refs';
-import { replaceBox, saveChangesBox, recoverBox, fileErrorBox } from './model/messages';
+import {
+  autoSaveBox,
+  fileErrorBox,
+  keepBox,
+  recoverBox,
+  replaceBox,
+  saveChangesBox,
+} from './model/messages';
 
 function rig(answers: { open?: string[]; save?: string; box?: number[]; exists?: string[] } = {}) {
   let n = 0;
@@ -186,7 +193,19 @@ describe('ask (I4) and showFileError (I5)', () => {
 
   it('file error: the F14 box built in main from problem and name', async () => {
     const r = rig();
-    await r.dialogs.showFileError('folder-gone', 'esterification.chalk');
+    await r.dialogs.showFileError({ problem: 'folder-gone', name: 'esterification.chalk' });
     expect(r.port.box).toHaveBeenCalledWith(fileErrorBox('folder-gone', 'esterification.chalk'));
+  });
+
+  it('auto-save and keep boxes by context (AS6, AS7, SS6)', async () => {
+    const r = rig();
+    await r.dialogs.showFileError({
+      context: 'auto-save',
+      problem: 'changed-outside',
+      name: 'ethanol.chalk',
+    });
+    expect(r.port.box).toHaveBeenLastCalledWith(autoSaveBox('changed-outside', 'ethanol.chalk'));
+    await r.dialogs.showFileError({ context: 'keep', problem: 'disk-full', name: 'Untitled 2' });
+    expect(r.port.box).toHaveBeenLastCalledWith(keepBox('disk-full', 'Untitled 2'));
   });
 });

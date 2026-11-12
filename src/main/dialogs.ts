@@ -6,11 +6,12 @@ import type {
   AskAnswer,
   AskRequest,
   ChooseSaveRequest,
-  FileProblem,
+  FileErrorRequest,
   FileRef,
 } from '../shared/ipc-types';
 import { baseName, kindOfPath, OPEN_KINDS, withExtension, type FileRefs } from './model/file-refs';
 import {
+  errorBox,
   fileErrorBox,
   recoverBox,
   replaceBox,
@@ -109,9 +110,9 @@ export function createDialogs({ port, refs, exists, folders }: DialogOptions) {
       return (answers[response] ?? 'cancel') as AskAnswer<R>;
     },
 
-    /** I5: the F14 box. */
-    async showFileError(problem: FileProblem, name: string): Promise<void> {
-      await port.box(fileErrorBox(problem, name));
+    /** I5: the F14 box, or the auto-save or keep box for a request with a `context`. */
+    async showFileError(request: FileErrorRequest): Promise<void> {
+      await port.box(errorBox(request));
     },
   };
 }

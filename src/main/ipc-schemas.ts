@@ -88,23 +88,61 @@ export const askSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('save-changes'), name: baseName }).strict(),
   z.object({ kind: z.literal('recover') }).strict(),
 ]);
-export const fileErrorSchema = z
+// I5 (SEC15): `{ problem, name }`; the auto-save and keep boxes add a `context`. Main builds every
+// text (`model/messages.ts`); the renderer never sends one.
+export const fileErrorSchema = z.union([
+  z
+    .object({
+      problem: z.enum([
+        'missing',
+        'too-large',
+        'unsupported',
+        'no-drawing',
+        'newer-version',
+        'damaged',
+        'unreadable',
+        'write-denied',
+        'disk-full',
+        'busy',
+        'folder-gone',
+        'write-failed',
+        'open-in-tab',
+      ]),
+      name: baseName,
+    })
+    .strict(),
+  z
+    .object({
+      context: z.literal('auto-save'),
+      problem: z.enum([
+        'missing',
+        'write-denied',
+        'disk-full',
+        'busy',
+        'folder-gone',
+        'write-failed',
+        'changed-outside',
+        'changed-outside-unopenable',
+      ]),
+      name: baseName,
+    })
+    .strict(),
+  z
+    .object({
+      context: z.literal('keep'),
+      problem: z.enum(['disk-full', 'write-denied', 'write-failed']),
+      name: baseName,
+    })
+    .strict(),
+]);
+
+// I10 (SPEC-app-shell.md T15, CM4): which tab, whether Reopen closed tab is offered, and where
+// (content CSS px under the tab for a key; null: at the cursor). Only the chosen item comes back.
+export const tabMenuSchema = z
   .object({
-    problem: z.enum([
-      'missing',
-      'too-large',
-      'unsupported',
-      'no-drawing',
-      'newer-version',
-      'damaged',
-      'unreadable',
-      'write-denied',
-      'disk-full',
-      'busy',
-      'folder-gone',
-      'write-failed',
-    ]),
-    name: baseName,
+    tabId: fileRefId,
+    state: z.object({ canReopenTab: z.boolean() }).strict(),
+    at: z.object({ x: z.number(), y: z.number() }).strict().nullable(),
   })
   .strict();
 

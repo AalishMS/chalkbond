@@ -69,8 +69,8 @@ test("SC8, SC4: a second launch with a .chalk exits 0; the first window restores
       {
         type: 'warning',
         title: 'Chalkbond',
-        message: 'Do you want to save changes to “Untitled”?',
-        detail: "If you don't save, your changes will be lost.",
+        message: 'Do you want to save “Untitled”?',
+        detail: "If you don't save, your drawing will be lost.",
         buttons: ['Save', "Don't save", 'Cancel'],
         defaultId: 0,
         cancelId: 2,

@@ -54,6 +54,57 @@ describe('A7 schemas', () => {
       bad(schemas.fileErrorSchema, v);
   });
 
+  it('I5 gains open-in-tab and the auto-save and keep contexts (SEC15)', () => {
+    ok(schemas.fileErrorSchema, { problem: 'open-in-tab', name: 'ethanol.chalk' });
+    for (const problem of [
+      'missing',
+      'write-denied',
+      'disk-full',
+      'busy',
+      'folder-gone',
+      'write-failed',
+      'changed-outside',
+      'changed-outside-unopenable',
+    ])
+      ok(schemas.fileErrorSchema, { context: 'auto-save', problem, name: 'ethanol.chalk' });
+    for (const problem of ['disk-full', 'write-denied', 'write-failed'])
+      ok(schemas.fileErrorSchema, { context: 'keep', problem, name: 'Untitled 2' });
+    for (const v of [
+      { context: 'auto-save', problem: 'damaged', name: 'a' },
+      { context: 'auto-save', problem: 'changed-outside', name: 'a\\b' },
+      { context: 'auto-save', problem: 'changed-outside', name: 'a/b' },
+      { context: 'keep', problem: 'busy', name: 'a' },
+      { context: 'keep', problem: 'missing', name: 'a' },
+      { context: 'other', problem: 'missing', name: 'a' },
+      { context: 'keep', problem: 'disk-full' },
+      { context: 'keep', problem: 'disk-full', name: 'a', detail: 'free text' },
+      { problem: 'changed-outside', name: 'a' },
+    ])
+      bad(schemas.fileErrorSchema, v);
+  });
+
+  it('I10 tab-menu: a tab uuid, canReopenTab and a point or null', () => {
+    for (const at of [null, { x: 0, y: 0 }, { x: 12.5, y: 30 }])
+      for (const canReopenTab of [true, false])
+        ok(schemas.tabMenuSchema, { tabId: ID, state: { canReopenTab }, at });
+    for (const v of [
+      {},
+      { tabId: ID, state: { canReopenTab: true } },
+      { tabId: 'not-a-uuid', state: { canReopenTab: true }, at: null },
+      { tabId: 3, state: { canReopenTab: true }, at: null },
+      { tabId: ID, state: {}, at: null },
+      { tabId: ID, state: { canReopenTab: 'yes' }, at: null },
+      { tabId: ID, state: { canReopenTab: true, extra: 1 }, at: null },
+      { tabId: ID, state: { canReopenTab: true }, at: { x: 1 } },
+      { tabId: ID, state: { canReopenTab: true }, at: { x: '1', y: 2 } },
+      { tabId: ID, state: { canReopenTab: true }, at: { x: Infinity, y: 2 } },
+      { tabId: ID, state: { canReopenTab: true }, at: { x: NaN, y: 2 } },
+      { tabId: ID, state: { canReopenTab: true }, at: { x: 1, y: 2, z: 3 } },
+      { tabId: ID, state: { canReopenTab: true }, at: null, items: [{ role: 'quit' }] },
+    ])
+      bad(schemas.tabMenuSchema, v);
+  });
+
   it('C3 choose-save: a format and a base name', () => {
     for (const format of ['chalk', 'png', 'svg', 'pdf'])
       ok(schemas.chooseSaveSchema, { format, suggestedName: `Untitled.${format}` });

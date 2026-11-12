@@ -262,6 +262,99 @@ describe('createContextMenus (CM1, CM2)', () => {
   });
 });
 
+describe('createContextMenus tab menu (T15, CM4, M5)', () => {
+  const tab = (canReopenTab: boolean, at: { x: number; y: number } | null = null) => ({
+    tabId: '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e',
+    state: { canReopenTab },
+    at,
+  });
+
+  it('pops the three items up at the cursor: ids, labels, no role, no registered accelerator', async () => {
+    const { menus, popups, win, click, close } = contextSetup();
+    const chosen = menus.showTab(tab(true));
+    const popup = popups[0];
+    expect(popup?.options.window).toBe(win);
+    expect(popup?.options).not.toHaveProperty('x');
+    expect(popup?.options).not.toHaveProperty('y');
+    expect(popup?.template.map((i) => i.id ?? i.type)).toEqual([
+      'new-tab',
+      'separator',
+      'close',
+      'separator',
+      'reopen',
+    ]);
+    expect(popup?.template[0]).toMatchObject({ label: '&New tab', accelerator: 'CmdOrCtrl+T' });
+    expect(popup?.template[4]).toMatchObject({
+      label: 'Reopen closed &tab',
+      accelerator: 'CmdOrCtrl+Shift+T',
+    });
+    for (const item of popup?.template ?? []) {
+      expect(item.registerAccelerator).toBe(false);
+      expect(item.role).toBeUndefined();
+    }
+    click(popup, 'close');
+    close(popup);
+    await expect(chosen).resolves.toBe('close');
+  });
+
+  it('leaves Reopen out when no closed tab can come back', () => {
+    const { menus, popups } = contextSetup();
+    void menus.showTab(tab(false));
+    expect(popups[0]?.template.map((i) => i.id ?? i.type)).toEqual([
+      'new-tab',
+      'separator',
+      'close',
+    ]);
+  });
+
+  it('under the tab for a key: the point is rounded and kept inside the window (>= 0)', async () => {
+    const { menus, popups, close } = contextSetup();
+    const first = menus.showTab(tab(true, { x: 120.6, y: 40.2 }));
+    expect(popups[0]?.options).toMatchObject({ x: 121, y: 40 });
+    close(popups[0]);
+    await first;
+    void menus.showTab(tab(true, { x: -5, y: -0.4 }));
+    expect(popups[1]?.options).toMatchObject({ x: 0, y: 0 });
+  });
+
+  it('dismissed (Esc, click elsewhere) answers null', async () => {
+    const { menus, popups, close } = contextSetup();
+    const dismissed = menus.showTab(tab(true));
+    close(popups[0]);
+    await expect(dismissed).resolves.toBeNull();
+  });
+
+  it('M5: a request while another popup is open is ignored, in both directions', async () => {
+    const { menus, popups, click, close } = contextSetup();
+    const canvas = menus.show({ onItem: true, state: ready });
+    await expect(menus.showTab(tab(true))).resolves.toBeNull();
+    expect(popups).toHaveLength(1);
+    click(popups[0], 'edit.cut');
+    close(popups[0]);
+    await expect(canvas).resolves.toBe('edit.cut');
+
+    const first = menus.showTab(tab(true));
+    await expect(menus.showTab(tab(true))).resolves.toBeNull();
+    await expect(menus.show({ onItem: false, state: ready })).resolves.toBeNull();
+    expect(popups).toHaveLength(2);
+    click(popups[1], 'reopen');
+    close(popups[1]);
+    await expect(first).resolves.toBe('reopen');
+    void menus.showTab(tab(true));
+    expect(popups).toHaveLength(3);
+  });
+
+  it('no window: null and no popup', async () => {
+    const { popups } = contextSetup();
+    const menus = createContextMenus({
+      Menu: { buildFromTemplate: () => ({ popup: () => popups.push({} as Popup) }) as never },
+      window: () => undefined,
+    });
+    await expect(menus.showTab(tab(true))).resolves.toBeNull();
+    expect(popups).toHaveLength(0);
+  });
+});
+
 describe('createContextMenus CM3 (text fields, R3)', () => {
   it('editable target: Cut · Copy · Paste · — · Select all with roles; others ignored', () => {
     const { menus, popups, win } = contextSetup();

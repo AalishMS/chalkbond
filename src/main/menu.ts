@@ -17,6 +17,18 @@ import {
   type TopMenu,
 } from './model/menu-model';
 import type { RecentEntry } from './model/recent';
+import { tabContextMenu, type TabCommand } from './model/tab-menu-model';
+
+/** The shape the canvas (CM1) and tab (T15) menu models share. */
+type PopupNode<Id extends string> =
+  | {
+      readonly kind: 'item';
+      readonly id: Id;
+      readonly label: string;
+      readonly accelerator: string;
+      readonly enabled: boolean;
+    }
+  | { readonly kind: 'separator' };
 
 export interface MenuPorts {
   /** `Menu` from electron, read at call time (TH4: a test may stub its methods). */
@@ -149,42 +161,65 @@ export interface ContextMenuPorts {
  * menu for `webContents` `context-menu` (CM3): editable targets only, with Electron's roles.
  */
 export function createContextMenus(ports: ContextMenuPorts) {
+  // M5: one popup at a time, shared by the canvas (CM1) and the tab (T15) menus.
   let open = false;
+
+  /** Pops `nodes` up on the main window (at the cursor, or at `at`); the chosen id, else null. */
+  const popupMenu = <Id extends string>(
+    nodes: readonly PopupNode<Id>[],
+    at: { x: number; y: number } | null,
+  ): Promise<Id | null> => {
+    const window = ports.window();
+    if (open || window === undefined) return Promise.resolve(null);
+    open = true;
+    return new Promise<Id | null>((resolve) => {
+      let settled = false;
+      const settle = (value: Id | null): void => {
+        if (settled) return;
+        settled = true;
+        open = false;
+        resolve(value);
+      };
+      const template = nodes.map((node): MenuItemConstructorOptions =>
+        node.kind === 'separator'
+          ? { type: 'separator', registerAccelerator: false }
+          : {
+              id: node.id,
+              label: node.label,
+              accelerator: node.accelerator,
+              registerAccelerator: false,
+              enabled: node.enabled,
+              click: () => {
+                // MenuItem.click() does not check `enabled` (R19).
+                if (node.enabled) settle(node.id);
+              },
+            },
+      );
+      ports.Menu.buildFromTemplate(template).popup({
+        window,
+        ...(at === null
+          ? {}
+          : { x: Math.max(0, Math.round(at.x)), y: Math.max(0, Math.round(at.y)) }),
+        // Closed: an item's click may still follow the close on some platforms, so null waits a
+        // turn for it.
+        callback: () => setImmediate(() => settle(null)),
+      });
+    });
+  };
+
   return {
     show({ onItem, state }: { onItem: boolean; state: MenuState }): Promise<ContextCommand | null> {
-      const window = ports.window();
-      if (open || window === undefined) return Promise.resolve(null);
-      open = true;
-      return new Promise<ContextCommand | null>((resolve) => {
-        let settled = false;
-        const settle = (value: ContextCommand | null): void => {
-          if (settled) return;
-          settled = true;
-          open = false;
-          resolve(value);
-        };
-        const template = canvasContextMenu(onItem, state).map((node): MenuItemConstructorOptions =>
-          node.kind === 'separator'
-            ? { type: 'separator', registerAccelerator: false }
-            : {
-                id: node.id,
-                label: node.label,
-                accelerator: node.accelerator,
-                registerAccelerator: false,
-                enabled: node.enabled,
-                click: () => {
-                  // MenuItem.click() does not check `enabled` (R19).
-                  if (node.enabled) settle(node.id);
-                },
-              },
-        );
-        ports.Menu.buildFromTemplate(template).popup({
-          window,
-          // Closed: an item's click may still follow the close on some platforms, so null waits a
-          // turn for it.
-          callback: () => setImmediate(() => settle(null)),
-        });
-      });
+      return popupMenu(canvasContextMenu(onItem, state), null);
+    },
+    /** I10 (T15, CM4): the tab menu at the cursor, or under the tab for a key. */
+    showTab({
+      state,
+      at,
+    }: {
+      state: { canReopenTab: boolean };
+      at: { x: number; y: number } | null;
+    }): Promise<TabCommand | null> {
+      return popupMenu(tabContextMenu(state), at);
     },
     text(params: { isEditable: boolean }): void {
       const window = ports.window();

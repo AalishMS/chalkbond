@@ -17,8 +17,13 @@ const api: ChalkbondApi = {
   writeFile: (ref, data) => ipcRenderer.invoke(CHANNELS.writeFile, { ref: ref.id, data }),
   printPdf: (request) => ipcRenderer.invoke(CHANNELS.printPdf, request),
   ask: (request) => ipcRenderer.invoke(CHANNELS.ask, request),
-  showFileError: (problem, name) => ipcRenderer.invoke(CHANNELS.showFileError, { problem, name }),
+  showFileError: (problem: string, name: string, context?: 'auto-save' | 'keep') =>
+    ipcRenderer.invoke(
+      CHANNELS.showFileError,
+      context === undefined ? { problem, name } : { context, problem, name },
+    ),
   showContextMenu: (request) => ipcRenderer.invoke(CHANNELS.showContextMenu, request),
+  showTabMenu: (request) => ipcRenderer.invoke(CHANNELS.showTabMenu, request),
   startup: () => ipcRenderer.invoke(CHANNELS.startup, {}),
   setSettings: (value) => ipcRenderer.invoke(CHANNELS.setSettings, value),
   updateSession: (value) => ipcRenderer.send(CHANNELS.updateSession, value),

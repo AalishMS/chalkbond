@@ -19,8 +19,8 @@ const hint = (page: Page) => page.getByTestId('statusbar').getByRole('status');
 const saveChanges = (name: string) => ({
   type: 'warning',
   title: 'Chalkbond',
-  message: `Do you want to save changes to “${name}”?`,
-  detail: "If you don't save, your changes will be lost.",
+  message: `Do you want to save “${name}”?`,
+  detail: "If you don't save, your drawing will be lost.",
   buttons: ['Save', "Don't save", 'Cancel'],
   defaultId: 0,
   cancelId: 2,

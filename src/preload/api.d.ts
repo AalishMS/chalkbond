@@ -1,6 +1,7 @@
 import type {
   AskAnswer,
   AskRequest,
+  AutoSaveProblem,
   ChooseSaveRequest,
   ClipboardWriteRequest,
   ClipboardReadResponse,
@@ -9,6 +10,7 @@ import type {
   FileDroppedResponse,
   FileProblem,
   FileRef,
+  KeepProblem,
   PrintPdfRequest,
   PrintPdfResponse,
   ReadFileResponse,
@@ -16,6 +18,8 @@ import type {
   MainEvent,
   RendererSettings,
   StartupResponse,
+  TabMenuAnswer,
+  TabMenuRequest,
   SessionUpdate,
   WriteRecoveryRequest,
 } from '../shared/ipc-types';
@@ -42,8 +46,14 @@ export interface ChalkbondApi {
   ask<R extends AskRequest>(request: R): Promise<AskAnswer<R>>;
   /** I5: the F14 error box for `{ problem, name }` (a base name). */
   showFileError(problem: FileProblem, name: string): Promise<void>;
+  /** I5 (AS6, AS7, SS6): the auto-save box (a failed write, `missing`, changed outside) for a base name. */
+  showFileError(problem: AutoSaveProblem, name: string, context: 'auto-save'): Promise<void>;
+  /** I5 (SS6): the "couldn't keep" box for a session record that could not be written. */
+  showFileError(problem: KeepProblem, name: string, context: 'keep'): Promise<void>;
   /** I6 (CM1): the canvas context menu at the cursor; the chosen command or null. */
   showContextMenu(request: ContextMenuRequest): Promise<ContextMenuAnswer>;
+  /** I10 (T15, CM4): the tab menu at the cursor (`at` null) or at a point; the chosen item or null. */
+  showTabMenu(request: TabMenuRequest): Promise<TabMenuAnswer>;
   startup(): Promise<StartupResponse>;
   /** I8: remembers renderer settings (ST1 style, Export choices); main writes settings.json. */
   setSettings(value: Partial<RendererSettings>): Promise<void>;

@@ -55,6 +55,7 @@ import {
   closeOkSchema,
   setSettingsSchema,
   contextMenuSchema,
+  tabMenuSchema,
   writeRecoverySchema,
   clearRecoverySchema,
   fileDroppedSchema,
@@ -317,13 +318,13 @@ async function startApp(): Promise<void> {
     }
     return dialogs.ask(request);
   });
-  ipc.handle(CHANNELS.showFileError, fileErrorSchema, ({ problem, name }) =>
-    dialogs.showFileError(problem, name),
-  );
+  ipc.handle(CHANNELS.showFileError, fileErrorSchema, (request) => dialogs.showFileError(request));
   ipc.on(CHANNELS.logError, logErrorSchema, ({ message }) => log('renderer', message));
   // CM1–CM3 (A13): the canvas menu on request (I6); the text-field menu from webContents.
   const contextMenus = createContextMenus({ Menu, window: () => mainWindow });
   ipc.handle(CHANNELS.showContextMenu, contextMenuSchema, (request) => contextMenus.show(request));
+  // I10 (T15, CM4): the tab menu shares the popup slot with CM1 (M5); nothing calls it yet (TB25).
+  ipc.handle(CHANNELS.showTabMenu, tabMenuSchema, (request) => contextMenus.showTab(request));
   // Recovery (RC1–RC6): one ordered chain of writes and clears in userData/recovery.
   const recovery = createRecovery({
     folder: join(app.getPath('userData'), 'recovery'),

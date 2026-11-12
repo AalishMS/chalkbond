@@ -18,6 +18,7 @@ export interface IpcRequestMap {
   'dialog:ask': AskRequest;
   'dialog:file-error': FileErrorRequest;
   'context-menu:show': ContextMenuRequest;
+  'tab-menu:show': TabMenuRequest;
   'log:error': LogErrorRequest;
   'app:startup': Record<string, never>;
   'settings:set': Partial<RendererSettings>;
@@ -80,7 +81,23 @@ export interface PrintPdfRequest {
 /** C5: the printed PDF (starts with `%PDF-`, at most 64 MiB), or a failure main has logged. */
 export type PrintPdfResponse = { ok: true; pdf: Uint8Array } | { ok: false };
 /** Every F14 problem (I5). */
-export type FileProblem = ReadProblem | WriteProblem | 'no-drawing' | 'newer-version' | 'damaged';
+export type FileProblem =
+  | ReadProblem
+  | WriteProblem
+  | 'no-drawing'
+  | 'newer-version'
+  | 'damaged'
+  /** AS9: Save as onto a file that is open in another tab. */
+  | 'open-in-tab';
+/** The auto-save boxes (AS6, AS7): a failed write, `missing`, or a file changed outside. */
+export type AutoSaveProblem =
+  | WriteProblem
+  | 'missing'
+  | 'changed-outside'
+  /** AS7(c): the changed file does not open, so no tab holds it. */
+  | 'changed-outside-unopenable';
+/** The "couldn't keep" box (SS6): a session record that could not be written. */
+export type KeepProblem = 'disk-full' | 'write-denied' | 'write-failed';
 export interface ChooseSaveRequest {
   format: FileRef['kind'];
   /** A base name (no `/` or `\`). */
@@ -90,11 +107,24 @@ export type AskRequest = { kind: 'save-changes'; name: string } | { kind: 'recov
 export type AskAnswer<R extends AskRequest> = R extends { kind: 'recover' }
   ? 'recover' | 'delete'
   : 'save' | 'discard' | 'cancel';
-export interface FileErrorRequest {
-  problem: FileProblem;
-  /** A base name (no `/` or `\`). */
-  name: string;
+/** I5: `{ problem, name }`, or the auto-save / keep boxes with their `context` (a base name always). */
+export type FileErrorRequest =
+  | { problem: FileProblem; name: string }
+  | { context: 'auto-save'; problem: AutoSaveProblem; name: string }
+  | { context: 'keep'; problem: KeepProblem; name: string };
+
+/** I10 (T15): the tab menu's items; only the answer leaves main. */
+export interface TabMenuState {
+  canReopenTab: boolean;
 }
+export interface TabMenuRequest {
+  /** The tab right-clicked or focused; the renderer acts on it, main only shows the menu. */
+  tabId: string;
+  state: TabMenuState;
+  /** Content CSS px under the tab for a key (M4 style); null: at the cursor. */
+  at: { x: number; y: number } | null;
+}
+export type TabMenuAnswer = 'new-tab' | 'close' | 'reopen' | null;
 
 /** I6 (CM1): which canvas menu, and the menu state when it was asked for. */
 export interface ContextMenuRequest {

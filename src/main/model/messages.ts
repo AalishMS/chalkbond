@@ -1,6 +1,11 @@
 // Native box texts (SPEC-app-shell.md F14 with mock-up A10, the A09 prompt, RC3 recover with A11,
 // the F8 replace box). Main builds every text from a problem code and a base name (SEC15). Pure.
-import type { FileProblem } from '../../shared/ipc-types';
+import type {
+  AutoSaveProblem,
+  FileErrorRequest,
+  FileProblem,
+  KeepProblem,
+} from '../../shared/ipc-types';
 
 /** The options main passes to `dialog.showMessageBox`. */
 export interface BoxOptions {
@@ -27,6 +32,7 @@ export const FILE_PROBLEMS = [
   'busy',
   'folder-gone',
   'write-failed',
+  'open-in-tab',
 ] as const satisfies readonly FileProblem[];
 
 const UNCHANGED = 'The file has not been changed.';
@@ -87,6 +93,8 @@ function fileError(problem: FileProblem, name: string): [string, string] {
         `Couldn't save ${q}.`,
         'Something went wrong while saving. Try again, or choose another folder.',
       ];
+    case 'open-in-tab':
+      return [`${q} is open in another tab.`, 'Close that tab first, or choose another name.'];
   }
 }
 
@@ -96,18 +104,74 @@ export function fileErrorBox(problem: FileProblem, name: string): BoxOptions {
   return { type: 'error', title: 'Chalkbond', message, detail, buttons: ['OK'] };
 }
 
-/** I4 `save-changes` (A09): Save · Don't save · Cancel. */
+/** I4 `save-changes` (T9, A20): Save · Don't save · Cancel, for an unsaved tab being closed. */
 export function saveChangesBox(name: string): BoxOptions {
   return {
     type: 'warning',
     title: 'Chalkbond',
-    message: `Do you want to save changes to “${name}”?`,
-    detail: "If you don't save, your changes will be lost.",
+    message: `Do you want to save “${name}”?`,
+    detail: "If you don't save, your drawing will be lost.",
     buttons: ['Save', "Don't save", 'Cancel'],
     defaultId: 0,
     cancelId: 2,
     noLink: true,
   };
+}
+
+const warningBox = (message: string, detail: string): BoxOptions => ({
+  type: 'warning',
+  title: 'Chalkbond',
+  message,
+  detail,
+  buttons: ['OK'],
+});
+
+const TRY_AGAIN = 'Chalkbond keeps your drawing and will try again. You can also use Save as.';
+
+/** The tab a file's unwritten changes move to (AS7(c), T3): the base name without `.chalk`. */
+const yourChangesTab = (name: string): string =>
+  `“${name.replace(/\.chalk$/i, '')} (your changes)”`;
+
+/** The auto-save boxes (AS6, AS7), built from `{ problem, name }` like F14. */
+export function autoSaveBox(problem: AutoSaveProblem, name: string): BoxOptions {
+  const q = `“${name}”`;
+  switch (problem) {
+    case 'changed-outside':
+      return warningBox(
+        `${q} was changed outside Chalkbond.`,
+        `Your changes are in the tab ${yourChangesTab(name)}. The changed file is open in the tab next to it.`,
+      );
+    case 'changed-outside-unopenable':
+      return warningBox(
+        `${q} was changed outside Chalkbond.`,
+        `Chalkbond can't open the changed file. Your changes are in the tab ${yourChangesTab(name)}.`,
+      );
+    case 'missing':
+      return warningBox(
+        `Couldn't save ${q}.`,
+        `It may have been moved, renamed or deleted, or its USB drive was removed. ${TRY_AGAIN}`,
+      );
+    default:
+      return warningBox(`Couldn't save ${q}.`, `${fileError(problem, name)[1]} ${TRY_AGAIN}`);
+  }
+}
+
+/** SS6: a session record that cannot be written for a drawing that exists only in the store. */
+export function keepBox(problem: KeepProblem, name: string): BoxOptions {
+  const detail =
+    problem === 'disk-full' ? 'The disk is full. Free some space.' : fileError(problem, name)[1];
+  return warningBox(
+    `Chalkbond couldn't keep “${name}”.`,
+    `${detail} Until it can, save this drawing with Save as.`,
+  );
+}
+
+/** I5: the box for a request, by its context. */
+export function errorBox(request: FileErrorRequest): BoxOptions {
+  if (!('context' in request)) return fileErrorBox(request.problem, request.name);
+  return request.context === 'auto-save'
+    ? autoSaveBox(request.problem, request.name)
+    : keepBox(request.problem, request.name);
 }
 
 /** I4 `recover` (RC3, A11): Recover · Delete; closing the box recovers. */

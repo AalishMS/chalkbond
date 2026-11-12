@@ -410,9 +410,9 @@ request and answer, bad `tabId`, bad `at`); a main-side test with a stubbed `Men
 that a second request while one popup is open is ignored.
 
 **Acceptance criteria:**
-- [ ] Every new box wording equals the spec table (a test per row)
-- [ ] I10 follows SEC5 and SEC6 (named preload function, sender check, Zod) and the preload key list test is updated
-- [ ] `src/main/model` coverage >= 90 % lines
+- [x] Every new box wording equals the spec table (a test per row)
+- [x] I10 follows SEC5 and SEC6 (named preload function, sender check, Zod) and the preload key list test is updated
+- [x] `src/main/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/main src/preload`, `npx playwright test --project=e2e e2e/app-security.spec.ts` (Windows), then `npm run check`.
 

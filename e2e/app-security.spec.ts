@@ -24,6 +24,7 @@ test('named bridge logs errors and denies windows and permissions', async () => 
       'setSettings',
       'showContextMenu',
       'showFileError',
+      'showTabMenu',
       'startup',
       'updateSession',
       'writeFile',
