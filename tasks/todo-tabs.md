@@ -698,9 +698,9 @@ the last tab-list change and 2 s after a view change; a switch flushes the outgo
 once; a view event alone writes no record; two inactive tabs untouched write nothing.
 
 **Acceptance criteria:**
-- [ ] `autosave-timer` behaviour identical to the old timer; `recovery-timer.ts` no longer exists and `host.ts` compiles
-- [ ] The schedule matches SS4's sentence by sentence (a test per clause)
-- [ ] `src/renderer/app/model` coverage >= 90 % lines
+- [x] `autosave-timer` behaviour identical to the old timer; `recovery-timer.ts` no longer exists and `host.ts` compiles
+- [x] The schedule matches SS4's sentence by sentence (a test per clause)
+- [x] `src/renderer/app/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/renderer/app`, then `npm run check`.
 

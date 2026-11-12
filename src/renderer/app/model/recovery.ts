@@ -4,7 +4,7 @@
 // on the RC1 timer; when it becomes clean (Save, undo back to the saved state) N4 clears the file.
 // Explicit clears come from the file flows (New / Open after F4, Delete, a normal close). RC7 (R23):
 // while the startup offer is unanswered nothing is written or cleared by a change.
-import { createRecoveryTimer } from './recovery-timer';
+import { createAutosaveTimer } from './autosave-timer';
 
 export interface RecoveryMain {
   writeRecovery(value: { text: string; name: string }): void;
@@ -64,7 +64,7 @@ export function createRecovery(o: RecoveryOptions): Recovery {
     o.main.writeRecovery({ text: o.text(), name: o.name() });
     cleared = false;
   };
-  const timer = createRecoveryTimer({ now: o.now, schedule: o.schedule, fire: write });
+  const timer = createAutosaveTimer({ now: o.now, schedule: o.schedule, fire: write });
 
   const clear = (): void => {
     timer.cancel();

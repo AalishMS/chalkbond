@@ -1,7 +1,8 @@
-// RC1 timing (SPEC-app-shell.md): 2 s after the last change, never more than 10 s after the first
-// change of a burst; injected clock and scheduler; a cancelled or stale callback never fires.
+// AS2 timing (RC1 before it, SPEC-app-shell.md): 2 s after the last change, never more than 10 s
+// after the first change of a burst; injected clock and scheduler; a cancelled or stale callback
+// never fires.
 import { describe, expect, it } from 'vitest';
-import { createRecoveryTimer, RECOVERY_IDLE_MS, RECOVERY_MAX_MS } from './recovery-timer';
+import { createAutosaveTimer, AUTOSAVE_IDLE_MS, AUTOSAVE_MAX_MS } from './autosave-timer';
 
 /** A fake clock and scheduler: `advance` runs due callbacks in time order. */
 function fakeTime() {
@@ -37,7 +38,7 @@ function fakeTime() {
 function rig() {
   const time = fakeTime();
   const fired: number[] = [];
-  const timer = createRecoveryTimer({
+  const timer = createAutosaveTimer({
     now: time.now,
     schedule: time.schedule,
     fire: () => fired.push(time.now()),
@@ -45,10 +46,10 @@ function rig() {
   return { time, fired, timer };
 }
 
-describe('recovery timer (RC1)', () => {
+describe('autosave timer (AS2, RC1 timing)', () => {
   it('constants: 2 s idle, 10 s at most', () => {
-    expect(RECOVERY_IDLE_MS).toBe(2000);
-    expect(RECOVERY_MAX_MS).toBe(10_000);
+    expect(AUTOSAVE_IDLE_MS).toBe(2000);
+    expect(AUTOSAVE_MAX_MS).toBe(10_000);
   });
 
   it('one edit writes 2 s later, once', () => {
