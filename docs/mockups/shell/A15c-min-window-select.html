@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Minimum window, Select</title>
+    <link rel="stylesheet" href="../editor/tokens.css" />
+    <link rel="stylesheet" href="shell-tokens.css" />
+    <link rel="stylesheet" href="../editor/mockup.css" />
+    <link rel="stylesheet" href="native.css" />
+    <link rel="stylesheet" href="shell.css" />
+  </head>
+  <body class="desk">
+    <div class="win" style="width: 960px; height: 691px">
+      <div class="titlebar">
+        <img class="app" src="app-icon-small.svg" alt="" /><span class="title"
+          >*esterification - Chalkbond</span
+        >
+        <span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-min" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-max" /></svg></span
+        ><span class="caption-btn"
+          ><svg class="" aria-hidden="true"><use href="native.svg#win-close" /></svg
+        ></span>
+      </div>
+      <div class="menubar" role="menubar">
+        <span class="menubar-item" id="mb-file">File</span
+        ><span class="menubar-item" id="mb-edit">Edit</span
+        ><span class="menubar-item" id="mb-view">View</span
+        ><span class="menubar-item" id="mb-help">Help</span>
+      </div>
+      <div class="client">
+        <div class="window is-compact">
+          <header class="topbar">
+            <label class="namefield"
+              ><svg class="icon icon-20" aria-hidden="true">
+                <use href="../editor/icons.svg#search" /></svg
+              ><input
+                type="text"
+                aria-label="Compound name"
+                placeholder="Type a compound name…"
+                value=""
+            /></label>
+            <div class="divider-v" role="separator"></div>
+            <div class="options" role="toolbar" aria-label="Tool options">
+              <button class="btn btn-action" id="act-clean">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#clean-up" /></svg
+                ><span>Clean up</span>
+              </button>
+              <button class="btn btn-action" id="act-kekule">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#show-kekule" /></svg
+                ><span>Show Kekulé</span>
+              </button>
+              <button class="btn btn-action" id="act-formula" aria-label="Show structural formula">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#show-structural" /></svg
+                ><span>Show structural</span>
+              </button>
+              <button class="btn btn-action" id="act-tidy">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#tidy" /></svg
+                ><span>Tidy reaction</span>
+              </button>
+              <div class="options-sep" role="separator"></div>
+              <button class="btn btn-opt" id="act-flip-h" aria-label="Flip horizontal">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-h" />
+                </svg>
+              </button>
+              <button class="btn btn-opt" id="act-flip-v" aria-label="Flip vertical">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#flip-v" />
+                </svg>
+              </button>
+            </div>
+            <div class="history">
+              <button class="btn btn-top" id="undo" aria-label="Undo (Ctrl+Z)">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#undo" />
+                </svg>
+              </button>
+              <button class="btn btn-top" id="redo" aria-label="Redo (Ctrl+Y)" aria-disabled="true">
+                <svg class="icon icon-20" aria-hidden="true">
+                  <use href="../editor/icons.svg#redo" />
+                </svg>
+              </button>
+            </div>
+            <button
+              class="btn btn-copy is-compact"
+              id="copy"
+              data-testid="copy"
+              aria-label="Copy (Ctrl+C)"
+            >
+              <span aria-hidden="true">Copy</span>
+            </button>
+          </header>
+          <nav class="rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+            <button
+              class="btn btn-rail"
+              id="tool-select"
+              aria-label="Select"
+              aria-keyshortcuts="1 V"
+              aria-pressed="true"
+            >
+              <span class="rail-key" aria-hidden="true">1</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#select" /></svg
+              ><span class="rail-caption" aria-hidden="true">Select</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-erase"
+              aria-label="Erase"
+              aria-keyshortcuts="2 E"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">2</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#erase" /></svg
+              ><span class="rail-caption" aria-hidden="true">Erase</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button
+              class="btn btn-rail"
+              id="tool-bond"
+              aria-label="Bond"
+              aria-keyshortcuts="3 B"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">3</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#bond-single" /></svg
+              ><span class="rail-caption" aria-hidden="true">Bond</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-chain"
+              aria-label="Chain"
+              aria-keyshortcuts="4 Z"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">4</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#chain" /></svg
+              ><span class="rail-caption" aria-hidden="true">Chain</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-ring"
+              aria-label="Ring"
+              aria-keyshortcuts="5 R"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">5</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#ring-benzene" /></svg
+              ><span class="rail-caption" aria-hidden="true">Ring</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-atom"
+              aria-label="Atom"
+              aria-keyshortcuts="6 L"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">6</span><span class="rail-glyph">C</span
+              ><span class="rail-caption" aria-hidden="true">Atom</span>
+            </button>
+            <div class="rail-sep" role="separator"></div>
+            <button
+              class="btn btn-rail"
+              id="tool-arrow"
+              aria-label="Arrow"
+              aria-keyshortcuts="7 A"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">7</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#arrow-forward" /></svg
+              ><span class="rail-caption" aria-hidden="true">Arrow</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-plus"
+              aria-label="Plus"
+              aria-keyshortcuts="8 Plus"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">8</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#plus" /></svg
+              ><span class="rail-caption" aria-hidden="true">Plus</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-curved"
+              aria-label="Curved arrow"
+              aria-keyshortcuts="9 M"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">9</span
+              ><svg class="icon" aria-hidden="true">
+                <use href="../editor/icons.svg#curved-full" /></svg
+              ><span class="rail-caption" aria-hidden="true">Curly</span>
+            </button>
+            <button
+              class="btn btn-rail"
+              id="tool-text"
+              aria-label="Text"
+              aria-keyshortcuts="0 T"
+              aria-pressed="false"
+            >
+              <span class="rail-key" aria-hidden="true">0</span
+              ><svg class="icon" aria-hidden="true"><use href="../editor/icons.svg#text" /></svg
+              ><span class="rail-caption" aria-hidden="true">Text</span>
+            </button>
+          </nav>
+          <main class="canvas" role="application" aria-label="Drawing canvas">
+            <img class="canvas-art" src="canvas/min-proposal.svg" alt="" />
+          </main>
+          <footer class="statusbar">
+            <div class="hint" role="status" aria-live="polite">
+              Click a molecule to select it. Drag to move. Drag on empty space to select an area.
+            </div>
+            <div class="segmented" role="group" aria-label="Style">
+              <button class="btn btn-status" id="preset-slides" aria-pressed="true">Slides</button
+              ><button class="btn btn-status" id="preset-handout" aria-pressed="false">
+                Handout
+              </button>
+            </div>
+            <div class="zoom">
+              <button class="btn btn-status" id="zoom-out" aria-label="Zoom out (Ctrl+−)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-out" />
+                </svg></button
+              ><button
+                class="btn btn-status btn-zoom"
+                id="zoom-100"
+                aria-label="Zoom to 100% (Ctrl+1)"
+              >
+                150%</button
+              ><button class="btn btn-status" id="zoom-in" aria-label="Zoom in (Ctrl+=)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#zoom-in" />
+                </svg></button
+              ><button class="btn btn-status" id="zoom-fit" aria-label="Zoom to fit (Ctrl+0)">
+                <svg class="icon icon-16" aria-hidden="true">
+                  <use href="../editor/icons.svg#fit" />
+                </svg>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <p class="native-note" style="top: 729px">
+      <b>2026-11-12 feature set:</b> client area 960 × 640 with the Select tool; the formula switch
+      (R51) is icon-only below 1100 px, so the Select options bar fits beside the label-only Copy.
+      Native parts approximate.
+    </p>
+    <script src="shell.js"></script>
+  </body>
+</html>

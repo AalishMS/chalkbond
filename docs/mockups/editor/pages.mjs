@@ -33,32 +33,45 @@ const HINTS = {
 };
 export { HINTS };
 
-/** id, accessible name, key, default glyph, one-word caption under the icon. */
+/**
+ * id, accessible name, letter key, default glyph, one-word caption under the icon, number key
+ * (SPEC-editor.md R50: the digits 1-9, 0 in rail order, shown as a badge on each button).
+ */
 const TOOLS = [
-  ['select', 'Select', 'V', 'select', 'Select'],
-  ['erase', 'Erase', 'E', 'erase', 'Erase'],
+  ['select', 'Select', 'V', 'select', 'Select', '1'],
+  ['erase', 'Erase', 'E', 'erase', 'Erase', '2'],
   '|',
-  ['bond', 'Bond', 'B', 'bond-single', 'Bond'],
-  ['chain', 'Chain', 'Z', 'chain', 'Chain'],
-  ['ring', 'Ring', 'R', 'ring-benzene', 'Ring'],
-  ['atom', 'Atom', 'L', 'C', 'Atom'],
+  ['bond', 'Bond', 'B', 'bond-single', 'Bond', '3'],
+  ['chain', 'Chain', 'Z', 'chain', 'Chain', '4'],
+  ['ring', 'Ring', 'R', 'ring-benzene', 'Ring', '5'],
+  ['atom', 'Atom', 'L', 'C', 'Atom', '6'],
   '|',
-  ['arrow', 'Arrow', 'A', 'arrow-forward', 'Arrow'],
-  ['plus', 'Plus', '+', 'plus', 'Plus'],
-  ['curved', 'Curved arrow', 'M', 'curved-full', 'Curly'],
-  ['text', 'Text', 'T', 'text', 'Text'],
+  ['arrow', 'Arrow', 'A', 'arrow-forward', 'Arrow', '7'],
+  ['plus', 'Plus', '+', 'plus', 'Plus', '8'],
+  ['curved', 'Curved arrow', 'M', 'curved-full', 'Curly', '9'],
+  ['text', 'Text', 'T', 'text', 'Text', '0'],
 ];
 export { TOOLS };
 
+/** `aria-keyshortcuts` names the plus key "Plus" (WAI-ARIA 1.2), every other key as typed. */
+const ariaKey = (k) => (k === '+' ? 'Plus' : k);
+
+/**
+ * R50: the accessible name is the tool's name alone; both keys are in `aria-keyshortcuts`
+ * (digit first, as the badge shows it), so a screen reader hears each key once. The badge and the
+ * caption are `aria-hidden`.
+ */
 export function railButton(
-  [id, label, key, glyph, caption],
+  [id, label, key, glyph, caption, digit],
   { active = false, state = '', current } = {},
 ) {
   const g = current ?? glyph;
   const inner = /^[A-Z][a-z]?$/.test(g) ? `<span class="rail-glyph">${g}</span>` : icon(g);
   return (
-    `<button class="btn btn-rail${stateClass(state)}" id="tool-${id}" aria-label="${label} (${key})"` +
-    ` aria-pressed="${active}">${inner}<span class="rail-caption" aria-hidden="true">${caption}</span></button>`
+    `<button class="btn btn-rail${stateClass(state)}" id="tool-${id}" aria-label="${label}"` +
+    ` aria-keyshortcuts="${digit} ${ariaKey(key)}" aria-pressed="${active}">` +
+    `<span class="rail-key" aria-hidden="true">${digit}</span>${inner}` +
+    `<span class="rail-caption" aria-hidden="true">${caption}</span></button>`
   );
 }
 
@@ -164,19 +177,27 @@ export function atomOptions({ selected, hover } = {}) {
   return [...els, '<div class="options-sep" role="separator"></div>', ...marks].join('\n');
 }
 
-export function action(iconName, label, { disabled = false, state = '', id, cls = '' } = {}) {
+export function action(iconName, label, { disabled = false, state = '', id, cls = '', aria } = {}) {
   const inner = iconName ? `${icon(iconName, 20)}<span>${label}</span>` : `<span>${label}</span>`;
   return (
     `<button class="btn btn-action${iconName ? '' : ' label-only'}${cls}${stateClass(state)}"` +
-    `${id ? ` id="${id}"` : ''}${disabled ? ' aria-disabled="true"' : ''}>${inner}</button>`
+    `${id ? ` id="${id}"` : ''}${aria ? ` aria-label="${aria}"` : ''}` +
+    `${disabled ? ' aria-disabled="true"' : ''}>${inner}</button>`
   );
 }
 
 /**
  * Selection actions. `kekule` is 'kekule' (shows "Show Kekulé") or 'circle' ("Show circle").
+ * `formula` is 'skeletal' (the drawing is skeletal: shows "Show structural") or 'structural'
+ * ("Show skeletal"); SPEC-editor.md R51, the whole drawing whatever is selected.
  * Expand is rendered only when the selection contains an abbreviation (`expand: true`).
  */
-export function selectionActions({ kekule = 'kekule', enabled = {}, expand = false } = {}) {
+export function selectionActions({
+  kekule = 'kekule',
+  formula = 'skeletal',
+  enabled = {},
+  expand = false,
+} = {}) {
   const on = (k) => enabled[k] !== false;
   const flip = (id, name, label) =>
     `<button class="btn btn-opt" id="act-${id}" aria-label="${label}"${on('flip') ? '' : ' aria-disabled="true"'}>${icon(name, 20)}</button>`;
@@ -185,6 +206,16 @@ export function selectionActions({ kekule = 'kekule', enabled = {}, expand = fal
     kekule === 'circle'
       ? action('show-circle', 'Show circle', { disabled: !on('kekule'), id: 'act-kekule' })
       : action('show-kekule', 'Show Kekulé', { disabled: !on('kekule'), id: 'act-kekule' }),
+    formula === 'structural'
+      ? action('show-skeletal', 'Show skeletal', {
+          id: 'act-formula',
+          aria: 'Show skeletal formula',
+        })
+      : action('show-structural', 'Show structural', {
+          disabled: !on('formula'),
+          id: 'act-formula',
+          aria: 'Show structural formula',
+        }),
     action('tidy', 'Tidy reaction', { disabled: !on('tidy'), id: 'act-tidy' }),
     '<div class="options-sep" role="separator"></div>',
     flip('flip-h', 'flip-h', 'Flip horizontal'),
@@ -288,10 +319,14 @@ export function formulaText(f) {
 
 // ---- Tooltip, empty state, page ----
 
+/** `key` is one key or a list of alternatives (a rail tool: digit, then letter; R50). */
+export const kbds = (key) =>
+  (Array.isArray(key) ? key : key ? [key] : []).map((k) => `<kbd>${k}</kbd>`).join('');
+
 export function tooltip(forId, side, title, { key, help } = {}) {
   return (
     `<div class="tooltip" role="tooltip" data-for="${forId}" data-side="${side}">` +
-    `<div class="tooltip-title"><span>${title}</span>${key ? `<kbd>${key}</kbd>` : ''}</div>` +
+    `<div class="tooltip-title"><span>${title}</span>${kbds(key)}</div>` +
     `${help ? `<div class="tooltip-help">${help}</div>` : ''}</div>`
   );
 }

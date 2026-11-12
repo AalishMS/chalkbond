@@ -97,7 +97,7 @@ interface TextRun {
 interface Group { id: GroupId; members: { atoms: AtomId[]; objects: ObjectId[] } }
 
 interface Doc {
-  schemaVersion: 1;
+  schemaVersion: 2;                // in memory always 2; a file may say 1 (see "File Format", D1)
   atoms:   Record<AtomId, Atom>;
   bonds:   Record<BondId, Bond>;
   objects: Record<ObjectId, DrawObject>;
@@ -105,9 +105,15 @@ interface Doc {
                                    // except 'shape' highlights, which paint beneath structures
   groups:  Record<GroupId, Group>;
   nextId:  number;                 // id counter; ids are 'a12', 'b7', 'o3', 'g1' (prefix + n)
-  style:   { preset: 'slides' | 'journal'; overrides: Partial<StyleSettings> };
+  style:   { preset: 'slides' | 'journal'; overrides: Partial<StyleSettings>;
+             formula?: 'structural' };
                                    // StyleSettings (final; meaning defined in SPEC-svg-render.md):
-                                   // bondLength, lineWidth, doubleBondSpacing, fontFamily, fontSize
+                                   // bondLength, lineWidth, doubleBondSpacing, fontFamily, fontSize.
+                                   // formula (schema v2, D1): absent = skeletal formula (the
+                                   // default, every file before v2); 'structural' = every carbon
+                                   // without a label is written with its hydrogens (CH3, CH2 …).
+                                   // A display setting of the whole document: atoms, bonds and
+                                   // coordinates are untouched by it. Meaning: SPEC-svg-render.md
   meta:    { title?: string; created: string; modified: string };  // ISO 8601
 }
 ```
@@ -121,7 +127,8 @@ bridging bond needs no bookkeeping.
 (the default look; fused systems like naphthalene get one circle per ring). A 1.5 bond that is
 not part of such a ring (e.g. carboxylate, allyl) is drawn as a line plus a dashed line. The
 editor's "Kekulé ↔ circle" toggle rewrites bond orders via `chem-core` (kekulize/aromatize),
-so no extra `DrawObject` variant or document flag exists.
+so no extra `DrawObject` variant or document flag exists for it. (The one document-level display
+flag, `style.formula`, is a different feature: structural versus skeletal formula, D1.)
 
 **Reactions are not stored as semantic objects.** A reaction is arrows, plus signs, fragments and
 conditions text in space. `editor`'s Tidy reaction infers the scheme from layout. (Reaction
@@ -185,7 +192,12 @@ bounds(doc, sel?): Rect | null             // geometric hull (BLU) of atom posit
 IDENTITY, applyAffine, translation(dx,dy), rotation(rad, center?), scaling(sx, sy?, center?)
 
 // style
-setStyle(doc, patch: { preset?: StylePreset; overrides?: Partial<StyleSettings> }): Doc   // preset ∈ {'slides','journal'}; overrides replaces the whole object, validated like the schema; DocError('invalid-value') otherwise. No schema change.
+setStyle(doc, patch: { preset?: StylePreset; overrides?: Partial<StyleSettings>;
+                       formula?: 'skeletal' | 'structural' }): Doc
+  // preset ∈ {'slides','journal'}; overrides replaces the whole object, validated like the schema;
+  // formula (D1, 2026-11-12): 'structural' sets style.formula, 'skeletal' removes the key (so a
+  // switch and its reverse give a doc deep-equal to the start); any other value →
+  // DocError('invalid-value'). A patch that changes nothing changes nothing (no history step).
 
 // derived structure
 fragments(doc): AtomId[][]                     // connected components, deterministic order
@@ -258,12 +270,26 @@ leaves its group.
 
 ## File Format
 
-- Extension **`.chalk`**, UTF-8 JSON, `{ "format": "chalkbond", "schemaVersion": 1, "doc": … }`.
+- Extension **`.chalk`**, UTF-8 JSON, `{ "format": "chalkbond", "schemaVersion": 1 | 2, "doc": … }`
+  (`serialize` writes the same version in the envelope and in the doc).
 - `parse` rejects: wrong `format`, malformed JSON, schema violations, invariant violations
   (with a message listing the first 10), files > 20 MB, and `schemaVersion` newer than this
   build ("created by a newer version of Chalkbond").
-- Older versions run through `migrations[n] : (v_n) => v_{n+1}` in sequence. v1 has none, but
-  the mechanism and a test for it exist from day one.
+- Older versions run through `migrations[n] : (v_n) => v_{n+1}` in sequence. `migrations[1]`
+  (v1 → v2, D1) sets `schemaVersion` to 2 and changes nothing else (a v1 document has no
+  `formula`, which means skeletal). Each version has its own strict Zod schema: v1 is the schema
+  of 1.0.0 unchanged (a `formula` key in a v1 file is rejected as an unknown key); v2 adds only
+  `style.formula: 'structural'` (optional; any other value, `'skeletal'` included, is rejected).
+- **Version written (D1):** `serialize` writes the lowest version that can hold the document:
+  `schemaVersion: 1` (envelope and doc) when `style.formula` is absent, `2` when it is
+  `'structural'`. Every byte `serialize` wrote before v2 is therefore unchanged for every document
+  without `formula`: committed fixtures and goldens, recovery files, clipboard payloads and
+  pictures' embedded drawings stay byte-identical, and a skeletal drawing saved, exported or
+  copied by the new build still opens in, and pastes into, the 1.0.0 build tested by the owner
+  on 2026-11-12 (which only knows v1). A structural drawing is v2: the 1.0.0 build refuses it with
+  its `newer-version` message (app-shell F14 "made with a newer version of Chalkbond"; clipboard
+  N-P3), which is true and changes nothing. `parse(serialize(doc))` deep-equals `doc` for both
+  versions (a v1 file parses to an in-memory v2 doc without `formula`).
 - `serialize` is deterministic: same doc → byte-identical output (stable diffs, golden tests).
   Record entries are ordered by id number; other keys lead with `format, schemaVersion, id,
   type, kind, x, y, w, h`, then alphabetical; `-0` is written as `0`; trailing newline.
@@ -298,6 +324,14 @@ Each violation is `{ invariant: 1…8, code, id?, message }`; `code` is a stable
   - `insert(extract(doc, everything))` into an empty doc preserves atom/bond/object counts
     and relative geometry.
 - Migration harness test with a synthetic v0 → v1 migration fixture.
+- Schema v2 (D1): every committed v1 fixture (`__fixtures__/*.chalk`, svg-render's
+  `__golden__/inputs/*.chalk`) parses, and `serialize` of the result is byte-identical to the
+  file; a v2 file with `formula: 'structural'` round-trips; a v1 file with a `formula` key, a v2
+  file with `formula: 'skeletal'` or any other value, and `schemaVersion: 3` are rejected with
+  `schema` / `newer-version`;
+  `setStyle` with `formula` inside `transact` is one undo step and its reverse returns a doc
+  deep-equal to the start; the property-test command generator gains the `formula` patch of
+  `setStyle` (round-trip and undo properties then cover v2; `numRuns` unchanged).
 - Test-support code lives in `__fixtures__/` (excluded from coverage): the property-test
   command generator (`arbitraries.ts`), fixture builders (`schemes.ts`) and golden `.chalk`
   files, which are `serialize` output of those builders (a test keeps the two in sync).
@@ -322,6 +356,14 @@ Each violation is `{ invariant: 1…8, code, id?, message }`; `code` is a stable
 - **Ask first:** adding a new `DrawObject` variant or `Atom` field once `editor` work has
   started (it ripples into render, editor and file format).
 - **Never:** encode chemistry rules here (e.g. "carbon has 4 bonds") — that is `chem-core`.
+
+## Decisions
+
+Rows added after approval; a later row supersedes older text anywhere in this file.
+
+| # | Decision | Reason | Date |
+|---|---|---|---|
+| D1 | **Schema v2: `style.formula?: 'structural'`** for the structural formula display (`SPEC-editor.md` R51, `SPEC-svg-render.md` Decision 15). Approved by the owner's request of 2026-11-12 (the orchestrator recorded it as the approval of the schema change). In memory every `Doc` is v2; absent `formula` means skeletal. `migrations[1]` v1 → v2 only sets the version. `serialize` writes v1 when `formula` is absent and v2 when it is `'structural'` ("lowest version that holds the document"). `setStyle` gains `formula`; `'skeletal'` deletes the key. The value set is the single literal `'structural'` so that one state has one representation (no `formula: 'skeletal'`) | A strict schema needs a version bump for any new key. Writing v1 whenever possible keeps every existing byte (fixtures, goldens, recovery, payloads) and keeps skeletal drawings from the new build readable by the 1.0.0 build the owner tested; a structural drawing cannot be shown correctly by 1.0.0, so it is v2 and refused there with the honest "newer version" message. The setting lives in `style` because, like the preset, it is how the whole document is drawn and travels with every save, copy and export | 2026-11-12 |
 
 ## Open Questions
 

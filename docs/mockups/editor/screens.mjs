@@ -11,6 +11,7 @@ import {
   formulaText,
   icon,
   iconOptions,
+  kbds,
   nameField,
   optIcon,
   optText,
@@ -123,6 +124,14 @@ function statesSheet() {
       action('tidy', 'Tidy reaction', { disabled: true }),
       action('clean-up', 'Clean up', { state: 'focus' }),
     ]),
+    row('Formula switch (R51)', [
+      action('show-structural', 'Show structural', { id: 'act-formula' }),
+      action('show-structural', 'Show structural', { id: 'act-formula', state: 'hover' }),
+      `${action('show-skeletal', 'Show skeletal', { id: 'act-formula', state: 'pressed' })}<span class="spec-note">structural drawing</span>`,
+      na,
+      `${action('show-structural', 'Show structural', { id: 'act-formula', disabled: true })}<span class="spec-note">empty drawing</span>`,
+      action('show-structural', 'Show structural', { id: 'act-formula', state: 'focus' }),
+    ]),
     row(
       'Chip, on the canvas',
       [
@@ -166,13 +175,17 @@ function statesSheet() {
   ];
   const tip = (title, { key, help, note }) =>
     `<div class="spec-tipbox"><div class="tooltip static"><div class="tooltip-title"><span>${title}</span>` +
-    `${key ? `<kbd>${key}</kbd>` : ''}</div>${help ? `<div class="tooltip-help">${help}</div>` : ''}</div>` +
+    `${kbds(key)}</div>${help ? `<div class="tooltip-help">${help}</div>` : ''}</div>` +
     `<span class="spec-note">${note}</span></div>`;
   const tips = [
     tip('Bond', {
-      key: 'B',
+      key: ['3', 'B'],
       help: 'Click to add a bond. Drag to aim it.',
-      note: 'rail: name, key, help',
+      note: 'rail: name, number key, letter key, help (R50)',
+    }),
+    tip('Show structural formula', {
+      help: 'Writes every carbon with its hydrogens (CH3, CH2, CH) in the whole drawing.',
+      note: 'R51 formula switch (a key chip only if U7 is approved)',
     }),
     tip('Cyclopentane', { note: 'option: name only' }),
     tip('Flip horizontal', { help: 'Select a molecule first.', note: 'disabled: says why' }),

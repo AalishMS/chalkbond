@@ -298,6 +298,33 @@ input {
   font: var(--type-rail);
 }
 
+/*
+ * Number key badge (SPEC-editor.md R50): the tool's digit in the button's top-right corner,
+ * 2 px from the top and 4 px from the right edge, in the caption type and colours, so it adds no
+ * colour pair and leaves the 56 x 48 hit target and the icon box as they were. Not announced
+ * (aria-hidden); the button's aria-keyshortcuts names the key.
+ */
+.rail-key {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-2);
+  color: var(--text-muted);
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.btn-rail:hover .rail-key,
+.btn-rail.is-hover .rail-key,
+.btn-rail:active .rail-key,
+.btn-rail.is-pressed .rail-key {
+  color: var(--text);
+}
+
+.btn-rail[aria-pressed='true'] .rail-key {
+  color: var(--active-fg);
+}
+
 .btn-opt {
   min-width: var(--option-btn);
   height: var(--option-btn);
@@ -333,6 +360,30 @@ input {
   width: var(--kekule-btn-w);
   min-width: var(--kekule-btn-w);
   padding-right: var(--space-2);
+}
+
+/* R51: fixed to the longer label ("Show structural") so the bar never jumps when it flips. */
+#act-formula {
+  justify-content: flex-start;
+  width: var(--formula-btn-w);
+  min-width: var(--formula-btn-w);
+  padding-right: var(--space-2);
+}
+
+/*
+ * R51 (U8): below 1100 px content width (the shell's compact top bar) the switch is icon-only,
+ * 32 x 32 like an option button, so the Select bar still fits at 960 px beside the Copy button.
+ * Its aria-label ("Show structural formula") and tooltip are unchanged.
+ */
+.window.is-compact #act-formula {
+  justify-content: center;
+  width: var(--option-btn);
+  min-width: var(--option-btn);
+  padding: 0;
+}
+
+.window.is-compact #act-formula span {
+  display: none;
 }
 
 .btn-action.label-only {
@@ -616,6 +667,11 @@ input {
   gap: var(--space-3);
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Alternative keys (a rail tool's digit and letter, R50) stand 4 px apart. */
+.tooltip-title kbd + kbd {
+  margin-left: calc(-1 * var(--space-2));
 }
 
 .tooltip-help {

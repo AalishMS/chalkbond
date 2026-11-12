@@ -306,16 +306,17 @@ const SHORTCUTS = [
   [
     'Tools',
     [
-      [['V'], 'Select'],
-      [['E'], 'Erase'],
-      [['B'], 'Bond'],
-      [['Z'], 'Chain'],
-      [['R'], 'Ring'],
-      [['L'], 'Atom'],
-      [['A'], 'Arrow'],
-      [['+'], 'Plus'],
-      [['M'], 'Curved arrow'],
-      [['T'], 'Text'],
+      // SPEC-editor.md R50: the number on the tool's button, then its letter.
+      [['1', 'V'], 'Select'],
+      [['2', 'E'], 'Erase'],
+      [['3', 'B'], 'Bond'],
+      [['4', 'Z'], 'Chain'],
+      [['5', 'R'], 'Ring'],
+      [['6', 'L'], 'Atom'],
+      [['7', 'A'], 'Arrow'],
+      [['8', '+'], 'Plus'],
+      [['9', 'M'], 'Curved arrow'],
+      [['0', 'T'], 'Text'],
     ],
   ],
   [
@@ -1008,6 +1009,26 @@ export function buildPages(info) {
       compact: true,
     }),
     note: '<b>Proposal:</b> minimum client area 960 × 640 (window 960 × 691), label-only Copy, name field 204 px; the widest options bar (Atom) fits. Native parts approximate.',
+  });
+
+  // SPEC-editor.md R51 (U8, 2026-11-12): the Select bar with the formula switch at the minimum
+  // window; below 1100 px the switch is icon-only, so the bar fits beside the label-only Copy.
+  p['A15c-min-window-select'] = desk({
+    title: 'Minimum window, Select',
+    winTitle,
+    width: 960,
+    height: 691,
+    client: editor({
+      top: topbar({
+        options: ed(selectionActions({ enabled: { kekule: true } })),
+        copy: { variant: 'compact' },
+      }),
+      left: rail('select'),
+      canvas: img('min-proposal'),
+      foot: status({ hint: HINTS.select }),
+      compact: true,
+    }),
+    note: '<b>2026-11-12 feature set:</b> client area 960 × 640 with the Select tool; the formula switch (R51) is icon-only below 1100 px, so the Select options bar fits beside the label-only Copy. Native parts approximate.',
   });
 
   p['A16-icons'] = iconsSheet();

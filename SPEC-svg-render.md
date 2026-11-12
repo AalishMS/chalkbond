@@ -2,7 +2,8 @@
 
 Shared stack, commands, style and boundaries: see `SPEC.md`. Module map: `CAPABILITY-MAP.md`.
 Depends on: `doc-model`, `chem-core` (public entries only). Status: **approved 2026-11-10**
-(reviewed and approved by the delegated reviewer; see "Decisions").
+(reviewed and approved by the delegated reviewer; see "Decisions"). Amended 2026-11-12 for the
+structural formula display (Decision 15; its layout is open, question S1).
 
 Audience: a teacher of grade 11–12 chemistry in Nepal (NEB curriculum) building slides and
 worksheets on Windows with Office 2021. Output must look like a textbook figure with no manual
@@ -153,6 +154,22 @@ Resolved during review (they replace the draft's open questions); binding until 
     measurement cover installed Liberation Sans as well as Arial, without changing advances,
     layout boxes or other glyphs' extents. Calibration tolerances and corpus stay unchanged.
 
+15. **Structural formula display (2026-11-12; owner's request, orchestrator's decisions; feature
+    F2).** The document setting `doc.style.formula` (`SPEC-doc-model.md` D1; absent = skeletal,
+    `'structural'`) decides whether a carbon atom without a `label` is a skeleton vertex or a
+    labelled atom. Decided: (a) **skeletal output is byte-identical to the output before F2**:
+    no existing golden changes, and no golden is re-recorded; (b) in structural mode every carbon
+    with no `label` is labelled, and its text is built **by the existing label rules** for an
+    atom that shows its symbol (H count from `AtomInfo.implicitH`, subscripts, `H3C` / `CH3`
+    orientation by the Side rule, charge in the label, satellites round the symbol box, bond
+    trimming, double bond at a label); atoms with a `label` (`CO2H`, `Ph`) and non-carbon atoms
+    are drawn exactly as in skeletal mode; aromatic ring carbons read `CH` (`C` when substituted)
+    and the circle is still drawn; (c) `isLabelled` takes the setting (Public API). **Open
+    (question S1, for the orchestrator):** the existing rules do **not** give a legible picture
+    for the reference molecules (bonds vanish, labels collide); the numbers and the options are in
+    "Structural formula display" below. No layout rule for structural mode is specified until S1
+    is answered; the F2 rendering tasks wait for it.
+
 ## Data Model
 
 ```ts
@@ -220,9 +237,11 @@ renderSvg(doc: Doc, opts?: RenderOptions & SvgOptions): SvgDocument
 curveControls(from: Point, to: Point, bend: number): [Point, Point, Point, Point]
     // the cubic control points of a curved arrow's whole (unclipped) curve between its resolved
     // anchors, in any one unit; for |bend| ≤ 0.5 the degree-raised quadratic (same point set)
-isLabelled(atom: Atom, bondCount: number): boolean
+isLabelled(atom: Atom, bondCount: number, formula?: 'skeletal' | 'structural'): boolean
     // whether the atom is drawn with a text label (so curved-arrow ends are clipped out of it):
-    // element ≠ C, a custom label, an isotope, explicit H, or no bonds
+    // element ≠ C, a custom label, an isotope, explicit H, or no bonds; and, with formula
+    // 'structural' (Decision 15; default 'skeletal' = the behaviour before F2), every carbon.
+    // Callers pass `doc.style.formula ?? 'skeletal'`
 ```
 
 `render` of an empty document (or an empty subset) gives `parts: []`, `bounds: null`; `toSvg`
@@ -259,8 +278,10 @@ defaults (`fill="none"`, round caps and joins); every filled element and `<text>
 ### Atoms and labels
 
 An atom is **labelled** (its text is drawn) when: element ≠ `C`; or it has a `label`; or
-`isotope` or `explicitH` is set; or it has no bonds. Otherwise it is a skeleton vertex: no
-letter, no H. Charge, radical, lone pairs, partial charge and `number` never force a letter.
+`isotope` or `explicitH` is set; or it has no bonds; or the document's `style.formula` is
+`'structural'` (Decision 15: then every carbon is labelled, so the skeleton vertex does not
+occur). Otherwise it is a skeleton vertex: no letter, no H. Charge, radical, lone pairs, partial
+charge and `number` never force a letter.
 
 | Part | Rule |
 |---|---|
@@ -384,6 +405,68 @@ Text positions `at` are in BLU and become pt. Text, caption, callout and bracket
 | `callout` | text centred at `at`; a leader line (`lineWidth`, no head) from the nearest point of the text box grown by `calloutPad` to `resolveAnchor(anchor)`, clipped out of an atom anchor's box like curved arrows |
 | `bracket` | `square`: two sides at `rect.x` and `rect.x + w`, spanning `y … y+h`, serifs `bracketSerif` (clamped to `w/2`) pointing inwards. `round`: arcs bulging outwards by `roundBulge`. `curly`: four-cubic braces, tip depth `curlyDepth`. `corner` runs: left edge `cornerGap` right of the right bracket; baseline at `y+h`, unless the first run is `sup`, then cap top at `y` |
 | `shape` | `rect` / `ellipse` of `rect`; `fill` with `fillOpacity` (clamped to 0–1, `fill-opacity`), `stroke` at `lineWidth`; neither → nothing drawn. Painted in the beneath layer |
+
+## Structural formula display (Decision 15; layout open, question S1)
+
+**What is decided** is in Decision 15. **What is open** is the layout: the orchestrator required
+an analysis with numbers before any rendering rule is written, and a stop if the existing rules
+are not legible. They are not.
+
+**Method (2026-11-12, W9).** The existing rules were run unchanged by a throwaway script against
+the committed renderer and font table (`font-metrics.ts`, Arial advances): every carbon without a
+label was given `explicitH` = its perceived `implicitH`, which makes today's `isLabelled` draw it
+with exactly the label rules structural mode would use. Geometry: the committed golden inputs
+`ethanol`, `alkene-trans` (but-2-ene, trans), `toluene`, `acetic-acid` (drawn with atoms, not
+`CO2H`), doc-model's `benzene` fixture, and zig-zags at 1.0 BLU and 30° for propane and isobutane
+(the centre carbon with three neighbours at 120°, and a zig-zag with the branch straight up; both
+give the same numbers). "Visible" is the length of the drawn main bond line after trimming at both
+labels; "gap" is the smallest distance between the cap-height glyph boxes (symbol, H part,
+subscripts, charge) of the two bonded labels, negative = the glyphs overlap. Presets: Slides
+(bond 40 pt, label 24 pt, `labelMargin` 4.4 pt); Handout = `journal` (bond 14.4 pt, label 10 pt,
+`labelMargin` 1.58 pt).
+
+| Molecule (labels as the rules write them) | Slides: worst bond | Slides: other bonds | Handout: worst bond | Handout: other bonds |
+|---|---|---|---|---|
+| ethanol (`HO`, `CH2`, `CH3`) | `CH2`–`CH3` **vanishes**; glyphs **overlap 1.98 pt** (the `2` of `CH2` runs into the `C` of `CH3`) | `HO`–`CH2` 9.05 pt (23 % of the bond) | `CH2`–`CH3` **vanishes**; overlap 1.96 pt | `HO`–`CH2` 2.08 pt (14 %) |
+| propane (`H3C`, `CH2`, `CH3`) | `CH2`–`CH3` **vanishes**; overlap 1.98 pt | `H3C`–`CH2` 9.83 pt (25 %) | **vanishes**; overlap 1.96 pt | 2.40 pt (17 %) |
+| isobutane (`CH`, `CH3`, `H3C`, `CH3`) | `CH`–`CH3` (down-right) **vanishes**; gap 2.82 pt | 9.83 pt, 14.02 pt (35 %) | **vanishes**; gap 0.04 pt | 2.40 pt, 4.07 pt (28 %) |
+| but-2-ene, trans (`H3C`, `HC`, `CH`, `CH3`) | `H3C`–`HC` and `CH`–`CH3` 10.00 pt (25 %) | `HC`=`CH` 13.87 pt (35 %); smallest gap 12.93 pt | 2.47 pt (17 %) | 4.01 pt (28 %); smallest gap 3.31 pt |
+| benzene (six `CH` / `HC`) | 2 of the 6 ring bonds **vanish**; gap 2.82 pt | 9.83 pt, 14.02 pt | 2 of 6 **vanish**; gap 0.04 pt | 2.40 pt, 4.07 pt |
+| toluene (`CH3`, `C`, five `CH` / `HC`) | 2 ring bonds **vanish**; gap 2.82 pt | 9.83 pt, 14.02 pt; `CH3`–`C` 9.83 pt | 2 ring bonds **vanish**; gap 0.04 pt | 2.40 pt, 4.07 pt |
+| acetic acid (`CH3`, `C`, `O`, `HO`) | `C`–`HO` 9.05 pt (23 %) | `CH3`–`C` 9.83 pt; `C`=`O` 14.02 pt | `C`–`HO` 2.08 pt (14 %) | 2.40 pt, 4.07 pt |
+
+**Why.** A carbon whose H part is written after its symbol (`CH2` at a zig-zag vertex: the
+neighbours sum to `sx` = 0, so "after") has a bond leaving down-right at 30° that passes through
+the `H` and subscript boxes; the Bonds-at-a-label rule ends a line "at the farthest exit among the
+boxes it actually intersects", so that end is trimmed 35.6 pt of a 40 pt bond (Slides), the other
+end 15.1 pt at its own symbol box, and the line has nothing left. `CH2` is about 44 pt wide in
+Slides, wider than the 40 pt bond, so horizontal labels on neighbouring carbons cannot both fit
+with today's sizes. In skeletal mode two such labels are rarely neighbours, which is why the
+goldens never showed it. Even where nothing vanishes, Handout stubs of 2.1–2.5 pt (under 1 mm)
+are barely visible.
+
+**Options for S1** (not specified; the orchestrator decides, the owner may be asked):
+
+1. **Longer bonds in structural mode only.** The pt bond length is multiplied by a factor while
+   structural (coordinates, angles and fonts unchanged; switching back gives the skeletal picture
+   exactly). Measured with the same script (shortest visible bond over all seven molecules /
+   smallest glyph gap): ×1.5: Slides 2.39 pt, Handout vanishes; ×1.75: Slides 8.92 pt / 21.1 pt,
+   Handout 1.13 pt / 4.90 pt; ×2: Slides 15.45 pt / 31.1 pt, Handout 3.48 pt / 8.43 pt. Uses the
+   label rules unchanged. Cost: a structural picture is about twice as large on the canvas, in
+   Office (true size) and in exports; the editor's zoom rules (V2) would follow the effective
+   bond length like a preset switch (R38).
+2. **Hydrogens stacked above or below** the carbon when a bond would cross the H part (a new
+   layout rule): `CH2` becomes a 17 pt wide `C` with `H2` on the free side, which fits 40 pt
+   bonds. Most compact; a new rule in the label layout, satellite slots and trimming, with its
+   own golden review.
+3. **A minimum visible bond stub** (trimming stops so that, say, 0.2 × the bond stays visible).
+   Keeps every bond, but does not cure the glyph overlap of ethanol and propane (1.98 pt), so it
+   is not enough on its own; it could guard option 1 or 2.
+
+**W9's recommendation:** option 1 at ×2 for both presets, because it uses only the existing label
+rules (the risk the orchestrator named) and keeps the zig-zag and the angles; its cost, a larger
+picture, is visible and easy to explain. Option 2 is the better-looking one if the owner prefers
+the drawing to keep its size; it needs a new rule and a visual review.
 
 ## Text measurement (no DOM)
 
@@ -522,6 +605,7 @@ The editor owns the canvas; this module supplies the following and nothing more.
 
 | Module | Change | Needed? |
 |---|---|---|
+| `doc-model` (2026-11-12, F2) | Schema v2 `style.formula?: 'structural'` and `setStyle`'s `formula` patch (`SPEC-doc-model.md` D1). `StyleSettings` is unchanged | Yes (doc-model task first) |
 | `doc-model` | `StyleSettings` **stays** in `doc-model/types.ts` and in the `.chalk` schema (moving it would make `doc-model` import a downstream module, which the capability map forbids). Its five fields are final: **no code, schema or `schemaVersion` change.** Docs only: "(provisional; svg-render's spec owns it)" in `SPEC-doc-model.md` becomes "(final; meaning defined in `SPEC-svg-render.md`)" (done at approval); the "Provisional field set" JSDoc in `types.ts` gets the same wording in the first implementation task | Docs only |
 | `chem-core` | None. Consumes `perceive`, `Perception`, `AtomInfo.implicitH`, `ABBREVIATIONS` (display-table coverage test) | No |
 | Tooling | ESLint block for `src/core/svg-render/**` banning the non-deterministic APIs above (the boundary entry already exists); `.gitattributes` golden line; `scripts/build-font-metrics.mjs`; `scripts/golden-sheet.mjs` + `npm run golden:sheet` (reads the committed `__golden__/*.svg`, writes `out/golden-sheet.html`, not committed; optional `--png <file>` screenshots it with Playwright's Chromium into `<file>-slides.png` and `<file>-journal.png`, numbered when a preset needs several pages; goldens are named `<scene>.<preset>.svg`, every scene in both presets); `.prettierignore` entry for `font-metrics.ts`; the calibration test under `e2e/` | Yes |
@@ -581,10 +665,23 @@ The editor owns the canvas; this module supplies the following and nothing more.
   contains `\r`.
 - **Shipped pipeline** is checked manually (`docs/windows-checklist.md`): paste three goldens
   into PowerPoint/Word 2021; labels, bond ends and circles must look right. (Owner decision 2026-11-12:
-  the Office 2016 on the development machine is accepted for this check.) Ticked 2026-11-12 in Checkpoint K from the owner's own hand check (check 15 of his list of 31, details not reported per item).
+  the Office 2016 on the development machine is accepted for this check.) Ticked 2026-11-12 in Checkpoint K from the owner's own hand check (check 15 of the owner's list of 31, details not reported per item).
 - **Perf** (separate perf project like the other modules, skipped under `--coverage`; `perception`
   supplied, since `perceive` has its own budget): slide-sized scheme (4 molecules ≈ 40 atoms, 3
   arrows, 6 texts) `render` < 8 ms median; 500-atom single fragment + 20 objects < 40 ms median.
+  Decision 15 adds the same two scenes in structural mode with the **same** budgets; a miss is a
+  request for `createRenderer` (spec first), never a looser budget.
+- **Structural mode (Decision 15)** — tests that do not depend on S1: every existing golden is
+  byte-identical (no `-u`); `render` of a doc and of the same doc with `style.formula` absent are
+  equal (skeletal is the absence of the key); `isLabelled(atom, n, 'structural')` is true for
+  every carbon and `isLabelled(atom, n)` equals the pre-F2 rule; in structural mode atoms with a
+  `label` and non-carbon atoms give parts byte-identical to skeletal mode **unless a neighbour's
+  label changes their trimming** (bond parts may change, atom parts may not); properties 1–7 run
+  with `style.formula` drawn from the generator too (`numRuns` unchanged). New golden scenes,
+  `<scene>-structural.<preset>.svg` for ethanol, propane, isobutane, but-2-ene, benzene,
+  toluene, acetic acid (atoms), acetic acid with `CO2H`, a carbocation and a methyl radical, are
+  written **after S1 is answered** and reviewed on the golden sheet; never by re-recording an
+  existing golden.
 - **Coverage:** `src/core/svg-render` line coverage ≥ 90 % (`SPEC.md` target; the generated metrics
   table and `__golden__/` excluded).
 
@@ -619,6 +716,13 @@ The editor owns the canvas; this module supplies the following and nothing more.
 12. No DOM, Node or Electron import in the module (lint and `tsconfig.core.json` pass).
 13. Text measurement: the table test passes; the calibration e2e test agrees with real Arial
     within 1 % on Windows.
+14. (F2, 2026-11-12; automated) Skeletal output unchanged: every golden committed before F2 passes
+    byte for byte with no `-u`. Structural mode: the tests listed under Testing pass; once S1 is
+    answered, its golden scenes exist, pass the ink-scan bounds check (SC5), and in both presets
+    **no bond between two labelled atoms vanishes and no two bonded labels' glyph boxes overlap**
+    for the seven reference molecules of "Structural formula display" (a unit test measures it as
+    the analysis did); the visual look is a human check on the golden sheet and in Office
+    (`docs/windows-checklist.md` "Re-checks after the 2026-11-12 feature set").
 
 ## Boundaries (module-specific)
 

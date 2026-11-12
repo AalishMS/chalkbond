@@ -32,8 +32,12 @@ for day-to-day slide figures.
 5. See chemistry info live: formula and MW of the selection, valence warnings on impossible
    atoms.
 6. Copy a structure or whole scheme and paste into PowerPoint/Word as a crisp, scalable image
-   with a transparent background; export PNG / SVG / PDF.
+   with a transparent background; export PNG / SVG / PDF. (Since 2026-11-12 the clipboard's
+   bitmap, which chat apps and Paint take, is white-backed; Office takes the transparent SVG:
+   clipboard-export R10.)
 7. Save and reopen documents; exported SVG/PNG can be reopened in Chalkbond as editable.
+8. (2026-11-12, owner) Pick a tool with the number keys shown on the tool rail; switch the whole
+   drawing between skeletal and structural formula (`CH3`, `CH2` written) with one button.
 
 ## Tech Stack
 
@@ -201,6 +205,15 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 6. Formula and MW for a reference set of ≥ 30 compounds match PubChem values (MW to 0.01).
 7. Every edit is undoable/redoable; save → open round-trip is lossless.
 8. Works with no network connection.
+9. (2026-11-12 feature set) The ten digits pick the ten rail tools, except `1`–`3` over an atom or
+   bond (editor SC13; automated, plus a hand check). The structural formula switch is one undo
+   step that leaves atoms, bonds and coordinates untouched, travels with the file, the clipboard
+   and every export, keeps skeletal output byte-identical, and lets files and clipboard drawings
+   of the tested 1.0.0 build open (doc-model D1, editor SC14, svg-render SC14, clipboard-export
+   SC15; automated); its drawn layout waits for svg-render question S1. The clipboard bitmap is
+   opaque white with a 0.25-bond margin while the clipboard SVG and every export stay as they
+   were (clipboard-export SC14; automated, plus hand checks in a dark chat app and on a dark
+   PowerPoint slide).
 
 ## Decisions Log
 
@@ -292,6 +305,14 @@ Coverage targets: `core/*` ≥ 90% lines; `renderer/editor` ≥ 70%. TDD for all
 | 2026-11-12 | Owner decision (Windows 10), the orchestrator's reading: asked "Do you have a Windows 10 machine or VM? Without one, the Windows 10 install check can't be done and the release can't be declared as the checklist stands.", the owner answered "no we dont need that". Read as: the owner waives the Windows 10 human checks; the human sections and the clean-account install run on Windows 11 only. Windows 10/11 x64 stays the target, and Windows 10 is untested by hand for 1.0.0. |
 | 2026-11-12 | Owner hand checks passed (Checkpoint Z step 9, batch 3): the owner ran a numbered list of 31 checks by hand with the installed Chalkbond 1.0.0 (installer built at `956a4a4`) on the development machine (Windows 11 Pro 26300, Office 2016) and reported "everything works well. the tests pass." (all 31 run; details not reported per item; not watched by the orchestrator). Ticked in `docs/windows-checklist.md`: Checkpoint K, Checkpoint R except "Pen or touch", every human box of "Clipboard and export", and 15 of 17 of "App shell and installer". Open: "Shutdown right after an edit" (reported as passed, the written observation of whether the last change was there is outstanding), Checkpoint R "Pen or touch" (conditional, not run), Checkpoint E32 and the cold-start box (teacher's laptop). Finding: pasted into a dark-mode chat app (Discord) the copied picture was "barely visible because it was dark on dark", because the clipboard bitmap is transparent with black ink (Decision X3 of `SPEC-clipboard-export.md`); to be decided in the 2026-11-12 feature set. The owner also asked for new features before the release, so the human checks those features touch will be repeated on the final installer; the release is not declared. |
 
+| 2026-11-12 | Feature set before the release (owner's requests, orchestrator's decisions, specified by W9). **F1 number keys** (editor R50, app-shell R27): digits `1`–`9`, `0` pick the rail tools in rail order and each rail button shows its digit; over a hovered atom or bond `1`–`3` keep editor R5 wherever hover keys are active; letter keys and Ctrl+1 / Ctrl+0 unchanged. UI decisions U1–U4 (badge look, `aria-keyshortcuts` with a name-only label, the exact exception, digit-first shortcuts rows) are W9's and go to the owner. |
+| 2026-11-12 | **F2 structural formula display**, document part (doc-model D1, editor R51 and R52, clipboard-export R11, app-shell R28): schema v2 adds `style.formula?: 'structural'` (absent = skeletal); `serialize` writes v1 whenever `formula` is absent, so every existing byte and the tested 1.0.0 build's ability to open skeletal files and pastes are kept, and a structural drawing (v2) is refused there as "newer version". One "Show structural" / "Show skeletal" button after Show Kekulé, whole document, one undo step, no menu entry, new drawings skeletal. UI decisions U5, U6, U8–U12 are W9's; the key Ctrl+Shift+F is only proposed (U7). |
+| 2026-11-12 | **F2 layout is open (svg-render Decision 15, question S1).** Under the existing label rules, structural labels collide: in both presets a bond vanishes in ethanol, propane, isobutane, benzene and toluene, and the `CH2` and `CH3` glyphs of ethanol and propane overlap by about 2 pt (Handout stubs elsewhere 2.1–2.5 pt). Options recorded in `SPEC-svg-render.md` (longer bonds in structural mode, hydrogens stacked, a minimum stub); W9 recommends longer bonds ×2. No structural layout rule is specified and the F2 rendering tasks wait for the answer. |
+| 2026-11-12 | **F3 white-backed clipboard bitmap** (clipboard-export R10, amends X3): the `image/png` clipboard entry is opaque white with a margin of 0.25 × the bond length (Slides 10 pt = 41.67 px, Handout 3.6 pt = 15 px at 300 dpi); the clipboard SVG stays transparent and tight; File > Export unchanged. Trade-off: an application that takes the bitmap and has a coloured page shows a white box; the Office pastes of 2026-11-11 took the SVG and are unaffected. |
+
 ## Open Questions
 
-None at project level.
+- **S1 (2026-11-12, for the orchestrator):** the layout of the structural formula display; see
+  `SPEC-svg-render.md` "Structural formula display" (analysis and options).
+- **U7 (2026-11-12, for the orchestrator):** a key for the formula switch (proposed Ctrl+Shift+F,
+  `SPEC-editor.md` R51).

@@ -62,6 +62,37 @@ i5-11400H, 16 GB, display at 125 % with a second monitor). Run and read by the o
 
 Also run: `npm run shots` (97 passed, 220 PNGs), compared by eye by the orchestrator (see "Clipboard and export").
 
+## Re-checks after the 2026-11-12 feature set
+
+The owner's feature set of 2026-11-12 (specified in `SPEC.md` Decisions Log 2026-11-12): number
+keys for the tool rail (F1, `SPEC-editor.md` R50), the structural formula display (F2, R51, R52;
+`SPEC-doc-model.md` D1; its drawing waits for `SPEC-svg-render.md` question S1) and the
+white-backed clipboard bitmap (F3, `SPEC-clipboard-export.md` R10). Run on the **final** build and
+installer, on Windows 11, after every feature task is done. Nothing above is unticked for this;
+these boxes are the repeat. Record each result as the other sections do (machine, Office, who ran
+it, who verified it).
+
+Automated gates (PowerShell, from a clean clone of the final commit):
+
+- [ ] `npm ci`, then `npm run check` (exit 0; write the file and test counts)
+- [ ] `npm run test:e2e` (builds first; includes `e2e/win/`; exit 0, count written)
+- [ ] `npm run test:e2e:os-input` (do not touch the mouse while it runs)
+- [ ] `npm run dist:win` (installer name shows the version; installer size written in `SPEC-app-shell.md` I1)
+- [ ] `npm run test:packaged` against `dist/win-unpacked`
+- [ ] `npm run shots`, and the PNGs of the feature tasks looked at by eye
+
+Hand checks (installed final build):
+
+- [ ] The look matches the updated mock-ups: rail number badges (mock-ups 03 and 10, `out/mockups`), the formula switch in the Select bar and at the minimum window (03, 10, shell A15c), the shortcuts list (shell A12); `node docs/mockups/editor/build.mjs --png out/mockups` and `node docs/mockups/shell/build.mjs --png out/mockups-shell` make the reference PNGs.
+- [ ] Number keys by hand: with the canvas focused, `1` … `9`, `0` pick Select … Text in rail order (the badge of the picked tool is highlighted); the letter keys still work; Ctrl+1 and Ctrl+0 still zoom.
+- [ ] The 1/2/3 exception by hand: pointing at an atom, `1` adds a bond (and `2`, `3` a double and triple bond); pointing at a bond, `1`, `2`, `3` set its order; pointing at an atom, `4` picks Chain; with Erase active, pointing at an atom, `1` picks Select.
+- [ ] A structural-formula drawing (ethanol, toluene and acetic acid, Slides) copied into PowerPoint and into Word: the labels are Arial, sit as on screen (`CH3`, `CH2`, `HO`, subscripts lowered), no bond missing, sharp at 400 %. Office actually used is written down.
+- [ ] Switching the same drawing back to skeletal gives exactly the skeletal picture (compare with a copy made before switching); Ctrl+Z after a switch also restores it.
+- [ ] Paste into a dark-mode chat app (Discord or WhatsApp Desktop in dark mode): the drawing arrives on a white background with a small white margin and is clearly visible.
+- [ ] Paste on a dark PowerPoint slide background: still no white or black box (Office takes the transparent SVG).
+- [ ] A `.chalk` file saved by the tested 1.0.0 build (installer built at `956a4a4`) opens in the final build, unchanged, and a skeletal drawing saved by the final build opens in the 1.0.0 build if it is still installed somewhere (optional; write down whether it was tried).
+- [ ] Install the final installer over the tested 1.0.0 on the development machine and on a clean Windows 11 account (SmartScreen steps as in "App shell and installer"); Help > About shows the final version.
+
 ## Checkpoint A — scaffold and tooling
 
 ```powershell

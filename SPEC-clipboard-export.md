@@ -5,7 +5,8 @@ Core depends on: `doc-model`, `svg-render` (public `index.ts` entries only). Wri
 `SPEC-app-shell.md`; the two share one UI design (`docs/mockups/shell/`) and one IPC contract
 (app-shell "Process split and IPC"). Status: **approved 2026-11-10** (drafted in commit 4dd7d48;
 reviewed and approved by the delegated reviewer with the shell mock-ups of commit d3abe4b as the
-visual source of truth; see "Decisions").
+visual source of truth; see "Decisions"). Amended 2026-11-12: white-backed clipboard bitmap
+(R10) and the formula setting in the payload (R11).
 
 Audience: a grade 11–12 chemistry teacher in Nepal (NEB curriculum) on a Windows laptop with
 Office 2021, no network, not a power user. The test for every choice: *what would this teacher
@@ -16,8 +17,9 @@ Word, looking like a textbook figure, without having to learn anything.**
 
 1. **Copy.** One action (Ctrl+C, the top-bar **Copy** button, Edit > Copy, the canvas context
    menu) puts the selection, or the whole drawing when nothing is selected, on the Windows
-   clipboard as a picture Office pastes well (vector SVG and a transparent, tight, 300 dpi PNG)
-   **and** as the Chalkbond drawing, in one clipboard write. Ctrl+V then works in PowerPoint, in
+   clipboard as a picture Office pastes well (vector SVG, transparent and tight, and a 300 dpi
+   PNG on opaque white with a small margin, Decision R10) **and** as the Chalkbond drawing, in one
+   clipboard write. Ctrl+V then works in PowerPoint, in
    Word and back in Chalkbond (also in a later session).
 2. **Export.** File > Export… writes the whole drawing as PNG, SVG or PDF.
 3. **Reopen.** Exported PNG and SVG files (and PDF, if probe C4 passes: rule PDF-A) carry the
@@ -114,14 +116,14 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 | C11 | PNG encoder (correction of R1): `rasterise` encodes with `canvas.toDataURL('image/png')` and decodes the data URL to bytes (`pngFromDataUrl`); `toBlob` is no longer used, and there is no async-Blob, OffscreenCanvas, retry or fallback path. The decoder accepts only a `data:image/png;base64,` URL whose base64 length is a positive multiple of 4, works out the decoded size before any `atob` and refuses one over `MAX_PICTURE_BYTES`, and decodes in bounded chunks (at most 64 KiB of base64 per `atob`). Anything else (Chromium's `data:,` for a canvas it cannot encode, bad base64, a non-PNG) rejects, and the callers' existing paths apply: N-C6 for a copy, the write-failed box for an export; no new UI. The SVG Blob and `Image` decode, target pixels and viewBox, optional white fill, object-URL revoke in a `finally`, `withPictureChunksCapped`, return shape, raster caps (10 000 px side, 50 MP) and the 64 MiB picture / 20 MiB drawing limits are unchanged | `toBlob` encodes in an idle task; in the app the copy waited about 1 s for it (C8 profile; portable e2e on the old encoder: median 1044 ms of five, against SC12's 500 ms), while `toDataURL` took about 7 ms on the same page | 2026-11-11 |
 | O7 | Positive fractional effective DPI is allowed only when no positive integer meets both raster caps after ceil and min 1. Search integers through floor(upper), upper = min(requestedDpi, 720000/widthPt, 720000/heightPt); if none fits, bisect [0,min(1,upper)] for 64 iterations (stop at an unrepresentable midpoint), retaining the feasible lower endpoint. Never return zero DPI; reduced is true. Keep rounded pHYs even when it is zero. | Approved orchestrator resolution for enormous finite drawings; avoids width × height overflow | 2026-11-11 |
 | O1 | The **Copy** button sits at the right end of the top bar, after Undo/Redo (mock-ups A01, A02): a filled primary button with icon and label; after a copy it reads "Copied" with a check for 2 s; below 1100 px window width it shows the label "Copy" with no icon (never icon-only) and the name field narrows to 204 px (A15b) | The top-right corner is where Office and browsers put "send it on"; a word is self-explanatory, two overlapping sheets are not | 2026-11-10 |
-| O2 | Ctrl+C, the Copy button and Edit > Copy copy the selection, or the whole drawing when nothing is selected, writing the picture formats and the editable drawing in one clipboard write. PNG transparent, tight, 300 dpi; SVG written too. Paste reads the system clipboard and follows the editor's cascade rule when the content is the editor's own last copy. Plain text pastes as a name or SMILES through the name-insert path | One shortcut for PowerPoint, Word and Chalkbond; the teacher never chooses a format | 2026-11-10 |
+| O2 | Ctrl+C, the Copy button and Edit > Copy copy the selection, or the whole drawing when nothing is selected, writing the picture formats and the editable drawing in one clipboard write. PNG transparent, tight, 300 dpi (amended 2026-11-12 by R10: the clipboard PNG is opaque white with a 0.25-bond margin; the SVG stays transparent and tight); SVG written too. Paste reads the system clipboard and follows the editor's cascade rule when the content is the editor's own last copy. Plain text pastes as a name or SMILES through the name-insert path | One shortcut for PowerPoint, Word and Chalkbond; the teacher never chooses a format | 2026-11-10 |
 | O3 | Export dialog exactly as mock-ups A08a–c: three format cards; Size as Screen / Print / Poster in teacher language with the live pixel line and no "dpi"; "White background" off by default and remembered; one Save… button. Selection-only export is out | PNG needs two choices a Save dialog cannot ask; plain words | 2026-11-10 |
 | C4 | PDF-A applies (probe C4, 2026-11-10, Linux); Windows confirmation pending | Hidden viewer control renders with minimum dimensions; embedded capture equals original | 2026-11-10 |
 | O4 | Exports reopen as editable: PNG via a text chunk, SVG via svg-render's metadata. PDF: an early probe (C4) tries a standard incremental update; outcome A embeds, outcome B exports without embedding and says so (rule PDF-A / PDF-B) | Do not accept "no embedding" without evidence | 2026-11-10 |
 | O5 | Accepted defaults: SVG stays on the clipboard even if Office ignores it; if Office ignores 300 dpi, accept for v1; plain error wording without codes | Costs nothing; newer Office and other apps use SVG; lowering the resolution would break "sharp at 400 %" | 2026-11-10 |
 | O6 | All notice wordings as mock-up A17 | Teacher language, no "dpi", "clipboard" or "insert" | 2026-11-10 |
 | X1 | One Copy writes the entries of rule CB-W1 in one `clipboard.write` | Atomic per the typings | 2026-11-10 |
-| X3 | Clipboard picture: transparent, tight (padding 0), 300 dpi PNG, SVG at true size (1 SVG unit = 1 pt) | Slides have coloured backgrounds; tight handles (`SPEC.md` SC4) | 2026-11-10 |
+| X3 | Clipboard picture: transparent, tight (padding 0), 300 dpi PNG, SVG at true size (1 SVG unit = 1 pt). **Amended 2026-11-12 by R10:** the PNG entry is opaque white with a margin of 0.25 × the bond length; the SVG entry is unchanged (transparent, padding 0, true size) | Slides have coloured backgrounds; tight handles (`SPEC.md` SC4) | 2026-11-10 |
 | X4 | Size in Office follows the preset: Slides = 40 pt bonds, 24 pt labels; Handout = 14.4 pt bonds, 10 pt labels | The preset switch already means "where this goes"; no resizing | 2026-11-10 |
 | X5 | The drawing travels as compact ASCII `.chalk` text (`drawingPayload`) everywhere: clipboard entry, PNG `tEXt`, SVG `<metadata>`, PDF stream | One format, read back only by `parse`; ASCII survives Latin-1 and XML escaping | 2026-11-10 |
 | X10 | Rasterise in the renderer (SVG → `<img>` → `<canvas>` → PNG), then add `pHYs` and `tEXt` with pure code | Same Chromium and system Arial as the canvas; no hidden window, no native module | 2026-11-10 |
@@ -134,6 +136,8 @@ are the draft's, kept or amended at review; R-rows are the reviewer's resolution
 | R6 | A compact "Copied" (below 1100 px) shows the word without the check and may widen the button for its 2 s; the editor's options bar scrolls horizontally if it must | Keeping 56 px for "Copied" would clip it; the state lasts 2 s | 2026-11-10 |
 | R7 | Numbers in the Export dialog are grouped with a comma by a pure function (`groupDigits`), never `toLocaleString` | Same text on every machine; testable | 2026-11-10 |
 | R8 | Draft open questions resolved: Q1 → O4; Q2 (white PNG by default) → no, remembered checkbox (O3); Q3, Q4 → O5; Q5 → yes (O2); Q6 → label-only (O1); Q7 → 300 dpi (X3) | Recorded so no question stays open | 2026-11-10 |
+| R10 | **White-backed clipboard bitmap** (orchestrator's decision 2026-11-12, amends X3, O2, PI3, CB-C2; feature F3). The `image/png` clipboard entry is rasterised on opaque white (`#ffffff`, the existing White-background fill of R1) from an SVG with a margin of `0.25 × bondLength` on every side (`resolveStyle(doc.style).bondLength`, overrides included): Slides 10 pt (41.67 px at 300 dpi), Handout 3.6 pt (15 px at 300 dpi). The SVG entry stays transparent, padding 0, true size; the drawing entry is unchanged; there is no setting. File > Export is unchanged (PNG transparent unless "White background", default off; SVG transparent; PDF white page). **Trade-off:** an application that takes the bitmap rather than the SVG and has a coloured page now shows a white box around the drawing (Paint's white canvas hides it; a dark chat app shows a white card, which is the point). The Office pastes checked on 2026-11-11 are not affected: PowerPoint and Word took the SVG entry (SC13 result), including the "no box on a dark slide" check | Owner's finding 2026-11-12: pasted into Discord's dark mode the transparent black-on-transparent bitmap was "barely visible because it was dark on dark". Chat apps and Paint take the bitmap; Office takes the SVG. The margin keeps ink off the edge of the white box | 2026-11-12 |
+| R11 | **The formula setting travels** (F2, `SPEC-doc-model.md` D1). `pictureDoc` copies `style.formula` as well as `preset` and `overrides`, so the clipboard drawing, the PNG `tEXt`, the SVG `<metadata>` and the PDF stream carry it, and every picture (`exportSvg` renders the source document) shows what the canvas shows. A pasted fragment takes the **target** document's setting, as it takes its preset (a `SubDoc` has no style). A skeletal payload stays v1 and byte-identical to before (D1) | One property of the document, carried like the preset; WYSIWYG for pictures | 2026-11-12 |
 | R9 | CB-W1 on Windows is decided by probe C3 (2026-11-11, Electron 45.2.3, Windows 11): the entries are the bitmap `image/png`, the raw SVG key and the raw drawing key, nothing else. **No exact-PNG entry**: the raw `PNG` key is accepted and ignored and Windows' `PNG` is always Chromium's re-encoding without `pHYs`, so a bitmap paste carries the 300 dpi pixel size but no 300 dpi tag, and no `tEXt` drawing chunk either (accepted for v1, O5; the checklist item "300 dpi ignored" stays the human record). **No fallbacks**: the MIME `image/svg+xml` key and `web image/svg+xml` are dropped or give no native SVG, and `web application/x-chalkbond`, though it works, is unused. `formats.ts` holds exactly these keys. SVG presence is checked natively or under the plain type `image/svg+xml`, never with `has(rawKey)`. The pixels handed to `image/png` (and their `pHYs` chunk) are unchanged; `pHYs` is asserted only for exported PNG files and unit tests | Evidence: `e2e/win/clipboard-facts.spec.ts` (P1–P7, P2b). Product code keeps no dead fallback path | 2026-11-11 |
 
 ---
@@ -284,16 +288,21 @@ pictureSelection(doc: Doc, selection: Selection): Selection
     // selection ∪ texts whose attachedTo.arrow is a selected arrow (what extract brings)
 pictureDoc(doc: Doc, selection: Selection | null): Doc
     // null → doc; else setStyle(insert(emptyDoc(doc.meta.created), extract(doc, sel), {x:0, y:0})[0],
-    // {preset: doc.style.preset, overrides: doc.style.overrides}) with meta.created/modified copied;
+    // {preset: doc.style.preset, overrides: doc.style.overrides,
+    //  formula: doc.style.formula ?? 'skeletal'}) with meta.created/modified copied (R11);
     // reads no clock
 
 // picture (PI1–PI4)
-exportSvg(doc: Doc, selection: Selection | null, opts?: { embed?: boolean }): SvgDocument
-    // renderSvg(doc, { only: sel && pictureSelection(doc, sel), padding: 0,
+exportSvg(doc: Doc, selection: Selection | null, opts?: { embed?: boolean; padding?: number }): SvgDocument
+    // renderSvg(doc, { only: sel && pictureSelection(doc, sel), padding: opts.padding ?? 0,
     //   metadata: embed !== false && payload.length <= MAX_FILE_BYTES ? payload : undefined })
     // payload = drawingPayload(pictureDoc(doc, sel)); one renderSvg call. C9: if the metadata was
     // added and the SVG is over MAX_PICTURE_BYTES UTF-8 bytes, its <metadata id="chalkbond"> line
-    // is removed again (the result is then exactly the embed: false SVG)
+    // is removed again (the result is then exactly the embed: false SVG). `padding` (pt, R10) is
+    // used only for the clipboard bitmap's source; every other caller passes none (0, tight)
+CLIPBOARD_MARGIN = 0.25                                                  // R10: × bond length
+clipboardBitmapPadding(doc: Doc): number
+    // R10: CLIPBOARD_MARGIN × resolveStyle(doc.style).bondLength, pt (Slides 10, Handout 3.6)
 MAX_PICTURE_BYTES = 64 * 1024 * 1024                                     // C9: picture carriers
 RASTER_LIMITS: { readonly maxSide: 10000; readonly maxPixels: 50_000_000 }
 pngPixelSize(widthPt: number, heightPt: number, dpi: number):
@@ -414,8 +423,10 @@ check, size limits). Request limits are enforced by the schema.
 - **PI2** `pictureSelection` adds the texts attached to selected arrows, so the picture shows
   exactly what `extract`, and so a paste, contains.
 - **PI3** Margins: `padding: 0` everywhere (ink-tight; text boxes keep svg-render's bounded
-  slack). Background: clipboard transparent; Export PNG transparent unless White background; SVG
-  transparent; PDF page white (paper).
+  slack), except the clipboard bitmap: `clipboardBitmapPadding(doc)` = 0.25 × the bond length
+  on every side (R10). Background: clipboard SVG transparent; clipboard bitmap opaque white
+  (R10); Export PNG transparent unless White background; Export SVG transparent; PDF page white
+  (paper).
 - **PI4** Size: the SVG says `width="Wpt" height="Hpt"`; the PNG's `pHYs` says its dpi.
 
 ### Clipboard rules (main `clipboard.ts`, renderer `copy-flow.ts`)
@@ -440,8 +451,12 @@ check, size limits). Request limits are enforced by the schema.
 - **CB-C1** Copy (renderer): document empty → N-C4. Selection non-empty → `controller.run('copy')`;
   the editor calls `onCopy(sub, doc, selection)` → `copyPicture(doc, selection, 'selection')`.
   Selection empty → `copyPicture(doc, null, 'all')` without touching the editor.
-- **CB-C2** `copyPicture(doc, sel, what)`: `svg = exportSvg(doc, sel)`; `png = rasterise(svg,
-  300, false)`; payload computed once and reused for the SVG metadata and the drawing entry; C1.
+- **CB-C2** `copyPicture(doc, sel, what)`: `svg = exportSvg(doc, sel)` (the SVG entry:
+  transparent, tight, with the drawing in its metadata); `bitmapSvg = exportSvg(doc, sel, {
+  embed: false, padding: clipboardBitmapPadding(doc) })`; `png = rasterise(bitmapSvg, 300, true)`
+  (R10: white, margin; the bitmap carries no `tEXt` drawing, which Windows drops anyway, R9, and
+  keeps its `pHYs`); payload computed once (from `svg`) and reused for the SVG metadata and the
+  drawing entry; C1.
   Success: the Copy button shows "Copied" for 2 s (a new copy restarts the 2 s); notice N-C1 /
   N-C2 / N-C3 (N-C5 if reduced); `lastEditorCopy = payload` when the copy came through `onCopy`,
   else null. Failure: N-C6, `lastEditorCopy` unchanged. Provenance (Decision C8): each `onCopy`
@@ -586,9 +601,25 @@ Coverage: `src/core/clipboard-export/**` ≥ 90 % lines; `src/renderer/clipboard
 ≥ 90 % lines (thresholds in `vitest.config.mts`, no file excluded); main glue, `rasterise.ts` and
 views by e2e.
 
+**Test changes that follow from R10 and R11 (2026-11-12).** They follow the spec change; no
+assertion is deleted or weakened, each old expectation is replaced by the new rule's.
+
+| File | Change |
+|---|---|
+| `src/core/clipboard-export/picture.test.ts` | add: `exportSvg` with `padding` (equals `renderSvg` with that padding; default 0 unchanged); `clipboardBitmapPadding` for Slides, Handout and a `bondLength` override |
+| `src/core/clipboard-export/payload.test.ts` (or wherever `pictureDoc` is tested) | add: `pictureDoc` copies `style.formula`; a skeletal selection's payload equals the pre-F2 bytes |
+| `src/renderer/clipboard-export/model/copy-flow.test.ts` | the expectation `rasterise(svg, 300, false)` becomes `rasterise(exportSvg(doc, sel, { embed: false, padding: clipboardBitmapPadding(doc) }), 300, true)`; the SVG entry and the drawing entry keep their expectations (tight SVG, payload from it) |
+| `e2e/win/clipboard-copy.spec.ts` | SC3's PNG size becomes `ceil((W + 2m)·300/72) × ceil((H + 2m)·300/72)`; add SC14's pixel checks (opaque white corners, all alpha 255, toluene ink box `m` from each edge within 2 px); the SVG stream assertion stays as it is |
+| `e2e/win/windows-clipboard.ts` | a helper that decodes the native PNG to RGBA in the page (Image + canvas), if none exists |
+| `e2e/clipboard-ui.spec.ts`, `e2e/clipboard-perf.spec.ts`, `e2e/clipboard-provenance.spec.ts`, `e2e/win/clipboard-perf.spec.ts`, `e2e/shots/C8.shot.ts`, `e2e/shots/C9.shot.ts` | run unchanged; change only an assertion that pins the old bitmap size or transparency (none known on 2026-11-12). SC12's 500 ms budget is unchanged: the second `renderSvg` must fit in it |
+| `src/renderer/clipboard-export/rasterise.test.ts`, `model/export-flow.test.ts`, `e2e/export-*.spec.ts` | **unchanged** (they prove Export did not change) |
+
 ## Windows checks (for `docs/windows-checklist.md`, section "Clipboard and export")
 
 Human-only: Office, other applications, eyes. Run with the installed app and Office 2021.
+The boxes below record the 1.0.0 build tested on 2026-11-11 and 2026-11-12; the checks that the
+2026-11-12 feature set touches (R10 white bitmap, R11 formula setting) are repeated on the final
+installer in `docs/windows-checklist.md` "Re-checks after the 2026-11-12 feature set".
 Note (owner decision 2026-11-12: the Office on the development machine, Microsoft Office Professional Plus 2016 (Version 2610, Click-to-Run, Current Channel), is accepted in place of Office 2021 for these checks).
 
 - [x] Draw the SC3 scheme (Slides), press Copy, Ctrl+V on a blank PowerPoint slide: it arrives as a drawing (ribbon **Graphics Format** = SVG) or a picture (**Picture Format**); write down which. At 400 % zoom lines and text are sharp. Result 2026-11-11: it arrived as the SVG drawing (ribbon **Graphics Format**; SC13: SVG drawing in PowerPoint and Word, Click-to-Run Version 2610); lines and text sharp at 400 %. Scheme "ethanol + acetic acid -> ethyl acetate + water" plus a text "H2SO4" above the arrow. Performed by a computer-use agent at the owner's request, verified by the orchestrator against screenshots and files. Office actually used: Microsoft Office Professional Plus 2016 as the Account page shows it, Version 2610 (Build 20527.20150 Click-to-Run), Current Channel, not Office 2021.
@@ -622,8 +653,10 @@ Each names the test or check that proves it.
 3. After the Copy button with nothing selected, the Windows clipboard lists the CB-W1 formats and
    no text format (P2b check inside `e2e/win/clipboard-copy.spec.ts`); the native SVG stream equals
    `exportSvg(doc, null).svg`; the drawing entry parses to a document whose `serialize` equals
-   `serialize(doc)`; the native PNG is `ceil(W·300/72) × ceil(H·300/72)` pixels (its `pHYs` is
-   Chromium's to drop, Decision R9; `pHYs` 11811 is asserted on exported files and in unit tests).
+   `serialize(doc)`; the native PNG is `ceil((W + 2m)·300/72) × ceil((H + 2m)·300/72)` pixels,
+   `W`, `H` the tight SVG's size and `m = clipboardBitmapPadding(doc)` (R10; before 2026-11-12:
+   `ceil(W·300/72) × ceil(H·300/72)`) (its `pHYs` is Chromium's to drop, Decision R9; `pHYs`
+   11811 is asserted on exported files and in unit tests).
 4. Copy of a selection: the drawing entry equals `drawingPayload(pictureDoc(doc, selection))`
    (unit + `clipboard-copy.spec.ts`).
 5. Round trip in the app: copy a selection then Ctrl+V pastes at source + (1, 1) BLU; a drawing
@@ -649,6 +682,21 @@ Each names the test or check that proves it.
     machine (`e2e/win/clipboard-perf.spec.ts`, number recorded in `docs/editor-perf.md`). The portable
     `e2e/clipboard-perf.spec.ts` (in-memory transport, Decision C11) measures encoding and flow only.
 13. The Windows checks above are ticked, with Office's choice of format written down (human).
+14. (F3, R10; automated) The clipboard bitmap is white-backed with its margin: in
+    `e2e/win/clipboard-copy.spec.ts` the native PNG (decoded in the page) has its four corner
+    pixels opaque `#ffffff`, every pixel alpha 255, the size of SC3, and for the toluene golden
+    input (no text, so the ink is tight) the box of non-white pixels starts `m·300/72` px from
+    each edge within 2 px (Slides 41.67 px, Handout 15 px); the native SVG stream is still byte-
+    identical to `exportSvg(doc, null).svg` (transparent, tight). Unit: `clipboardBitmapPadding`
+    (Slides 10, Handout 3.6, a `bondLength` override), `exportSvg` with `padding` equals
+    `renderSvg` with that padding, `copy-flow` rasterises `exportSvg(doc, sel, { embed: false,
+    padding })` at 300 dpi with white = true. Export is unchanged: `export-flow.test.ts`,
+    `e2e/export-png.spec.ts` (corner alpha 0 with White background off) pass **unchanged**.
+    Human: a paste into a dark-mode chat app shows the drawing on a white card; a paste on a dark
+    PowerPoint slide still shows no box (re-check section of `docs/windows-checklist.md`).
+15. (F2, R11; automated) `pictureDoc` copies `style.formula`; a structural selection's payload
+    parses to a structural doc; a skeletal payload is byte-identical to the one before F2 (D1);
+    pasting a structural fragment into a skeletal document draws it skeletal.
 
 ## Boundaries (module-specific)
 

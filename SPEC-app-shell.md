@@ -6,7 +6,9 @@ Depends on: every module (core modules through `@core/<module>`; the editor thro
 main folders). Written together with `SPEC-clipboard-export.md`; the two share one UI design
 (`docs/mockups/shell/`) and one IPC contract (defined here). Status: **approved 2026-11-10**
 (drafted in commit 4dd7d48; reviewed and approved by the delegated reviewer with the shell
-mock-ups of commit d3abe4b as the visual source of truth; see "Decisions").
+mock-ups of commit d3abe4b as the visual source of truth; see "Decisions"). Amended 2026-11-12:
+the shortcuts list names the tool number keys (R27); the formula switch needs no menu (R28); new
+mock-up A15c (the Select bar at the minimum window).
 
 Audience: a grade 11–12 chemistry teacher in Nepal on a Windows 10/11 laptop (often 1366×768; Windows 10 was not tested by hand before 1.0.0 (owner decision 2026-11-12)),
 Office 2021, no network, power cuts common, not a power user. The test for every choice: *what
@@ -116,6 +118,8 @@ draft's, kept or amended at review; R-rows are the reviewer's resolutions.
 | R24 | Session end (Windows). `query-session-end` is a question: main sends `flush-recovery` and changes no close-guard state, prevents nothing, waits for nothing. `session-end` (documented as irrevocable) is the only thing that lets a following `close` skip F4 and the recovery clear. A gone or crashed renderer keeps its behaviour. The shutdown flush is **best effort**: no `preventDefault`, no acknowledgement wait, no sleep; the exposure is RC1's (changes older than 2 s, 10 s in a burst), as after a power cut. Consequence of the `will-quit` / `before-quit` note: the quit flush does not run at a Windows session end, so a settings change younger than 500 ms can be lost then (documented only) | Before, `query-session-end` disarmed the guard for good: if the shutdown was cancelled, the next ordinary close skipped the save prompt and the recovery clear. Holding the shutdown (`preventDefault`, acknowledgement, exit) cannot be verified off Windows, and a defect there would block the teacher's shutdown; the exposure is bounded by RC1, which a power cut imposes anyway. To be revisited only with Windows evidence | 2026-11-11 |
 | R25 | An open label or text draft at shutdown: `flush-recovery` (RC5) finishes the open editor through its commit path first (not during an IME composition, which is left alone and whose draft is not recoverable), then writes N3, all synchronously and without waiting. Host code only (`finish-editing.ts`, the recovery model's `beforeFlush`); the editor's public surface is unchanged | The shutdown flush covered the committed drawing only, so a label typed but not yet confirmed was lost. Waiting for a composition (as F4a does) could delay the flush past Windows' grace, and the flush must stay best effort (R24) | 2026-11-11 |
 | R26 | In a dialog whose body scrolls, Arrow Up/Down, Page Up/Down, Home and End scroll the body while the focused control does not use the key itself (radio cards and segments keep their arrow keys, text fields keep theirs; no Ctrl/Alt/Meta). Focus does not move and no tab stop is added. | At 960×640 a keyboard-only user could not read the whole shortcuts list (found by A18); guarded by `e2e/app-a11y.spec.ts` | 2026-11-11 |
+| R27 | **Shortcuts list names the number keys** (editor R50, feature F1, 2026-11-12). A12's Tools rows show the tool's digit then its letter as alternatives: `1 V` Select · `2 E` Erase · `3 B` Bond · `4 Z` Chain · `5 R` Ring · `6 L` Atom · `7 A` Arrow · `8 +` Plus · `9 M` Curved arrow · `0 T` Text. The "Pointing at an atom" and "Pointing at a bond" rows (`1 2 3`) are unchanged: their section headings already say they apply while pointing, which is R50's exception. No menu item names a tool key (there is no Tools menu), so no menu text changes. **UI decision (W9, U4):** digit first, as the rail badge shows it | One list, always correct (O8); the badge is what the teacher sees first | 2026-11-12 |
+| R28 | **Formula switch and the shell** (editor R51, feature F2, 2026-11-12). No menu entry (M1 "Left out on purpose" already leaves the options-bar actions Clean up, Kekulé, Tidy and Flip out of the menus; the switch joins them; UI decision U9). New drawings start skeletal: F1 does not remember the formula setting (ST1 remembers only the preset; U10). Save, Open, recovery and the title need nothing new: the setting is part of the document (`SPEC-doc-model.md` D1), a skeletal drawing is still written as v1, and a structural drawing opened in the 1.0.0 build gets F14 `newer-version`. **Proposed, not decided (U7):** if the orchestrator approves editor R51's key Ctrl+Shift+F, A12's Chemistry section gains `Ctrl+Shift+F` "Show structural or skeletal formula" after Show Kekulé, and K2's conflict check lists it; until then neither changes | The shell's existing rules already cover a document setting; only the key is a new question | 2026-11-12 |
 | R13 | Draft open questions resolved: Q1 visible (O3); Q2 remembered (O4); Q3 no (O9); Q4 recover (O5); Q5 one-click per user (O6); Q6 en-US (O9); Q7 → R4; Q8 1.0.0 (O6); Q9 yes (O9); Q10 8 (O4) | Recorded so no question stays open | 2026-11-10 |
 
 ---
@@ -186,7 +190,7 @@ the name field, the label editor or the text editor), Edit shows &Undo, &Redo, C
 paste() / delete() / selectAll()` in main; &Duplicate is disabled.
 
 Left out on purpose: Print, Close (Exit is enough with one window), Clean up / Kekulé / Tidy /
-Flip (on the Select options bar), Find compound (the name field is the largest control), developer
+Flip / the formula switch (on the Select options bar; R28), Find compound (the name field is the largest control), developer
 tools, full screen, window menu.
 
 ### Keyboard (host keys)
@@ -319,7 +323,8 @@ interface Settings {
 ```
 
 - **ST1** A document change that switches the preset (status-bar switch, View menu, undo/redo of
-  a switch; not a load) stores `newDrawingStyle`. New uses it.
+  a switch; not a load) stores `newDrawingStyle`. New uses it. The formula setting (editor R51)
+  is not remembered: New is always skeletal (R28).
 - **ST2** The renderer sees only `RendererSettings = { newDrawingStyle, export }`; paths stay in
   main. Export's Save dialog starts in `folders.export` (else `folders.save`, else Documents).
   `folders.open` / `folders.save` follow N2 (an opened / a Save-as ref); `folders.export` is the
@@ -359,7 +364,7 @@ right (`--type-sm`). Footer: **Close** (secondary); Enter, Esc and a scrim click
 
 | Section | Rows (keys → meaning) |
 |---|---|
-| Tools | V Select · E Erase · B Bond · Z Chain · R Ring · L Atom · A Arrow · + Plus · M Curved arrow · T Text |
+| Tools | 1 V Select · 2 E Erase · 3 B Bond · 4 Z Chain · 5 R Ring · 6 L Atom · 7 A Arrow · 8 + Plus · 9 M Curved arrow · 0 T Text (R27, editor R50: digit then letter) |
 | Pointing at an atom | C H N O S P F I "Change it to that element" · L "Change it to chlorine (Cl)" · B "Change it to bromine (Br)" · + − "Add a positive or negative charge" · 1 2 3 "Add a single, double or triple bond" · Enter "Type a label, such as OH or CH3" |
 | Pointing at a bond | 1 2 3 "Make it single, double or triple" · W "Make it a wedge" · H "Make it a hash" |
 | Editing | Ctrl+Z Undo · Ctrl+Y Redo · Ctrl+C "Copy (the whole drawing when nothing is selected)" · Ctrl+X Cut · Ctrl+V Paste · Ctrl+D Duplicate · Ctrl+A Select all · Delete Delete · ← ↑ → ↓ "Move the selection (hold Shift to move further)" · Esc "Cancel, or clear the selection" |
@@ -758,6 +763,10 @@ Coverage: `src/main/model/**` and `src/renderer/app/model/**` ≥ 90 % lines (th
 ## Windows checks (for `docs/windows-checklist.md`, section "App shell and installer")
 
 Human-only: native chrome, other programs, a clean machine.
+The checks the 2026-11-12 feature set touches (install of the final installer, the version in
+About, opening a `.chalk` file saved by the tested 1.0.0 build) are repeated in
+`docs/windows-checklist.md` "Re-checks after the 2026-11-12 feature set"; the boxes below are
+not unticked.
 
 - [x] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1). Done 2026-11-11 (`dist:win` exit 0 at `956a4a4`): installer 109,915,593 bytes (104.8 MiB), unpacked `dist/win-unpacked` 347,499,681 bytes (331.4 MiB, 21 files), installed 347,681,841 bytes (331.6 MiB, 24 files, measured 2026-11-11 after installing on the development machine); all three are in `SPEC-app-shell.md` I1.
 - [x] On a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
@@ -817,6 +826,13 @@ Human-only: native chrome, other programs, a clean machine.
     (`e2e/packaged/app.packaged.ts`, Playwright project `packaged`, run by `npm run test:packaged` after `npm run dist:win`).
 14. The shots of every UI task match their mock-up by eye at the phase checkpoint; the Windows
     checks above are ticked on Windows 11 (human; Windows 10 waived by the owner on 2026-11-12, untested by hand for 1.0.0).
+15. (2026-11-12 feature set; automated) `shortcuts.test.ts` asserts R27's Tools rows (digit and
+    letter, each selecting its tool through the editor keymap) and the unchanged rest of A12;
+    the "every key is listed" test includes the ten digits; the menu model tests show no new
+    item (R28); F1 New gives a skeletal document even after a structural one was open; a
+    structural drawing saved and reopened keeps `formula: 'structural'` and is written as v2,
+    a skeletal one as v1 (`e2e/app-files.spec.ts`); shots `F1/shortcuts-dialog.png` and
+    `F2/min-window-select-960.png` match mock-ups A12 and A15c by eye (human).
 
 ## Boundaries (module-specific)
 

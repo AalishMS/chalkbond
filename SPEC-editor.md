@@ -4,7 +4,10 @@ Shared stack, commands, style and boundaries: see `SPEC.md`. Module map: `CAPABI
 Depends on: `doc-model`, `chem-core`, `svg-render` (public `index.ts` entries only).
 Status: **reviewed and approved 2026-11-10** (delegated reviewer, with the orchestrator's
 decisions; see "Decisions"). The approved mock-ups in `docs/mockups/editor/` (iteration 2,
-commit ae3eecd) are part of this spec (see "Normative sources").
+commit ae3eecd) are part of this spec (see "Normative sources"). Amended 2026-11-12 for the
+owner's feature set: number keys for the tool rail (R50) and the structural formula switch (R51,
+R52; its drawing waits for svg-render question S1). The mock-ups were updated in the same commit
+(rail badges, the formula switch, its two icons, the `--formula-btn-w` token).
 
 Audience: a grade 11–12 chemistry teacher in Nepal (NEB curriculum) making slides and handouts on
 a Windows laptop, often 1366×768, no network. Not a power user of drawing software. The test for
@@ -149,6 +152,9 @@ resolutions of the draft's open questions and of problems found in review.
 | R47 | Host-callable name-field focus: canRun unless a label/text editor is open; run increments a focus request counter observed by the view; Ctrl+F uses the same path | Host and view share focus behavior | 2026-11-10 |
 | R48 | IME: a blur during a composition defers the commit to `compositionend`, after the DOM is reconciled into the model (T2 "Model first"). Internal to the view; no public surface or schema change. The host (app-shell F4a) uses only the public `canRun('focus-name-field')` and `subscribe` to wait for the box to close | The model never holds the composing text: committing it at blur would lose or stale the word being typed | 2026-11-11 |
 | R49 | Supersedes R12. `zoom-reset` sets zoom 1 (100 % = true size, 1 pt = 4/3 CSS px) about the canvas centre, whatever the preset, and is the same command from the status-bar readout, Ctrl+1 and app-shell's View > "Zoom to &100%" (A06); the readout's aria-label and tooltip read "Zoom to 100% (Ctrl+1)" / "Zoom to 100%" with key Ctrl+1. The default zoom of a new or loaded document (V2: 150 % Slides, 416.67 % Handout), fit (V3, R13), reveal, frame, the 25–800 % range and every performance budget are unchanged; only an explicit reset changes | The approved app menu and shortcuts list (A06, A12) say "Zoom to 100%"; one command must do what all three places say. R12's 150 % would make the menu item lie | 2026-11-11 |
+| R50 | **Number keys for the tool rail** (owner's request 2026-11-12, "Tools unless hovering"; feature F1). The ten rail tools get the plain digits `1`…`9`, `0` in rail order: Select 1, Erase 2, Bond 3, Chain 4, Ring 5, Atom 6, Arrow 7, Plus 8, Curved arrow 9, Text 0. A digit picks its tool under exactly the conditions of the tool's letter key (K2: canvas focused, no label or text editor open, no Ctrl/Alt/Meta, Shift ignored, `KeyboardEvent.key`, so the number row and the number pad with Num Lock both work; not repeated while held; a gesture is cancelled as for a letter, G3; HV3 refresh). **Exception:** while an atom or bond is hovered **and hover keys are active** (every tool except Erase and Text, K2), `1`, `2`, `3` keep R5 (sprout / set order); `4`…`9`, `0` pick tools there too. With Erase or Text, and over objects or empty canvas, every digit picks its tool. The letter keys stay; Ctrl+1 / Ctrl+0 (zoom) are unchanged (they need Ctrl, K2 needs Ctrl up). **UI decisions (W9, for the owner):** U1 each rail button shows its digit as a badge, top-right (2 px from the top, 4 px from the right edge), `--type-caption` with the caption's colours (`--text-muted`, `--text` on hover and pressed, `--active-fg` when selected), so no new colour pair and the 56×48 target and icon box are unchanged; U2 the button's accessible name is the tool name alone ("Bond"), both keys are in `aria-keyshortcuts="3 B"` (digit first; the plus key is written `Plus`), the badge and caption are `aria-hidden`, so each key is announced once; the tooltip shows the title and two key chips, digit first (**Bond** `3` `B`); U3 the 1–3 exception follows K2's hover-key rule exactly (so under Erase and Text a digit over an atom picks a tool) | The owner: "a numbered display for the left tool bar so navigation is easy through the number keys in the keyboard". R5's digits are the toluene-in-3-actions path (SC2), so they win where they already act; one rule (K2's) decides both | 2026-11-12 |
+| R51 | **Structural formula switch** (owner's request 2026-11-12, "Same shape, carbons written"; feature F2). One action button in the Select options bar, right after Show Kekulé / Show circle, built like it (action primitive, icon + label, fixed width so the bar never jumps): "Show structural" (icon `show-structural`) while the drawing is skeletal, "Show skeletal" (icon `show-skeletal`) while it is structural. It always acts on the **whole document** (selection ignored): one commit `setStyle(doc, { formula })`, labelled "Show structural formula" / "Show skeletal formula", one undo step; atoms, bonds and coordinates are untouched, so undo or switching back gives the skeletal drawing exactly. It travels with the file, the clipboard drawing and every export (doc-model D1; clipboard-export R11). **UI decisions (W9):** U5 labels, icons and place as above, `aria-label` "Show structural formula" / "Show skeletal formula" (contains the visible label), width `--formula-btn-w` (124 px: "Show structural" is 89.6 px in Arial 13 px, 88.7 px in Segoe UI); U6 "Show structural" is disabled on an empty document (tooltip help "Draw a molecule first."), "Show skeletal" is always enabled; tooltip help "Writes every carbon with its hydrogens (CH3, CH2, CH) in the whole drawing." / "Draws carbons as corners and line ends again, in the whole drawing."; U8 below 1100 px content width the switch is icon-only (32×32, name and tooltip unchanged): with the full label the Select bar plus Expand is 613 px against 563 px available at 960 px beside the Copy button (shell A15c); U9 no menu entry (app-shell leaves the options-bar actions Clean up, Kekulé, Tidy and Flip out of the menus on purpose); U10 new drawings are skeletal (not remembered like the preset). **Proposed, not decided (U7, orchestrator):** the key Ctrl+Shift+F (free in K1, the host's K1 and K3; Clean up, Kekulé and Tidy have Ctrl+Shift keys, Flip and Expand none); until approved there is no key, no K1 row and no shortcuts-list row | The owner asked for "an option like the 'Show circle' for the benzene rings on the top"; a document property, not a rewrite of atoms, so switching back is exact and a pasted picture shows what the canvas shows | 2026-11-12 |
+| R52 | **Editor consequences of structural mode** (F2). The canvas mounts svg-render's parts, so it shows whatever svg-render draws (its layout waits for svg-render question S1). Every rule below already keys on "labelled atom" (an `atom:` extents entry), so in structural mode it applies to every carbon: hit-testing (H1: extents grown 4 px), hover (R27 light box), selection halos, valence-warning boxes, the curved-arrow default bend (R37, `isLabelled(atom, n, doc.style.formula)`), and **HV4: no hover ghost over a carbon** (the click still sprouts; U12, W9: kept as the rule says, because the ghost bond would cross the `H3`). Ghosts and previews render the preview doc with the same setting (a neighbour's label in a preview may change, e.g. `CH3` → `CH2`, and is shown at full opacity: it is what the commit gives). **U11 (W9):** the label editor on a structural carbon with no `label` opens filled with the text it shows (`CH3`), so committing it unchanged makes no change and no undo step (L3: the typed H count equals the automatic one). Unchanged: the empty-state rules (R30), name insert (N2, N3, P7), Tidy (TR1–TR6 use ink boxes, so a structural scheme is spaced by its wider labels), Clean up, Kekulé (C3), the formula and weight (C5), the preset switch, the performance budgets (a miss is a `createRenderer` request, never a looser budget) | Nothing new to decide in the editor beyond what svg-render draws; the existing "labelled atom" rules were made for exactly this case | 2026-11-12 |
 
 ---
 
@@ -194,18 +200,25 @@ The numbers below are what the e2e layout test measures at 1280×800 (and 960×6
 
 ### Tool rail
 
-| # | Group | Tool (`aria-label`) | Caption | Key | Icon | Options bar |
-|---|---|---|---|---|---|---|
-| 1 | Pick | Select | Select | `V` | `select` | Selection actions |
-| 2 | Pick | Erase | Erase | `E` | `erase` | empty |
-| 3 | Structure | Bond | Bond | `B` | current bond option's icon | Single, Double, Triple, Wedge, Hash (`bond-*`) |
-| 4 | Structure | Chain | Chain | `Z` | `chain` | empty |
-| 5 | Structure | Ring | Ring | `R` | current ring's icon | Benzene, Cyclohexane, Cyclopentane, Cyclobutane, Cyclopropane (`ring-benzene`, `ring-6`, `ring-5`, `ring-4`, `ring-3`) |
-| 6 | Structure | Atom | Atom | `L` | current element as text (`--type-rail`), or the mark's icon | C H N O S P F Cl Br I │ Positive charge, Negative charge, Lone pair, Radical (`mark-*`), δ+, δ− |
-| 7 | Reaction | Arrow | Arrow | `A` | current arrow's icon | Reaction, Equilibrium, Resonance, No reaction (`arrow-forward`, `-equilibrium`, `-resonance`, `-nogo`) |
-| 8 | Reaction | Plus | Plus | `+` | `plus` | empty |
-| 9 | Reaction | Curved arrow | Curly | `M` | current head's icon | Electron pair, Single electron (`curved-full`, `curved-fishhook`) |
-| 10 | Reaction | Text | Text | `T` | `text` | empty (text editing options while a text editor is open) |
+| # | Group | Tool (`aria-label`) | Caption | Number key and badge (R50) | Key | Icon | Options bar |
+|---|---|---|---|---|---|---|---|
+| 1 | Pick | Select | Select | `1` | `V` | `select` | Selection actions |
+| 2 | Pick | Erase | Erase | `2` | `E` | `erase` | empty |
+| 3 | Structure | Bond | Bond | `3` | `B` | current bond option's icon | Single, Double, Triple, Wedge, Hash (`bond-*`) |
+| 4 | Structure | Chain | Chain | `4` | `Z` | `chain` | empty |
+| 5 | Structure | Ring | Ring | `5` | `R` | current ring's icon | Benzene, Cyclohexane, Cyclopentane, Cyclobutane, Cyclopropane (`ring-benzene`, `ring-6`, `ring-5`, `ring-4`, `ring-3`) |
+| 6 | Structure | Atom | Atom | `6` | `L` | current element as text (`--type-rail`), or the mark's icon | C H N O S P F Cl Br I │ Positive charge, Negative charge, Lone pair, Radical (`mark-*`), δ+, δ− |
+| 7 | Reaction | Arrow | Arrow | `7` | `A` | current arrow's icon | Reaction, Equilibrium, Resonance, No reaction (`arrow-forward`, `-equilibrium`, `-resonance`, `-nogo`) |
+| 8 | Reaction | Plus | Plus | `8` | `+` | `plus` | empty |
+| 9 | Reaction | Curved arrow | Curly | `9` | `M` | current head's icon | Electron pair, Single electron (`curved-full`, `curved-fishhook`) |
+| 10 | Reaction | Text | Text | `0` | `T` | `text` | empty (text editing options while a text editor is open) |
+
+Each rail button carries its number as a badge (R50, U1): `<span class="rail-key"
+aria-hidden="true">` in the top-right corner, `top: var(--space-1)`, `right: var(--space-2)`,
+`font: var(--type-caption)`, tabular digits, the caption's colour in every state (`--text-muted`,
+`--text` on hover and pressed, `--active-fg` when selected), `pointer-events: none`. It changes
+neither the 56×48 box nor the icon and caption positions. The button's `aria-label` is the tool
+name alone and `aria-keyshortcuts` is `"<digit> <letter>"` (`"8 Plus"` for Plus), U2.
 
 Element and δ buttons are text glyphs (`--type-md` 600); the others are 20 px icons.
 Each option button's tooltip names it (`Chlorine`, `Cyclopentane`) with one help line where the
@@ -217,6 +230,7 @@ mock-up shows one ("Click an atom to make it Cl.").
 |---|---|---|---|
 | Clean up | `clean-up` + label | the scope has a fragment with ≥ 2 atoms ("Draw a molecule first.") | rule C1 |
 | Show Kekulé / Show circle | `show-kekule` / `show-circle` + label; `min-width` fits "Show Kekulé"; label left-aligned | scope has an order-1.5 bond → "Show Kekulé"; else an aromatic non-1.5 bond (R11) → "Show circle"; else disabled as "Show Kekulé" ("No benzene ring here.") | rule C3 |
+| Show structural / Show skeletal (R51) | `show-structural` / `show-skeletal` + label; width `--formula-btn-w`; label left-aligned; `aria-label` "Show structural formula" / "Show skeletal formula"; icon-only (32×32) below 1100 px content width (U8); `data-testid="act-formula"` | the drawing is skeletal → "Show structural", disabled on an empty document ("Draw a molecule first."); structural → "Show skeletal", always enabled. Ignores the selection (whole document) | rule C7 |
 | Tidy reaction | `tidy` + label | the document has a straight arrow ("Draw an arrow first.") | rules TR1–TR6 |
 | divider | | | |
 | Flip horizontal / Flip vertical | `flip-h` / `flip-v` icons | selection non-empty ("Select a molecule first.") | `transformItems` with `scaling(-1, 1, c)` / `scaling(1, -1, c)`, c = centre of the selection's ink box; one "Flip" commit |
@@ -289,7 +303,8 @@ colour alone: rail buttons get the 3×24 `--accent` bar at the rail's left edge;
 bond-hash chain ring-benzene ring-6 ring-5 ring-4 ring-3 mark-plus mark-minus mark-lone-pair
 mark-radical arrow-forward arrow-equilibrium arrow-resonance arrow-nogo plus curved-full
 curved-fishhook text search undo redo zoom-in zoom-out fit warning clean-up tidy show-kekule
-show-circle expand flip-h flip-v glyph-degree glyph-arrow`. Rendered by one `Icon` component at
+show-circle show-structural show-skeletal expand flip-h flip-v glyph-degree glyph-arrow`
+(`show-structural` and `show-skeletal` added 2026-11-12, R51). Rendered by one `Icon` component at
 24 px (rail), 20 px (top bar, options), 16 px (status bar); `aria-hidden`, colour
 `currentColor`. Nothing else draws icons.
 
@@ -317,7 +332,8 @@ control. Show after 500 ms hover or on keyboard focus; once one is shown, the ne
 no delay until the pointer has been off all tooltipped controls for 300 ms. Placement: right of
 rail buttons (8 px gap), below top-bar controls, above status-bar controls; flipped if clipped.
 Content: title (600) then the key in a `kbd` chip (18 px tall), then optionally one help line in
-`--tooltip-muted`. Example: **Bond** `B` / "Click to add a bond. Drag to aim it." Max width
+`--tooltip-muted`. A rail tool shows two chips, its digit then its letter, 4 px apart (R50).
+Example: **Bond** `3` `B` / "Click to add a bond. Drag to aim it." Max width
 240 px, padding 4 8. Dismissed on pointer down, Esc or blur. `role="tooltip"`, linked by
 `aria-describedby`.
 
@@ -434,6 +450,12 @@ Hover keys work with every tool except Erase and Text.
 | bond | `W` / `H` | wedge / hash; again reverses the direction (rule B5) |
 | atom or bond | Delete, Backspace | erase it (rule E2) |
 | — | `V` `E` `B` `Z` `R` `L` `A` `+` `M` `T` | select that tool |
+| — | `1` `2` `3` `4` `5` `6` `7` `8` `9` `0` | select the tool with that number (R50): Select, Erase, Bond, Chain, Ring, Atom, Arrow, Plus, Curved arrow, Text. `1` `2` `3` reach this row only when no atom or bond takes them as hover keys (rows above), the same precedence as `L` and `B` |
+
+Every plain digit binding in the editor (searched 2026-11-12 in this spec and in
+`src/renderer/editor`): the `1` `2` `3` hover keys above (R5); the K2 tool row of R50; Ctrl+0 and
+Ctrl+1 (K1, need Ctrl); digits typed into the name field, the label editor and the text editor
+(text targets, never K2). Nothing else binds a digit, in the editor or in app-shell's host keys.
 
 **K3 Editor keys** (label or text editor focused): Enter commits; Shift+Enter new line (text
 only); Esc cancels; Ctrl+Z / Ctrl+Y local undo/redo (R7); text only: Ctrl+B bold, Ctrl+I italic,
@@ -464,8 +486,11 @@ focus (Decision 5).
 - Contrast per the pairs table; hit targets: rail 56×48, top bar 32, options 32, status 24 (all
   ≥ 24 px, WCAG 2.5.8); canvas tolerances in screen px, independent of zoom (H1).
 - `prefers-reduced-motion: reduce` turns off every transition and the reveal pan.
-- The hint slot announces notices and inserts ("Inserted ethanol"); rail captions are
-  `aria-hidden` (the button's `aria-label` carries the name and key, e.g. "Bond (B)").
+- The hint slot announces notices and inserts ("Inserted ethanol"); rail captions and number
+  badges are `aria-hidden`; the button's `aria-label` is the tool name ("Bond") and its
+  `aria-keyshortcuts` names both keys ("3 B"), so each key is announced once (R50, U2; until
+  2026-11-12 the label carried the letter, "Bond (B)"). Other controls keep the key in their
+  label ("Undo (Ctrl+Z)").
 - Works at Windows display scaling 100–200 % (all sizes are CSS px).
 
 ---
@@ -682,6 +707,7 @@ type EditorCommand =
   | 'undo' | 'redo' | 'cut' | 'copy' | 'paste' | 'duplicate' | 'delete' | 'select-all'
   | 'zoom-in' | 'zoom-out' | 'zoom-fit' | 'zoom-reset' | 'clean-up' | 'toggle-kekulé'
   | 'tidy-reaction' | 'focus-name-field'
+  | 'toggle-formula'                          // R51, C7: canRun = idle and (structural or non-empty)
   | { type: 'set-preset'; preset: StylePreset }
   | { type: 'paste-sub'; sub: SubDoc }        // host read a Chalkbond fragment from the clipboard
   | { type: 'insert-text'; text: string };    // host read text (name, SMILES, Molfile)
@@ -932,7 +958,8 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
   (amended 2026-11-10: the earlier 28 px / 2 px / radius 6 box did not match the rendered text
   size or screen 09); the edited atom's own label and the selection halo are hidden while it is
   open; filled with
-  the atom's label, else its element (with H count when `explicitH` is set: `OH`), all selected.
+  the atom's label, else its element (with H count when `explicitH` is set: `OH`; in structural
+  mode a carbon without a label is filled with its H count as drawn, `CH3`, R52 U11), all selected.
   Display is WYSIWYG through `labelDisplayRuns(text)`: digits after a letter or `)` as
   subscripts, a trailing charge as superscript; typing is plain characters, nothing to toggle.
 - **L2** Below it (4 px), a caption in `--type-xs`: `--text-muted` "e.g. OH, NH2, Cl, Ph, CO2H";
@@ -1106,6 +1133,12 @@ Cyclopropane (regular n-gon, vertex up; square axis-aligned; single bonds).
   "C6H6 · 78.11 g/mol".
 - **C6** Warnings button: hidden when `perception.warnings` is empty; else `warning` icon + count;
   click selects the atoms (and bonds) of the next warning in order, cycling, and reveals them.
+- **C7** Formula switch (R51; `toggle-formula`): skeletal → `setStyle(doc, { formula:
+  'structural' })` ("Show structural formula"); structural → `setStyle(doc, { formula:
+  'skeletal' })` ("Show skeletal formula"); one commit, whole document, selection kept, tool
+  unchanged. Not run on an empty skeletal document (disabled) nor while a gesture runs or an
+  editor is open (`canRun` false, as Clean up). The viewport is unchanged unless svg-render's
+  answer to S1 changes the effective bond length; then it follows R38 like a preset switch.
 
 ### Clipboard (in-app)
 
@@ -1188,6 +1221,8 @@ that depends on it.
 | 5 | Scaffold `src/renderer/app/App.tsx`, `app.css` | Mount `<Editor>` filling the window inside the element with `data-testid="canvas-area"` (so `e2e/smoke.spec.ts` passes); the scaffold toolbar is removed (the editor has its own top bar) | none |
 | 6 | Tooling | ESLint: (a) `src/renderer/**` may import core only as `@core/<module>` (no deep paths, no relative paths into `src/core`), except test files importing `@core/<module>/__fixtures__/*`; the block repeats the `openchemlib` restriction; (b) a DOM-free block for `src/renderer/editor/{model,tools,state}/**` (bans in "Where the code lives"; repeats the named-export restriction). Probes in `tests/tooling/editor-lint.test.ts`. Playwright projects `e2e` and `shots`; npm script `shots` | none |
 | — | `svg-render` | None | — |
+| 7 (2026-11-12) | `doc-model` | Schema v2 `style.formula` and `setStyle`'s `formula` patch (R51) | `SPEC-doc-model.md` D1 (done with this amendment) |
+| 8 (2026-11-12) | `svg-render` | Structural mode in `render` and `isLabelled(atom, n, formula)` (R51, R52); layout waits for question S1 | `SPEC-svg-render.md` Decision 15 (done with this amendment) |
 
 ## Testing
 
@@ -1200,7 +1235,7 @@ that depends on it.
 | Store/controller (node) | dirty tracking through edit/undo/save, `canRun`, events (incl. `context-menu`), `load`, `onCopy` payload, R7 | `state/*.test.ts` |
 | View markup (node) | `renderToStaticMarkup` of rail, options bars, status bar, empty state, tooltips for given states: names, `aria-pressed`, `aria-disabled`, test ids, hidden/visible controls (R15) | `view/*.test.tsx` |
 | Tooling | lifted `tokens.css` / `icons.svg` identical to the mock-ups; contrast pairs; ESLint probes | `tests/tooling/editor-*.test.ts` |
-| Perf (node, perf project, timings skipped under `--coverage`) | `hitTest` on a 500-atom doc < 0.5 ms median; one bond-drag preview step (tool + render with cached perception) on the 40-atom scheme < 10 ms median; `tidyReaction` on the 4-molecule scheme < 25 ms; `createNameIndex(compounds.json)` < 30 ms | `src/renderer/editor/perf.test.ts` |
+| Perf (node, perf project, timings skipped under `--coverage`) | `hitTest` on a 500-atom doc < 0.5 ms median; one bond-drag preview step (tool + render with cached perception) on the 40-atom scheme < 10 ms median; `tidyReaction` on the 4-molecule scheme < 25 ms; `createNameIndex(compounds.json)` < 30 ms. 2026-11-12 (R52): the `hitTest` and bond-drag scenes also run in structural mode with the same budgets | `src/renderer/editor/perf.test.ts` |
 | E2E (Playwright `_electron`, built app) | `e2e/editor-*.spec.ts`: layout boxes, focus order, drawing stories, name field, text editor DOM ↔ runs, zoom, preset, frame-time probe | `e2e/` |
 | Screenshots | `e2e/shots/<task-id>.shot.ts` → `out/shots/<task-id>/<name>.png` via `npm run shots` (R16); each UI task names its shots | `e2e/shots/` |
 | Manual (Windows) | "Editor" section of `docs/windows-checklist.md` | checklist |
@@ -1242,7 +1277,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
    draws ethanol by gestures (Bond click on empty canvas, hover the end atom, `O`) and
    `[data-testid=formula]` reads "C2H6O · 46.07 g/mol"; a Ring click places benzene ("C6H6 ·
    78.11 g/mol"). Shots `E20/hover-key-O.png`, `E21/toluene.png`.
-   **Partly proven:** `e2e/editor-structures.spec.ts`, shots `E20/hover-key-O.png`, `E21/toluene.png`. **Manual, pending:** the "no instructions" part is a human judgement (first-use pass, `docs/windows-checklist.md` Checkpoint R). Update 2026-11-12: ticked there from the owner's own hand check (check 1 of his list of 31, details not reported per item).
+   **Partly proven:** `e2e/editor-structures.spec.ts`, shots `E20/hover-key-O.png`, `E21/toluene.png`. **Manual, pending:** the "no instructions" part is a human judgement (first-use pass, `docs/windows-checklist.md` Checkpoint R). Update 2026-11-12: ticked there from the owner's own hand check (check 1 of the owner's list of 31, details not reported per item).
 2. Toluene in ≤ 3 actions (Ring, click canvas, hover a ring atom + `1`) and the SC3 reaction
    ("ethanol + acetic acid -> ethyl acetate + water", H₂SO₄ above, Δ below) in ≤ 15 actions,
    aligned: `state/scenarios.test.ts` (exact, 0.01 BLU) and `e2e/editor-reaction.spec.ts`
@@ -1265,7 +1300,7 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
 7. The window matches the approved mock-ups: `e2e/editor-layout.spec.ts` measures the region and
    control boxes in "Layout" at 1280×800 and 960×640 (±1 px), and the named shots of every UI task
    exist for side-by-side review with `out/mockups/*.png`.
-   **Partly proven:** `e2e/editor-layout.spec.ts` boxes; **Manual, pending:** the side-by-side shot review (`docs/windows-checklist.md` Checkpoint R). Update 2026-11-12: ticked there from the owner's own hand check (check 13 of his list of 31, details not reported per item).
+   **Partly proven:** `e2e/editor-layout.spec.ts` boxes; **Manual, pending:** the side-by-side shot review (`docs/windows-checklist.md` Checkpoint R). Update 2026-11-12: ticked there from the owner's own hand check (check 13 of the owner's list of 31, details not reported per item).
 8. Valence warnings appear as overlays with their message on hover and never in exports: an
    overlay unit test for a doc with an `H20` label, an e2e hover over it showing chem-core's
    message `Unknown label "H20".` (shot `E24/warning-tooltip.png`), and a unit test that `renderSvg(doc)` of that doc
@@ -1282,6 +1317,28 @@ frame sample in `docs/editor-perf.md`). No budget was missed, so `createRenderer
 12. The editor runs in the scaffold window with no app-shell code beyond the listed scaffold
     changes; `e2e/smoke.spec.ts` passes.
    **Proven:** `e2e/smoke.spec.ts` and the whole e2e suite run in the scaffold window.
+13. (F1, R50; automated unless marked) Number keys: `keymap.test.ts` asserts, for every tool,
+    digit → `select-tool` with nothing hovered, over an object and over an atom or bond with Erase
+    and Text; `1` `2` `3` over an atom → sprout and over a bond → order with every other tool;
+    `4`…`0` over an atom or bond → their tools; Ctrl+1 / Ctrl+0 still zoom; Alt/Meta+digit and a
+    held (repeated) digit do nothing; a digit in the name field, the label editor and the text
+    editor is typed text. View markup (`ToolRail.test.tsx`): every rail button has the badge
+    (`aria-hidden`, its digit), `aria-label` = the tool name, `aria-keyshortcuts` = digit and
+    letter. E2E (`e2e/editor-keyboard.spec.ts`): pressing `1`…`0` on the canvas selects each tool
+    in turn; hovering a ring atom with Ring active then `1` sprouts a bond (toluene, SC2 unchanged).
+    `e2e/editor-a11y.spec.ts`: badge boxes lie inside their 56×48 buttons, buttons unchanged in
+    size, tooltip names both keys. Shots `F1/rail-badges.png` and `F1/rail-tooltip.png` compared
+    with mock-ups 03 and 10 by eye (human).
+14. (F2, R51, R52; automated unless marked) Formula switch: `OptionsBar.test.tsx` (labels, icons,
+    `aria-label`, disabled on an empty document, enabled when structural); reducer tests: one
+    commit, one undo step, undo and a second switch each give a doc deep-equal to the start, the
+    selection and tool are kept, `isDirty` is false after switching twice; R37's default bend
+    uses `isLabelled(..., formula)`; HV4 suppresses the ghost over a structural carbon; U11's
+    label editor text. E2E (`e2e/editor-formula.spec.ts`): the button flips the drawing and back,
+    Ctrl+Z restores, at 960×640 the Select bar (with Expand) does not overflow
+    (`scrollWidth <= clientWidth`). The node perf budgets pass with a structural-mode variant of
+    the bond-drag preview scene (same budget). The drawn picture itself waits for svg-render S1;
+    shots `F2/structural-*.png` are looked at by a human then.
 
 ## Boundaries (module-specific)
 
