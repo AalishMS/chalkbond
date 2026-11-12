@@ -1,6 +1,8 @@
-// F13 close, RC2 normal close, RC5 shutdown and the one quit flush (SPEC-app-shell.md) with fake
-// windows: a normal close waits for the recovery chain (N4 then N5), a gone renderer or a close after
-// `session-end` (R24) closes without the prompt and never clears, and quit flushes settings and recovery once.
+// F13 close, RC2 normal close, RC5 shutdown, SS10 and the one quit flush (SPEC-app-shell.md) with
+// fake windows and a fake session chain: a normal close waits for the recovery chain (N4 then N5)
+// and for the session chain to be empty, then deletes the discarded records on the empty chain and
+// closes once (TB13); a gone renderer or a close after `session-end` (R24) closes at once, without
+// the prompt, the wait or the deletion; and quit flushes settings and recovery once.
 import { EventEmitter } from 'node:events';
 import { describe, expect, it, vi } from 'vitest';
 import { guardClose, installQuitFlush } from './lifecycle';
@@ -35,14 +37,53 @@ function deferred() {
   return { promise, resolve };
 }
 
+/**
+ * A fake of the session store's chain (TB9): tasks run one after another in arrival order; a
+ * failing task is caught (as `enqueue` does) and the next one runs; `busy` while one is queued or
+ * running; `idle` settles once every task queued so far has run; `deleteDiscarded` is a task.
+ */
+function fakeChain() {
+  let chain: Promise<unknown> = Promise.resolve();
+  let queued = 0;
+  const events: string[] = [];
+  const add = (label: string, task: () => Promise<unknown> = () => Promise.resolve()) => {
+    queued++;
+    const run = chain
+      .then(task)
+      .then(
+        () => events.push(label),
+        () => events.push(`${label} failed`),
+      )
+      .finally(() => {
+        queued--;
+      });
+    chain = run;
+    return run.then(() => undefined);
+  };
+  return {
+    events,
+    add,
+    idle: vi.fn(() => chain.then(() => undefined)),
+    busy: () => queued > 0,
+    deleteDiscarded: vi.fn(() => add('delete discarded')),
+  };
+}
+
 function setup() {
   const win = fakeWindow();
   const flush = deferred();
   const closing = vi.fn();
   const recoveryIdle = vi.fn(() => flush.promise);
-  const guard = guardClose(win, { closing, recoveryIdle });
-  return { win, guard, closing, recoveryIdle, flush };
+  const sessionChain = fakeChain();
+  const guard = guardClose(win, { closing, recoveryIdle, sessionChain });
+  return { win, guard, closing, recoveryIdle, flush, sessionChain };
 }
+
+/** Lets every settled promise run its handlers (a chain of a few dozen steps). */
+async function settle(): Promise<void> {
+  for (let i = 0; i < 50; i++) await Promise.resolve();
+}
+const never = () => new Promise<void>(() => undefined);
 
 describe('guardClose (F13, RC2, RC5)', () => {
   it('before the first N1 a close goes ahead at once', () => {
@@ -65,7 +106,12 @@ describe('guardClose (F13, RC2, RC5)', () => {
     const requestClose = vi.fn();
     const make = () => {
       const win = fakeWindow();
-      const ports = { closing: vi.fn(), recoveryIdle: () => Promise.resolve(), requestClose };
+      const ports = {
+        closing: vi.fn(),
+        recoveryIdle: () => Promise.resolve(),
+        sessionChain: fakeChain(),
+        requestClose,
+      };
       return { win, guard: guardClose(win, ports) };
     };
     const early = make();
@@ -98,19 +144,130 @@ describe('guardClose (F13, RC2, RC5)', () => {
     const guard = guardClose(win, {
       closing,
       recoveryIdle: () => Promise.reject(new Error('disk')),
+      sessionChain: fakeChain(),
     });
     guard.rendererReady();
     guard.closeOk();
     await vi.waitFor(() => expect(win.destroyed).toBe(true));
   });
 
-  it('a gone renderer: the close goes ahead without the prompt (recovery kept)', () => {
-    const { win, guard, closing } = setup();
+  it('SS10: N5 with session writes in flight waits for every one, deletes the discarded records on the empty chain, then closes once', async () => {
+    const { win, guard, closing, flush, sessionChain } = setup();
     guard.rendererReady();
+    flush.resolve();
+    const slow = deferred();
+    void sessionChain.add('record', () => slow.promise);
+    void sessionChain.add('auto-save');
+    void sessionChain.add('index');
+    guard.closeOk();
+    guard.closeOk(); // a duplicate answer does not drain or close twice
+    await settle();
+    expect(win.destroyed).toBe(false);
+    expect(sessionChain.deleteDiscarded).not.toHaveBeenCalled();
+    slow.resolve();
+    await vi.waitFor(() => expect(win.destroyed).toBe(true));
+    expect(sessionChain.events).toEqual(['record', 'auto-save', 'index', 'delete discarded']);
+    expect(sessionChain.deleteDiscarded).toHaveBeenCalledTimes(1);
+    expect(win.closes).toBe(1);
+    expect(closing).toHaveBeenCalledTimes(1);
+  });
+
+  it('SS10: a write that arrives while the chain drains is waited for too', async () => {
+    const { win, guard, flush, sessionChain } = setup();
+    guard.rendererReady();
+    flush.resolve();
+    const first = deferred();
+    const late = deferred();
+    void sessionChain.add('record', () => first.promise);
+    guard.closeOk();
+    await settle();
+    void sessionChain.add('index', () => late.promise); // arrives after N5, behind the record
+    first.resolve();
+    await settle();
+    expect(win.destroyed).toBe(false);
+    expect(sessionChain.deleteDiscarded).not.toHaveBeenCalled();
+    late.resolve();
+    await vi.waitFor(() => expect(win.destroyed).toBe(true));
+    expect(sessionChain.events).toEqual(['record', 'index', 'delete discarded']);
+  });
+
+  it('SS10: a write queued behind the deletion is waited for before the close', async () => {
+    const win = fakeWindow();
+    const sessionChain = fakeChain();
+    const late = deferred();
+    sessionChain.deleteDiscarded.mockImplementation(() => {
+      const deleting = sessionChain.add('delete discarded');
+      void sessionChain.add('index', () => late.promise);
+      return deleting;
+    });
+    const guard = guardClose(win, {
+      closing: vi.fn(),
+      recoveryIdle: () => Promise.resolve(),
+      sessionChain,
+    });
+    guard.rendererReady();
+    guard.closeOk();
+    await vi.waitFor(() => expect(sessionChain.events).toEqual(['delete discarded']));
+    await settle();
+    expect(win.destroyed).toBe(false);
+    late.resolve();
+    await vi.waitFor(() => expect(win.destroyed).toBe(true));
+    expect(sessionChain.events).toEqual(['delete discarded', 'index']);
+  });
+
+  it('SS10: the close waits for both chains: an empty session chain is not enough while recovery is busy', async () => {
+    const { win, guard, flush, sessionChain } = setup();
+    guard.rendererReady();
+    const slow = deferred();
+    void sessionChain.add('record', () => slow.promise);
+    guard.closeOk();
+    slow.resolve();
+    await vi.waitFor(() => expect(sessionChain.events).toEqual(['record']));
+    await settle();
+    expect(win.destroyed).toBe(false); // the recovery chain is not idle yet
+    flush.resolve();
+    await vi.waitFor(() => expect(win.destroyed).toBe(true));
+    expect(sessionChain.events).toEqual(['record', 'delete discarded']);
+  });
+
+  it('SS10: a failing session write, or a failing deletion, does not block the close', async () => {
+    const { win, guard, flush, sessionChain } = setup();
+    guard.rendererReady();
+    flush.resolve();
+    sessionChain.deleteDiscarded.mockImplementation(() => Promise.reject(new Error('EPERM')));
+    void sessionChain.add('record', () => Promise.reject(new Error('ENOSPC')));
+    void sessionChain.add('index');
+    guard.closeOk();
+    await vi.waitFor(() => expect(win.destroyed).toBe(true));
+    expect(sessionChain.events).toEqual(['record failed', 'index']);
+    expect(win.closes).toBe(1);
+  });
+
+  it('SS10: a session chain whose idle rejects still lets the window close', async () => {
+    const win = fakeWindow();
+    const sessionChain = fakeChain();
+    void sessionChain.add('record', never);
+    sessionChain.idle.mockImplementation(() => Promise.reject(new Error('broken')));
+    const guard = guardClose(win, {
+      closing: vi.fn(),
+      recoveryIdle: () => Promise.resolve(),
+      sessionChain,
+    });
+    guard.rendererReady();
+    guard.closeOk();
+    await vi.waitFor(() => expect(win.destroyed).toBe(true));
+  });
+
+  it('a gone renderer: the close goes ahead at once, without the prompt, the session wait or a deletion', () => {
+    const { win, guard, closing, sessionChain } = setup();
+    guard.rendererReady();
+    void sessionChain.add('record', never);
     win.webContents.emit('render-process-gone', {}, { reason: 'killed' });
     expect(win.close().prevented).toBe(false);
     expect(win.sent).toEqual([]);
     expect(closing).toHaveBeenCalledTimes(1);
+    expect(sessionChain.idle).not.toHaveBeenCalled();
+    expect(sessionChain.deleteDiscarded).not.toHaveBeenCalled();
   });
 
   it('a crashed renderer is treated the same', () => {
@@ -134,6 +291,18 @@ describe('guardClose (F13, RC2, RC5)', () => {
     expect(win.sent).toEqual([{ type: 'flush-recovery' }]);
   });
 
+  it('R24: query-session-end waits for nothing and touches neither chain nor the window', () => {
+    const { win, guard, closing, recoveryIdle, sessionChain } = setup();
+    guard.rendererReady();
+    void sessionChain.add('record', never);
+    win.emit('query-session-end', asking());
+    expect(recoveryIdle).not.toHaveBeenCalled();
+    expect(sessionChain.idle).not.toHaveBeenCalled();
+    expect(sessionChain.deleteDiscarded).not.toHaveBeenCalled();
+    expect(win.closes).toBe(0);
+    expect(closing).not.toHaveBeenCalled();
+  });
+
   it('R24: a close after query-session-end alone (shutdown cancelled) is an ordinary close', () => {
     const { win, guard, closing } = setup();
     guard.rendererReady();
@@ -144,13 +313,28 @@ describe('guardClose (F13, RC2, RC5)', () => {
     expect(closing).not.toHaveBeenCalled();
   });
 
-  it('R24: session-end, then the close, goes ahead without the prompt', () => {
-    const { win, guard, closing } = setup();
+  it('R24: session-end, then the close, goes ahead at once without the prompt or the session wait', () => {
+    const { win, guard, closing, sessionChain } = setup();
     guard.rendererReady();
+    void sessionChain.add('record', never);
     win.emit('session-end', {});
     expect(win.close().prevented).toBe(false);
     expect(win.sent).toEqual([]);
     expect(closing).toHaveBeenCalledTimes(1);
+    expect(sessionChain.idle).not.toHaveBeenCalled();
+    expect(sessionChain.deleteDiscarded).not.toHaveBeenCalled();
+  });
+
+  it('R24: a close after session-end goes ahead even while an N5 drain is waiting', async () => {
+    const { win, guard, flush, sessionChain } = setup();
+    guard.rendererReady();
+    flush.resolve();
+    void sessionChain.add('record', never);
+    guard.closeOk();
+    await settle();
+    win.emit('session-end', {});
+    expect(win.close().prevented).toBe(false);
+    expect(win.closes).toBe(1);
   });
 
   it('R24: query-session-end, session-end, close: goes ahead; only the flush was sent', () => {

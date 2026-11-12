@@ -573,10 +573,10 @@ discarded records are deleted after the chain is empty and never when the index 
 (a damaged index deletes nothing).
 
 **Acceptance criteria:**
-- [ ] The window never closes while the session chain has work (tests with a slow fake write)
-- [ ] Discarded records are deleted only per SS11's rule; no `.chalk` or picture file is ever deleted
-- [ ] The R24 and R25 guard logic is unchanged apart from the event name in the schema
-- [ ] `e2e/app-draft-close.spec.ts` and `e2e/app-recovery.spec.ts` stay green (the old events are still used until TB20)
+- [x] The window never closes while the session chain has work (tests with a slow fake write)
+- [x] Discarded records are deleted only per SS11's rule; no `.chalk` or picture file is ever deleted
+- [x] The R24 and R25 guard logic is unchanged apart from the event name in the schema
+- [x] `e2e/app-draft-close.spec.ts` and `e2e/app-recovery.spec.ts` stay green (the old events are still used until TB20)
 
 **Verification:** `npm test -- src/main`, `npx playwright test --project=e2e e2e/app-draft-close.spec.ts e2e/app-recovery.spec.ts`, then `npm run check`.
 

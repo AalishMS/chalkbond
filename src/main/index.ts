@@ -554,7 +554,8 @@ async function startApp(): Promise<void> {
     folders.sessionFile(entry);
     recent.add(entry.path);
   });
-  // N5 (F13): the renderer ran F4 and agreed to close.
+  // N5 (F13, SS10): the renderer ran its close flush and agreed to close; main closes once the
+  // recovery chain is idle and the session chain is empty, with the discarded records deleted.
   ipc.on(CHANNELS.closeOk, closeOkSchema, () => closing?.closeOk());
   /** W2: on a real close, the outer normal bounds and the maximized flag. */
   const rememberWindow = (win: BrowserWindow): void => {
@@ -568,6 +569,8 @@ async function startApp(): Promise<void> {
     closing = guardClose(win, {
       closing: () => rememberWindow(win),
       recoveryIdle: () => recovery.idle(),
+      // TB13 (SS10): N5 waits for the session chain, then the discarded records are deleted.
+      sessionChain: sessionStore,
       // R37: `close-requested` waits behind every open that arrived before it.
       requestClose: () => openRequests.close(),
     });

@@ -6,6 +6,12 @@ export type MainEvent =
   | { type: 'open'; ref: { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' } }
   | { type: 'close-requested' }
   | { type: 'flush-recovery' }
+  /**
+   * SS10, RC5 as amended by R24 / R25 (TB13): `query-session-end`'s best-effort flush of the
+   * session store (record, AS1 write, index; nothing awaited). Main sends it in place of
+   * `flush-recovery` from TB20 on.
+   */
+  | { type: 'flush-session' }
   /** T17 (R37): a main-chosen open (F10, F11) of a path already open in this tab: focus it. */
   | { type: 'focus-tab'; tabId: string };
 export interface IpcRequestMap {

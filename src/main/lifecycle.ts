@@ -1,11 +1,16 @@
-// Window close and app quit (SPEC-app-shell.md F13, RC2, RC5, R5, R20). A close is handed to the
-// renderer (`close-requested`) once it has sent its first N1; its N5 closes the window only after
-// the recovery chain is idle, so the N4 sent just before it has removed the file. A gone renderer
-// or a close after Windows' `session-end` (irrevocable, RC5, R24) closes without the prompt and
-// never clears recovery. `query-session-end` is only a question (the shutdown can still be
-// cancelled): it asks the renderer for a best-effort flush and changes no guard state. Quit waits
-// for one flush of settings and recovery (not run at a Windows session end). R37: the
-// `close-requested` waits in the open-request queue behind earlier opens when one is given.
+// Window close and app quit (SPEC-app-shell.md F13, RC2, RC5, R5, R20, SS10). A close is handed to
+// the renderer (`close-requested`) once it has sent its first N1; its N5 closes the window only
+// after the recovery chain is idle, so the N4 sent just before it has removed the file, and (TB13,
+// SS10) after the session chain is empty: every record, index and auto-save write the renderer sent
+// before N5 has run, then the discarded records are deleted on the empty chain (the store deletes
+// only after a validly read index, SS11), and anything queued meanwhile has run too. A failed write
+// or deletion does not hold the close. A gone renderer or a close after Windows' `session-end`
+// (irrevocable, RC5, R24) closes at once: no prompt, no wait, no deletion (the next valid start
+// deletes), and recovery is never cleared. `query-session-end` is only a question (the shutdown can
+// still be cancelled): it asks the renderer for a best-effort flush, prevents nothing, waits for
+// nothing and changes no guard state. Quit waits for one flush of settings and recovery (not run at
+// a Windows session end). R37: the `close-requested` waits in the open-request queue behind earlier
+// opens when one is given.
 import { CHANNELS } from '../shared/channels';
 import type { MainEvent } from '../shared/ipc-types';
 
@@ -28,11 +33,50 @@ export interface GuardedWindow {
   };
 }
 
+/** The parts of the session store the close uses (a fake chain in tests). */
+export interface SessionChain {
+  /** Settles once every task queued so far has run. */
+  idle(): Promise<void>;
+  /** A task is queued or running. */
+  busy(): boolean;
+  /** Queues the deletion of the discarded records (SS3, SS11); settles when it has run. */
+  deleteDiscarded(): Promise<void>;
+}
+
+/**
+ * Waits until the chain has no task queued or running, also for tasks that arrive meanwhile.
+ * True when it was seen empty; false when `idle` failed (the chain's state is then unknown).
+ */
+async function drained(chain: SessionChain): Promise<boolean> {
+  while (chain.busy()) {
+    try {
+      await chain.idle();
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * SS10 after N5: the recovery chain idle, the session chain empty, the discarded records deleted on
+ * the empty chain, and the chain empty again. Never rejects: a failure only skips what follows it
+ * (the deletion is skipped when the chain was not seen empty; the next valid start deletes them).
+ */
+async function settleBeforeClose(ports: CloseGuardPorts): Promise<void> {
+  await ports.recoveryIdle().catch(() => undefined);
+  if (!(await drained(ports.sessionChain))) return;
+  await ports.sessionChain.deleteDiscarded().catch(() => undefined);
+  await drained(ports.sessionChain);
+}
+
 export interface CloseGuardPorts {
   /** Runs for every close that goes ahead (W2 remembers the bounds then). */
   closing(): void;
   /** Settles when every recovery write and clear queued so far has run (RC6). */
   recoveryIdle(): Promise<void>;
+  /** The session store's one chain (SS5, `session-store.ts`): N5 waits for it to be empty (SS10). */
+  sessionChain: SessionChain;
   /**
    * R37: hands `close-requested` to the open-request queue, so it is sent behind every open that
    * arrived before it (`model/open-requests.ts`). Without it the request is sent at once.
@@ -73,15 +117,17 @@ export function guardClose(win: GuardedWindow, ports: CloseGuardPorts) {
     rendererReady(): void {
       ready = true;
     },
-    /** N5: the renderer ran F4 and sent N4 first; close once that clear has run. */
+    /**
+     * N5: the renderer ran its close flush and sent N4 first; close once that clear has run and
+     * the session chain is empty with the discarded records deleted (SS10), once.
+     */
     closeOk(): void {
       if (closingNow) return;
       closingNow = true;
-      const close = (): void => {
+      void settleBeforeClose(ports).then(() => {
         allowed = true;
         if (!win.isDestroyed()) win.close();
-      };
-      ports.recoveryIdle().then(close, close);
+      });
     },
   };
 }

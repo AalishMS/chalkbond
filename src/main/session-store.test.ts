@@ -1252,6 +1252,49 @@ describe('auto-save writer (TB10)', () => {
     await store.autoSave({ tabId: A, text: '{"secret":"toluene"}' });
     expect(logged.join('\n')).not.toMatch(/benzene|toluene/);
   });
+
+  // TB13 (SS10, SS11): the window close deletes the records of tabs closed this run once the
+  // chain is empty; never the tab's file, and never after an index that was not read validly.
+  it('TB13: at the window close a closed file tab loses its record only; its .chalk file and binding are free', async () => {
+    const store = await openTab();
+    expect(
+      await store.writeRecord({ tabId: A, text: record('Esterification.chalk', 'chalk') }),
+    ).toEqual({ ok: true });
+    expect(await store.writeRecord({ tabId: B, text: record('Untitled') })).toEqual({ ok: true });
+    void store.updateIndex({
+      tabs: [
+        { id: B, kind: 'untitled', name: 'Untitled', view: null, unsaved: true, warning: false },
+      ],
+      active: B,
+      discarded: [A],
+    });
+    await store.idle();
+    expect(await list(tabs)).toEqual([`${A}.json`, `${B}.json`].sort());
+    await store.deleteDiscarded();
+    expect(await list(tabs)).toEqual([`${B}.json`]);
+    expect(await list(docs)).toEqual(['Esterification.chalk']);
+    expect(await read(ester)).toBe(OLD);
+    expect((await readIndex())['discarded']).toEqual([]);
+    // The closed tab no longer holds its file: opening it again is a fresh open (T17).
+    expect(await store.tabOf(ester)).toBeNull();
+  });
+
+  it('TB13: after a damaged index, a tab closed this run keeps its record at the window close', async () => {
+    await seed({ 'index.json': '{broken' });
+    const store = make();
+    await store.restored();
+    expect(await store.writeRecord({ tabId: C, text: record('Untitled') })).toEqual({ ok: true });
+    await store.updateIndex({
+      tabs: [
+        { id: B, kind: 'untitled', name: 'Untitled', view: null, unsaved: true, warning: false },
+      ],
+      active: B,
+      discarded: [C],
+    });
+    await store.deleteDiscarded();
+    expect(await list(tabs)).toEqual([`${C}.json`]);
+    expect(await list(damaged)).toEqual(['index.json']);
+  });
 });
 
 describe('opening a path bound to a tab (TB12: T17, R37)', () => {
