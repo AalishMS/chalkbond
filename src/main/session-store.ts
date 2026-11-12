@@ -620,18 +620,23 @@ export function createSessionStore(options: SessionStoreOptions) {
 
     /**
      * I14 (AS5 (b), (c)): the bound file's state and the written hash, an in-flight hash promoted
-     * by this check included. A tab that is not a file tab is refused (rejects).
+     * by this check included. A tab that is not a file tab is refused (rejects). With `wantBytes`
+     * (SS11, TB18) a `same` answer also carries the bytes the check hashed.
      */
-    checkFile(tabId: string): Promise<CheckTabFileResponse> {
+    checkFile(tabId: string, wantBytes = false): Promise<CheckTabFileResponse> {
       if (recordNameOf(tabId) === null) return refused();
       return enqueueChecked<CheckTabFileResponse>('Tab file check', async () => {
         const checked = await checkTab(tabId);
         if (checked === null) return REFUSED;
         const { result } = checked;
         const written = result.entry.written;
-        return result.outcome === 'changed'
-          ? { tabId, written, state: 'changed', bytes: checked.bytes ?? new Uint8Array() }
-          : { tabId, written, state: result.outcome };
+        if (result.outcome === 'changed') {
+          return { tabId, written, state: 'changed', bytes: checked.bytes ?? new Uint8Array() };
+        }
+        if (result.outcome === 'same' && wantBytes && checked.bytes !== null) {
+          return { tabId, written, state: 'same', bytes: checked.bytes };
+        }
+        return { tabId, written, state: result.outcome };
       });
     },
 

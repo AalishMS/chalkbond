@@ -1,7 +1,12 @@
 // Tab flows (SPEC-app-shell.md "Tabs, auto-save and session"): T7 new tab, T11 switch, T12 reopen,
-// T17 opening into tabs (with its open queue), SS7 restore and SS11's renderer half. TB18 adds
-// auto-save and Save, TB19 the full close. Pure: DOM-free, no timers; every effect goes through an
-// injected port (`main` is the preload's functions, `controller` the one editor controller).
+// T17 opening into tabs (with its open queue), SS7 restore and SS11's renderer half; TB18's
+// auto-save, outside change, Save and Save as live in `tab-autosave.ts` over this module's state;
+// TB19 adds the full close. Pure: DOM-free, no timers; every effect goes through an injected port
+// (`main` is the preload's functions, `controller` the one editor controller).
+//
+// Idle (AS5, AS7): what waits for the host to be idle (AS7, the AS6 boxes) runs as a flow when no
+// flow runs, no open waits and the host reports idle (`hostIdle`): at the end of every flow, after
+// every `write`, and when the host calls `settleIdle`.
 //
 // One in-progress flag for every flow. While a flow runs, keys, clicks and the + button are ignored
 // (T11: input waits for the incoming state) and opens wait in a first-in-first-out queue of at most
@@ -17,6 +22,10 @@ import {
   type EditorTabState,
 } from '../../editor';
 import type {
+  AcceptOutsideRequest,
+  AutoSaveProblem,
+  AutoSaveRequest,
+  AutoSaveResponse,
   BindTabRequest,
   BindTabResponse,
   CheckTabFileResponse,
@@ -30,10 +39,12 @@ import type {
   SessionTab,
   SessionTabView,
   StartupSession,
+  WriteFileResponse,
   WriteTabRecordRequest,
   WriteTabRecordResponse,
 } from '../../../shared/ipc-types';
 import { parseProblem } from './file-flows';
+import { createTabAutosave, type Trouble } from './tab-autosave';
 import { buildRecord, loadTabRecord } from './session-record';
 import {
   drawingHash,
@@ -71,7 +82,7 @@ export const OPEN_QUEUE_LIMIT = 20;
 /** N-A5 (SS11). */
 export const DAMAGED_NOTICE = 'A drawing kept by Chalkbond could not be read.';
 
-/** The preload functions the tab flows use (`window.chalkbond`); TB18 and TB19 add theirs. */
+/** The preload functions the tab flows use (`window.chalkbond`); TB19 adds its own. */
 export interface TabFlowMain {
   /** I1: a ref, `{ focus }` when the file is open in a tab (T17), or null when cancelled. */
   chooseOpen(): Promise<OpenTarget | null>;
@@ -79,6 +90,12 @@ export interface TabFlowMain {
   readFile(ref: FileRef): Promise<ReadFileResponse>;
   /** I5: the F14 box. */
   showFileError(problem: FileProblem, name: string): Promise<void>;
+  /** I5: the auto-save boxes (AS6, AS7). */
+  showFileError(problem: AutoSaveProblem, name: string, context: 'auto-save'): Promise<void>;
+  /** C3 (F6): the Save dialog; main picks the folder. */
+  chooseSave(format: 'chalk', suggestedName: string): Promise<FileRef | null>;
+  /** C4 (F6): the Save-as write; main settles the I12 `save-as` binding from its result. */
+  writeFile(ref: FileRef, data: Uint8Array): Promise<WriteFileResponse>;
   /** I11. */
   readTabRecord(tabId: string): Promise<ReadTabRecordResponse>;
   /** N7 (an invoke: SS6 reads its answer). */
@@ -89,21 +106,19 @@ export interface TabFlowMain {
   updateSessionIndex(value: SessionIndexUpdate): void;
   /** I12. */
   bindTab(request: BindTabRequest): Promise<BindTabResponse>;
-  /** I14. */
-  checkTabFile(tabId: string): Promise<CheckTabFileResponse>;
-  /**
-   * SS11 "a file tab whose record is damaged opens from its file": the bytes of the file bound to
-   * a file tab, by tab id (a restored tab has no ref). No IPC row yet (TB17 report): until main has
-   * one, the host may answer `{ ok: false, problem: 'unreadable' }`, and the tab is lost with N-A5.
-   */
-  readTabFile(tabId: string): Promise<ReadFileResponse>;
+  /** I14 (AS5); `wantBytes` (TB18) also returns a `same` file's bytes (SS11: open from its file). */
+  checkTabFile(tabId: string, wantBytes: boolean): Promise<CheckTabFileResponse>;
+  /** I13 (AS1). */
+  autoSave(request: AutoSaveRequest): Promise<AutoSaveResponse>;
+  /** N9 (AS7(a)). */
+  acceptOutsideChange(value: AcceptOutsideRequest): void;
   /** N6. */
   logError(message: string): void;
 }
 
 export type TabFlowController = Pick<
   EditorController,
-  'getDoc' | 'takeState' | 'putState' | 'newState' | 'snapshotState'
+  'getDoc' | 'markSaved' | 'run' | 'takeState' | 'putState' | 'newState' | 'snapshotState'
 >;
 
 export interface TabFlowOptions {
@@ -125,11 +140,10 @@ export interface TabFlowOptions {
   /** Strict UTF-8; null on a malformed sequence. */
   decodeUtf8(bytes: Uint8Array): string | null;
   /**
-   * T11, AS2: writes file tab `tabId`'s drawing now (AS1) and applies the result (AS3). Called for
-   * the outgoing tab of a switch while it is still active, only when it has unwritten changes and
-   * is available. TB18's; the flows refresh the tab's stored state from `snapshotState` after it.
+   * AS5, AS7: the host is idle: no gesture, no label or text editor, no in-window dialog (the flows
+   * add "no flow"). When it becomes idle the host calls `settleIdle`.
    */
-  flushTab(tabId: string): Promise<void>;
+  hostIdle(): boolean;
   /** Called after every change of `state()` (the host re-renders the strip, N1, schedules N8). */
   changed(): void;
 }
@@ -146,6 +160,14 @@ export interface TabMeta {
   readonly view: SessionTabView | null;
   /** AS5 answered `changed` with these bytes; AS7 applies them when the host is idle (TB18). */
   readonly outside: Uint8Array | null;
+  /** AS6: why the file tab is unavailable; null while available. */
+  readonly trouble: Trouble | null;
+  /** AS6: N-A3 / N-A7 was shown since the tab became unavailable. */
+  readonly reported: boolean;
+  /** AS6: the "Couldn't save" box was shown for this tab in this run (at most once). */
+  readonly boxShown: boolean;
+  /** AS6: the box waiting for the host to be idle. */
+  readonly boxDue: AutoSaveProblem | null;
 }
 
 export interface TabFlowState {
@@ -207,6 +229,20 @@ export interface TabFlows {
   marker(tabId: string): Promise<TabMarker>;
   /** N8: the renderer's part of the index. */
   index(): Promise<SessionIndexUpdate>;
+  /**
+   * SS4, AS2: the write schedule's `write` port. `record`: the active tab's record from
+   * `snapshotState` and, for a file tab, AS1 when it has unwritten changes (a retry check while
+   * unavailable); `index`: N8. Not a flow: never ignored, never finishes an editor.
+   */
+  write(due: { readonly record: boolean; readonly index: boolean }): Promise<void>;
+  /** AS4 Ctrl+S. Ignored while a flow runs. */
+  save(): Promise<void>;
+  /** F6 Save as. Ignored while a flow runs. */
+  saveAs(): Promise<void>;
+  /** AS5 (c): the window regained focus: the active file tab is checked. Ignored while a flow runs. */
+  windowFocused(): Promise<void>;
+  /** The host became idle: AS7 and the AS6 boxes that wait for it run now. */
+  settleIdle(): Promise<void>;
 }
 
 const OPEN_NAME = /\.(chalk|png|svg|pdf)$/i;
@@ -217,6 +253,10 @@ const freshMeta = (written: string | null = null): TabMeta => ({
   stored: { unsaved: false, warning: false },
   view: null,
   outside: null,
+  trouble: null,
+  reported: false,
+  boxShown: false,
+  boxDue: null,
 });
 
 export function createTabFlows(o: TabFlowOptions): TabFlows {
@@ -272,41 +312,40 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     main.updateSessionIndex(await index());
   }
 
-  /**
-   * AS5 (b): the file check of a file tab. It gives the written hash and the availability; a
-   * `changed` answer is kept for AS7 (TB18), which also owns AS6's notices and boxes.
-   */
-  async function check(id: string): Promise<void> {
-    let response: CheckTabFileResponse;
-    try {
-      response = await main.checkTabFile(id);
-    } catch (error) {
-      main.logError(`Tab file check failed: ${String(error)}`);
-      list = update(list, id, { available: false });
-      return;
-    }
-    setMeta(id, {
-      written: response.written,
-      outside: response.state === 'changed' ? response.bytes : null,
-    });
-    if (response.state !== 'changed') {
-      list = update(list, id, { available: response.state === 'same' });
-    }
-  }
+  const auto = createTabAutosave({
+    o,
+    list: () => list,
+    setList: (next) => {
+      list = next;
+    },
+    meta: metaOf,
+    setMeta,
+    writeRecord,
+    writeIndex,
+    freshMeta,
+  });
 
-  /** SS11: a file tab whose record is damaged (or missing) opens from its file, history lost. */
-  async function fromFile(id: string): Promise<EditorTabState | null> {
-    let read: ReadFileResponse;
-    try {
-      read = await main.readTabFile(id);
-    } catch {
-      return null;
-    }
-    if (!read.ok) return null;
-    const text = extractDrawing('chalk', read.bytes, o.decodeUtf8);
+  /**
+   * SS11 (TB18, R52): a file tab whose record is damaged (or missing) opens from the bytes its I14
+   * check returned (`wantBytes`), history lost. After a `changed` answer the file is accepted (N9)
+   * as AS7(a) would: no drawing of hers exists to keep.
+   */
+  async function fromFile(
+    id: string,
+    checked: CheckTabFileResponse | null,
+  ): Promise<EditorTabState | null> {
+    if (checked === null || !('bytes' in checked) || checked.bytes === undefined) return null;
+    const text = extractDrawing('chalk', checked.bytes, o.decodeUtf8);
     if (!text.ok) return null;
     const parsed = parse(text.text);
-    return parsed.ok ? controller.newState(parsed.value) : null;
+    if (!parsed.ok) return null;
+    if (checked.state === 'changed') {
+      const written = await drawingHash(parsed.value, sha256);
+      main.acceptOutsideChange({ tabId: id, written });
+      setMeta(id, { written, outside: null });
+      list = update(list, id, { available: true });
+    }
+    return controller.newState(parsed.value);
   }
 
   /**
@@ -323,8 +362,8 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     });
     let state: EditorTabState | null = null;
     if (tab.kind === 'chalk') {
-      await check(tab.id);
-      state = loaded.ok ? loaded.state : await fromFile(tab.id);
+      const checked = await auto.check(tab.id, !loaded.ok);
+      state = loaded.ok ? loaded.state : await fromFile(tab.id, checked);
       if (state !== null) {
         const doc = tabStateDoc(state);
         // SS7: compared with the written hash I14 returned, never an older copy.
@@ -365,7 +404,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
       outgoing.available &&
       (await hasUnwrittenChanges(tabStateDoc(taken), metaOf(outgoing.id).written, sha256))
     ) {
-      await o.flushTab(outgoing.id);
+      await auto.flushTab(outgoing.id); // AS2: at once on a switch; AS3 applies the result
       // AS3 may have marked it saved while it was still active.
       list = update(list, outgoing.id, { state: controller.snapshotState() });
     }
@@ -380,12 +419,13 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
         return false;
       }
     } else if (incoming.kind === 'chalk') {
-      await check(id); // AS5 (b): a file tab becomes active
+      await auto.check(id, false); // AS5 (b): a file tab becomes active
     }
     controller.putState(state);
     list = activate(update(list, id, { state }), id);
     o.changed();
     await writeIndex();
+    await auto.settle(id);
     return true;
   }
 
@@ -471,7 +511,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
 
   // ---- flow runner --------------------------------------------------------------------------
 
-  /** Runs one flow under the flag, then the queued opens in order. */
+  /** Runs one flow under the flag, then the queued opens in order, then the idle work. */
   async function run(flow: () => Promise<void>): Promise<void> {
     running = true;
     try {
@@ -482,7 +522,14 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
       running = false;
     }
     const next = queue.shift();
-    if (next !== undefined) await run(() => perform(next));
+    if (next !== undefined) return run(() => perform(next));
+    await settleIdle();
+  }
+
+  /** AS7 and the AS6 boxes, as a flow, once nothing runs and the host is idle. */
+  function settleIdle(): Promise<void> {
+    if (running || !o.hostIdle() || !auto.idlePending()) return Promise.resolve();
+    return run(() => auto.idleWork());
   }
 
   /** A flow started by her (a key, a click, a menu item): ignored while another runs. */
@@ -536,6 +583,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
       lose(tab.id);
     }
     o.changed();
+    await auto.settle(list.active); // SS5: a record newer than its file is written now
   }
 
   // ---- T12 reopen and the T8 list part -------------------------------------------------------
@@ -591,7 +639,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
         if (state !== null) {
           controller.putState(state);
           list = update(list, next.id, { state });
-          if (next.kind === 'chalk' && next.state !== null) await check(next.id);
+          if (next.kind === 'chalk' && next.state !== null) await auto.check(next.id, false);
           break;
         }
         lose(next.id);
@@ -599,6 +647,7 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
     }
     o.changed();
     await writeIndex();
+    await auto.settle(list.active);
   }
 
   // ---- reading ------------------------------------------------------------------------------
@@ -674,5 +723,31 @@ export function createTabFlows(o: TabFlowOptions): TabFlows {
       return markerOf(await facts(id), { kind: tab?.kind ?? 'untitled', ...m.stored });
     },
     index,
+    async write(due) {
+      const tab = activeTab(list);
+      if (tab.state === null) return; // SS7: the active tab is not loaded yet
+      if (due.record) {
+        await writeRecord(tab, controller.snapshotState());
+        await auto.tick();
+      }
+      if (due.index) await writeIndex();
+      await settleIdle();
+    },
+    save: () =>
+      idle(async () => {
+        await auto.save();
+      }),
+    saveAs: () =>
+      idle(async () => {
+        await auto.saveAs();
+      }),
+    windowFocused: () =>
+      idle(async () => {
+        const id = list.active;
+        if (activeTab(list).kind !== 'chalk') return;
+        await auto.check(id, false);
+        await auto.settle(id);
+      }),
+    settleIdle,
   };
 }

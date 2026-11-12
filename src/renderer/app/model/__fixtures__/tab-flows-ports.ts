@@ -16,7 +16,6 @@ import type {
   BindTabRequest,
   BindTabResponse,
   CheckTabFileResponse,
-  FileProblem,
   FileRef,
   OpenTarget,
   ReadFileResponse,
@@ -50,12 +49,8 @@ export function decodeUtf8(bytes: Uint8Array): string | null {
   }
 }
 
-/** Every main function the tab flows of TB17-TB19 use (TB18 and TB19 extend `TabFlowMain`). */
+/** Every main function the tab flows of TB17-TB19 use (TB19 extends `TabFlowMain`). */
 export interface FakeMain extends TabFlowMain {
-  autoSave(request: AutoSaveRequest): Promise<AutoSaveResponse>;
-  acceptOutsideChange(value: AcceptOutsideRequest): void;
-  chooseSave(format: 'chalk', suggestedName: string): Promise<FileRef | null>;
-  writeFile(ref: FileRef, data: Uint8Array): Promise<WriteFileResponse>;
   closeOk(): void;
 }
 type MainName = keyof FakeMain;
@@ -138,7 +133,7 @@ export function createTabFlowHarness(options: HarnessOptions = {}) {
       const bytes = files.get(ref.id);
       return bytes === undefined ? { ok: false, problem: 'missing' } : { ok: true, bytes };
     },
-    showFileError: async (_problem: FileProblem, _name: string) => undefined,
+    showFileError: async (..._args: unknown[]) => undefined,
     readTabRecord: async (tabId: string): Promise<ReadTabRecordResponse> => {
       const text = records.get(tabId);
       return text === undefined ? { ok: false, problem: 'missing' } : { ok: true, text };
@@ -184,15 +179,15 @@ export function createTabFlowHarness(options: HarnessOptions = {}) {
       );
       return { ok: true };
     },
-    checkTabFile: async (tabId: string): Promise<CheckTabFileResponse> => {
+    checkTabFile: async (tabId: string, wantBytes?: boolean): Promise<CheckTabFileResponse> => {
       const refId = bindings.get(tabId);
       if (refId === undefined) throw new Error(`fake checkTabFile: ${tabId} is not a file tab`);
-      const state = files.has(refId) ? 'same' : 'missing';
-      return { tabId, written: written.get(tabId) ?? null, state };
-    },
-    readTabFile: async (tabId: string): Promise<ReadFileResponse> => {
-      const bytes = files.get(bindings.get(tabId) ?? '');
-      return bytes === undefined ? { ok: false, problem: 'missing' } : { ok: true, bytes };
+      const bytes = files.get(refId);
+      const hash = written.get(tabId) ?? null;
+      if (bytes === undefined) return { tabId, written: hash, state: 'missing' };
+      return wantBytes === true
+        ? { tabId, written: hash, state: 'same', bytes }
+        : { tabId, written: hash, state: 'same' };
     },
     logError: (message: string) => {
       errors.push(message);
@@ -257,6 +252,14 @@ export function createTabFlowHarness(options: HarnessOptions = {}) {
 
   const controller: TabFlowOptions['controller'] = {
     getDoc: () => editor.getDoc(),
+    markSaved: () => {
+      log('markSaved', []);
+      editor.markSaved();
+    },
+    run: (cmd) => {
+      log('run', [cmd]);
+      editor.run(cmd);
+    },
     newState: (doc) => editor.newState(doc),
     snapshotState: () => editor.snapshotState(),
     takeState: () => {
@@ -287,9 +290,8 @@ export function createTabFlowHarness(options: HarnessOptions = {}) {
     },
     newDrawingStyle: () => 'slides',
     decodeUtf8,
-    flushTab: async (tabId) => {
-      log('flushTab', [tabId]);
-    },
+    // F4a's idle: no gesture and no label or text editor (what `replace-doc` needs, R58).
+    hostIdle: () => editor.canRun({ type: 'replace-doc', doc: editor.getDoc(), label: '' }),
     changed: () => {
       changes++;
     },
@@ -312,7 +314,7 @@ export function createTabFlowHarness(options: HarnessOptions = {}) {
     saveDialogs,
     answers,
     changes: () => changes,
-    /** The flows over these ports (`patch` replaces host ports, e.g. `flushTab`). */
+    /** The flows over these ports (`patch` replaces host ports, e.g. `hostIdle`). */
     flows(patch: Partial<TabFlowOptions> = {}): TabFlows {
       return createTabFlows({ ...ports, ...patch });
     },

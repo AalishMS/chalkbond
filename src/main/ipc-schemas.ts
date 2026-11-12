@@ -250,5 +250,8 @@ export const autoSaveSchema = z
       .refine((text) => Buffer.byteLength(text, 'utf8') <= maxDrawingBytes),
   })
   .strict();
-export const checkTabFileSchema = z.object({ tabId }).strict();
+// I14 (TB18): `wantBytes` asks for the bytes of a `same` file too (SS11's open from its file).
+export const checkTabFileSchema = z
+  .object({ tabId, wantBytes: z.literal(true).optional() })
+  .strict();
 export const acceptOutsideSchema = z.object({ tabId, written: sha256 }).strict();

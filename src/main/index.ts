@@ -416,8 +416,8 @@ async function startApp(): Promise<void> {
   });
   // I13 (AS1, AS5, AS8), I14 (AS5) and N9 (AS7(a)) run on the session chain.
   ipc.handle(CHANNELS.autoSave, autoSaveSchema, (request) => sessionStore.autoSave(request));
-  ipc.handle(CHANNELS.checkTabFile, checkTabFileSchema, ({ tabId }) =>
-    sessionStore.checkFile(tabId),
+  ipc.handle(CHANNELS.checkTabFile, checkTabFileSchema, ({ tabId, wantBytes }) =>
+    sessionStore.checkFile(tabId, wantBytes === true),
   );
   ipc.on(
     CHANNELS.acceptOutsideChange,

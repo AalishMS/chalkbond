@@ -936,6 +936,20 @@ describe('auto-save writer (TB10)', () => {
     expect(await store.checkFile(A)).toEqual({ tabId: A, written: sha(OLD), state: 'same' });
   });
 
+  it('I14 `wantBytes` (SS11, TB18): a `same` answer carries the bytes it hashed; others do not', async () => {
+    const store = await openTab();
+    const check = await store.checkFile(A, true);
+    expect(check).toMatchObject({ tabId: A, written: sha(OLD), state: 'same' });
+    expect(new TextDecoder().decode((check as { bytes: Uint8Array }).bytes)).toBe(OLD);
+    expect(await store.checkFile(A, false)).toEqual({ tabId: A, written: sha(OLD), state: 'same' });
+    await rm(ester);
+    expect(await store.checkFile(A, true)).toEqual({
+      tabId: A,
+      written: sha(OLD),
+      state: 'missing',
+    });
+  });
+
   it('AS5: a missing file, then a missing folder, is `missing`; the file is never created (AS8)', async () => {
     const store = await openTab();
     await rm(ester);

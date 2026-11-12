@@ -91,8 +91,11 @@ export interface ChalkbondApi {
   bindTab(request: BindTabRequest): Promise<BindTabResponse>;
   /** I13 (AS1, AS5): writes a file tab's drawing after the outside-change check; names its tab. */
   autoSave(request: AutoSaveRequest): Promise<AutoSaveResponse>;
-  /** I14 (AS5): the outside-change check of a file tab and its written hash. */
-  checkTabFile(tabId: string): Promise<CheckTabFileResponse>;
+  /**
+   * I14 (AS5): the outside-change check of a file tab and its written hash; with `wantBytes` a
+   * `same` answer also carries the file's bytes (SS11, TB18).
+   */
+  checkTabFile(tabId: string, wantBytes?: boolean): Promise<CheckTabFileResponse>;
   /** N9 (AS7(a)): the changed bytes the tab loaded become its file, `written` its written hash. */
   acceptOutsideChange(value: AcceptOutsideRequest): void;
   /**

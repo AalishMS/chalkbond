@@ -796,10 +796,10 @@ AS7 waits for idle after a window-focus check; AS6 box shown once per tab; a `ke
 AS9; F6 suggested names and folders; N-A1 only after an explicit Save.
 
 **Acceptance criteria:**
-- [ ] Items (1), (2) timer half, (5) renderer half, (6) and (K) pass as fake-port tests
-- [ ] A write result never touches any tab but the one in its `tabId` (asserted over all three tab states)
-- [ ] Nothing is ever marked saved on an `ok` whose `doc` is not the drawing now in the tab
-- [ ] `src/renderer/app/model` coverage >= 90 % lines
+- [x] Items (1), (2) timer half, (5) renderer half, (6) and (K) pass as fake-port tests
+- [x] A write result never touches any tab but the one in its `tabId` (asserted over all three tab states)
+- [x] Nothing is ever marked saved on an `ok` whose `doc` is not the drawing now in the tab
+- [x] `src/renderer/app/model` coverage >= 90 % lines
 
 **Verification:** `npm test -- src/renderer/app/model`, then `npm run check`.
 

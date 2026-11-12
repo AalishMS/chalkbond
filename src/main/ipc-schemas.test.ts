@@ -487,9 +487,17 @@ describe('TB10 I12 tab:bind, I13 file:auto-save, I14 file:check, N9 file:accept-
       bad(schemas.autoSaveSchema, v);
   });
 
-  it('I14 takes a uuid tab id only', () => {
+  it('I14 takes a uuid tab id and, for SS11 (TB18), `wantBytes: true`', () => {
     ok(schemas.checkTabFileSchema, { tabId: ID });
-    for (const v of [{}, { tabId: 'x' }, { tabId: ID, path: '/x' }, null])
+    ok(schemas.checkTabFileSchema, { tabId: ID, wantBytes: true });
+    for (const v of [
+      {},
+      { tabId: 'x' },
+      { tabId: ID, path: '/x' },
+      { tabId: ID, wantBytes: false },
+      { tabId: ID, wantBytes: 'yes' },
+      null,
+    ])
       bad(schemas.checkTabFileSchema, v);
   });
 

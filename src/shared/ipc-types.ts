@@ -245,13 +245,17 @@ export type AutoSaveResponse =
 /** I14 (AS5): the outside-change check of a file tab. */
 export interface CheckTabFileRequest {
   tabId: string;
+  /** SS11 (TB18): a `same` answer also carries the file's bytes (a damaged record opens from them). */
+  wantBytes?: true;
 }
 /**
  * I14: the state of the bound file and the written hash (an in-flight hash promoted by this check
  * included; null only for a binding restored without one).
  */
 export type CheckTabFileResponse =
-  | { tabId: string; written: string | null; state: 'same' | 'missing' | 'unreadable' }
+  /** `bytes` only when asked with `wantBytes` (SS11, TB18). */
+  | { tabId: string; written: string | null; state: 'same'; bytes?: Uint8Array }
+  | { tabId: string; written: string | null; state: 'missing' | 'unreadable' }
   | { tabId: string; written: string | null; state: 'changed'; bytes: Uint8Array };
 /** N9 (AS7(a)): the changed bytes the tab loaded become its file hash, `written` its written hash. */
 export interface AcceptOutsideRequest {

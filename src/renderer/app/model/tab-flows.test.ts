@@ -295,21 +295,23 @@ describe('T11 switch', () => {
     expect(f.busy()).toBe(false);
   });
 
-  it('a file tab with unwritten changes is flushed (TB18 port) before the switch; one without is not', async () => {
+  it('a file tab with unwritten changes is written (AS1, TB18) before the switch; one without is not', async () => {
     const h = createTabFlowHarness();
     const f = await started(h);
     await f.openRef(h.file('a.chalk', withAtoms(1)));
     await f.newTab();
     await f.activate('tab-1');
-    expect(h.argsOf('flushTab')).toEqual([]);
-    draw(h, 3);
+    expect(h.argsOf('autoSave')).toEqual([]);
+    const doc = draw(h, 3);
     await f.activate('tab-2');
-    expect(h.argsOf('flushTab')).toEqual(['tab-1']);
-    expect(h.names(['writeTabRecord', 'flushTab', 'putState']).slice(-3)).toEqual([
+    expect(h.argsOf('autoSave')).toEqual([{ tabId: 'tab-1', text: serialize(doc) }]);
+    expect(h.names(['writeTabRecord', 'autoSave', 'putState']).slice(-3)).toEqual([
       'writeTabRecord',
-      'flushTab',
+      'autoSave',
       'putState',
     ]);
+    // AS3: marked saved while still active, so the stored state is clean.
+    expect(tabStateDirty(f.state().list.tabs[0]?.state as EditorTabState)).toBe(false);
   });
 
   it('a file tab is checked (AS5) when it becomes active; missing makes it unavailable', async () => {
@@ -325,9 +327,10 @@ describe('T11 switch', () => {
     expect(await f.marker('tab-1')).toBe('unavailable');
   });
 
-  it('a changed file is kept for AS7 (TB18); a failed check makes the tab unavailable', async () => {
+  it('a changed file is kept for AS7 while the host is busy; a failed check makes the tab unavailable', async () => {
     const h = createTabFlowHarness();
-    const f = await started(h);
+    const f = h.flows({ hostIdle: () => false });
+    await f.start({ session: null, open: null });
     await f.openRef(h.file('a.chalk', withAtoms(1)));
     await f.newTab();
     const bytes = encodeUtf8(serialize(withAtoms(5)));
@@ -666,10 +669,13 @@ describe('SS7 restore', () => {
     expect(h.argsOf('checkTabFile')).toEqual(['a']);
     expect(tabStateDirty(h.editor.snapshotState())).toBe(false);
     expect((await f.facts('a'))?.unwritten).toBe(false);
+    expect(h.argsOf('autoSave')).toEqual([]);
     await f.activate('b');
-    expect(tabStateDirty(h.editor.snapshotState())).toBe(true);
-    expect((await f.facts('b'))?.unwritten).toBe(true);
-    expect(await f.marker('b')).toBe('none'); // pending, not unsaved (F7)
+    // b's drawing differs from the written hash I14 returned: unwritten (pending, not unsaved, F7),
+    // so AS1 writes it at once (TB18; SS5: a record newer than its file).
+    expect(h.argsOf('autoSave')).toEqual([{ tabId: 'b', text: serialize(tabStateDoc(state)) }]);
+    expect((await f.facts('b'))?.unwritten).toBe(false);
+    expect(await f.marker('b')).toBe('none');
   });
 
   it("I7's open runs after the restore, before the opens queued meanwhile", async () => {
@@ -752,7 +758,7 @@ describe("SS11's renderer half", () => {
     expect(h.notices.map((n) => n.text)).toEqual([DAMAGED_NOTICE]);
   });
 
-  it('a file tab whose record is damaged opens from its file, history lost', async () => {
+  it('a file tab whose record is damaged opens from its file (I14 wantBytes), history lost', async () => {
     const h = createTabFlowHarness();
     const doc = withAtoms(3);
     const ref = h.file('n0.chalk', doc);
@@ -765,6 +771,9 @@ describe("SS11's renderer half", () => {
     expect(atoms(h.editor.getDoc())).toBe(3);
     expect(tabStateCanUndo(h.editor.snapshotState())).toBe(false);
     expect((await f.facts('t0'))?.unwritten).toBe(false);
+    expect(h.calls.filter((c) => c.name === 'checkTabFile').map((c) => c.args)).toEqual([
+      ['t0', true],
+    ]);
   });
 
   it('a file tab whose record and file are both unreadable is lost; every tab lost leaves one Untitled', async () => {
@@ -779,20 +788,24 @@ describe("SS11's renderer half", () => {
     expect(atoms(h.editor.getDoc())).toBe(0);
   });
 
-  it('a file read that throws, or a file that does not parse, loses the file tab', async () => {
+  it('a check that throws or gives no bytes, or a file that does not parse, loses the file tab', async () => {
     const h = createTabFlowHarness();
     h.records.set('t0', '{ broken');
     h.records.set('t1', '{ broken');
+    h.records.set('t2', '{ broken');
     h.bind('t0', h.file('n0.chalk', withAtoms(1)), null);
     h.bind('t1', h.file('n1.chalk', encodeUtf8('{ not chalk')), null);
-    h.override('readTabFile', async (tabId) => {
+    h.bind('t2', h.file('n2.chalk', withAtoms(1)), null);
+    h.override('checkTabFile', async (tabId, wantBytes) => {
       if (tabId === 't0') throw new Error('refused');
-      return { ok: true, bytes: encodeUtf8('{ not chalk') };
+      if (tabId === 't2') return { tabId, written: null, state: 'same' };
+      expect(wantBytes).toBe(true);
+      return { tabId, written: null, state: 'same', bytes: encodeUtf8('{ not chalk') };
     });
     const f = h.flows();
-    await f.start({ session: session(h, ['chalk', 'chalk']), open: null });
+    await f.start({ session: session(h, ['chalk', 'chalk', 'chalk']), open: null });
     expect(labels(f)).toEqual(['Untitled']);
-    expect(h.notices).toHaveLength(2);
+    expect(h.notices).toHaveLength(3);
   });
 
   it('a missing record: an empty Untitled opens empty, a tab that had content is lost', async () => {

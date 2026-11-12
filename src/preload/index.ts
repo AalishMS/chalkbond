@@ -34,7 +34,11 @@ const api: ChalkbondApi = {
   updateSessionIndex: (value) => ipcRenderer.send(CHANNELS.updateSessionIndex, value),
   bindTab: (request) => ipcRenderer.invoke(CHANNELS.bindTab, request),
   autoSave: (request) => ipcRenderer.invoke(CHANNELS.autoSave, request),
-  checkTabFile: (tabId) => ipcRenderer.invoke(CHANNELS.checkTabFile, { tabId }),
+  checkTabFile: (tabId, wantBytes) =>
+    ipcRenderer.invoke(
+      CHANNELS.checkTabFile,
+      wantBytes === true ? { tabId, wantBytes: true } : { tabId },
+    ),
   acceptOutsideChange: (value) => ipcRenderer.send(CHANNELS.acceptOutsideChange, value),
   damagedTabRecord: (tabId) => ipcRenderer.send(CHANNELS.damagedTabRecord, { tabId }),
   writeRecovery: (value) => ipcRenderer.send(CHANNELS.writeRecovery, value),
