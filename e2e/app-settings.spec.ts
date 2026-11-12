@@ -226,7 +226,9 @@ test('W1: a first launch has a content area of exactly 1280 x 800 at the display
 });
 
 test('W2: a malformed stored window (fractional, beyond int32) starts usable at the W1 place', async () => {
-  let { app } = await launchWith(userData);
+  // The W1 place is measured with the same content-size step as the fallback launches below, so a
+  // first launch that came up maximized (small screen) is restored the same way in both.
+  let { app } = await launchWith(userData, { size: SIZE });
   const first = await windowState(app);
   await closeForReal(app);
   const base = readSettings() ?? {};

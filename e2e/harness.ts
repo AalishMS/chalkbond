@@ -13,10 +13,16 @@ export interface OpenedApp {
   page: Page;
 }
 
-/** Sets the window's content (page) size; the page is that size because there is no menu bar. */
+/**
+ * Sets the window's content (page) size; the page is that size because there is no menu bar.
+ * A maximized window ignores setContentSize, and W1 starts the first launch maximized when the
+ * work area cannot hold 1280 x 800 plus the frame (a small screen), so it is restored first.
+ */
 export async function resizeContent(app: ElectronApplication, size: Size): Promise<void> {
   await app.evaluate(({ BrowserWindow }, [w, h]) => {
-    BrowserWindow.getAllWindows()[0]?.setContentSize(w, h);
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win?.isMaximized()) win.unmaximize();
+    win?.setContentSize(w, h);
   }, size);
 }
 

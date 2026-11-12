@@ -373,6 +373,10 @@ Vitest projects (`vitest.config.mts`):
   that must kill the app takes `process.pid` from inside the app (see `drawThenKill`).
 - `e2e/app-settings.spec.ts` launches without `--force-device-scale-factor`, so window sizes there
   run at the real display scale (125 % on the dev laptop); pixel-exact claims must hold at it.
+- On a small screen (work area under 1280 x 800 plus the frame, e.g. a laptop alone at 125 %) the
+  first launch is maximized (W1) and `setContentSize` is ignored on a maximized window.
+  `resizeContent` (`e2e/harness.ts`, used by `launchWith` and `openApp`) un-maximizes first; a test
+  that sets a size and also asserts window state must measure both sides with that same step.
 
 ## Maintenance
 
