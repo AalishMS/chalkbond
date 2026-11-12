@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140.56pt" height="257.954pt" viewBox="0 0 140.56 257.954">
+<g transform="translate(70.28 81)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 147.008L0 80" stroke="#000000" stroke-width="2"/>
+<path d="M0 80L69.28 40" stroke="#000000" stroke-width="2"/>
+<path d="M69.28 40L69.28 -40" stroke="#000000" stroke-width="2"/>
+<path d="M69.28 -40L0 -80" stroke="#000000" stroke-width="2"/>
+<path d="M0 -80L-69.28 -40" stroke="#000000" stroke-width="2"/>
+<path d="M-69.28 -40L-69.28 40" stroke="#000000" stroke-width="2"/>
+<path d="M0 80L-69.28 40" stroke="#000000" stroke-width="2"/>
+<text x="-8.664" y="168.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">C</text>
+<text x="8.664" y="168.592" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="25.992" y="173.392" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">3</text>
+</g>
+</svg>

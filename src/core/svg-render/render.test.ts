@@ -1223,10 +1223,13 @@ describe('structural formula display (Decisions 15 and 16: labelling rule and th
   describe('against the skeletal document, committed inputs', () => {
     const docs: { name: string; doc: Doc; only?: Selection }[] = goldenScenes();
 
+    // The `*-structural` inputs are structural already (N3b); for them the same switch is a no-op
+    // the other way round: setting `structural` on a structural document changes nothing.
     it.each(docs.map((d) => [d.name, d] as const))(
-      '%s: render(setStyle(doc, skeletal)) equals render(doc)',
+      '%s: the formula switch leaves the document as it is when already in that mode',
       (_name, d) => {
-        expect(render(skeletal(d.doc), { only: d.only })).toEqual(render(d.doc, { only: d.only }));
+        const same = d.doc.style.formula === undefined ? skeletal(d.doc) : structural(d.doc);
+        expect(render(same, { only: d.only })).toEqual(render(d.doc, { only: d.only }));
       },
     );
 

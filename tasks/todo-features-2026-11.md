@@ -232,10 +232,10 @@ second run must pass with no `-u`). Expected worst cases (W12, 2026-11-12): Slid
 31.05 pt, Handout 8.47 pt / 8.43 pt; a different number is investigated, not accepted.
 
 **Acceptance criteria:**
-- [ ] 13 structural scenes × 2 presets exist as goldens from frozen inputs; every pre-F2 golden and input byte-identical (`git diff --stat` shows only added files under `__golden__/`)
-- [ ] L1–L3 and "no ring carbon written" pass in both presets; SC5's ink-scan check passes on the new goldens (existing test)
-- [ ] the golden sheet was looked at; the commit message names what was seen (textbook labels, rings as in skeletal mode, nothing touching)
-- [ ] the N1 test "every committed input re-serialises byte-identically" passes with the v2 inputs
+- [x] 13 structural scenes × 2 presets exist as goldens from frozen inputs; every pre-F2 golden and input byte-identical (`git diff --stat` shows only added files under `__golden__/`)
+- [x] L1–L3 and "no ring carbon written" pass in both presets; SC5's ink-scan check passes on the new goldens (existing test)
+- [x] the golden sheet was looked at; the commit message names what was seen (textbook labels, rings as in skeletal mode, nothing touching)
+- [x] the N1 test "every committed input re-serialises byte-identically" passes with the v2 inputs
 
 **Verification:** `npx vitest run --project unit src/core/svg-render`, `npm run golden:sheet -- --png out/sheet.png` (look at the PNGs), then `npm run check`
 

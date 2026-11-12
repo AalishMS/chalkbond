@@ -1,0 +1,50 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 2,
+  "doc": {
+    "schemaVersion": 2,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0.866,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "label": "CO2H",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b3": {
+        "id": "b3",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-12T00:00:00.000Z",
+      "modified": "2026-11-12T00:00:00.000Z",
+      "title": "acetic-acid-co2h-structural"
+    },
+    "nextId": 4,
+    "objects": {},
+    "style": {
+      "formula": "structural",
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": []
+  }
+}

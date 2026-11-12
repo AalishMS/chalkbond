@@ -1,0 +1,137 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 2,
+  "doc": {
+    "schemaVersion": 2,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0,
+        "y": 2,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0,
+        "y": 1,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": 0.866,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a4": {
+        "id": "a4",
+        "x": 0.866,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a5": {
+        "id": "a5",
+        "x": 0,
+        "y": -1,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a6": {
+        "id": "a6",
+        "x": -0.866,
+        "y": -0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a7": {
+        "id": "a7",
+        "x": -0.866,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b8": {
+        "id": "b8",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b9": {
+        "id": "b9",
+        "a1": "a2",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b10": {
+        "id": "b10",
+        "a1": "a3",
+        "a2": "a4",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b11": {
+        "id": "b11",
+        "a1": "a4",
+        "a2": "a5",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b12": {
+        "id": "b12",
+        "a1": "a5",
+        "a2": "a6",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b13": {
+        "id": "b13",
+        "a1": "a6",
+        "a2": "a7",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b14": {
+        "id": "b14",
+        "a1": "a2",
+        "a2": "a7",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-12T00:00:00.000Z",
+      "modified": "2026-11-12T00:00:00.000Z",
+      "title": "methylcyclohexane-structural"
+    },
+    "nextId": 15,
+    "objects": {},
+    "style": {
+      "formula": "structural",
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": []
+  }
+}

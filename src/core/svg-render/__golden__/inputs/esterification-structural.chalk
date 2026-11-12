@@ -1,0 +1,251 @@
+{
+  "format": "chalkbond",
+  "schemaVersion": 2,
+  "doc": {
+    "schemaVersion": 2,
+    "atoms": {
+      "a1": {
+        "id": "a1",
+        "x": 0,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a2": {
+        "id": "a2",
+        "x": 0.866,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a3": {
+        "id": "a3",
+        "x": 0.866,
+        "y": 1.5,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a4": {
+        "id": "a4",
+        "x": 1.732,
+        "y": 0,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a9": {
+        "id": "a9",
+        "x": 3.51196,
+        "y": 0.47954,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a10": {
+        "id": "a10",
+        "x": 4.37796,
+        "y": 0.97954,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a11": {
+        "id": "a11",
+        "x": 5.24396,
+        "y": 0.47954,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a15": {
+        "id": "a15",
+        "x": 9.76142,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a16": {
+        "id": "a16",
+        "x": 10.62742,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a17": {
+        "id": "a17",
+        "x": 10.62742,
+        "y": 1.5,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a18": {
+        "id": "a18",
+        "x": 11.49342,
+        "y": 0,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      },
+      "a19": {
+        "id": "a19",
+        "x": 12.35942,
+        "y": 0.5,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a20": {
+        "id": "a20",
+        "x": 13.22542,
+        "y": 0,
+        "charge": 0,
+        "element": "C",
+        "radical": 0
+      },
+      "a27": {
+        "id": "a27",
+        "x": 15.11764,
+        "y": 0.72954,
+        "charge": 0,
+        "element": "O",
+        "radical": 0
+      }
+    },
+    "bonds": {
+      "b5": {
+        "id": "b5",
+        "a1": "a1",
+        "a2": "a2",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b6": {
+        "id": "b6",
+        "a1": "a2",
+        "a2": "a3",
+        "doublePlacement": "auto",
+        "order": 2,
+        "stereo": "none"
+      },
+      "b7": {
+        "id": "b7",
+        "a1": "a2",
+        "a2": "a4",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b12": {
+        "id": "b12",
+        "a1": "a9",
+        "a2": "a10",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b13": {
+        "id": "b13",
+        "a1": "a10",
+        "a2": "a11",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b21": {
+        "id": "b21",
+        "a1": "a15",
+        "a2": "a16",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b22": {
+        "id": "b22",
+        "a1": "a16",
+        "a2": "a17",
+        "doublePlacement": "auto",
+        "order": 2,
+        "stereo": "none"
+      },
+      "b23": {
+        "id": "b23",
+        "a1": "a16",
+        "a2": "a18",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b24": {
+        "id": "b24",
+        "a1": "a18",
+        "a2": "a19",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      },
+      "b25": {
+        "id": "b25",
+        "a1": "a19",
+        "a2": "a20",
+        "doublePlacement": "auto",
+        "order": 1,
+        "stereo": "none"
+      }
+    },
+    "groups": {},
+    "meta": {
+      "created": "2026-11-12T00:00:00.000Z",
+      "modified": "2026-11-12T00:00:00.000Z",
+      "title": "esterification-structural"
+    },
+    "nextId": 28,
+    "objects": {
+      "o8": {
+        "id": "o8",
+        "type": "plus",
+        "at": {
+          "x": 2.5678,
+          "y": 0.75345
+        }
+      },
+      "o14": {
+        "id": "o14",
+        "type": "arrow",
+        "kind": "forward",
+        "from": {
+          "x": 6.20476,
+          "y": 0.75345
+        },
+        "to": {
+          "x": 8.70476,
+          "y": 0.75345
+        }
+      },
+      "o26": {
+        "id": "o26",
+        "type": "plus",
+        "at": {
+          "x": 14.16508,
+          "y": 0.75345
+        }
+      }
+    },
+    "style": {
+      "formula": "structural",
+      "overrides": {},
+      "preset": "slides"
+    },
+    "zOrder": [
+      "o8",
+      "o14",
+      "o26"
+    ]
+  }
+}

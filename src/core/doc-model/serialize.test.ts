@@ -311,12 +311,15 @@ describe('schema v2 (D1)', () => {
     expect(COMMITTED.length).toBeGreaterThanOrEqual(40);
   });
 
-  it.each(COMMITTED)('%s parses to a v2 doc and serialises byte-identically', (_path, text) => {
+  it.each(COMMITTED)('%s parses to a v2 doc and serialises byte-identically', (path, text) => {
     const r = parse(text);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.schemaVersion).toBe(2);
-    expect(r.value.style.formula).toBeUndefined();
+    // The `*-structural` golden inputs carry the formula and are written as file version 2.
+    const isStructural = path.endsWith('-structural.chalk');
+    expect(r.value.style.formula).toBe(isStructural ? 'structural' : undefined);
+    expect(/"schemaVersion": 2,\s+"doc"/.test(text)).toBe(isStructural);
     expect(serialize(r.value)).toBe(text);
   });
 

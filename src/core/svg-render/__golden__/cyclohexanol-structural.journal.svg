@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50.482pt" height="92.4pt" viewBox="0 0 50.482 92.4">
+<g transform="translate(25.241 29.1)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0 52.436L0 28.8" stroke="#000000" stroke-width="0.6"/>
+<path d="M0 28.8L24.941 14.4" stroke="#000000" stroke-width="0.6"/>
+<path d="M24.941 14.4L24.941 -14.4" stroke="#000000" stroke-width="0.6"/>
+<path d="M24.941 -14.4L0 -28.8" stroke="#000000" stroke-width="0.6"/>
+<path d="M0 -28.8L-24.941 -14.4" stroke="#000000" stroke-width="0.6"/>
+<path d="M-24.941 -14.4L-24.941 14.4" stroke="#000000" stroke-width="0.6"/>
+<path d="M0 28.8L-24.941 14.4" stroke="#000000" stroke-width="0.6"/>
+<text x="-3.89" y="61.18" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">O</text>
+<text x="3.89" y="61.18" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#000000" stroke="none" xml:space="preserve">H</text>
+</g>
+</svg>

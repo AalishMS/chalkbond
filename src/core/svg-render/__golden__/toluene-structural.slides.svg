@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="245.019pt" height="174.128pt" viewBox="0 0 245.019 174.128">
+<g transform="translate(104.923 93.128)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="-34.641" cy="0" r="45.033" stroke="#000000" stroke-width="2"/>
+<path d="M90.859 -72.457L34.641 -40" stroke="#000000" stroke-width="2"/>
+<path d="M34.641 -40L-34.641 -80" stroke="#000000" stroke-width="2"/>
+<path d="M-34.641 -80L-103.923 -40" stroke="#000000" stroke-width="2"/>
+<path d="M-103.923 -40L-103.923 40" stroke="#000000" stroke-width="2"/>
+<path d="M-103.923 40L-34.641 80" stroke="#000000" stroke-width="2"/>
+<path d="M-34.641 80L34.641 40" stroke="#000000" stroke-width="2"/>
+<path d="M34.641 -40L34.641 40" stroke="#000000" stroke-width="2"/>
+<text x="95.259" y="-71.408" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">C</text>
+<text x="112.587" y="-71.408" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#000000" stroke="none" xml:space="preserve">H</text>
+<text x="129.915" y="-66.608" font-family="Arial, Helvetica, sans-serif" font-size="16.8" fill="#000000" stroke="none" xml:space="preserve">3</text>
+</g>
+</svg>
