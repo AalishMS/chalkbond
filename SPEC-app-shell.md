@@ -920,6 +920,24 @@ const controller = createEditorController({
   armed from outside (the window still closes, so the chain was not held) and `e2e/packaged` asserts
   that the test object, and so `.hold`, does not exist in the packaged app. Unit tests:
   `store-hold.test.ts` and `session-store.test.ts` ("the test hold").
+- **TH8** (2026-11-13, TB31; recorded as built) The T11 and SS8 budgets are asserted by one e2e file,
+  `e2e/app-tabs-perf.spec.ts` (frame-time probe in the style of `editor-perf.spec.ts`), not by a
+  vitest `perf` test: a switch's first painted frame needs the built app (the `perf` project holds
+  only TB5's `putState` and TB6's record serialisation numbers). Differences from the plan, recorded
+  honestly: **(1)** LG1's main log holds errors only, so a successful `readTabRecord` leaves no line
+  in it; the SS8 assertion "a normal start reads one record" counts `ipcMain.handle` calls instead
+  (`e2e/probe-main.mjs`, a `-r` preload loaded by the new launch option `probe: true`, never by
+  production: no log line, channel or flag was added). **(2)** The same preload registers a renderer
+  preload (its source is a string in `probe-main.mjs`, written to the OS temp folder for the run; lint forbids a `.cjs` file of its own) on the default session that times the restore at start from the
+  strip showing the restored tabs to the first painted frame of the active drawing. **(3)** One
+  sample is a real click on a tab; the end is the first painted frame (a `requestAnimationFrame`
+  callback that sees the target tab selected and the target drawing's parts, then the task posted
+  from it); the drawing of each tab differs, and a fingerprint of its parts proves the right one is
+  on screen. 10 warm-up and 40 measured switches per case (2 and 10 tabs; Untitled and file tabs);
+  from the store: 3 relaunches with 10 file tabs, the 9 inactive tabs clicked once each (27 samples)
+  and 3 restores at start. Budgets unchanged (100 ms, 300 ms; the restore is held to 300 ms too, SS8).
+  Measured numbers: `docs/editor-perf.md` "Tabs". SC1's 3 s cold start with 10 restored tabs is not
+  measured: it is the teacher's-laptop box.
 
 ### Logging
 

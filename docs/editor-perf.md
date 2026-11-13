@@ -140,3 +140,63 @@ on the structural 40-atom scheme (10 ms median) in `src/renderer/editor/perf.tes
 4 files, 17 tests, all passed. The tests assert the budgets and print no medians, so no structural
 median is recorded here; a measured number would need the probes to log it. The structural frame-time
 probe (`e2e/editor-perf.spec.ts`) was not run for N11 (needs a build; open for N12).
+
+## Tabs (T11 budgets and SS8; tabs feature set, task TB31; Windows 11, 2026-11-13)
+
+`npx playwright test --project=e2e e2e/app-tabs-perf.spec.ts`, run alone on `9818b2b` (the probe and its
+two test seams are the only change), after `npx electron-vite build`, nothing else running.
+Budgets approved by the owner 2026-11-12 (`SPEC-app-shell.md` T11): **100 ms** for a switch to a tab
+loaded in this run, **300 ms** for a first activation from the store; none was missed and none was changed.
+
+Machine: Intel Core i5-11400H (2.7 GHz, 6 cores, 12 threads), 16 GB, Windows 11 (10.0.26300),
+Electron 45.2.3, a real window, `--force-device-scale-factor=1` (scale 1.0), 1280 x 800 content.
+
+One sample is one real mouse click on a tab (Playwright). `t0` is the capture-phase `click` listener
+on `window`. The end is the first painted frame that shows the incoming drawing: the first
+`requestAnimationFrame` callback in which the strip marks the target tab selected and the content layer
+holds that drawing's parts (a fingerprint of the first six parts, taken while that tab was active; the
+drawings all differ and the spec asserts so), then a task posted from inside that callback, which runs
+after the frame's style, layout and paint work on the main thread. Raster, compositing and the wait for
+the vsync are not in it. Inside the sample: finishing the editor, taking the outgoing state out, its
+record write (IPC and disk), AS5's check for a file tab, the record read and D2 verification when the
+tab is not loaded, `putState` and React's render. Not inside it: the 100 ms pause between samples.
+Every drawing is the 100-atom perf document of `editor-perf.spec.ts`, shifted per tab. 10 warm-up
+switches, then 40 measured (n = 40, so p95 is the 39th of 40 sorted values); each pair of cells is two runs.
+
+| Scenario | Budget | n | Median | p95 | Max |
+|---|---|---|---|---|---|
+| 2 Untitled tabs, loaded (run A / run B) | p95 <= 100 ms | 40 | 7.6 / 7.4 ms | 18.0 / 17.7 ms | 18.2 / 17.7 ms |
+| 10 Untitled tabs, loaded (run A / run B) | p95 <= 100 ms | 40 | 8.2 / 7.8 ms | 17.7 / 17.5 ms | 17.8 / 17.6 ms |
+| 2 file (.chalk) tabs, loaded (run A / run B) | p95 <= 100 ms | 40 | 19.1 / 19.3 ms | 19.6 / 19.6 ms | 19.7 / 19.6 ms |
+| 10 file (.chalk) tabs, loaded (run A / run B) | p95 <= 100 ms | 40 | 27.4 / 26.1 ms | 31.5 / 28.3 ms | 31.6 / 28.4 ms |
+| First activation from the store, 10 file tabs, after a relaunch (3 relaunches x 9 tabs; run A / run B) | p95 <= 300 ms | 27 | 26.4 / 28.7 ms | 30.6 / 35.3 ms | 32.3 / 35.4 ms |
+| Restore of the active tab at start, 10 file tabs (strip shown to drawing painted; 3 relaunches; run A / run B) | <= 300 ms | 3 | 54.4 / 51.0 ms | | 79.5 / 64.9 ms |
+
+Run A and run B are two consecutive runs of the final spec. Two earlier runs of the same probe (before its
+renderer preload moved from a file into `probe-main.mjs`, same measurement) gave the same ranges: loaded p95
+17.6-19.7 ms, 10 file tabs 28.7-36.5 ms, from the store p95 32.0-32.3 ms, restore 43.4-55.1 ms.
+
+The Untitled samples fall into two groups, about 7.6 ms and about 17.7 ms: the end waits for the next
+frame, so a sample lands in the frame that is current when the work is done. A file tab costs more than
+an Untitled tab (about 19 ms with 2 tabs, 26-28 ms with 10, medians): the switch of a file tab also runs AS5's
+check (file read and SHA-256) before the incoming state is put in, and hashes the outgoing drawing
+against its written hash (`switchTo` in `tab-flows.ts`). The step from 2 to 10 tabs was not profiled: the
+budgets are met by a factor of 2.7 or more, so there is nothing to fix. A first activation from the
+store (a file tab: record read, D2 verification, AS5) costs about the same as a switch between ten
+loaded file tabs. The restore at start is measured by a renderer preload (the source string in `e2e/probe-main.mjs`) that
+sees the document from its first byte: it starts when the strip first shows the 10 tabs (`o.changed()`
+before the load) and ends at the first painted frame of the restored drawing. The strip itself
+appears about 260-300 ms after the page starts; that part is outside SS8's restore budget and is not
+broken down here.
+Cold start with 10 restored tabs against SC1's 3 s is the teacher's-laptop box of
+`docs/windows-checklist.md` and is **not measured here** (E32 stays open; the development machine is not that laptop).
+
+SS8, normal start reads one record: `e2e/probe-main.mjs` counts every `ipcMain.handle` call. After a
+relaunch with 10 tabs in the store, once the active tab is painted and 500 ms have passed, the
+`session:read-tab` (`readTabRecord`) count is 1; each of the nine first activations that follow adds
+exactly one (the count was 2, 3, ... 10 after each click). LG1's main log holds errors only, so a
+successful read has no line there; the count is the e2e twin of TB17's fake-port assertion.
+
+The probe fails when a budget is not met: with both budgets locally set to 5 ms and 10 ms (not
+committed) the four loaded-switch tests and the first relaunch failed on the same code (the rest of the serial group did not run) (for example received 17.6 ms against 5 ms,
+and 51.4 ms against 10 ms for the restore).

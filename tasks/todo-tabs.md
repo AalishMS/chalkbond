@@ -1329,8 +1329,8 @@ teacher's-laptop box in TB33, not measured here.
 caches, the I11 read), never the budget or the timeout.
 
 **Acceptance criteria:**
-- [ ] 100 ms loaded, 300 ms from the store, both met on the development machine; numbers written down
-- [ ] `docs/editor-perf.md` records the measurement; no budget or timeout was changed
+- [x] 100 ms loaded, 300 ms from the store, both met on the development machine; numbers written down (2026-11-13, `e2e/app-tabs-perf.spec.ts`, 8 tests, green on the first run and on three more; over four runs: loaded p95 17.5-19.7 ms (2 and 10 Untitled tabs, 2 file tabs) and 28.3-36.5 ms (10 file tabs) against 100 ms; first activation from the store p95 30.6-35.3 ms (27 samples each) against 300 ms; restore of the active tab at start 43.4-79.5 ms; one `readTabRecord` on a normal start and one more per first activation; TH8 records the seams)
+- [x] `docs/editor-perf.md` records the measurement; no budget or timeout was changed ("Tabs": medians, p95, max, machine, scale, date; a throwaway run with the budgets at 5 ms and 10 ms failed five tests, so the probe bites; the committed budgets are 100 and 300)
 
 **Verification:** `npx playwright test --project=e2e e2e/app-tabs-perf.spec.ts`, then `npm run check`.
 

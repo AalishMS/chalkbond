@@ -21,6 +21,11 @@ export interface LaunchOptions {
    * order; loads `stub-dialogs.mjs` before the app's code runs.
    */
   dialogs?: unknown[];
+  /**
+   * TB31 perf probe: loads `probe-main.mjs` (a count of every IPC handle channel's calls on
+   * `globalThis.__chalkbondProbe`, and a renderer preload that times the restore at start).
+   */
+  probe?: boolean;
   /** UI success shots only: stub main clipboard.write, retaining real flow and rasterisation. */
   clipboardWriteSuccess?: boolean;
   /** UI/model-success shots only: main's clipboard is an in-memory store (stub-clipboard-memory). */
@@ -110,6 +115,7 @@ function appArgs(opts: LaunchOptions, userData: string): string[] {
     '-r',
     resolve(__dirname, 'no-os-mouse.mjs'),
     ...(opts.dialogs === undefined ? [] : ['-r', resolve(__dirname, 'stub-dialogs.mjs')]),
+    ...(opts.probe ? ['-r', resolve(__dirname, 'probe-main.mjs')] : []),
     ...(opts.clipboardWriteSuccess ? ['-r', resolve(__dirname, 'stub-clipboard-write.mjs')] : []),
     ...(opts.clipboardMemory ? ['-r', resolve(__dirname, 'stub-clipboard-memory.mjs')] : []),
     resolve(__dirname, '..'),
