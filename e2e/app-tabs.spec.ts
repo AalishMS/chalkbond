@@ -348,6 +348,43 @@ test('T13: a drag past 4 px reorders; under 4 px it is a click; Esc cancels', as
   }
 });
 
+test('T13: a tab dragged to the far left of the strip is dropped at the front, and one dragged to the far right at the end', async () => {
+  const { app, page } = await openApp({ launch: { dialogs: [] } });
+  try {
+    await openTabs(page, 3);
+    const [a, b, c] = (await readTabs(page)).map((t) => t.id) as [string, string, string];
+    const width = (await box(tabs(page).nth(0))).width;
+
+    // The last tab, past the first tab's left edge: its lifted centre is exactly the first tab's
+    // centre (equal widths, TB32), which must count as passed.
+    await dragBy(page, 2, -(width * 3));
+    await expect(page.locator('.tab-drop')).toHaveCount(1);
+    // A18: the lifted tab is the canvas colour (white) with a shadow, not the pressed-tab grey that
+    // `:active` gives a pressed tab (the pointer is down on it).
+    await expect(page.locator('.tab.is-dragging')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    expect(
+      await page.locator('.tab.is-dragging').evaluate((el) => getComputedStyle(el).boxShadow),
+    ).not.toBe('none');
+    await page.mouse.up();
+    await expect.poll(() => tabKeys(page)).toEqual([c, a, b]);
+    expect((await readTabs(page)).map((t) => t.id)).toEqual([c, a, b]);
+
+    // The second tab to the front as well, then the first to the end.
+    await dragBy(page, 1, -(width * 3));
+    await page.mouse.up();
+    await expect.poll(() => tabKeys(page)).toEqual([a, c, b]);
+    await dragBy(page, 0, width * 3);
+    await page.mouse.up();
+    await expect.poll(() => tabKeys(page)).toEqual([c, b, a]);
+    await expectNoNetwork(app);
+  } finally {
+    await app.close();
+  }
+});
+
 test('T13: the other tabs make room at once under prefers-reduced-motion, and move at the motion speed otherwise', async () => {
   const { app, page } = await openApp({ launch: { dialogs: [] } });
   try {

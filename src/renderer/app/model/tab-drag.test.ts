@@ -73,6 +73,22 @@ describe('dropIndex (T13): the tab ends where its centre has passed the others',
     expect(dropIndex(slots, 0, 100000)).toBe(3);
     expect(dropIndex(slots, 3, -1000)).toBe(0);
   });
+  it('equal widths: a tab pushed to the far left edge reaches the front, as to the far right the end', () => {
+    // TB32 found this by looking at the shot: lifted to the first slot, the centre of a tab as wide
+    // as the first one is exactly the first tab's centre, and a tie must count as passed on the
+    // left too, or no tab can ever be dropped at the front.
+    for (const from of [1, 2, 3]) {
+      expect(dropIndex(slots, from, liftLeft(slots, from, -500, 30) + 50)).toBe(0);
+    }
+    for (const from of [0, 1, 2]) {
+      expect(dropIndex(slots, from, liftLeft(slots, from, 9000, 30) + 50)).toBe(3);
+    }
+  });
+  it('a tie with a neighbour on the left counts as passed, one on the right likewise', () => {
+    expect(dropIndex(slots, 1, 50)).toBe(0);
+    expect(dropIndex(slots, 2, 154)).toBe(1);
+    expect(dropIndex(slots, 1, 258)).toBe(2);
+  });
   it('one tab, or an index that is no tab, drops where it is', () => {
     expect(dropIndex([{ left: 0, width: 100 }], 0, 500)).toBe(0);
     expect(dropIndex(slots, 7, 0)).toBe(7);

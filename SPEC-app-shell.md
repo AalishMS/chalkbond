@@ -939,6 +939,33 @@ const controller = createEditorController({
   Measured numbers: `docs/editor-perf.md` "Tabs". SC1's 3 s cold start with 10 restored tabs is not
   measured: it is the teacher's-laptop box.
 
+- **TH9** (2026-11-13, TB32; recorded as built) `e2e/shots/TB32.shot.ts` writes the shots of A18
+  (strip: one, several, hover, focus, +, dot, both warning icons, long name, overflow at 960 with
+  one or both chevrons, drag, the six tooltips), A19 (the ☰ button closed and pressed: a stub of
+  `Menu.prototype.popup` that never calls back keeps `aria-expanded`; the native popup is in no
+  shot), A21 (960 x 640 with tabs, and the options bar of each of the ten tools, Select with a
+  selection, with Expand and with Expand structural; each also asserts that the bar and the top bar
+  do not scroll and that no button leaves the bar), A01 (three tabs) and A12 (top, "Tabs and
+  files", end, 960). Looked at one by one beside `out/mockups-shell`. **Found and fixed in code**
+  (each with a failing test first): **(1)** `dropIndex` counted a tab whose centre equalled the
+  lifted tab's centre as passed only on the right, so with equal-width tabs (the usual case) no tab
+  could ever be dropped at the front; a tie now counts as passed in the direction of travel
+  (`tab-drag.test.ts`, and an e2e drag to the front and to the end in `app-tabs.spec.ts`).
+  **(2)** The lifted tab was painted with the pressed-tab grey, because `.tab:active:not(:has(...))`
+  outweighed `.tab.is-dragging`; it is `--canvas-bg` with `--shadow-2` as A18 shows (asserted in
+  the same e2e test). **Differences left as they are, for the owner to rule on** (the specs and the
+  built app agree; the mock-ups differ): **(a)** A18 drag: the mock draws a 124 px card lifted 8 px
+  and dims the tab's own place to 45 % with no reflow; the built tab keeps its full width and
+  height, the others make room (T13) and a 2 px accent line marks the landing place, the origin
+  place is simply empty. **(b)** A18 keyboard focus: the built tab also shows its tooltip (tooltips
+  open on keyboard focus app-wide); the mock's focus cell has none. **(c)** A12: the built Close
+  button shows its focus ring (the dialog was opened with F1) and the list has a real scrollbar
+  thumb; the mock draws no ring and a stand-in thumb. **(d)** A01 and A21: the shots are the page
+  only (1280 x 800 and 960 x 640 of content); the mock's window is 1280 x 800 outer, so the scheme
+  zooms to 134 % (mock 117 %) and 95 % (mock 83 %); the title bar is native and in no shot. The
+  scheme's condition text sits nearer the product's O than in the mock because the fixture types
+  it with the Text tool. No mock-up, token or icon file was changed.
+
 ### Logging
 
 **LG1** Main appends errors (its own and N6) to `userData/logs/main.log`, one line each (`ISO

@@ -209,7 +209,11 @@
   display: none;
 }
 
-.tab.is-dragging {
+/*
+ * The pointer is down on the lifted tab, so `.tab:active:not(:has(...))` (specificity 0,4,0) would
+ * paint it with the pressed-tab grey; this rule has the same weight and comes later (A18, TB32).
+ */
+.tabs.is-reordering .tab.is-dragging {
   z-index: 3;
   box-shadow: var(--shadow-2);
   background: var(--canvas-bg);

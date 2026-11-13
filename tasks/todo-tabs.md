@@ -1358,8 +1358,8 @@ found in the commit message (fix a difference that is a bug in the code or CSS; 
 the owner).
 
 **Acceptance criteria:**
-- [ ] `npm run shots -- TB32` passes and every PNG was looked at against its mock-up
-- [ ] The existing shots (`npm run shots`) still pass
+- [x] `npm run shots -- TB32` passes and every PNG was looked at against its mock-up (14 tests, 71 PNGs in `out/shots/TB32`; differences in `SPEC-app-shell.md` TH9 and the commit message; two bugs fixed)
+- [x] The existing shots (`npm run shots`) still pass (119 passed, 105 earlier + 14 new)
 
 **Verification:** `npm run shots -- TB32`, then `npm run shots`.
 

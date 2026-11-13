@@ -44,14 +44,20 @@ export function liftLeft(
 }
 
 /**
- * T13: the index the dragged tab `from` ends at when its centre is at `centre`: it has passed every
- * other tab whose centre is at or left of its own. Far left is 0 and far right the last index.
+ * T13: the index the dragged tab `from` ends at when its centre is at `centre`. It has passed a tab
+ * on its left when its centre is at or left of that tab's centre, and a tab on its right when its
+ * centre is at or right of that tab's centre: a tie counts as passed in the direction of travel.
+ * That makes both ends reachable when the tabs are equally wide, the usual case, where the dragged
+ * tab, lifted to the first (or last) slot, has exactly that tab's centre. Far left is 0 and far
+ * right the last index.
  */
 export function dropIndex(slots: readonly Slot[], from: number, centre: number): number {
   if (slots[from] === undefined) return from;
-  let to = 0;
+  let to = from;
   slots.forEach((s, i) => {
-    if (i !== from && s.left + s.width / 2 <= centre) to += 1;
+    const mid = s.left + s.width / 2;
+    if (i < from && centre <= mid) to -= 1;
+    if (i > from && centre >= mid) to += 1;
   });
   return to;
 }
