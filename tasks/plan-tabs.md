@@ -105,15 +105,15 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 ## Task List
 
 ### Phase 0: docs
-- [ ] TB1: approvals, specs, mock-ups, plan and todo committed; lifted tokens and icons synced (`docs:`)
+- [x] TB1: approvals, specs, mock-ups, plan and todo committed; lifted tokens and icons synced (`docs:`)
 
 ### Phase 1: doc-model and editor
-- [ ] TB2: doc-model `historyToRecord` / `historyFromRecord` (D2)
-- [ ] TB3: editor keys moved for the tabs (R59): Tidy Ctrl+Shift+R, Ctrl+1 and Ctrl+Shift+T freed, Zoom to 100% without a key
-- [ ] TB4: editor host slots `menu` and `tabs`, tab panel, K4 order (R56)
-- [ ] TB5: editor per-tab state in memory: `takeState`, `putState`, `newState`, `snapshotState`, `tabState*`, `view` event (R57)
-- [ ] TB6: editor record conversion `tabStateToRecord` / `tabStateFromRecord` and the SS4 serialisation budgets (R57)
-- [ ] TB7: editor `replace-doc` command (R58)
+- [x] TB2: doc-model `historyToRecord` / `historyFromRecord` (D2)
+- [x] TB3: editor keys moved for the tabs (R59): Tidy Ctrl+Shift+R, Ctrl+1 and Ctrl+Shift+T freed, Zoom to 100% without a key
+- [x] TB4: editor host slots `menu` and `tabs`, tab panel, K4 order (R56)
+- [x] TB5: editor per-tab state in memory: `takeState`, `putState`, `newState`, `snapshotState`, `tabState*`, `view` event (R57)
+- [x] TB6: editor record conversion `tabStateToRecord` / `tabStateFromRecord` and the SS4 serialisation budgets (R57)
+- [x] TB7: editor `replace-doc` command (R58)
 
 ### Checkpoint A: doc-model and editor
 - [ ] `npm run check` green; coverage thresholds hold
@@ -121,12 +121,12 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [ ] Commit + push (no push unless asked)
 
 ### Phase 2: app-shell main (additive)
-- [ ] TB8: `session-index.ts` and `tab-registry.ts` pure models (SS3 index, SS11 classification, bindings and hashes)
-- [ ] TB11: main messages (T9 box, auto-save boxes, `open-in-tab`), `tab-menu-model`, the I10 handler
-- [ ] TB9: `session-store.ts` write chain, atomic store writes, I11, N7, N8
-- [ ] TB10: auto-save writer, AS5 check, I12 to I14, N9 (SEC8)
-- [ ] TB12: open-request queue of 20, I1/I3 answers `{ focus }`, I7 `session`, Save-as refusal (AS9)
-- [ ] TB13: window close and shutdown in main: chain-empty close, `discarded` deletion, `flush-session`
+- [x] TB8: `session-index.ts` and `tab-registry.ts` pure models (SS3 index, SS11 classification, bindings and hashes)
+- [x] TB11: main messages (T9 box, auto-save boxes, `open-in-tab`), `tab-menu-model`, the I10 handler
+- [x] TB9: `session-store.ts` write chain, atomic store writes, I11, N7, N8
+- [x] TB10: auto-save writer, AS5 check, I12 to I14, N9 (SEC8)
+- [x] TB12: open-request queue of 20, I1/I3 answers `{ focus }`, I7 `session`, Save-as refusal (AS9)
+- [x] TB13: window close and shutdown in main: chain-empty close, `discarded` deletion, `flush-session`
 
 ### Checkpoint B: main
 - [ ] `npm run check` green; `src/main/model` >= 90 % lines
@@ -134,39 +134,39 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [ ] Commit
 
 ### Phase 3: renderer models, flows, views
-- [ ] TB14: `model/tabs.ts` (T1, T4, list rules, reopen list, T17's replace-empty rule)
-- [ ] TB15: `model/session-record.ts` and tab status (pending, unsaved, unkept; F7)
-- [ ] TB16: `model/autosave-timer.ts` and the SS4 write schedule
-- [ ] TB17: `tab-flows` part 1: new tab, open into tabs, switch, reopen, restore (T7, T11, T12, T17, SS7)
-- [ ] TB18: `tab-flows` part 2: auto-save, outside change, Save and Save as (AS1-AS9, F5, F6)
-- [ ] TB19: `tab-flows` part 3: close a tab, unkept, window close and shutdown flush (T8, T9, SS6, SS10)
-- [ ] TB22: host keys K1, K2, K3 (`keys.ts`, `host-keys.ts`)
-- [ ] TB23: shortcuts dialog and A12 rows
-- [ ] TB24: `TabStrip.tsx` rendering, roles, markers, tooltips (T2, T3, T5, T6, T16)
-- [ ] TB25: strip interactions: reorder, overflow, scroll into view, tab menu trigger (T13, T14, CM4)
+- [x] TB14: `model/tabs.ts` (T1, T4, list rules, reopen list, T17's replace-empty rule)
+- [x] TB15: `model/session-record.ts` and tab status (pending, unsaved, unkept; F7)
+- [x] TB16: `model/autosave-timer.ts` and the SS4 write schedule
+- [x] TB17: `tab-flows` part 1: new tab, open into tabs, switch, reopen, restore (T7, T11, T12, T17, SS7)
+- [x] TB18: `tab-flows` part 2: auto-save, outside change, Save and Save as (AS1-AS9, F5, F6)
+- [x] TB19: `tab-flows` part 3: close a tab, unkept, window close and shutdown flush (T8, T9, SS6, SS10)
+- [x] TB22: host keys K1, K2, K3 (`keys.ts`, `host-keys.ts`)
+- [x] TB23: shortcuts dialog and A12 rows
+- [x] TB24: `TabStrip.tsx` rendering, roles, markers, tooltips (T2, T3, T5, T6, T16)
+- [x] TB25: strip interactions: reorder, overflow, scroll into view, tab menu trigger (T13, T14, CM4)
 
 ### Checkpoint C: the pieces exist
 - [ ] `npm run check` green; `src/renderer/app/model` >= 90 % lines
 - [ ] Commit
 
 ### Phase 4: switch-over
-- [ ] TB20: the host wires tabs and the session store; the recovery file and F4 prompts stop being used
-- [ ] TB21: recovery code, N3 and N4, `flush-recovery` and their tests deleted (after TB26: both change `index.ts`, the IPC files and the preload)
-- [ ] TB26: menu model rows (R47, R46, M6), I9 popup, ☰ button, application menu removed, Alt and F10
+- [x] TB20: the host wires tabs and the session store; the recovery file and F4 prompts stop being used
+- [x] TB21: recovery code, N3 and N4, `flush-recovery` and their tests deleted (after TB26: both change `index.ts`, the IPC files and the preload)
+- [x] TB26: menu model rows (R47, R46, M6), I9 popup, ☰ button, application menu removed, Alt and F10
 
 ### Checkpoint D: the app works with tabs
 - [ ] `npm run check` green; `npm run test:e2e` green on Windows (342 existing, rewritten where the spec supersedes them)
 - [ ] Commit
 
 ### Phase 5: tests of the whole, perf, shots, docs
-- [ ] TB27: `e2e/app-tabs.spec.ts`
-- [ ] TB28: `e2e/app-session.spec.ts`
-- [ ] TB29: `e2e/app-autosave.spec.ts`
-- [ ] TB30: new e2e for opens into tabs (second launch, queue of 20, multi-drop) and clipboard-export R13 across tabs
-- [ ] TB31: T11 budgets e2e probe, SS8 restore time, `docs/editor-perf.md`
+- [x] TB27: `e2e/app-tabs.spec.ts`
+- [x] TB28: `e2e/app-session.spec.ts`
+- [x] TB29: `e2e/app-autosave.spec.ts`
+- [x] TB30: new e2e for opens into tabs (second launch, queue of 20, multi-drop) and clipboard-export R13 across tabs
+- [x] TB31: T11 budgets e2e probe, SS8 restore time, `docs/editor-perf.md`
 - [x] TB32: shots A18, A19, A21, A01, A12 against the mock-ups
 - [x] TB33: `docs/windows-checklist.md` rows
-- [ ] TB34: `AGENTS.md`, spec statuses, DEVIATIONS item 5, todo ticks
+- [x] TB34: `AGENTS.md`, spec statuses, DEVIATIONS item 5, todo ticks
 
 ### Checkpoint Z-tabs: final (Windows 11 development machine)
 - [ ] TB35: `npm run check`, `npm run test:e2e` (including `e2e/win/`), `npm run test:e2e:os-input`, `npm run dist:win`, `npm run test:packaged`, `npm run shots`, `npm test -- --coverage`; Linux re-run listed in `docs/windows-checklist.md`; the owner's hand checks stay open

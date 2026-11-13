@@ -9,7 +9,19 @@ the owner 2026-11-12 (tabs feature set, app-shell R30–R45):** host slots for t
 strip (R56), a per-tab state seam (R57, public surface approved by the owner 2026-11-12, revised after an independent
 review: a read-only `snapshotState` and `tabStateMarkSaved`), a `replace-doc` command (R58,
 approved by the owner 2026-11-12) and moved keys (R59: Tidy Ctrl+Shift+R; Zoom to 100% has no key, owner); not
-implemented. Amended 2026-11-12 for the
+implemented at that time. **Tabs seam (R56–R59): implemented in tasks TB3–TB7 (2026-11-12) and used by
+app-shell's tab flows (TB17–TB20, 2026-11-12 to 2026-11-13); status as of 2026-11-14.** The built surface is
+the one the rows list (`index.ts` exports `EditorTabState`, `EditorTabRecord`, `tabStateCanRedo`, `tabStateCanUndo`,
+`tabStateDirty`, `tabStateDoc`, `tabStateMarkSaved`, `tabStateView`, `tabStateFromRecord`, `tabStateToRecord`; the
+controller has `takeState`, `putState`, `snapshotState`, `newState`; the `view` event; the `replace-doc` command; the
+`menu`, `tabs` and `tabPanelLabelledBy` props of `Editor`). As-built details the rows do not state: R56's slots are
+the `has-menu` class on the top bar and a `tabs-slot` between the rail and the canvas with `has-tabs` on the root (the rail
+spans both rows), the canvas sits in a `canvas-panel` with `role="tabpanel"`, and `--option-btn-compact` stays the
+shell's (the host's CSS narrows `.editor.has-tabs .btn-opt` below 1100 px); R57's `putState` of a tab's own view before the
+canvas is measured keeps its zoom and centre on the first measurement (`EditorState.viewPending`; a new or loaded
+document still gets V2 then), and `putState` of a 100-atom tab to its first derived scene took 2.0–2.7 ms (TB5, node,
+median; T11's switch budget is 100 ms). TB35 (the final automated gates) has not run and the owner's hand
+checks are open: no gate result is claimed for the tabs seam here. Amended 2026-11-12 for the
 owner's feature set: number keys for the tool rail (R50) and the structural formula switch (R51,
 R52; its drawing was svg-render question S1, answered 2026-11-12 by svg-render Decision 16 and
 R53 here: bonds twice as long, rings drawn as before). The mock-ups were updated in the same commit

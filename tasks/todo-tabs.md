@@ -14,35 +14,51 @@ tests, see them fail (RED) for the reason given, then write the code. Do not pus
 "R n", "T n", "AS n", "SS n" are rows of the specs named above; "item (n)" is the fix-round test
 list in `SPEC-app-shell.md` "Testing".
 
-## Checkpoint 2026-11-12 (paused here; continue from this note)
+## Checkpoint 2026-11-14 (34 of 35 done; TB35 is next)
 
-**State:** `main` at the commit that adds this note; `npm run check` green on a quiet machine (260
-files, 5500 tests). Not pushed. **Done (29 of 35; TB21 done 2026-11-13, see its entry):** TB1-TB27, TB29, TB30, plus fixes:
-svg-render Decision 16 oracle (seed 3343550), T8 "an unreadable record keeps the tab", a flaky
-SEC8 cleanup in `session-store.test.ts`. Tabs, auto-save, restore and the ☰ menu are live in the app.
-**Full `npm run test:e2e` has not been re-run since TB26, TB27, TB29 and TB30 were merged together**
-(each ran its own specs; TB26's full run was 340 passed / 9 failed before its fixes) — run it first.
+**State:** `main` at `0bc72d9` plus the TB34 commit. `npm run check` was green at `0bc72d9`: 261 files,
+5422 tests (the 2026-11-12 note said 260 files, 5500 tests; this is the count now). Not pushed.
+**Done (34 of 35):** TB1-TB34 (TB1-TB20, TB22-TB27, TB29 and TB30 on 2026-11-12 and 2026-11-13; TB21, TB28, TB31
+and TB32 on 2026-11-13; TB33 and TB34 on 2026-11-14), plus fixes: svg-render Decision 16 oracle (seed
+3343550), T8 "an unreadable record keeps the tab", a flaky SEC8 cleanup in `session-store.test.ts`, and two
+drag bugs found by TB32's shots. The feature set was approved and started on 2026-11-12 (its title says so);
+TB34 finished on 2026-11-14. Tabs, auto-save, restore and the ☰ menu are live in the app; the recovery code
+is gone (TB21). Checkpoints A to D above are left unticked on purpose: their boxes need a full
+`npm run test:e2e`, coverage and shots run, which is TB35's job. **No full `npm run test:e2e` run is recorded
+in this file since TB26, TB27, TB29 and TB30 were merged together** (each task ran its own specs; TB26's full
+run was 340 passed / 9 failed before its fixes; TB32's `npm run shots` was 119 passed): TB35 runs it first.
 
-**Next, in order:** TB21 (retire the recovery code; dead now: `fileFlows`, `session`, the renderer's
-recovery code, `session.ts` `sessionUpdate`, N2, N3, N4, main's `recovery` wiring) -> TB28 (e2e
-session restore; builds on `app-session.spec.ts`, `session-steps.ts`) -> TB31 (perf) and TB32 (shots:
-look at A14 and `out/shots/A11/menu-960.png`; the ☰ popup's look is in no shot) and TB33 (Windows
-checklist) -> TB34 (AGENTS.md and specs) -> TB35 (gates on a quiet machine: check, full e2e,
-e2e/win, os-input, `dist:win`, `test:packaged`, shots).
+**Next:** TB35 only (the automated gates on a quiet machine: check, coverage, full e2e with `e2e/win`,
+os-input, `dist:win`, `test:packaged`, shots). It has not run. No gate result of the tabs feature set is
+claimed anywhere yet, and the release is not declared. The owner's hand checks (the "Re-checks for the tabs
+feature set" boxes in `docs/windows-checklist.md`) and the teacher's-laptop boxes (the cold start with 10
+tabs, Checkpoint E32) stay open.
 
-**Spec text owed to TB34** (built differently; record "as built"): TH2 helpers are `readTabs()`,
-`activateTab(id)`, `menuRequests()` (no `history()`); F6's Save-as folder comes from the active tab's
-binding in main (`activeBinding`), no N2; I7 always answers `recovery: null`; M4 tooltip = title
-"Menu (Alt or F10)" + help "File, Edit, View and Help.", `aria-expanded` always rendered; W4
-`autoHideMenuBar: false` still set; W6 at 125 % a 960×640 content is a 978×687 window; R37/R22 queue:
-one request in delivery + 20 waiting, so a burst of 22 opens 21 and drops the 22nd (a drop of 22
-files opens 21); T13 "a right press cancels a drag" is untested (Chromium sends no `pointerdown` for
-a chorded right press); a NumLock-off Ctrl+Numpad digit is PageUp/Down by `key`.
+**Spec text owed to TB34, done in TB34 (2026-11-14):** the "as built" notes are in
+`SPEC-app-shell.md` (R22 and R37, W4, W6, M4, the keys table with R45, T13, F6, I7, TH2; TH7, TH8 and TH9 were
+already there and are unchanged), `SPEC-doc-model.md` (D2) and `SPEC-editor.md` (status, R56-R59). What they
+say, checked against the code on 2026-11-14: TH2's tab helpers are `readTabs()`, `activateTab(id)` and
+`menuRequests()` (no `tabs()`, no `history()`); F6's Save-as folder comes from the active tab's binding in main
+(`sessionStore.activeBinding()`, no N2); **I7 has no `recovery` field at all** (TB21 removed it; the earlier
+note's "always answers `recovery: null`" was stale); M4 tooltip is the title "Menu (Alt or F10)" with the
+help line "File, Edit, View and Help." and `aria-expanded` is always rendered (`false` at rest); W4
+`autoHideMenuBar: false` is still set (the spec said "left at its default"); W6 at 125 % display scale a
+960 x 640 content is a 978 x 687 outer window (re-measured 2026-11-14 with `e2e/app-window.spec.ts`
+"W6/R32"); R37 and R22: the request being delivered does not count as waiting, so one in delivery plus 20
+waiting means a burst of 22 opens 21 and drops the 22nd, and a drop of 22 files opens 21 (TB30's description
+above, "the 21st is dropped", is superseded by that); T13 "a right press cancels a drag" has no e2e test
+(Chromium sends no `pointerdown` for a chorded right press), only the unit test of `cancelsDrag`; with Num Lock
+off, Ctrl+Numpad3 and Ctrl+Numpad9 are next and previous tab (`key` is `PageDown`, `PageUp`, tested before
+`code`), the other pad digits still go to their tab by `code`, and none of it is tested by e2e.
 
-**Open decisions for the owner:** (1) `src/renderer/editor/model/tidy.prop.test.ts` (~1 s alone, same
-as before the tabs work) times out at the 5 s default only while other agents load the machine;
-similar property suites set an explicit timeout, the bar forbids raising one without approval.
-(2) The open-request limit: keep "20 waiting" (a drop of 22 opens 21) or cap a drop at 20 files.
+**Open decisions for the owner (not decided in TB34; both are recorded in the specs as open):** (1)
+`src/renderer/editor/model/tidy.prop.test.ts` (~1 s alone, same as before the tabs work) times out at the 5 s
+default only while other agents load the machine; similar property suites set an explicit timeout, the bar
+forbids raising one without approval. (2) The open-request limit: keep "20 waiting" (a request in delivery
+plus 20 waiting, so a drop of 22 opens 21) or cap a drop at 20 files in total.
+
+**Owner's TB32 mock-up differences (unresolved, TH9 in `SPEC-app-shell.md` lists them as (a) to (d)):** the
+specs and the built app agree and the mock-ups differ; they need the owner, not an agent.
 
 **How the work was run:** one agent per task in its own git worktree (`.claude/worktrees/`, ignored;
 `node_modules` as a junction to the main checkout's), one commit per task on its branch, then
@@ -1423,9 +1439,21 @@ stay open.
 **Tests first:** none (docs).
 
 **Acceptance criteria:**
-- [ ] `AGENTS.md` names every new file family and rule a new agent needs, and nothing it does not have
-- [ ] Spec statuses match the real state; no "approved" wording is changed
-- [ ] `npm run check` green
+- [x] `AGENTS.md` names every new file family and rule a new agent needs, and nothing it does not have (2026-11-14: the project paragraph and table rows, the doc-model D2 note, the editor seam and moved-keys notes, the app-shell notes on the session store, tab flows, hashes, open queue, keys and the missing menu bar, the test hooks and flags, the gotchas and the maintenance paragraph. **Per the owner's instruction `AGENTS.md` and `CLAUDE.md` are never staged: the edit is in the task's worktree, unstaged and uncommitted, and the orchestrator copies that one file to `main`, also unstaged; `CLAUDE.md` is untouched.** The commit of this task therefore does not contain it)
+- [x] Spec statuses match the real state; no "approved" wording is changed (`SPEC-app-shell.md`, `SPEC-editor.md` and the `SPEC-doc-model.md` D2 comment, row and open question say what was built and when; the one status word that changed is "Not implemented"; see the Result below for the date rule)
+- [x] `npm run check` green (2026-11-14, exit 0, 261 files, 5422 tests, run on its own in the foreground before the commit)
+
+**Result (2026-11-14):** Only `SPEC-app-shell.md`, `SPEC-editor.md`, `SPEC-doc-model.md`, `tasks/plan-tabs.md`
+and this file are in the commit (plus the unstaged `AGENTS.md` described above). "Implemented 2026-11-12
+(TB1-TB35)" in the description above was not written: the work was approved and started on 2026-11-12, TB1-TB34
+were done by 2026-11-14, and TB35 has not run, so the specs say "implemented in tasks TB1-TB34" with those dates
+and claim no gate. `tasks/plan-tabs.md`: TB1-TB31 and TB34 ticked (TB32 and TB33 already were); the checkpoints A to D
+and Z-tabs stay unticked (they need TB35's runs); `CAPABILITY-MAP.md` is unchanged. Owner questions left open and
+recorded as open: the `tidy.prop.test.ts` timeout under load and the open-request limit; the TB32 mock-up
+differences stay in TH9. W6's 978 x 687 was re-measured on 2026-11-14 with `e2e/app-window.spec.ts` "W6/R32"
+(after `npx electron-vite build`; 1 passed); the Num Lock-off keys were checked with `hostKey` (Numpad3 and
+Numpad9 are next and previous tab; the other pad digits go by `code`). No code, test, golden, fixture, budget,
+timeout, threshold or dependency was changed.
 
 **Verification:** `npm run check`.
 
