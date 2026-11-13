@@ -908,6 +908,79 @@ describe('auto-save writer (TB10)', () => {
     expect(await restarted.checkFile(A)).toEqual({ tabId: A, written: sha(OLD), state: 'same' });
   });
 
+  describe('the test hold (TB28, TH7)', () => {
+    it('`hold` is asked after a record write has landed and the chain waits for it', async () => {
+      const opened = gate();
+      const asked: [string, string][] = [];
+      const store = await openTab({
+        hold: async (point, tabId) => {
+          asked.push([point, tabId]);
+          // The record is already on disk when the hold is asked.
+          expect(await read(join(tabs, `${A}.json`))).toBe(record('Esterification.chalk', 'chalk'));
+          await opened.promise;
+        },
+      });
+      const written = store.writeRecord({
+        tabId: A,
+        text: record('Esterification.chalk', 'chalk'),
+      });
+      let indexed = false;
+      const next = store
+        .updateIndex({ tabs: [{ ...listed(A), unsaved: true }], active: A, discarded: [] })
+        .then(() => {
+          indexed = true;
+        });
+      await expect.poll(() => asked.length).toBe(1);
+      expect(asked).toEqual([['record-written', A]]);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(indexed).toBe(false);
+      opened.open();
+      await Promise.all([written, next]);
+      expect(indexed).toBe(true);
+    });
+
+    it('`hold` is asked after the file write and before the index with the written hash', async () => {
+      const opened = gate();
+      const asked: [string, string][] = [];
+      const store = await openTab({
+        hold: async (point, tabId) => {
+          if (point !== 'file-written') return;
+          asked.push([point, tabId]);
+          await opened.promise;
+        },
+      });
+      const saved = store.autoSave({ tabId: A, text: NEW });
+      await expect.poll(() => asked.length).toBe(1);
+      // The power cut at this point: the file holds the in-flight text, the index says `writing`.
+      expect(await read(ester)).toBe(NEW);
+      expect(await indexTab(A)).toMatchObject({ fileHash: sha(OLD), writing: sha(NEW) });
+      const restarted = make();
+      await restarted.restored();
+      expect(await restarted.checkFile(A)).toEqual({ tabId: A, written: sha(NEW), state: 'same' });
+      opened.open();
+      expect(await saved).toEqual({ tabId: A, ok: true, sha256: sha(NEW) });
+    });
+
+    it('is not asked for a failed write, and an absent `hold` changes nothing', async () => {
+      const asked: string[] = [];
+      const failing = make({
+        hold: (point) => {
+          asked.push(point);
+          return Promise.resolve();
+        },
+        rename: () => Promise.reject(errno('EACCES')),
+      });
+      await failing.restored();
+      expect(await failing.writeRecord({ tabId: A, text: record('x') })).toMatchObject({
+        ok: false,
+      });
+      expect(asked).toEqual([]);
+      const plain = make();
+      await plain.restored();
+      expect(await plain.writeRecord({ tabId: B, text: record('y') })).toEqual({ ok: true });
+    });
+  });
+
   it('AS5: a change of the same size and the same modified time is `changed` (FAT32, Explorer copies)', async () => {
     const store = await openTab();
     // FAT32 keeps modified times in 2 s steps: the outside copy lands on the same time.

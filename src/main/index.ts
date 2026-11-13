@@ -40,6 +40,7 @@ import { fileArg, testFlags } from './model/args';
 import { kindOfPath } from './model/file-refs';
 import { guardClose, installQuitFlush } from './lifecycle';
 import { createSessionStore } from './session-store';
+import { createStoreHold } from './model/store-hold';
 import { pathKeyOf } from './model/tab-registry';
 import { createRecent } from './model/recent';
 import { createOpenRequests, openTarget, type OpenRequest } from './model/open-requests';
@@ -273,6 +274,15 @@ async function startApp(): Promise<void> {
     folder: join(app.getPath('userData'), 'session'),
     log: (message) => log('session', message),
     normalizePath: pathKeyOf(process.platform === 'win32'),
+    // TH7, SEC12: the chain-holding test seam exists only when the test flags are honoured; a packaged
+    // or flagless run passes no hold, so nothing reads `__chalkbondTestMain.hold`.
+    ...(flags.hooks
+      ? {
+          hold: createStoreHold(
+            () => (globalThis as { __chalkbondTestMain?: unknown }).__chalkbondTestMain,
+          ),
+        }
+      : {}),
   });
   const documents = (): string => app.getPath('documents');
   // F2, F6, ST2: the last open, save and export folders, remembered in settings.json.

@@ -63,6 +63,7 @@ import {
   type TabBinding,
   type TabRegistry,
 } from './model/tab-registry';
+import type { HoldPoint } from './model/store-hold';
 import { writeProblem } from './model/write-problem';
 
 /** SS2, SEC8: the largest record main writes or reads (UTF-8 bytes). */
@@ -90,6 +91,12 @@ export interface SessionStoreOptions {
   remove?(path: string): Promise<void>;
   /** Reads a store file; injected so tests can make a read fail. */
   readBytes?(path: string): Promise<Uint8Array>;
+  /**
+   * TB28, TH7: asked after a record write and after an auto-save's file write, each time it has
+   * landed; the chain waits for the answer. Only a test build passes it (index.ts), so a test can
+   * kill the process exactly there; production never does.
+   */
+  hold?(point: HoldPoint, tabId: string): Promise<void>;
 }
 
 type ReadProblem = 'missing' | 'unreadable' | 'too-large';
@@ -377,6 +384,7 @@ export function createSessionStore(options: SessionStoreOptions) {
       { path: result.entry.path, kind: 'chalk', writable: true },
       bytes,
     );
+    if (written.ok) await options.hold?.('file-written', tabId);
     registry = written.ok ? finishWrite(registry, tabId, sha256) : failWrite(registry, tabId);
     await persistBindings();
     if (!written.ok) {
@@ -525,10 +533,12 @@ export function createSessionStore(options: SessionStoreOptions) {
           } catch (error) {
             return { ok: false, problem: writeProblem(codeOf(error)) };
           }
-          return files.write(
+          const written = await files.write(
             { path: join(tabsFolder, name), kind: 'chalk', writable: true },
             bytes,
           );
+          if (written.ok) await options.hold?.('record-written', tabId);
+          return written;
         },
         { ok: false, problem: 'write-failed' },
       );

@@ -828,7 +828,7 @@ is sent only when title, dirty or state changed.
 | SEC9 | The main process imports no `src/core` module and parses no user content beyond size and signature checks | lint probe |
 | SEC10 | The hidden PDF window (clipboard-export PD1, CS6) | clipboard-export CS6 |
 | SEC11 | `shell.openExternal` is never used; `shell.openPath` only for the bundled `THIRD-PARTY-NOTICES.txt` | tooling test: `src/main/**` contains no `openExternal` and one `openPath` call site |
-| SEC12 | Test flags (TH1) are honoured only when `!app.isPackaged` | unit test of `args.ts` `testFlags(argv, isPackaged)`; packaged e2e (A17) finds no `__chalkbondTest` |
+| SEC12 | Test flags (TH1) are honoured only when `!app.isPackaged`; the TH7 store hold is wired only under `flags.hooks` | unit test of `args.ts` `testFlags(argv, isPackaged)`; packaged e2e (A17) finds no `__chalkbondTest` and no `__chalkbondTestMain` (so no `.hold`); `tests/tooling/store-hold-gating.test.ts` |
 | SEC13 | The renderer CSP meta stays `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'` | tooling test reads `src/renderer/index.html` |
 | SEC14 | A dropped file's path is read in the preload (`webUtils.getPathForFile`) and sent by the preload; the page cannot pass a path string | e2e: calling `openDroppedFile` with a JS-made `File` returns `unsupported` with an empty name and opens nothing |
 | SEC15 | Native box texts come from `model/messages.ts`; the renderer sends only `{ problem, name }` with a base name | unit tests of `messages.ts` (every F14 row) and of the I5 schema (a name with `\` is rejected) |
@@ -905,6 +905,21 @@ const controller = createEditorController({
   template) and looked at by a human (checklist).
 - **TH6** `playwright.config.ts`: project `e2e` sets `testIgnore: /[\\/]win[\\/]/` on non-Windows
   platforms (R10); `shots` unchanged.
+- **TH7** (2026-11-13, TB28; recorded as built) A main-process seam holds the session store's chain
+  so an e2e test can kill the process between two writes of SS5's order (fix item (5)).
+  `createSessionStore` takes an optional `hold(point, tabId)` and awaits it after a successful
+  record write (`record-written`) and after a successful auto-save file write, before the index
+  with the written hash (`file-written`). `index.ts` passes it only when `flags.hooks` is true (TH1:
+  an unpackaged build started with `--chalkbond-test-hooks`), built by `createStoreHold`
+  (`src/main/model/store-hold.ts`, pure), which reads `globalThis.__chalkbondTestMain.hold = {
+  point, tabId?, reached }` at every call: a call at the armed point (for the armed tab, or any tab
+  when `tabId` is absent) adds 1 to `reached` and never settles, so the chain stays there until the
+  test kills the process. No new flag (`args.ts` is unchanged); a malformed `hold` is ignored. A
+  packaged or flagless run passes the store no hold: `tests/tooling/store-hold-gating.test.ts`
+  asserts the single wiring site, `e2e/app-session.spec.ts` runs a flagless launch with the hold
+  armed from outside (the window still closes, so the chain was not held) and `e2e/packaged` asserts
+  that the test object, and so `.hold`, does not exist in the packaged app. Unit tests:
+  `store-hold.test.ts` and `session-store.test.ts` ("the test hold").
 
 ### Logging
 

@@ -1238,8 +1238,8 @@ closing that tab asks, closing the window asks for that tab only and Cancel keep
 **Tests first:** the spec is the test.
 
 **Acceptance criteria:**
-- [ ] SC20 and R51 are asserted as described; the file ends with `blockedRequests === 0`
-- [ ] The hook that holds the chain exists only for an unpackaged build with `--chalkbond-test-hooks` and is asserted absent when packaged (`e2e/packaged`)
+- [x] SC20 and R51 are asserted as described; the file ends with `blockedRequests === 0` (2026-11-13, `e2e/app-session.spec.ts`, 23 tests: three tabs of three kinds, views, 100 undo steps and no redo steps, the dots from the index; item (5) at both hold points; damaged index, orphan, damaged record and record drawing, damaged file-tab record; R51 with the deny ACL; every TB28 test asserts `expectNoNetwork` before the app closes or is killed, except the flagless TH7 test, which has no counter without the flag)
+- [x] The hook that holds the chain exists only for an unpackaged build with `--chalkbond-test-hooks` and is asserted absent when packaged (`e2e/packaged`) (2026-11-13: TH7; `createStoreHold`, wired only under `flags.hooks`; `store-hold-gating.test.ts`; the flagless e2e; the packaged test "TH7, SEC12")
 
 **Verification:** `npx playwright test --project=e2e e2e/app-session.spec.ts`, then `npm run check`.
 

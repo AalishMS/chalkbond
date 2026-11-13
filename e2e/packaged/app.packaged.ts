@@ -65,6 +65,23 @@ test('SEC12: no test hook exists although the flag was passed', async () => {
   ).toBe(true);
 });
 
+test('TH7, SEC12: the session-store hold seam is absent when packaged: there is no test object to arm it on', async () => {
+  const page = await app.firstWindow();
+  await page.waitForLoadState('load');
+  // The seam (TB28) is read from the main-process test object, which a packaged app never creates
+  // although the flag was passed; main builds the store without a hold. Nothing here writes to the
+  // real user data (this file only reads and closes).
+  expect(
+    await app.evaluate(() => {
+      const main = (globalThis as { __chalkbondTestMain?: { hold?: unknown } }).__chalkbondTestMain;
+      return { object: main === undefined, hold: main?.hold === undefined };
+    }),
+  ).toEqual({ object: true, hold: true });
+  expect(
+    await page.evaluate(() => 'undefined' === typeof (window as never)['__chalkbondTest']),
+  ).toBe(true);
+});
+
 test('there is no application menu; the ☰ popup has File, Edit, View and Help', async () => {
   expect(await app.evaluate(({ Menu }) => Menu.getApplicationMenu())).toBeNull();
   const labels = (await menuItems(app))

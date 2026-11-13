@@ -3,7 +3,8 @@
 // then kills the process; nothing queries the dead app afterwards. Relaunches reuse the same
 // user-data folder. Records are read as the renderer writes them (SS3): the drawing is the
 // `.chalk` text in `editor.file`.
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { chmodSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, type ElectronApplication, type Page } from '@playwright/test';
 import { parse, type Doc } from '../src/core/doc-model';
@@ -119,4 +120,142 @@ export async function closeWindowForReal(app: ElectronApplication): Promise<void
     BrowserWindow.getAllWindows()[0]?.close();
   });
   await exited;
+}
+
+// ---- TB28: the index, the main hold, an unwritable store, undo-step counts ---------------------
+
+/** A tab entry of `index.json` as main writes it (SS3). */
+export interface IndexTab {
+  id: string;
+  kind: 'untitled' | 'chalk' | 'picture' | 'kept';
+  name: string;
+  path: string | null;
+  fileHash: string | null;
+  written: string | null;
+  writing: string | null;
+  unsaved: boolean;
+  warning: boolean;
+  view: { zoom: number; centre: { x: number; y: number } } | null;
+}
+
+/** `userData/session/index.json` parsed, or null while there is none (or it does not parse). */
+export function readIndex(
+  userData: string,
+): { tabs: IndexTab[]; active: string; discarded: string[] } | null {
+  const file = indexFile(userData);
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8')) as {
+      tabs: IndexTab[];
+      active: string;
+      discarded: string[];
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Names in `userData/session/damaged/` (SS11), sorted. */
+export function damagedNames(userData: string): string[] {
+  const folder = join(sessionFolder(userData), 'damaged');
+  return existsSync(folder) ? readdirSync(folder).sort() : [];
+}
+
+/** Where main's test hold stops the session store's chain (TH7): after a record or after a file write. */
+export type HoldPoint = 'record-written' | 'file-written';
+
+/**
+ * Arms main's test hold (TH7, `__chalkbondTestMain.hold`) for `tabId`: the chain stops at `point`
+ * the next time it gets there, and `heldCount` says that it did. Main honours it only for an
+ * unpackaged build started with `--chalkbond-test-hooks`.
+ */
+export async function holdStore(
+  app: ElectronApplication,
+  point: HoldPoint,
+  tabId: string,
+): Promise<void> {
+  await app.evaluate(
+    (_electron, hold) => {
+      const main = (globalThis as { __chalkbondTestMain?: { hold?: unknown } }).__chalkbondTestMain;
+      if (main === undefined) throw new Error('no __chalkbondTestMain');
+      main.hold = hold;
+    },
+    { point, tabId, reached: 0 },
+  );
+}
+
+/** How often the chain has reached the armed hold (0 when none is armed). */
+export const heldCount = (app: ElectronApplication): Promise<number> =>
+  app.evaluate(
+    () =>
+      (globalThis as { __chalkbondTestMain?: { hold?: { reached?: number } } }).__chalkbondTestMain
+        ?.hold?.reached ?? 0,
+  );
+
+/** The `n` objects of `text` (one commit each) added to the active drawing through the hook. */
+export async function addSteps(page: Page, n: number, text = 'methane'): Promise<void> {
+  const before = Object.keys((await readDocument(page)).atoms).length;
+  await page.evaluate(
+    ({ count, name }) => {
+      const hook = (
+        window as unknown as {
+          __chalkbondTest: { run(cmd: { type: 'insert-text'; text: string }): void };
+        }
+      ).__chalkbondTest;
+      for (let i = 0; i < count; i++) hook.run({ type: 'insert-text', text: name });
+    },
+    { count: n, name: text },
+  );
+  await expect
+    .poll(async () => Object.keys((await readDocument(page)).atoms).length)
+    .toBe(before + n);
+}
+
+/**
+ * How many redo steps and then how many undo steps the active tab holds: each is run until the
+ * drawing stops changing. Leaves the tab fully undone (redo steps then exist), so read it last.
+ */
+export async function countSteps(page: Page): Promise<{ redo: number; undo: number }> {
+  return page.evaluate(() => {
+    const hook = (
+      window as unknown as {
+        __chalkbondTest: { run(cmd: 'undo' | 'redo'): void; getDoc(): unknown };
+      }
+    ).__chalkbondTest;
+    const steps = (cmd: 'undo' | 'redo'): number => {
+      let n = 0;
+      for (;;) {
+        const before = hook.getDoc();
+        hook.run(cmd);
+        if (hook.getDoc() === before) return n;
+        n++;
+      }
+    };
+    const redo = steps('redo');
+    const undo = steps('undo');
+    return { redo, undo };
+  });
+}
+
+/**
+ * R51 / SS6: makes `userData/session` unwritable (a deny ACE with `icacls` on Windows, mode 0500 on
+ * `tabs/` elsewhere) and returns the function that undoes it. The folder must exist.
+ */
+export function lockSession(userData: string): () => void {
+  const sessionDir = sessionFolder(userData);
+  const win = process.platform === 'win32';
+  const user = `${process.env['USERDOMAIN'] ?? ''}\\${process.env['USERNAME'] ?? ''}`;
+  if (win) {
+    execFileSync('icacls', [sessionDir, '/deny', `${user}:(OI)(CI)(W,DC)`], { stdio: 'ignore' });
+  } else {
+    chmodSync(join(sessionDir, 'tabs'), 0o500);
+  }
+  return () => {
+    try {
+      if (win) execFileSync('icacls', [sessionDir, '/remove:d', user], { stdio: 'ignore' });
+      else chmodSync(join(sessionDir, 'tabs'), 0o700);
+    } catch {
+      // The folder may be gone already.
+    }
+  };
 }
