@@ -13,7 +13,6 @@ import { baseName, kindOfPath, OPEN_KINDS, withExtension, type FileRefs } from '
 import {
   errorBox,
   fileErrorBox,
-  recoverBox,
   replaceBox,
   saveChangesBox,
   type BoxOptions,
@@ -100,14 +99,10 @@ export function createDialogs({ port, refs, exists, folders }: DialogOptions) {
     },
 
     /** I4. */
-    async ask<R extends AskRequest>(request: R): Promise<AskAnswer<R>> {
-      if (request.kind === 'recover') {
-        const { response } = await port.box(recoverBox());
-        return (response === 1 ? 'delete' : 'recover') as AskAnswer<R>;
-      }
+    async ask(request: AskRequest): Promise<AskAnswer> {
       const { response } = await port.box(saveChangesBox(request.name));
       const answers = ['save', 'discard', 'cancel'] as const;
-      return (answers[response] ?? 'cancel') as AskAnswer<R>;
+      return answers[response] ?? 'cancel';
     },
 
     /** I5: the F14 box, or the auto-save or keep box for a request with a `context`. */

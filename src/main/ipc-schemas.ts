@@ -84,10 +84,7 @@ export const printPdfSchema = z
     heightPt: pagePt,
   })
   .strict();
-export const askSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('save-changes'), name: baseName }).strict(),
-  z.object({ kind: z.literal('recover') }).strict(),
-]);
+export const askSchema = z.object({ kind: z.literal('save-changes'), name: baseName }).strict();
 // I5 (SEC15): `{ problem, name }`; the auto-save and keep boxes add a `context`. Main builds every
 // text (`model/messages.ts`); the renderer never sends one.
 export const fileErrorSchema = z.union([
@@ -152,8 +149,7 @@ export const appMenuSchema = z
   .object({ state: menuStateSchema, x: z.number().finite(), y: z.number().finite() })
   .strict();
 
-// A8 (SPEC-app-shell.md N2, N5): the session file by ref (null for Untitled) and the close answer.
-export const sessionFileSchema = z.object({ ref: fileRefId.nullable() }).strict();
+// A8 (SPEC-app-shell.md N5): the close answer.
 export const closeOkSchema = z.object({}).strict();
 
 // A10 (SPEC-app-shell.md I8, ST2): a partial RendererSettings; no path, folder, window or recent.
@@ -173,20 +169,6 @@ export const setSettingsSchema = z
 
 // A13 (SPEC-app-shell.md I6, CM1): the canvas context menu's kind and the menu state now.
 export const contextMenuSchema = z.object({ onItem: z.boolean(), state: menuStateSchema }).strict();
-
-// A14 (SPEC-app-shell.md N3, N4; RC1, RC2): the committed drawing's text (up to 20 MiB of UTF-8,
-// starting "{") and a base name; the clear takes nothing.
-export const writeRecoverySchema = z
-  .object({
-    text: z
-      .string()
-      .max(maxDrawingBytes)
-      .startsWith('{')
-      .refine((text) => Buffer.byteLength(text, 'utf8') <= maxDrawingBytes),
-    name: baseName,
-  })
-  .strict();
-export const clearRecoverySchema = z.object({}).strict();
 
 // A15 (SPEC-app-shell.md I3, SEC14): the one request that carries a path, sent by the preload
 // from `webUtils.getPathForFile` (`''` for a JS-made File, which main answers `unsupported`).

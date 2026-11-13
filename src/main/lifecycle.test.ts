@@ -1,8 +1,8 @@
-// F13 close, RC2 normal close, RC5 shutdown, SS10 and the one quit flush (SPEC-app-shell.md) with
-// fake windows and a fake session chain: a normal close waits for the recovery chain (N4 then N5)
-// and for the session chain to be empty, then deletes the discarded records on the empty chain and
-// closes once (TB13); a gone renderer or a close after `session-end` (R24) closes at once, without
-// the prompt, the wait or the deletion; and quit flushes settings and recovery once.
+// F13 close, RC5 shutdown, SS10 and the one quit flush (SPEC-app-shell.md) with fake windows and a
+// fake session chain: the one close path (TB21): N5 waits for the session chain to be empty, then
+// deletes the discarded records on the empty chain and closes once; a gone renderer or a close
+// after `session-end` (R24) closes at once, without the prompt, the wait or the deletion; and quit
+// flushes settings and the session store once.
 import { EventEmitter } from 'node:events';
 import { describe, expect, it, vi } from 'vitest';
 import { guardClose, installQuitFlush } from './lifecycle';
@@ -71,12 +71,10 @@ function fakeChain() {
 
 function setup() {
   const win = fakeWindow();
-  const flush = deferred();
   const closing = vi.fn();
-  const recoveryIdle = vi.fn(() => flush.promise);
   const sessionChain = fakeChain();
-  const guard = guardClose(win, { closing, recoveryIdle, sessionChain });
-  return { win, guard, closing, recoveryIdle, flush, sessionChain };
+  const guard = guardClose(win, { closing, sessionChain });
+  return { win, guard, closing, sessionChain };
 }
 
 /** Lets every settled promise run its handlers (a chain of a few dozen steps). */
@@ -85,7 +83,7 @@ async function settle(): Promise<void> {
 }
 const never = () => new Promise<void>(() => undefined);
 
-describe('guardClose (F13, RC2, RC5)', () => {
+describe('guardClose (F13, RC5, SS10)', () => {
   it('before the first N1 a close goes ahead at once', () => {
     const { win, closing } = setup();
     expect(win.close().prevented).toBe(false);
@@ -108,7 +106,6 @@ describe('guardClose (F13, RC2, RC5)', () => {
       const win = fakeWindow();
       const ports = {
         closing: vi.fn(),
-        recoveryIdle: () => Promise.resolve(),
         sessionChain: fakeChain(),
         requestClose,
       };
@@ -124,37 +121,20 @@ describe('guardClose (F13, RC2, RC5)', () => {
     expect(ready.win.sent).toEqual([]);
   });
 
-  it('N5 closes only after the recovery chain is idle (the N4 sent before it is done), once', async () => {
-    const { win, guard, closing, recoveryIdle, flush } = setup();
+  it('N5 with an idle session chain deletes the discarded records and closes once', async () => {
+    const { win, guard, closing, sessionChain } = setup();
     guard.rendererReady();
     guard.closeOk();
     guard.closeOk(); // a duplicate answer does not close twice
-    await Promise.resolve();
-    expect(recoveryIdle).toHaveBeenCalledTimes(1);
-    expect(win.closes).toBe(0);
-    flush.resolve();
     await vi.waitFor(() => expect(win.destroyed).toBe(true));
     expect(win.closes).toBe(1);
     expect(closing).toHaveBeenCalledTimes(1);
-  });
-
-  it('a failing recovery chain still lets the window close', async () => {
-    const win = fakeWindow();
-    const closing = vi.fn();
-    const guard = guardClose(win, {
-      closing,
-      recoveryIdle: () => Promise.reject(new Error('disk')),
-      sessionChain: fakeChain(),
-    });
-    guard.rendererReady();
-    guard.closeOk();
-    await vi.waitFor(() => expect(win.destroyed).toBe(true));
+    expect(sessionChain.events).toEqual(['delete discarded']);
   });
 
   it('SS10: N5 with session writes in flight waits for every one, deletes the discarded records on the empty chain, then closes once', async () => {
-    const { win, guard, closing, flush, sessionChain } = setup();
+    const { win, guard, closing, sessionChain } = setup();
     guard.rendererReady();
-    flush.resolve();
     const slow = deferred();
     void sessionChain.add('record', () => slow.promise);
     void sessionChain.add('auto-save');
@@ -173,9 +153,8 @@ describe('guardClose (F13, RC2, RC5)', () => {
   });
 
   it('SS10: a write that arrives while the chain drains is waited for too', async () => {
-    const { win, guard, flush, sessionChain } = setup();
+    const { win, guard, sessionChain } = setup();
     guard.rendererReady();
-    flush.resolve();
     const first = deferred();
     const late = deferred();
     void sessionChain.add('record', () => first.promise);
@@ -202,7 +181,6 @@ describe('guardClose (F13, RC2, RC5)', () => {
     });
     const guard = guardClose(win, {
       closing: vi.fn(),
-      recoveryIdle: () => Promise.resolve(),
       sessionChain,
     });
     guard.rendererReady();
@@ -215,25 +193,9 @@ describe('guardClose (F13, RC2, RC5)', () => {
     expect(sessionChain.events).toEqual(['delete discarded', 'index']);
   });
 
-  it('SS10: the close waits for both chains: an empty session chain is not enough while recovery is busy', async () => {
-    const { win, guard, flush, sessionChain } = setup();
-    guard.rendererReady();
-    const slow = deferred();
-    void sessionChain.add('record', () => slow.promise);
-    guard.closeOk();
-    slow.resolve();
-    await vi.waitFor(() => expect(sessionChain.events).toEqual(['record']));
-    await settle();
-    expect(win.destroyed).toBe(false); // the recovery chain is not idle yet
-    flush.resolve();
-    await vi.waitFor(() => expect(win.destroyed).toBe(true));
-    expect(sessionChain.events).toEqual(['record', 'delete discarded']);
-  });
-
   it('SS10: a failing session write, or a failing deletion, does not block the close', async () => {
-    const { win, guard, flush, sessionChain } = setup();
+    const { win, guard, sessionChain } = setup();
     guard.rendererReady();
-    flush.resolve();
     sessionChain.deleteDiscarded.mockImplementation(() => Promise.reject(new Error('EPERM')));
     void sessionChain.add('record', () => Promise.reject(new Error('ENOSPC')));
     void sessionChain.add('index');
@@ -250,7 +212,6 @@ describe('guardClose (F13, RC2, RC5)', () => {
     sessionChain.idle.mockImplementation(() => Promise.reject(new Error('broken')));
     const guard = guardClose(win, {
       closing: vi.fn(),
-      recoveryIdle: () => Promise.resolve(),
       sessionChain,
     });
     guard.rendererReady();
@@ -292,11 +253,10 @@ describe('guardClose (F13, RC2, RC5)', () => {
   });
 
   it('R24: query-session-end waits for nothing and touches neither chain nor the window', () => {
-    const { win, guard, closing, recoveryIdle, sessionChain } = setup();
+    const { win, guard, closing, sessionChain } = setup();
     guard.rendererReady();
     void sessionChain.add('record', never);
     win.emit('query-session-end', asking());
-    expect(recoveryIdle).not.toHaveBeenCalled();
     expect(sessionChain.idle).not.toHaveBeenCalled();
     expect(sessionChain.deleteDiscarded).not.toHaveBeenCalled();
     expect(win.closes).toBe(0);
@@ -326,9 +286,8 @@ describe('guardClose (F13, RC2, RC5)', () => {
   });
 
   it('R24: a close after session-end goes ahead even while an N5 drain is waiting', async () => {
-    const { win, guard, flush, sessionChain } = setup();
+    const { win, guard, sessionChain } = setup();
     guard.rendererReady();
-    flush.resolve();
     void sessionChain.add('record', never);
     guard.closeOk();
     await settle();
@@ -348,7 +307,7 @@ describe('guardClose (F13, RC2, RC5)', () => {
   });
 });
 
-describe('installQuitFlush (settings and recovery, once)', () => {
+describe('installQuitFlush (settings and the session store, once)', () => {
   function fakeApp() {
     const app = Object.assign(new EventEmitter(), {
       quits: 0,

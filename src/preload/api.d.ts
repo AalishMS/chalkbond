@@ -34,7 +34,6 @@ import type {
   TabMenuAnswer,
   TabMenuRequest,
   SessionUpdate,
-  WriteRecoveryRequest,
 } from '../shared/ipc-types';
 /** The API the preload script exposes on `window.chalkbond`. Grows as app-shell features land. */
 export interface ChalkbondApi {
@@ -57,7 +56,7 @@ export interface ChalkbondApi {
   /** C5: prints the export SVG to a one-page PDF in a hidden window (PD1). */
   printPdf(request: PrintPdfRequest): Promise<PrintPdfResponse>;
   /** I4: a native question box. */
-  ask<R extends AskRequest>(request: R): Promise<AskAnswer<R>>;
+  ask(request: AskRequest): Promise<AskAnswer>;
   /** I5: the F14 error box for `{ problem, name }` (a base name). */
   showFileError(problem: FileProblem, name: string): Promise<void>;
   /** I5 (AS6, AS7, SS6): the auto-save box (a failed write, `missing`, changed outside) for a base name. */
@@ -76,8 +75,6 @@ export interface ChalkbondApi {
   setSettings(value: Partial<RendererSettings>): Promise<void>;
   /** N1: the window title (W3). */
   updateSession(value: SessionUpdate): void;
-  /** N2: the session's file (null: Untitled after New); main keeps the folders, never the page. */
-  sessionFile(ref: FileRef | null): void;
   /** N5: the renderer agreed to close (F13); main closes the window. */
   closeOk(): void;
   /** I11 (SS7): a tab's session record by tab id (main checks only size and signature). */
@@ -108,10 +105,6 @@ export interface ChalkbondApi {
    * to `userData/session/damaged/` on the session chain.
    */
   damagedTabRecord(tabId: string): void;
-  /** N3 (RC1): writes the recovery file (main queues it, RC6). */
-  writeRecovery(value: WriteRecoveryRequest): void;
-  /** N4 (RC2): removes the recovery file (queued after every earlier write). */
-  clearRecovery(): void;
   readonly platform: string;
   logError(message: string): void;
   onMainEvent(callback: (event: MainEvent) => void): () => void;

@@ -16,7 +16,7 @@ import type {
   CheckTabFileResponse,
   WriteProblem,
 } from '../../../shared/ipc-types';
-import { parseProblem } from './file-flows';
+import { parseProblem } from './file-problem';
 import { drawingHash, hasUnwrittenChanges } from './tab-status';
 import {
   activeTab,

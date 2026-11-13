@@ -48,8 +48,7 @@ function rig(settings: RendererSettings = DEFAULTS, startup: Partial<StartupResp
       closeOk();
       h.main.closeOk();
     },
-    startup: () =>
-      Promise.resolve({ settings, recovery: null, session: null, open: null, ...startup }),
+    startup: () => Promise.resolve({ settings, session: null, open: null, ...startup }),
     setSettings,
     updateSession,
     ask,
@@ -57,9 +56,6 @@ function rig(settings: RendererSettings = DEFAULTS, startup: Partial<StartupResp
     showAppMenu,
     openDroppedFile,
     showContextMenu: vi.fn(() => Promise.resolve(null)),
-    sessionFile: vi.fn(),
-    writeRecovery: vi.fn(),
-    clearRecovery: vi.fn(),
     clipboardWrite: () => Promise.resolve({ ok: true }),
     clipboardRead: () =>
       Promise.resolve({ drawing: null, text: null, textTooLong: false, image: false }),
@@ -257,7 +253,7 @@ describe('W3, N1: the title follows the active tab and F7 unsaved', () => {
   });
 });
 
-describe('TB20 start-up (SS7, CO5): no recovery offer', () => {
+describe('TB20 start-up (SS7, CO5): nothing is offered, nothing asked', () => {
   it('no session: one empty Untitled tab, nothing asked, the canvas focused, a second start does nothing', async () => {
     const r = rig();
     const { host, focus } = await started(r);
@@ -293,7 +289,7 @@ describe('TB20 start-up (SS7, CO5): no recovery offer', () => {
     const r2 = {
       ...r,
       main: Object.assign(r.main, {
-        startup: () => Promise.resolve({ settings: DEFAULTS, recovery: null, session, open: ref }),
+        startup: () => Promise.resolve({ settings: DEFAULTS, session, open: ref }),
       }),
     };
     const { host } = await started(r2);
@@ -389,7 +385,7 @@ describe('TB20 main events', () => {
     expect(activeId(host)).toBe(first);
   });
 
-  it('open opens the ref in the empty Untitled tab (T17); a command runs; flush-recovery is ignored', async () => {
+  it('open opens the ref in the empty Untitled tab (T17); a command runs', async () => {
     const r = rig();
     const { host } = await started(r);
     const ref = r.h.file('a.chalk', drawing('slides', 2));
@@ -399,9 +395,6 @@ describe('TB20 main events', () => {
     send(host, { type: 'command', command: 'edit.select-all' });
     expect(host.commands).toEqual(['edit.select-all']);
     expect(host.controller.getSelection().atoms.size).toBe(2);
-    const calls = r.h.calls.length;
-    send(host, { type: 'flush-recovery' });
-    expect(r.h.calls.length).toBe(calls);
   });
 
   it('flush-session writes the record and the index at once', async () => {

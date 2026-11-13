@@ -35,7 +35,7 @@ export type HostActions = Record<Exclude<HostKeyAction, LaterAction>, () => void
 export function installHostKeys(
   controller: Pick<EditorController, 'getSelection' | 'canRun' | 'getDoc'>,
   /** The tab flows (T11: keys wait while a flow runs). */
-  fileFlows: { busy(): boolean },
+  tabFlows: { busy(): boolean },
   actions: HostActions,
   /** An in-window dialog is open (Export, Keyboard shortcuts): K1 does nothing. */
   modal: () => boolean = () => false,
@@ -64,7 +64,7 @@ export function installHostKeys(
         selection.atoms.size === 0 && selection.bonds.size === 0 && selection.objects.size === 0,
       idle: controller.canRun({ type: 'set-preset', preset: 'slides' }),
       modal: modal(),
-      fileBusy: fileFlows.busy(),
+      fileBusy: tabFlows.busy(),
       empty: Object.keys(doc.atoms).length === 0 && Object.keys(doc.objects).length === 0,
       insideEditor: insideEditor(event.target),
       canReopen: canReopen(),

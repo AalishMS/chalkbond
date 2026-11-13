@@ -1,4 +1,4 @@
-// Native box texts (SPEC-app-shell.md F14, A09 prompt, RC3 recover, F8 replace; SEC15).
+// Native box texts (SPEC-app-shell.md F14, A09 prompt, F8 replace; SEC15).
 import { describe, expect, it } from 'vitest';
 import {
   autoSaveBox,
@@ -6,7 +6,6 @@ import {
   FILE_PROBLEMS,
   fileErrorBox,
   keepBox,
-  recoverBox,
   replaceBox,
   saveChangesBox,
 } from './messages';
@@ -126,19 +125,6 @@ describe('the question boxes', () => {
       noLink: true,
     });
     expect(saveChangesBox('toluene.png').message).toBe('Do you want to save “toluene.png”?');
-  });
-
-  it('recover (A11, RC3): closing the box recovers', () => {
-    expect(recoverBox()).toEqual({
-      type: 'info',
-      title: 'Chalkbond',
-      message: 'Chalkbond closed before your drawing was saved.',
-      detail: "Do you want to recover it? If you delete it, it can't be brought back.",
-      buttons: ['Recover', 'Delete'],
-      defaultId: 0,
-      cancelId: 0,
-      noLink: true,
-    });
   });
 
   it('replace (F8, R6)', () => {

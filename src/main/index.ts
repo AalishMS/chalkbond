@@ -39,7 +39,6 @@ import type {
 import { fileArg, testFlags } from './model/args';
 import { kindOfPath } from './model/file-refs';
 import { guardClose, installQuitFlush } from './lifecycle';
-import { createRecovery } from './recovery';
 import { createSessionStore } from './session-store';
 import { pathKeyOf } from './model/tab-registry';
 import { createRecent } from './model/recent';
@@ -61,14 +60,11 @@ import {
   readFileSchema,
   writeFileSchema,
   printPdfSchema,
-  sessionFileSchema,
   closeOkSchema,
   setSettingsSchema,
   contextMenuSchema,
   tabMenuSchema,
   appMenuSchema,
-  writeRecoverySchema,
-  clearRecoverySchema,
   fileDroppedSchema,
   readTabRecordSchema,
   writeTabRecordSchema,
@@ -244,8 +240,6 @@ async function startApp(): Promise<void> {
   ipc.handle(CHANNELS.clipboardRead, clipboardReadSchema, clipboardPort.read);
   // Files (A7): the renderer holds opaque refs only (R8); paths stay in this registry.
   const refs = createFileRefs(() => randomUUID());
-  /** The ref N2 last named (F10: a successful write to it is a Save). */
-  let sessionRef: string | null = null;
   const files = createFiles({ log: (message) => log('files', message) });
   const entryOf = (id: string) => {
     const entry = refs.get(id);
@@ -271,10 +265,10 @@ async function startApp(): Promise<void> {
       : targetOf<FileRef>(path, () => refs.add(path, kind, 'opened'));
   };
   // Session store (SS2, SS5, SS11): userData/session, one ordered chain; the start-up read runs
-  // first on it (damaged files moved aside, discarded records deleted after a valid read). The old
-  // userData/recovery folder is neither read nor deleted by it. TB10 adds the tab bindings (I12),
-  // the auto-save writer (I13), the AS5 check (I14) and N9 to the same chain; the renderer's tab
-  // flows use them from TB20 on; I7 returns `restored()` from TB12 on.
+  // first on it (damaged files moved aside, discarded records deleted after a valid read). The
+  // tab bindings (I12), the auto-save writer (I13), the AS5 check (I14) and N9 run on the same
+  // chain; I7 returns `restored()`.
+  // SS7, R35: the userData/recovery folder of earlier builds is ignored: neither read nor deleted.
   const sessionStore = createSessionStore({
     folder: join(app.getPath('userData'), 'session'),
     log: (message) => log('session', message),
@@ -300,7 +294,7 @@ async function startApp(): Promise<void> {
         () => true,
         () => false,
       ),
-    // N2 / I12 decide the folders for this run (A10 persists them); F6 (TB20): the active tab's.
+    // I12 decides the folders for this run (A10 persists them); F6 (TB20): the active tab's.
     folders: {
       open: () => folders.openFolder(),
       save: (format) =>
@@ -354,12 +348,10 @@ async function startApp(): Promise<void> {
   ipc.handle(CHANNELS.writeFile, writeFileSchema, async ({ ref, data }) => {
     const entry = entryOf(ref);
     const result = await files.write(entry, data);
-    // F10: a successful Save in place counts (Save as is added by its N2 or its I12).
-    if (result.ok && ref === sessionRef) recent.add(entry.path);
     const sha256 = result.ok ? sha256Hex(data) : null;
     if (sha256 !== null) refs.noteHash(ref, sha256);
     // F6 (I12 `save-as` is sent before this write): success binds the bytes written and the folders
-    // and recent list follow it as N2 did; a failed write puts the tab's previous binding back.
+    // and recent list follow it; a failed write puts the tab's previous binding back.
     const savedAs =
       entry.kind === 'chalk' &&
       (await sessionStore.settleSaveAs(
@@ -393,7 +385,7 @@ async function startApp(): Promise<void> {
           fileHash: refs.hashOf(ref),
           written: request.written ?? null,
         });
-        // N2's part: the last open folder and the recent list follow an open (F10).
+        // The last open folder and the recent list follow an open (F10).
         if (answer.ok) {
           folders.sessionFile(entry);
           recent.add(entry.path);
@@ -478,11 +470,6 @@ async function startApp(): Promise<void> {
     }),
   );
   ipc.handle(CHANNELS.ask, askSchema, async (request) => {
-    // RC3 at launch: the box waits until its parent window is on screen (shown at first paint).
-    const win = mainWindow;
-    if (request.kind === 'recover' && win && !win.isDestroyed() && !win.isVisible()) {
-      await new Promise<void>((resolve) => win.once('show', () => resolve()));
-    }
     return dialogs.ask(request);
   });
   ipc.handle(CHANNELS.showFileError, fileErrorSchema, (request) => dialogs.showFileError(request));
@@ -507,14 +494,6 @@ async function startApp(): Promise<void> {
   ipc.handle(CHANNELS.showAppMenu, appMenuSchema, (request) => contextMenus.showApp(request));
   // I10 (T15, CM4): the tab menu shares the popup slot with CM1 (M5); the tab strip asks for it.
   ipc.handle(CHANNELS.showTabMenu, tabMenuSchema, (request) => contextMenus.showTab(request));
-  // Recovery (RC1–RC6): one ordered chain of writes and clears in userData/recovery.
-  const recovery = createRecovery({
-    folder: join(app.getPath('userData'), 'recovery'),
-    log: (message) => log('recovery', message),
-    now: () => new Date().toISOString(),
-  });
-  ipc.on(CHANNELS.writeRecovery, writeRecoverySchema, (value) => void recovery.write(value));
-  ipc.on(CHANNELS.clearRecovery, clearRecoverySchema, () => void recovery.clear());
   // The session store's record and index channels (I11, N7, N8).
   ipc.handle(CHANNELS.readTabRecord, readTabRecordSchema, ({ tabId }) =>
     sessionStore.readRecord(tabId),
@@ -533,23 +512,20 @@ async function startApp(): Promise<void> {
     damagedTabRecordSchema,
     ({ tabId }) => void sessionStore.damagedRecord(tabId),
   );
-  // Quit waits for one flush of settings (a change younger than 500 ms, e.g. the window bounds),
-  // of the recovery chain and of the session chain.
+  // Quit waits for one flush of settings (a change younger than 500 ms, e.g. the window bounds)
+  // and of the session chain.
   installQuitFlush(app, {
-    pending: () => store.pending() || recovery.busy() || sessionStore.busy(),
-    flush: () => Promise.all([store.flush(), recovery.idle(), sessionStore.idle()]),
+    pending: () => store.pending() || sessionStore.busy(),
+    flush: () => Promise.all([store.flush(), sessionStore.idle()]),
     log: (message) => log('quit', message),
   });
-  // I7 with ST2: the renderer's view only (no path, folder, window or recent list). No recovery
-  // offer any more (R35). SS7 (TB12): the restored session from the store's start-up read; the
+  // I7 with ST2: the renderer's view only (no path, folder, window or recent list). SS7 (TB12): the restored session from the store's start-up read; the
   // launch's file is looked up after it, so a file a restored tab holds answers that tab (T17).
   ipc.handle(CHANNELS.startup, startupSchema, async (): Promise<StartupResponse> => {
     const path = openRequests.takeStartup();
     const session = await sessionStore.restored();
     return {
       settings: rendererSettings(store.get()),
-      // SS7, R35 (TB20): the old recovery folder is neither read nor deleted; TB21 drops the field.
-      recovery: null,
       session,
       open: path === null ? null : await openedTarget(path),
     };
@@ -566,21 +542,8 @@ async function startApp(): Promise<void> {
     closing?.rendererReady();
     openRequests.listening();
   });
-  // N2: the session file by ref (null after New). An unknown id is ignored and logged. A file
-  // that became the session was opened or saved: it goes to the top of the recent list (F10).
-  ipc.on(CHANNELS.sessionFile, sessionFileSchema, ({ ref }) => {
-    if (ref === null) {
-      sessionRef = null;
-      return folders.sessionFile(null);
-    }
-    const entry = refs.get(ref);
-    if (!entry) return log('files', 'Unknown session file ref');
-    sessionRef = ref;
-    folders.sessionFile(entry);
-    recent.add(entry.path);
-  });
   // N5 (F13, SS10): the renderer ran its close flush and agreed to close; main closes once the
-  // recovery chain is idle and the session chain is empty, with the discarded records deleted.
+  // session chain is empty, with the discarded records deleted.
   ipc.on(CHANNELS.closeOk, closeOkSchema, () => closing?.closeOk());
   /** W2: on a real close, the outer normal bounds and the maximized flag. */
   const rememberWindow = (win: BrowserWindow): void => {
@@ -593,7 +556,6 @@ async function startApp(): Promise<void> {
     mainWindow = win;
     closing = guardClose(win, {
       closing: () => rememberWindow(win),
-      recoveryIdle: () => recovery.idle(),
       // TB13 (SS10): N5 waits for the session chain, then the discarded records are deleted.
       sessionChain: sessionStore,
       // R37: `close-requested` waits behind every open that arrived before it.

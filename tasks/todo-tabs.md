@@ -17,7 +17,7 @@ list in `SPEC-app-shell.md` "Testing".
 ## Checkpoint 2026-11-12 (paused here; continue from this note)
 
 **State:** `main` at the commit that adds this note; `npm run check` green on a quiet machine (260
-files, 5500 tests). Not pushed. **Done (28 of 35):** TB1-TB20, TB22-TB27, TB29, TB30, plus fixes:
+files, 5500 tests). Not pushed. **Done (29 of 35; TB21 done 2026-11-13, see its entry):** TB1-TB27, TB29, TB30, plus fixes:
 svg-render Decision 16 oracle (seed 3343550), T8 "an unreadable record keeps the tab", a flaky
 SEC8 cleanup in `session-store.test.ts`. Tabs, auto-save, restore and the ☰ menu are live in the app.
 **Full `npm run test:e2e` has not been re-run since TB26, TB27, TB29 and TB30 were merged together**
@@ -1114,9 +1114,11 @@ expect the final channel set (I9-I14, N7-N9 present; N3, N4 absent); a tooling t
 says the old folder is ignored; `lifecycle.test.ts` for the single close path.
 
 **Acceptance criteria:**
-- [ ] The code and tests named above are gone and `npm run check` is green (no `eslint-disable`, no skipped test to get there)
-- [ ] Coverage thresholds hold without excluding anything; `npm run test:e2e` stays green
-- [ ] SEC5's documented key list equals `Object.keys(window.chalkbond)`
+- [x] The code and tests named above are gone and `npm run check` is green (no `eslint-disable`, no skipped test to get there)
+- [x] Coverage thresholds hold without excluding anything; `npm run test:e2e` stays green
+- [x] SEC5's documented key list equals `Object.keys(window.chalkbond)`
+
+**Done 2026-11-13 (as built):** `recovery.ts`, `model/recovery.ts`, `model/session.ts`, `model/file-flows.ts` and their tests are deleted; `parseProblem` (the only part the tab flows used; they validate with their own `drawingOf`) moved to `model/file-problem.ts` with its test. N2 `sessionFile`, N3, N4, the `flush-recovery` event, I4 `recover` (and `recoverBox`), I7 `recovery` and `askSchema`'s recover kind are gone; `AskAnswer` is no longer generic; main's `sessionRef` and its dead "Save in place counts" recent rule are removed (F10 amended in the spec); `lifecycle.ts` loses `recoveryIdle` (one close path). New tests: `src/shared/channels.test.ts` (final channel set), `tests/tooling/app-recovery-retired.test.ts` (no recovery mention except the SS7 comment), a no-retired-schema check in `ipc-schemas.test.ts`; `e2e/app-security.spec.ts` and `app-window.spec.ts` expect the final key list and startup. Spec: I4, I7, N2-N4, main events, SEC5 (the documented list), F10, file layout. Left alone: `session-folders.ts`'s `sessionFile` method and its picture-folder (A6) rule, now only reachable through I12 binds. Verification: `npm run check` exit 0 (259 files, 5408 tests); `npm test -- --coverage` exit 0 (thresholds hold); full `npm run test:e2e` on Windows 402 passed (10.9 m).
 
 **Verification:** `npm run check`, then `npm run test:e2e` (Windows).
 

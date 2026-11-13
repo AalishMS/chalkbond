@@ -1,4 +1,4 @@
-// Native box texts (SPEC-app-shell.md F14 with mock-up A10, the A09 prompt, RC3 recover with A11,
+// Native box texts (SPEC-app-shell.md F14 with mock-up A10, the A09 prompt,
 // the F8 replace box). Main builds every text from a problem code and a base name (SEC15). Pure.
 import type {
   AutoSaveProblem,
@@ -172,20 +172,6 @@ export function errorBox(request: FileErrorRequest): BoxOptions {
   return request.context === 'auto-save'
     ? autoSaveBox(request.problem, request.name)
     : keepBox(request.problem, request.name);
-}
-
-/** I4 `recover` (RC3, A11): Recover · Delete; closing the box recovers. */
-export function recoverBox(): BoxOptions {
-  return {
-    type: 'info',
-    title: 'Chalkbond',
-    message: 'Chalkbond closed before your drawing was saved.',
-    detail: "Do you want to recover it? If you delete it, it can't be brought back.",
-    buttons: ['Recover', 'Delete'],
-    defaultId: 0,
-    cancelId: 0,
-    noLink: true,
-  };
 }
 
 /** F8 / R6: the appended name exists. Replace · Cancel. */

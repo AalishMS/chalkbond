@@ -28,7 +28,6 @@ const api: ChalkbondApi = {
   startup: () => ipcRenderer.invoke(CHANNELS.startup, {}),
   setSettings: (value) => ipcRenderer.invoke(CHANNELS.setSettings, value),
   updateSession: (value) => ipcRenderer.send(CHANNELS.updateSession, value),
-  sessionFile: (ref) => ipcRenderer.send(CHANNELS.sessionFile, { ref: ref?.id ?? null }),
   closeOk: () => ipcRenderer.send(CHANNELS.closeOk, {}),
   readTabRecord: (tabId) => ipcRenderer.invoke(CHANNELS.readTabRecord, { tabId }),
   writeTabRecord: (value) => ipcRenderer.invoke(CHANNELS.writeTabRecord, value),
@@ -42,8 +41,6 @@ const api: ChalkbondApi = {
     ),
   acceptOutsideChange: (value) => ipcRenderer.send(CHANNELS.acceptOutsideChange, value),
   damagedTabRecord: (tabId) => ipcRenderer.send(CHANNELS.damagedTabRecord, { tabId }),
-  writeRecovery: (value) => ipcRenderer.send(CHANNELS.writeRecovery, value),
-  clearRecovery: () => ipcRenderer.send(CHANNELS.clearRecovery, {}),
   platform: process.platform,
   logError: (message) => ipcRenderer.send(CHANNELS.logError, { message }),
   onMainEvent: (callback) => {

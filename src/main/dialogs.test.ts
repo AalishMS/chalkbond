@@ -3,14 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createDialogs, type DialogPort } from './dialogs';
 import { createFileRefs } from './model/file-refs';
-import {
-  autoSaveBox,
-  fileErrorBox,
-  keepBox,
-  recoverBox,
-  replaceBox,
-  saveChangesBox,
-} from './model/messages';
+import { autoSaveBox, fileErrorBox, keepBox, replaceBox, saveChangesBox } from './model/messages';
 
 function rig(answers: { open?: string[]; save?: string; box?: number[]; exists?: string[] } = {}) {
   let n = 0;
@@ -177,17 +170,6 @@ describe('ask (I4) and showFileError (I5)', () => {
       const r = rig({ box: [response] });
       expect(await r.dialogs.ask({ kind: 'save-changes', name: 'esterification' })).toBe(answer);
       expect(r.port.box).toHaveBeenCalledWith(saveChangesBox('esterification'));
-    }
-  });
-
-  it('recover: Recover / Delete (closing recovers)', async () => {
-    for (const [response, answer] of [
-      [0, 'recover'],
-      [1, 'delete'],
-    ] as const) {
-      const r = rig({ box: [response] });
-      expect(await r.dialogs.ask({ kind: 'recover' })).toBe(answer);
-      expect(r.port.box).toHaveBeenCalledWith(recoverBox());
     }
   });
 

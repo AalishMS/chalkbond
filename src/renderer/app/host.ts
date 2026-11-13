@@ -393,7 +393,7 @@ export async function createWindowHost(
 
   /**
    * CO5, SS7: once, after the window's view is mounted: the strip, the active tab, then I7's file
-   * and the opens queued meanwhile. No recovery offer (R35). The canvas has focus after.
+   * and the opens queued meanwhile. Nothing is offered (R35). The canvas has focus after.
    */
   const start = async (): Promise<void> => {
     if (started) return;
@@ -536,8 +536,6 @@ export async function createWindowHost(
       case 'flush-session':
         void flows.flushSession(); // R25: best effort, nothing awaited
         return;
-      case 'flush-recovery':
-        return; // superseded by `flush-session` (R35); main no longer sends it
     }
   };
 

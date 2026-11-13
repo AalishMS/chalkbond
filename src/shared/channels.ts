@@ -15,7 +15,6 @@ export const CHANNELS = {
   startup: 'app:startup',
   setSettings: 'settings:set',
   updateSession: 'session:update',
-  sessionFile: 'session:file',
   closeOk: 'app:close-ok',
   readTabRecord: 'session:read-tab',
   writeTabRecord: 'session:write-tab',
@@ -25,8 +24,6 @@ export const CHANNELS = {
   checkTabFile: 'file:check',
   acceptOutsideChange: 'file:accept-outside',
   damagedTabRecord: 'session:damaged-tab',
-  writeRecovery: 'recovery:write',
-  clearRecovery: 'recovery:clear',
   logError: 'log:error',
   mainEvent: 'main:event',
 } as const;

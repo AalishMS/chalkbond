@@ -47,7 +47,7 @@ import type {
   WriteTabRecordRequest,
   WriteTabRecordResponse,
 } from '../../../shared/ipc-types';
-import { parseProblem } from './file-flows';
+import { parseProblem } from './file-problem';
 import { createTabAutosave, type Trouble } from './tab-autosave';
 import { createTabClose } from './tab-close';
 import { buildRecord, loadTabRecord } from './session-record';

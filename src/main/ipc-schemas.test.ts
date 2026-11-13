@@ -25,14 +25,14 @@ describe('A7 schemas', () => {
       bad(schemas.readFileSchema, v);
   });
 
-  it('I4 ask: save-changes with a base name, or recover', () => {
+  it('I4 ask: save-changes with a base name only (no recover kind, TB21)', () => {
     ok(schemas.askSchema, { kind: 'save-changes', name: 'esterification' });
-    ok(schemas.askSchema, { kind: 'recover' });
     for (const v of [
       { kind: 'save-changes' },
       { kind: 'save-changes', name: 'a/b' },
       { kind: 'save-changes', name: 'a\\b' },
       { kind: 'save-changes', name: 'x'.repeat(256) },
+      { kind: 'recover' },
       { kind: 'recover', name: 'x' },
       { kind: 'other' },
     ])
@@ -132,12 +132,10 @@ describe('A7 schemas', () => {
   });
 });
 
-describe('A8 session schemas (N2, N5)', () => {
-  it('N2 session file: a uuid ref or null (New, Untitled), nothing else', () => {
-    ok(schemas.sessionFileSchema, { ref: ID });
-    ok(schemas.sessionFileSchema, { ref: null });
-    for (const v of [{}, { ref: '/x.chalk' }, { ref: ID, path: '/x' }, { ref: 3 }, null])
-      bad(schemas.sessionFileSchema, v);
+describe('A8 close schema (N5)', () => {
+  it('TB21: no schema is left for the retired channels (N2, N3, N4)', () => {
+    for (const name of ['sessionFileSchema', 'writeRecoverySchema', 'clearRecoverySchema'])
+      expect(Object.keys(schemas)).not.toContain(name);
   });
 
   it('N5 close ok: an empty object only', () => {
@@ -338,34 +336,6 @@ describe('A13 I6 context-menu:show', () => {
       { onItem: true, state, items: [{ role: 'quit' }] },
     ])
       bad(schemas.contextMenuSchema, v);
-  });
-});
-
-describe('A14 N3 recovery:write and N4 recovery:clear', () => {
-  it('N3: text starting "{" up to 20 MiB and a base name', () => {
-    ok(schemas.writeRecoverySchema, { text: '{"a":1}', name: 'esterification.chalk' });
-    ok(schemas.writeRecoverySchema, { text: '{', name: 'Untitled' });
-    ok(schemas.writeRecoverySchema, { text: `{${'x'.repeat(20 * 1024 * 1024 - 1)}`, name: 'a' });
-  });
-  it('N3 rejects other text, a path as name, extras', () => {
-    for (const v of [
-      {},
-      { text: '{}' },
-      { text: '[1]', name: 'a' },
-      { text: ' {}', name: 'a' },
-      { text: `{${'x'.repeat(20 * 1024 * 1024)}`, name: 'a' },
-      { text: `{${'é'.repeat(10 * 1024 * 1024)}`, name: 'a' },
-      { text: '{}', name: 'C:\\x\\a.chalk' },
-      { text: '{}', name: '/tmp/a.chalk' },
-      { text: '{}', name: 'x'.repeat(256) },
-      { text: '{}', name: 'a', path: '/tmp' },
-    ])
-      bad(schemas.writeRecoverySchema, v);
-  });
-  it('N4: an empty object only', () => {
-    ok(schemas.clearRecoverySchema, {});
-    bad(schemas.clearRecoverySchema, { all: true });
-    bad(schemas.clearRecoverySchema, null);
   });
 });
 

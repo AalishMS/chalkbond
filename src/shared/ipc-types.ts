@@ -5,11 +5,9 @@ export type MainEvent =
   | { type: 'command'; command: AppCommand }
   | { type: 'open'; ref: { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' } }
   | { type: 'close-requested' }
-  | { type: 'flush-recovery' }
   /**
    * SS10, RC5 as amended by R24 / R25 (TB13): `query-session-end`'s best-effort flush of the
-   * session store (record, AS1 write, index; nothing awaited). Main sends it in place of
-   * `flush-recovery` from TB20 on.
+   * session store (record, AS1 write, index; nothing awaited).
    */
   | { type: 'flush-session' }
   /** T17 (R37): a main-chosen open (F10, F11) of a path already open in this tab: focus it. */
@@ -42,8 +40,6 @@ export interface IpcRequestMap {
   'file:check': CheckTabFileRequest;
   'file:accept-outside': AcceptOutsideRequest;
   'session:damaged-tab': DamagedTabRecordRequest;
-  'recovery:write': WriteRecoveryRequest;
-  'recovery:clear': Record<string, never>;
 }
 export type FileRef = { id: string; name: string; kind: 'chalk' | 'png' | 'svg' | 'pdf' };
 /** T17 (R37): the path is open in this tab (main compared real paths); nothing was read. */
@@ -56,7 +52,6 @@ export interface RendererSettings {
 }
 export interface StartupResponse {
   settings: RendererSettings;
-  recovery: { text: string; name: string } | null;
   /** SS7 (TB12): the restored tabs as the renderer may see them; null on a first run. */
   session: StartupSession | null;
   /** F11: the launch's file, opened after the session is restored (T17). */
@@ -132,10 +127,9 @@ export interface ChooseSaveRequest {
   /** A base name (no `/` or `\`). */
   suggestedName: string;
 }
-export type AskRequest = { kind: 'save-changes'; name: string } | { kind: 'recover' };
-export type AskAnswer<R extends AskRequest> = R extends { kind: 'recover' }
-  ? 'recover' | 'delete'
-  : 'save' | 'discard' | 'cancel';
+/** I4 (T9, R51): the save prompt of a tab that is closed unsaved. */
+export type AskRequest = { kind: 'save-changes'; name: string };
+export type AskAnswer = 'save' | 'discard' | 'cancel';
 /** I5: `{ problem, name }`, or the auto-save / keep boxes with their `context` (a base name always). */
 export type FileErrorRequest =
   | { problem: FileProblem; name: string }
@@ -170,13 +164,6 @@ export interface ContextMenuRequest {
   state: MenuState;
 }
 export type ContextMenuAnswer = ContextCommand | null;
-
-/** N3 (RC1): the committed drawing's text and the session's name for `recovery.json`. */
-export interface WriteRecoveryRequest {
-  text: string;
-  /** A base name (no `/` or `\`). */
-  name: string;
-}
 
 /** A tab's kind (SPEC-app-shell.md Terms): a file tab, new, opened from a picture, or kept. */
 export type SessionTabKind = 'chalk' | 'untitled' | 'picture' | 'kept';
