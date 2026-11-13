@@ -1390,9 +1390,11 @@ to the Linux re-run list. All new boxes stay unticked; the owner runs the hand c
 **Tests first:** none (docs); `npm run check` must stay green.
 
 **Acceptance criteria:**
-- [ ] Every box of the spec's tabs list is in the checklist with its wording unchanged
-- [ ] The Linux re-run list names the files and commands to re-run
-- [ ] No box is ticked
+- [x] Every box of the spec's tabs list is in the checklist with its wording unchanged (12 of 12 boxes of `SPEC-app-shell.md` "Windows checks (tabs feature set)" compared by a script after whitespace folding: all identical; they are in the new section "Re-checks for the tabs feature set", and "App shell and installer" points to it; the native-popup keyboard-focus probe from the Facts row is added as one more box)
+- [x] The Linux re-run list names the files and commands to re-run (by family: tabs seam, keys, shared menu, IPC, main session store, no application menu, retired recovery, new hooks and probe, new e2e, tooling tests; the `git diff --name-only d93c2fb..HEAD` command; `npm run check`, `npm run test:e2e`, the Linux packaging check, `npm run test:packaged`)
+- [x] No box is ticked (the 19 new boxes are `- [ ]`; the diff only adds lines)
+
+**Result (2026-11-14, on `1286737`):** `npm run check` exit 0, 261 files, 5422 tests. Only `docs/windows-checklist.md`, this file and `tasks/plan-tabs.md` changed. Not decided here: the `tidy.prop.test.ts` timeout, the open-request limit, the TB32 mock-up differences. The release is not declared; the teacher's-laptop boxes (the cold start and Checkpoint E32) stay open.
 
 **Verification:** read the diff against the spec list; `npm run check`.
 

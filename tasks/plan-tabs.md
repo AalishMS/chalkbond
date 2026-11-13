@@ -165,7 +165,7 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [ ] TB30: new e2e for opens into tabs (second launch, queue of 20, multi-drop) and clipboard-export R13 across tabs
 - [ ] TB31: T11 budgets e2e probe, SS8 restore time, `docs/editor-perf.md`
 - [x] TB32: shots A18, A19, A21, A01, A12 against the mock-ups
-- [ ] TB33: `docs/windows-checklist.md` rows
+- [x] TB33: `docs/windows-checklist.md` rows
 - [ ] TB34: `AGENTS.md`, spec statuses, DEVIATIONS item 5, todo ticks
 
 ### Checkpoint Z-tabs: final (Windows 11 development machine)

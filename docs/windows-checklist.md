@@ -24,6 +24,8 @@ declared and Checkpoint Z is not reached. Open: the owner's hand re-checks on th
 (the unticked boxes of the re-check section, including the installed size), and, on the teacher's
 laptop, Checkpoint E32 and the cold-start box.
 
+**Tabs feature set (2026-11-13).** The tabs, auto-save and session feature set (`SPEC-app-shell.md` R30–R51) is implemented. Its hand boxes and Linux re-run list are in "Re-checks for the tabs feature set"; every box there is unticked and its automated gates (task TB35) have not been run. The release is not declared and Checkpoint Z is not reached; Checkpoint E32 and the cold-start box stay open on the teacher's laptop.
+
 ## Owner decisions of 2026-11-12
 
 1. **Teacher's laptop.** Asked "Is this laptop the one the teacher will use?", the owner answered "no this laptop is not the one the teacher will use". Checkpoint E32 and the box "Cold start of the installed app to a usable canvas is under 3 s on the teacher's laptop" cannot be done on the development machine. They stay open and unticked; what they require is unchanged.
@@ -126,6 +128,97 @@ Hand checks (installed final build):
 - [ ] The rail digit badges at 125 % and at 150 % display scaling: each badge is crisp, inside its button, does not touch the icon or the caption, and the rail does not change size.
 - [ ] Digits typed with the Devanagari IME in the label editor (and in the text editor) stay text and pick no tool; with the canvas focused and the IME on, write down whether the digit keys pick tools (the spec does not say; this is an observation, not a pass criterion).
 - [ ] The hint after a switch to structural: insert the esterification scheme (the reaction chip), press "Show structural": the status bar says "Press Tidy reaction to make room for the written carbons."; press Tidy reaction: the scheme is spaced so that no label, plus sign or arrow touches another.
+
+## Re-checks for the tabs feature set
+
+The tabs, auto-save and session feature set of 2026-11-12 (`SPEC-app-shell.md` "Tabs, auto-save and
+session", R30–R51, and its "Windows checks" list; `SPEC-editor.md` R56–R59; `SPEC-doc-model.md` D2;
+`SPEC-clipboard-export.md` R13; mock-ups `docs/mockups/shell/` A01, A12, A18–A21). It replaces the
+native menu bar, the unsaved-changes prompt on New / Open / close and the recovery offer. The ticked
+boxes of "App shell and installer" that speak of the menu bar, the unsaved-changes prompt, the
+recovery box or "opens it in the same window" describe the 1.0.0 build the owner tested on
+2026-11-12; they stay ticked as history and are not unticked. The boxes below are their repeat for
+the final installer. Run them on the **final** build and installer, on Windows 11 (Windows 10 is
+waived, owner decision 2026-11-12), after every tabs task is done. Record each result as the other
+sections do (machine, Office where it matters, who ran it, who verified it).
+
+Automated gates (PowerShell, from a clean clone of the final commit; they belong to task TB35 and
+have not been run for this feature set):
+
+- [ ] `npm ci`, then `npm run check` (exit 0; write the file and test counts)
+- [ ] `npm run test:e2e` (builds first; includes `e2e/win/`; exit 0, count written)
+- [ ] `npm run test:e2e:os-input` (do not touch the mouse while it runs)
+- [ ] `npm run dist:win` (installer size and unpacked size written in `SPEC-app-shell.md` I1)
+- [ ] `npm run test:packaged` against `dist/win-unpacked`
+- [ ] `npm run shots`, and the PNGs of `out/shots/TB32` looked at by eye against the mock-ups A01, A12 and A18–A21 (`node docs/mockups/shell/build.mjs --png out/mockups-shell` makes the reference PNGs)
+
+Status of this section: no box here has been done. Every hand box below is open: none has been done
+on the final installer. The release is not declared and Checkpoint Z is not reached. The cold-start
+box of "App shell and installer" and Checkpoint E32 stay open on the teacher's laptop (owner decision
+2026-11-12: the development machine is not that laptop); the last box of the hand checks repeats
+them for 10 tabs.
+
+Linux re-run needed. The tabs feature set was built and run on Windows only; no Linux run covers
+it. The full list is `git diff --name-only d93c2fb..HEAD -- src e2e tests electron-builder.yml eslint.config.mjs`,
+leaving out `e2e/win/` (`d93c2fb` is the last commit before the tabs approval, `cbbc288`). By file
+family, a Linux run must cover these:
+
+- **Tabs seam (editor and doc-model):** `src/renderer/editor/state/{tab-state,tab-state-record,controller,commands,editor-state,reducer,tips}.ts` and their tests, `src/renderer/editor/index.ts`, `src/renderer/editor/view/{Editor,TopBar,OptionsBar,StatusBar}.tsx`, `src/renderer/editor/view/editor.css`, `src/renderer/editor/perf.test.ts`, `src/core/doc-model/history-record.ts` (with `history-record.test.ts` and `history-record.prop.test.ts`), `src/core/doc-model/{index.ts,doc.test.ts,perf.test.ts}`, and `src/core/svg-render/{svg-render.prop.test.ts,__fixtures__/structural-oracle.ts}` (the Decision 16 oracle fix).
+- **Keys:** `src/renderer/editor/model/keymap.ts`, `src/renderer/app/host-keys.ts`, `src/renderer/app/model/{keys,shortcuts}.ts`, `src/renderer/app/ShortcutsDialog.test.tsx`, `e2e/app-keys.spec.ts`, `e2e/app-shortcuts.spec.ts`, `e2e/editor-keyboard.spec.ts`, `e2e/editor-a11y.spec.ts`.
+- **Shared menu and the ☰ button:** `src/shared/menu.ts`, `src/main/model/{menu-model,tab-menu-model}.ts` and `context-menu-model.test.ts`, `src/main/menu.ts`, `src/renderer/app/{MenuButton.tsx,menu-button.css}`, `src/renderer/app/model/menu-state.ts`, `e2e/app-menu.ts`, `e2e/app-menus.spec.ts`, `e2e/app-context-menus.spec.ts`.
+- **IPC:** `src/shared/{channels,ipc-types}.ts`, `src/main/ipc-schemas.ts`, `src/preload/{index.ts,api.d.ts}`, `src/main/model/{messages,file-refs,open-requests}.ts`, `src/main/{files,dialogs,lifecycle}.ts`.
+- **Main session store and the renderer's tab code:** `src/main/session-store.ts`, `src/main/model/{session-index,session-folders,store-hold,tab-registry}.ts`; `src/renderer/app/{App.tsx,host.ts,drop-target.ts,TabStrip.tsx,tab-strip.css,ui/Tooltip.tsx}` and `src/renderer/app/model/{tabs,tab-flows,tab-close,tab-autosave,tab-status,tab-drag,write-schedule,autosave-timer,session-record,file-problem,preset-memory}.ts`.
+- **No application menu:** `Menu.setApplicationMenu(null)` in `src/main/index.ts` (`autoHideMenuBar: false` is still set there), asserted through `e2e/app-menus.spec.ts`, `e2e/app-window.spec.ts` and `e2e/smoke.spec.ts`.
+- **Retired recovery code (deleted; a Linux run shows nothing is left that imports it):** `src/main/recovery.ts`, `src/renderer/app/model/{recovery,session,file-flows}.ts` (with their tests), `e2e/app-recovery.spec.ts` and `e2e/recovery-steps.ts`; `tests/tooling/app-recovery-retired.test.ts` guards it.
+- **New hooks and probe:** `src/renderer/app/model/test-hook.ts` (TH2 `readTabs`, `activateTab`, `menuRequests`), the TH7 store hold (`src/main/model/store-hold.ts`, `tests/tooling/store-hold-gating.test.ts`), the TH8 perf probe `e2e/probe-main.mjs`, `e2e/{launch,harness,session-steps,drop-steps}.ts`, `e2e/app-test-hook.spec.ts`, `eslint.config.mjs`.
+- **New e2e:** `e2e/app-tabs.spec.ts`, `e2e/app-tabs-perf.spec.ts`, `e2e/app-autosave.spec.ts`, `e2e/app-session.spec.ts`, `e2e/app-open-tabs.spec.ts`, `e2e/clipboard-tabs.spec.ts`, `e2e/shots/TB32.shot.ts`; changed: `e2e/app-files.spec.ts`, `app-instance.spec.ts`, `app-recent.spec.ts`, `app-security.spec.ts`, `app-settings.spec.ts`, `app-draft-close.spec.ts`, `editor-canvas.spec.ts`, `editor-conditions.spec.ts`, `editor-layout.spec.ts`, `export-dialog.spec.ts`, `export-png.spec.ts`, `export-svg.spec.ts`, `packaged/app.packaged.ts`, and the shots `A11`, `A14` and `E28`.
+- **Tooling tests:** `tests/tooling/tab-strip-css.test.ts`.
+
+The commands to run: `npm run check`, `npm run test:e2e`, the Linux packaging check
+(`npx electron-vite build`, then `npx electron-builder --linux dir` from a terminal) and
+`npm run test:packaged` (it launches `dist/linux-unpacked`), as in the list above.
+
+Hand checks (installed final build):
+
+- [ ] Tabs look like A18 at 100, 125 and 150 % scaling (one tab, several, overflow, drag); the ☰
+  button and its menu like A19; the close prompt like A20 and Narrator reads it; at 960×640
+  content nothing is cut off (A21); Snap layouts and the caption buttons work as before.
+- [ ] ☰ opens with a click, with Alt (pressed and released alone) and with F10; arrows, access keys
+  (Alt then F opens File) and Esc work; Narrator reads the menu. Alt+click an atom, Alt+Tab and
+  Left Alt+Shift (switching to the Nepali keyboard) never open it.
+- [ ] With a real keyboard: Ctrl+T, Ctrl+N, Ctrl+W, Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageUp,
+  Ctrl+PageDown, Ctrl+1 … Ctrl+9, Ctrl+Shift+T and Ctrl+Shift+R do what A12 says, also with the
+  Nepali layout active (write down what happens).
+- [ ] Narrator on the tab strip: Tab reaches it after the rail, it is announced as a tab list,
+  each tab with its name and "not saved as a file yet" / "couldn't save", arrows move, Enter
+  switches; the + button and the ☰ button are announced with their names.
+- [ ] Documents synced by OneDrive: open and edit a `.chalk` in the synced Documents folder for a
+  few minutes while OneDrive runs (and once while it uploads): no "Couldn't save" box and no
+  "(your changes)" tab appear (F9's retries cover OneDrive holding the file during a rename).
+- [ ] Full disk: fill the drive that holds `%APPDATA%` (a small VHD or USB drive as the user data
+  folder is enough), edit an Untitled drawing: the tab shows the warning, the "Couldn't keep" box
+  appears once, closing that tab asks; free space and edit again: the warning goes.
+- [ ] Double-click two `.chalk` files in Explorer, then select three and press Enter: each opens in
+  its own tab; double-clicking one already open focuses its tab.
+- [ ] Auto-save: edit a named drawing, wait 3 s, open the file's folder: its modified time changed;
+  no prompt anywhere; the tab shows no marker.
+- [ ] USB stick: open a `.chalk` from a stick, edit, pull the stick: the "Couldn't save" box once,
+  the tab shows the warning; plug it back and click the tab: the warning goes and the file gets
+  the changes.
+- [ ] Copy a different `esterification.chalk` over the open one in Explorer, come back to
+  Chalkbond: the drawing changes and Ctrl+Z brings hers back; edit first and copy within 2 s: the
+  "(your changes)" tab and the changed file's tab both exist.
+- [ ] Power cut: three tabs (a named file, an Untitled with content, a picture drawing), edit, wait
+  15 s, end Chalkbond in Task Manager, start it: the same tabs, order, active tab, drawings,
+  zoom, and undo works back through the edits. The same after a Windows shutdown, and after a
+  shutdown right after an edit (write down whether the last change was there).
+- [ ] Cold start with 10 tabs restored is under 3 s on the teacher's laptop and switching tabs is
+  immediate; memory after visiting all 10 is written down (E32, SC1).
+
+Probe from the spec's Facts (`SPEC-app-shell.md`, the row on `src/main/menu.ts` popups; M4, K3, T15):
+
+- [ ] Native-popup keyboard focus: a popup opened from a key press gets keyboard focus (arrows, access keys, Esc) and Narrator reads it.
+  - Run it for the ☰ menu opened with Alt (pressed and released alone) and with F10, and for the tab menu (T15) opened with the context-menu key and with Shift+F10 on a focused tab. Write down for each: whether the first arrow key moves in the menu, whether an access key and Esc work, what Narrator reads, and where focus is after Esc. If a popup opened from a key does not take keyboard focus, that is a finding for the owner, not a result to tick.
 
 ## Checkpoint A — scaffold and tooling
 
@@ -238,6 +331,8 @@ Human-only checks, with the installed app and Office 2021 (owner decision 2026-1
 ## App shell and installer (app-shell, `SPEC-app-shell.md` "Windows checks")
 
 Human-only: native chrome, other programs, a clean machine. Run with the installer built in step 6 of Checkpoint Z on a clean Windows 11 account (Windows 10 waived by the owner on 2026-11-12). The automated steps built the installer and smoke-tested the unpacked app; the first human batch (2026-11-11, development machine, by a computer-use agent, verified by the orchestrator) ticked the first box; the owner's hand checks of 2026-11-12 ticked fifteen of the seventeen boxes. Sixteen of the seventeen boxes are now ticked (the owner's answer of 2026-11-12 supplied the written observation for "Shutdown right after an edit"). Open: the cold start on the teacher's laptop.
+
+**Tabs feature set (2026-11-12).** The new boxes for tabs, the ☰ menu, auto-save, the session and the native-popup keyboard-focus probe (`SPEC-app-shell.md` "Windows checks (tabs feature set)") are in "Re-checks for the tabs feature set" above, with their wording unchanged. The boxes below that speak of the menu bar, the unsaved-changes prompt, the recovery box or "opens it in the same window" describe the 1.0.0 build tested on 2026-11-12 and stay ticked as history; the cold-start box below stays open on the teacher's laptop.
 
 - [x] `npm run dist:win` produces `dist/Chalkbond-1.0.0-setup.exe`; its size and the installed size are written in this spec (I1). Done 2026-11-11 (`dist:win` exit 0 at `956a4a4`): installer 109,915,593 bytes (104.8 MiB), unpacked `dist/win-unpacked` 347,499,681 bytes (331.4 MiB, 21 files), installed 347,681,841 bytes (331.6 MiB, 24 files, measured 2026-11-11 after installing on the development machine); all three are in `SPEC-app-shell.md` I1. Note 2026-11-12 (W20): those 2026-11-11 sizes included development files (`out/shots`, sheets, mock-ups) because the package took all of `out/`; the installer tested by hand on 2026-11-11 contained them too (`SPEC-app-shell.md` R29). Rebuilt with `files` naming only `out/main`, `out/preload`, `out/renderer`: installer 104,733,023 bytes (99.9 MiB), unpacked 340,752,470 bytes (325.0 MiB, 21 files); the installed size of the new installer is still to be measured (see the re-check box below).
 - [x] On a clean Windows 11 account **without admin rights**, network disconnected: run the installer. SmartScreen shows "Windows protected your PC"; **More info** → **Run anyway** works; no admin prompt; Chalkbond opens by itself; Start-menu and desktop shortcuts show the new icon (A16).
