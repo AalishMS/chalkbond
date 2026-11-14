@@ -950,6 +950,12 @@ const controller = createEditorController({
   Measured numbers: `docs/editor-perf.md` "Tabs". SC1's 3 s cold start with 10 restored tabs is not
   measured: it is the teacher's-laptop box.
 
+- **TB35 harness correction (2026-11-14):** A10 now waits for two tabs after Ctrl+N and asserts
+  `Untitled 2 - Chalkbond` (T4/T7), rather than racing against the first tab's old title.
+  Waiting for the second tab reproduced the stale assertion failure before it was corrected.
+  The packaged smoke also checks that a fresh standard Chromium `--user-data-dir` gets a session
+  index with one tab and no old recovery folder. This uses no Chalkbond test flag or hook.
+
 - **TH9** (2026-11-13, TB32; recorded as built) `e2e/shots/TB32.shot.ts` writes the shots of A18
   (strip: one, several, hover, focus, +, dot, both warning icons, long name, overflow at 960 with
   one or both chevrons, drag, the six tooltips), A19 (the ☰ button closed and pressed: a stub of

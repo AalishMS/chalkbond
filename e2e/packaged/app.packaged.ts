@@ -53,6 +53,26 @@ test('the packaged app starts with the untitled window title', async () => {
   expect(await app.evaluate(({ app: electronApp }) => electronApp.isPackaged)).toBe(true);
 });
 
+test('SS7: a packaged first launch creates the session store without a recovery folder', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'chalkbond-packaged-session-'));
+  const isolated = await launchApp({
+    executablePath: unpackedExecutable(),
+    extraArgs: [`--user-data-dir=${userData}`],
+  });
+  try {
+    await isolated.firstWindow();
+    await expect.poll(() => existsSync(join(userData, 'session', 'index.json'))).toBe(true);
+    const index = JSON.parse(readFileSync(join(userData, 'session', 'index.json'), 'utf8')) as {
+      tabs: unknown[];
+    };
+    expect(index.tabs).toHaveLength(1);
+    expect(existsSync(join(userData, 'recovery'))).toBe(false);
+  } finally {
+    await isolated.close();
+    rmSync(userData, { recursive: true, force: true });
+  }
+});
+
 test('SEC12: no test hook exists although the flag was passed', async () => {
   const page = await app.firstWindow();
   expect(
