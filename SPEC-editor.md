@@ -20,8 +20,8 @@ spans both rows), the canvas sits in a `canvas-panel` with `role="tabpanel"`, an
 shell's (the host's CSS narrows `.editor.has-tabs .btn-opt` below 1100 px); R57's `putState` of a tab's own view before the
 canvas is measured keeps its zoom and centre on the first measurement (`EditorState.viewPending`; a new or loaded
 document still gets V2 then), and `putState` of a 100-atom tab to its first derived scene took 2.0–2.7 ms (TB5, node,
-median; T11's switch budget is 100 ms). TB35 (the final automated gates) has not run and the owner's hand
-checks are open: no gate result is claimed for the tabs seam here. Amended 2026-11-12 for the
+median; T11's switch budget is 100 ms). TB35 (the final automated gates) ran on 2026-11-14 at `ea36057` and every
+gate exited 0 (the numbers are in the `SPEC.md` Decisions Log, 2026-11-14); the owner's hand checks are open. Amended 2026-11-12 for the
 owner's feature set: number keys for the tool rail (R50) and the structural formula switch (R51,
 R52; its drawing was svg-render question S1, answered 2026-11-12 by svg-render Decision 16 and
 R53 here: bonds twice as long, rings drawn as before). The mock-ups were updated in the same commit

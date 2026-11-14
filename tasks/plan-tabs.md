@@ -116,9 +116,9 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [x] TB7: editor `replace-doc` command (R58)
 
 ### Checkpoint A: doc-model and editor
-- [ ] `npm run check` green; coverage thresholds hold
-- [ ] On Windows: `npm run test:e2e` editor files (`editor-canvas`, `editor-keyboard`, `editor-layout`, `editor-a11y`, `editor-perf`) and `npm run shots -- E21 N5` looked at
-- [ ] Commit + push (no push unless asked)
+- [x] `npm run check` green; coverage thresholds hold (2026-11-14, TB35, `ea36057`: check exit 0, 261 files, 5422 tests; `npm test -- --coverage` exit 0)
+- [x] On Windows: `npm run test:e2e` editor files (`editor-canvas`, `editor-keyboard`, `editor-layout`, `editor-a11y`, `editor-perf`) and `npm run shots -- E21 N5` looked at (2026-11-14: the full e2e run, 422 passed, covers the editor files; the full shots run passed, and of the E21 and N5 PNGs only `N5/rail-tooltip.png` and `E21/ring-options-bar.png` were looked at, against mock-ups 03 and 04)
+- [x] Commit (the TB35 commit records it; not pushed, no push unless asked)
 
 ### Phase 2: app-shell main (additive)
 - [x] TB8: `session-index.ts` and `tab-registry.ts` pure models (SS3 index, SS11 classification, bindings and hashes)
@@ -129,9 +129,9 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [x] TB13: window close and shutdown in main: chain-empty close, `discarded` deletion, `flush-session`
 
 ### Checkpoint B: main
-- [ ] `npm run check` green; `src/main/model` >= 90 % lines
-- [ ] `npm run test:e2e` unchanged and green (nothing user-visible changed yet)
-- [ ] Commit
+- [x] `npm run check` green; `src/main/model` >= 90 % lines (2026-11-14, TB35: check exit 0; the coverage run exit 0 enforces the 90 % threshold)
+- [x] `npm run test:e2e` unchanged and green (2026-11-14, TB35, at the end state: 422 passed, exit 0; the checkpoint's "nothing user-visible changed yet" no longer applies at the end state)
+- [x] Commit (the TB35 commit records it)
 
 ### Phase 3: renderer models, flows, views
 - [x] TB14: `model/tabs.ts` (T1, T4, list rules, reopen list, T17's replace-empty rule)
@@ -146,8 +146,8 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [x] TB25: strip interactions: reorder, overflow, scroll into view, tab menu trigger (T13, T14, CM4)
 
 ### Checkpoint C: the pieces exist
-- [ ] `npm run check` green; `src/renderer/app/model` >= 90 % lines
-- [ ] Commit
+- [x] `npm run check` green; `src/renderer/app/model` >= 90 % lines (2026-11-14, TB35: check exit 0; the coverage run exit 0 enforces the 90 % threshold)
+- [x] Commit (the TB35 commit records it)
 
 ### Phase 4: switch-over
 - [x] TB20: the host wires tabs and the session store; the recovery file and F4 prompts stop being used
@@ -155,8 +155,8 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [x] TB26: menu model rows (R47, R46, M6), I9 popup, ☰ button, application menu removed, Alt and F10
 
 ### Checkpoint D: the app works with tabs
-- [ ] `npm run check` green; `npm run test:e2e` green on Windows (342 existing, rewritten where the spec supersedes them)
-- [ ] Commit
+- [x] `npm run check` green; `npm run test:e2e` green on Windows (342 existing, rewritten where the spec supersedes them) (2026-11-14, TB35, `ea36057`: check exit 0, 261 files, 5422 tests; e2e exit 0, 422 passed including `e2e/win/`)
+- [x] Commit (the TB35 commit records it)
 
 ### Phase 5: tests of the whole, perf, shots, docs
 - [x] TB27: `e2e/app-tabs.spec.ts`
@@ -169,7 +169,7 @@ ordered). Groups run in order; a group starts when the dependencies in the todo 
 - [x] TB34: `AGENTS.md`, spec statuses, DEVIATIONS item 5, todo ticks
 
 ### Checkpoint Z-tabs: final (Windows 11 development machine)
-- [ ] TB35: `npm run check`, `npm run test:e2e` (including `e2e/win/`), `npm run test:e2e:os-input`, `npm run dist:win`, `npm run test:packaged`, `npm run shots`, `npm test -- --coverage`; Linux re-run listed in `docs/windows-checklist.md`; the owner's hand checks stay open
+- [ ] TB35: `npm run check`, `npm run test:e2e` (including `e2e/win/`), `npm run test:e2e:os-input`, `npm run dist:win`, `npm run test:packaged`, `npm run shots`, `npm test -- --coverage`; Linux re-run listed in `docs/windows-checklist.md`; the owner's hand checks stay open (2026-11-14, `ea36057`: every command above exited 0, numbers in the `SPEC.md` Decisions Log, 2026-11-14. **The box stays unticked on purpose**: Checkpoint Z-tabs is not reached while the owner's hand checks, the teacher's-laptop boxes and the Linux re-run are open, and the release is not declared)
 
 ## Success Criteria Coverage
 

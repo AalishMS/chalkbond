@@ -24,7 +24,7 @@ declared and Checkpoint Z is not reached. Open: the owner's hand re-checks on th
 (the unticked boxes of the re-check section, including the installed size), and, on the teacher's
 laptop, Checkpoint E32 and the cold-start box.
 
-**Tabs feature set (2026-11-13).** The tabs, auto-save and session feature set (`SPEC-app-shell.md` R30–R51) is implemented. Its hand boxes and Linux re-run list are in "Re-checks for the tabs feature set"; every box there is unticked and its automated gates (task TB35) have not been run. The release is not declared and Checkpoint Z is not reached; Checkpoint E32 and the cold-start box stay open on the teacher's laptop.
+**Tabs feature set (2026-11-13).** The tabs, auto-save and session feature set (`SPEC-app-shell.md` R30–R51) is implemented. Its hand boxes and Linux re-run list are in "Re-checks for the tabs feature set"; its automated gates (task TB35) passed on 2026-11-14 at `ea36057` (the six automated boxes there are ticked with their results), and every hand box there is unticked. The release is not declared and Checkpoint Z is not reached; Checkpoint E32 and the cold-start box stay open on the teacher's laptop.
 
 ## Owner decisions of 2026-11-12
 
@@ -142,17 +142,24 @@ the final installer. Run them on the **final** build and installer, on Windows 1
 waived, owner decision 2026-11-12), after every tabs task is done. Record each result as the other
 sections do (machine, Office where it matters, who ran it, who verified it).
 
-Automated gates (PowerShell, from a clean clone of the final commit; they belong to task TB35 and
-have not been run for this feature set):
+Automated gates (PowerShell; task TB35, run 2026-11-14 at `ea36057`, Windows 11 Pro build 26300, in
+the task's worktree at a clean `ea36057`, not in a fresh clone; the numbers are also in the `SPEC.md`
+Decisions Log, 2026-11-14):
 
-- [ ] `npm ci`, then `npm run check` (exit 0; write the file and test counts)
-- [ ] `npm run test:e2e` (builds first; includes `e2e/win/`; exit 0, count written)
-- [ ] `npm run test:e2e:os-input` (do not touch the mouse while it runs)
-- [ ] `npm run dist:win` (installer size and unpacked size written in `SPEC-app-shell.md` I1)
-- [ ] `npm run test:packaged` against `dist/win-unpacked`
-- [ ] `npm run shots`, and the PNGs of `out/shots/TB32` looked at by eye against the mock-ups A01, A12 and A18–A21 (`node docs/mockups/shell/build.mjs --png out/mockups-shell` makes the reference PNGs)
+- [x] `npm ci`, then `npm run check` (exit 0; write the file and test counts)
+  - Result 2026-11-14, `ea36057`: **`npm ci` was not run.** The existing pinned install of the development checkout was used (`node_modules` linked into the worktree; `package.json` and `package-lock.json` unchanged). `npm run check`: exit 0, 261 files, 5422 tests. `npm test -- --coverage`: exit 0, 258 files passed and 3 skipped, 5403 tests passed and 19 skipped (perf timings are skipped under coverage), lines 89.37 %. The `npm ci` half of this box is therefore not done, and the clean-clone wording above was not met.
+- [x] `npm run test:e2e` (builds first; includes `e2e/win/`; exit 0, count written)
+  - Result 2026-11-14, `ea36057`: exit 0, 422 passed, 13.0 min, including `e2e/win/`. Copy of the 40-atom scheme to the Windows clipboard: median 68.0 ms (budget 500 ms).
+- [x] `npm run test:e2e:os-input` (do not touch the mouse while it runs)
+  - Result 2026-11-14, `ea36057`: exit 0, 1 passed.
+- [x] `npm run dist:win` (installer size and unpacked size written in `SPEC-app-shell.md` I1)
+  - Result 2026-11-14, `ea36057`: exit 0, from a real console window with `CI` unset (`dist/builder-effective-config.yaml` written). Installer `dist/Chalkbond-1.0.0-setup.exe` 104,765,903 bytes (99.9 MiB); `dist/win-unpacked` 340,914,213 bytes (325.1 MiB, 21 files). Installed size after a silent install over the 2026-11-12 build: 341,096,373 bytes (325.3 MiB), 24 files (`SPEC-app-shell.md` I1; the owner's hand box for it below stays open).
+- [x] `npm run test:packaged` against `dist/win-unpacked`
+  - Result 2026-11-14, `ea36057`: exit 0, 9 passed (no `__chalkbondTest`, no `__chalkbondTestMain` and so no store hold, no application menu, the archive contents). That test does not check the session folder: a start of the unpacked app with a throwaway `--user-data-dir` created `session/index.json` with one Untitled tab and no `recovery` folder. It used the real `%APPDATA%\Chalkbond` as designed; its `session/index.json` and `settings.json` were byte-identical to a copy taken before.
+- [x] `npm run shots`, and the PNGs of `out/shots/TB32` looked at by eye against the mock-ups A01, A12 and A18–A21 (`node docs/mockups/shell/build.mjs --png out/mockups-shell` makes the reference PNGs)
+  - Result 2026-11-14, `ea36057`: exit 0, 119 passed, on the **third** run. The first was cut off by the end of the agent session at 101 passed and 0 failed (no result); the second failed, 98 passed and 21 failed (30 s timeouts with clicks taking 8 to 10 s, one A10 "Untitled 2"; cause not proven, see the log row); the same specs passed alone. Looked at by eye: A18 `strip-several`, `strip-hover`, `strip-focus`, `strip-add-hover`, `strip-warning-unavailable`, `strip-warning-unkept`, `strip-overflow-middle-960`, `strip-drag`, `tooltip-unkept`, `tooltip-close`; A19 `menu-pressed`; A21 `min-tabs-960`; A01 `main`; A12 `shortcuts-tabs`; and `N5/rail-tooltip`, `E21/ring-options-bar`. Not looked at: the other TB32 PNGs (per-tool options bars, the A12 top and 960 shots, the other tooltips, `strip-one`, the overflow start and end), and the native A20, ☰ popup and tab menu. Differences from the mock-ups: the ones in `SPEC-app-shell.md` TH9 (a)–(d), left for the owner, and the fixture's third tab "Untitled" where the mock draws "Untitled 2". This box is the automated run and the test agent's look; it does not replace the owner's look at the installed build below.
 
-Status of this section: no box here has been done. Every hand box below is open: none has been done
+Status of this section (2026-11-14): the six automated boxes above are ticked with the results shown. No hand box is ticked by them. Every hand box below is open: none has been done
 on the final installer. The release is not declared and Checkpoint Z is not reached. The cold-start
 box of "App shell and installer" and Checkpoint E32 stay open on the teacher's laptop (owner decision
 2026-11-12: the development machine is not that laptop); the last box of the hand checks repeats

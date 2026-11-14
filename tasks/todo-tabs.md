@@ -14,7 +14,7 @@ tests, see them fail (RED) for the reason given, then write the code. Do not pus
 "R n", "T n", "AS n", "SS n" are rows of the specs named above; "item (n)" is the fix-round test
 list in `SPEC-app-shell.md` "Testing".
 
-## Checkpoint 2026-11-14 (34 of 35 done; TB35 is next)
+## Checkpoint 2026-11-14 (35 of 35 done; TB35's automated gates passed at `ea36057`; see "TB35 result" at the end of this block)
 
 **State:** `main` at `0bc72d9` plus the TB34 commit. `npm run check` was green at `0bc72d9`: 261 files,
 5422 tests (the 2026-11-12 note said 260 files, 5500 tests; this is the count now). Not pushed.
@@ -28,11 +28,21 @@ is gone (TB21). Checkpoints A to D above are left unticked on purpose: their box
 in this file since TB26, TB27, TB29 and TB30 were merged together** (each task ran its own specs; TB26's full
 run was 340 passed / 9 failed before its fixes; TB32's `npm run shots` was 119 passed): TB35 runs it first.
 
-**Next:** TB35 only (the automated gates on a quiet machine: check, coverage, full e2e with `e2e/win`,
-os-input, `dist:win`, `test:packaged`, shots). It has not run. No gate result of the tabs feature set is
-claimed anywhere yet, and the release is not declared. The owner's hand checks (the "Re-checks for the tabs
-feature set" boxes in `docs/windows-checklist.md`) and the teacher's-laptop boxes (the cold start with 10
-tabs, Checkpoint E32) stay open.
+**Next (written before TB35 ran, kept as history):** TB35 only (the automated gates on a quiet machine: check,
+coverage, full e2e with `e2e/win`, os-input, `dist:win`, `test:packaged`, shots).
+
+**TB35 result (2026-11-14, `ea36057`, Windows 11, by the test agent; details in the `SPEC.md` Decisions Log row of
+2026-11-14):** every gate exited 0 and no source, test, golden, fixture, budget, timeout or dependency was changed:
+`npm run check` 261 files, 5422 tests; `npm test -- --coverage` (258 files passed and 3 skipped, 5403 tests passed
+and 19 skipped; lines 89.37 %); `npm run test:e2e` with `e2e/win/` 422 passed (13.0 min); `npm run test:e2e:os-input`
+1 passed; `npm run dist:win` from a real console window (installer 104,765,903 bytes, unpacked 340,914,213 bytes,
+`builder-effective-config.yaml` written); `npm run test:packaged` 9 passed (the session folder, which that test does
+not assert, was checked apart); `npm run shots` 119 passed on the **third** run (the first was cut off by the end of
+the agent session at 101 passed, 0 failed; the second failed 21 of 119 with 30 s timeouts and slow clicks under an
+unproven machine load, and the same specs passed alone). Installed size after a silent install over the 2026-11-12
+build: 341,096,373 bytes, 24 files (`SPEC-app-shell.md` I1). `npm ci` was not run (the existing pinned install was
+used). **Still open:** the owner's hand checks, the teacher's-laptop boxes (cold start with 10 tabs, Checkpoint
+E32), the Linux re-run; the release is not declared and Checkpoint Z-tabs is not ticked.
 
 **Spec text owed to TB34, done in TB34 (2026-11-14):** the "as built" notes are in
 `SPEC-app-shell.md` (R22 and R37, W4, W6, M4, the keys table with R45, T13, F6, I7, TH2; TH7, TH8 and TH9 were
@@ -383,9 +393,9 @@ not merge into it.
 ---
 
 ### Checkpoint A: doc-model and editor
-- [ ] `npm run check` green; coverage thresholds hold (`npm test -- --coverage`)
-- [ ] Windows: `npm run test:e2e` editor files and `npm run shots -- E21 N5` looked at
-- [ ] Commit
+- [x] `npm run check` green; coverage thresholds hold (`npm test -- --coverage`) (2026-11-14, TB35, `ea36057`, both exit 0)
+- [x] Windows: `npm run test:e2e` editor files and `npm run shots -- E21 N5` looked at (2026-11-14: full e2e 422 passed; full shots run passed; looked at `N5/rail-tooltip.png` and `E21/ring-options-bar.png` only)
+- [x] Commit (the TB35 commit records it)
 
 ---
 
@@ -642,9 +652,9 @@ discarded records are deleted after the chain is empty and never when the index 
 ---
 
 ### Checkpoint B: main
-- [ ] `npm run check` green; `src/main/model` >= 90 % lines
-- [ ] Windows: `npm run test:e2e` unchanged and green (nothing user-visible changed)
-- [ ] Commit
+- [x] `npm run check` green; `src/main/model` >= 90 % lines (2026-11-14, TB35: check exit 0; the coverage run exit 0 enforces the threshold)
+- [x] Windows: `npm run test:e2e` unchanged and green (2026-11-14, TB35, at the end state: 422 passed, exit 0)
+- [x] Commit (the TB35 commit records it)
 
 ---
 
@@ -1062,8 +1072,8 @@ context-menu key handler table; reduced-motion CSS class; the e2e for these is T
 ---
 
 ### Checkpoint C: the pieces exist
-- [ ] `npm run check` green; `src/renderer/app/model` >= 90 % lines
-- [ ] Commit
+- [x] `npm run check` green; `src/renderer/app/model` >= 90 % lines (2026-11-14, TB35: check exit 0; the coverage run exit 0 enforces the threshold)
+- [x] Commit (the TB35 commit records it)
 
 ---
 
@@ -1197,9 +1207,9 @@ above are the RED step.
 ---
 
 ### Checkpoint D: the app works with tabs
-- [ ] `npm run check` green; `npm test -- --coverage` thresholds hold
-- [ ] Windows: `npm run test:e2e` green including `e2e/win/`; `npm run test:e2e:os-input` green
-- [ ] Commit
+- [x] `npm run check` green; `npm test -- --coverage` thresholds hold (2026-11-14, TB35, `ea36057`: both exit 0)
+- [x] Windows: `npm run test:e2e` green including `e2e/win/`; `npm run test:e2e:os-input` green (2026-11-14, TB35: 422 passed; 1 passed)
+- [x] Commit (the TB35 commit records it)
 
 ---
 
@@ -1480,8 +1490,13 @@ The hand boxes, the teacher's-laptop boxes (cold start, E32 with 10 tabs) and th
 **Tests first:** none.
 
 **Acceptance criteria:**
-- [ ] Every command above exits 0 at one commit hash, written in the log row
-- [ ] The log row says which hand checks are open and that the release is not declared
+- [x] Every command above exits 0 at one commit hash, written in the log row (2026-11-14, `ea36057`; `npm run shots` exited 0 on its third run, the first two are in the log row)
+- [x] The log row says which hand checks are open and that the release is not declared (`SPEC.md` Decisions Log, 2026-11-14)
+
+**Result (2026-11-14):** see the "TB35 result" paragraph at the top of this file and the `SPEC.md` log row. Also
+written: `SPEC-app-shell.md` I1 (sizes) and the two status sentences of `SPEC-app-shell.md` and `SPEC-editor.md`;
+`docs/windows-checklist.md` (the six automated boxes of "Re-checks for the tabs feature set", ticked with their
+results; the combined `npm ci` box says that `npm ci` was not run). `AGENTS.md` and `CLAUDE.md` were not touched.
 
 **Verification:** the commands above.
 
@@ -1496,7 +1511,7 @@ The hand boxes, the teacher's-laptop boxes (cold start, E32 with 10 tabs) and th
 ---
 
 ### Checkpoint Z-tabs
-- [ ] TB35 done; the owner's hand checks of "Re-checks for the tabs feature set" and the teacher's-laptop boxes are open; the release is not declared
+- [ ] TB35 done; the owner's hand checks of "Re-checks for the tabs feature set" and the teacher's-laptop boxes are open; the release is not declared (2026-11-14: TB35's automated gates passed at `ea36057`; **this box stays unticked on purpose**, because the checkpoint is not reached while the owner's hand checks, the teacher's-laptop boxes and the Linux re-run are open)
 
 ---
 
