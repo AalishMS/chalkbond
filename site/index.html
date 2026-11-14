@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chalkbond: chemistry drawings for teaching</title>
+    <meta
+      name="description"
+      content="Chalkbond is an offline Windows app for drawing chemical structures and reaction schemes for teaching. Type a name, tidy the reaction, paste it into PowerPoint or Word."
+    />
+    <meta name="theme-color" content="#24493f" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="assets/icon-256.png" type="image/png" sizes="256x256" />
+    <link rel="apple-touch-icon" href="assets/icon-256.png" />
+    <link rel="preload" href="fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="styles.css" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Chalkbond: chemistry drawings for teaching" />
+    <meta
+      property="og:description"
+      content="Draw structures and reaction schemes for your lessons in seconds, and paste them into PowerPoint or Word. Offline, for Windows."
+    />
+    <meta property="og:url" content="https://aalishms.github.io/chalkbond/" />
+    <meta property="og:image" content="https://aalishms.github.io/chalkbond/assets/app-hero.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <div class="board-wrap">
+      <div class="board" aria-hidden="true">
+        <svg class="chalk-art chalk-art--left" viewBox="0 0 260 220">
+          <defs>
+            <filter id="chalk-rough" x="-5%" y="-5%" width="110%" height="110%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" />
+            </filter>
+          </defs>
+          <g filter="url(#chalk-rough)">
+            <path d="M90 62 140 91v58l-50 29-50-29V91Z" />
+            <circle cx="90" cy="120" r="30" />
+            <path d="m140 91 46-27 46 27" />
+          </g>
+        </svg>
+        <svg class="chalk-art chalk-art--right" viewBox="0 0 300 200">
+          <g filter="url(#chalk-rough)">
+            <path d="m20 150 46-27 46 27 46-27" />
+            <path d="M70 92c18-42 70-50 96-14" />
+            <path d="m158 66 8 12-14 2" />
+            <text x="170" y="136">OH</text>
+            <path d="M232 128h50" />
+            <path d="m272 120 10 8-10 8" />
+          </g>
+        </svg>
+      </div>
+
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="Chalkbond home">
+          <img src="assets/icon.svg" alt="" width="32" height="32" />
+          <span>Chalkbond</span>
+        </a>
+        <nav aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="#install">Install</a>
+          <a
+            class="nav-download"
+            href="https://github.com/AalishMS/chalkbond/releases/download/v1.0.0/Chalkbond-1.0.0-setup.exe"
+            >Download</a
+          >
+        </nav>
+      </header>
+
+      <main id="main">
+        <section class="hero" aria-labelledby="hero-title">
+          <p class="eyebrow eyebrow--chalk">For chemistry teachers</p>
+          <h1 id="hero-title">Chemistry drawings for your lessons, <em>in&nbsp;seconds</em>.</h1>
+          <p class="lede">
+            Chalkbond is a small Windows app for drawing structures and reaction schemes. Type a
+            compound’s name, tidy the reaction, and paste it straight into PowerPoint or Word, sharp
+            on every projector.
+          </p>
+          <div class="cta">
+            <a
+              class="btn btn--chalk"
+              href="https://github.com/AalishMS/chalkbond/releases/download/v1.0.0/Chalkbond-1.0.0-setup.exe"
+            >
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" />
+              </svg>
+              Download for Windows
+            </a>
+            <a class="btn btn--ghost" href="#features">See what it does</a>
+          </div>
+          <p class="meta">Version 1.0.0 · Windows 10 and 11, 64-bit · 100 MB · Works offline</p>
+
+          <figure class="window">
+            <div class="window-bar" aria-hidden="true">
+              <img src="assets/icon.svg" alt="" width="16" height="16" />
+              <span>esterification - Chalkbond</span>
+              <span class="window-controls">
+                <svg viewBox="0 0 10 10"><path d="M0 5h10" /></svg>
+                <svg viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" rx="1" /></svg>
+                <svg viewBox="0 0 10 10"><path d="m0 0 10 10M10 0 0 10" /></svg>
+              </span>
+            </div>
+            <img
+              src="assets/app-hero.png"
+              width="2560"
+              height="1600"
+              alt="The Chalkbond window with three tabs open. The esterification tab shows ethanol plus acetic acid, an arrow labelled conc. H2SO4 and heat, then ethyl acetate plus water. A tool rail on the left lists Select, Erase, Bond, Chain, Ring, Atom, Arrow, Plus, Curly and Text."
+            />
+          </figure>
+        </section>
+      </main>
+    </div>
+
+    <section id="features" class="section features" aria-labelledby="features-title">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">What it does</p>
+          <h2 id="features-title">Made for the way chemistry is taught.</h2>
+          <p>
+            Built around grade 11 and 12 organic chemistry: the names you use, the reactions you
+            write on the board, and the mechanisms you explain.
+          </p>
+        </header>
+
+        <article class="feature">
+          <div class="feature-text">
+            <p class="feature-num">01</p>
+            <h3>Type a name, get the structure.</h3>
+            <p>
+              Start typing <i>ethanol</i>, <i>benzene</i> or <i>acetic acid</i> and pick it from the
+              list, by IUPAC or common name. Or write a whole reaction,
+              <code>ethanol + acetic acid -&gt; ethyl acetate + water</code>, and Chalkbond draws
+              every part of it.
+            </p>
+            <p class="note">More than 400 compounds are built in. SMILES works too.</p>
+          </div>
+          <div class="feature-visual feature-visual--shot">
+            <picture>
+              <source
+                media="(max-width: 600px)"
+                srcset="assets/app-name-search-narrow.png"
+                width="790"
+                height="700"
+              />
+              <img
+                src="assets/app-name-search.png"
+                width="1200"
+                height="740"
+                loading="lazy"
+                alt="The name field with eth typed in. A list suggests ethane, ethene, ethyne, ethanol, ethylamine, ethylbenzene, ethyl acetate and ethyl formate, each with its formula."
+              />
+            </picture>
+          </div>
+        </article>
+
+        <article class="feature feature--wide">
+          <div class="feature-text">
+            <p class="feature-num">02</p>
+            <h3>Reactions that line themselves up.</h3>
+            <p>
+              Add arrows, plus signs and equilibrium arrows, then type the conditions above or below
+              the arrow. H₂SO₄ gets its subscripts by itself. Press <b>Tidy reaction</b> and
+              everything sits on one line with even spacing.
+            </p>
+          </div>
+          <div class="feature-visual">
+            <img
+              class="mol"
+              style="--w: 697"
+              src="assets/molecules/reaction-conditions.svg"
+              loading="lazy"
+              alt="Ethanol plus acetic acid, an equilibrium arrow with H2SO4 (cat.) above and heat, 80 °C, 2 h below, giving ethyl acetate plus water."
+            />
+          </div>
+        </article>
+
+        <article class="feature feature--flip">
+          <div class="feature-text">
+            <p class="feature-num">03</p>
+            <h3>Skeletal or structural, in one click.</h3>
+            <p>
+              Switch the whole drawing to structural formula and Chalkbond writes every CH₃ and CH₂
+              for you, with longer bonds so they are easy to read. One more click takes it back to
+              skeletal.
+            </p>
+          </div>
+          <div class="feature-visual feature-visual--pair">
+            <span class="switch-chip" aria-hidden="true">
+              <svg class="i" viewBox="0 0 24 24"><path d="m3 15 5-6 4 4 4-6 5 6" /></svg>
+              Show structural
+            </span>
+            <div class="pair-row">
+              <img
+                class="mol"
+                style="--w: 98"
+                src="assets/molecules/acetic-acid.svg"
+                loading="lazy"
+                alt="Acetic acid as a skeletal formula."
+              />
+              <svg class="i pair-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12h15m-5-5 5 5-5 5" />
+              </svg>
+              <img
+                class="mol"
+                style="--w: 203"
+                src="assets/molecules/acetic-acid-structural.svg"
+                loading="lazy"
+                alt="The same acetic acid as a structural formula, with C and CH3 written out."
+              />
+            </div>
+          </div>
+        </article>
+
+        <article class="feature">
+          <div class="feature-text">
+            <p class="feature-num">04</p>
+            <h3>Mechanisms, the way you teach them.</h3>
+            <p>
+              Curly arrows for electron pairs and fishhooks for single electrons. They stay attached
+              to their atoms and bonds when you move things around. Add lone pairs, charges,
+              radicals and δ+ / δ−.
+            </p>
+          </div>
+          <div class="feature-visual feature-visual--cluster">
+            <img
+              class="mol"
+              style="--w: 97"
+              src="assets/molecules/acetate.svg"
+              loading="lazy"
+              alt="The acetate ion with lone pairs and a negative charge."
+            />
+            <img
+              class="mol"
+              style="--w: 83"
+              src="assets/molecules/hcl-partial.svg"
+              loading="lazy"
+              alt="Hydrogen chloride with partial charges delta plus and delta minus and lone pairs on chlorine."
+            />
+            <img
+              class="mol"
+              style="--w: 136"
+              src="assets/molecules/fishhook-homolysis.svg"
+              loading="lazy"
+              alt="A chlorine molecule splitting, shown with two fishhook arrows."
+            />
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section paste" aria-labelledby="paste-title">
+      <div class="container paste-grid">
+        <div class="paste-text">
+          <p class="eyebrow">Into your slides</p>
+          <h2 id="paste-title">Copy, then paste into PowerPoint or Word.</h2>
+          <p>
+            Press <b>Copy</b> and paste. The drawing arrives as a crisp picture with a transparent
+            background that stays sharp when you resize it. Paste it back into Chalkbond later and
+            you can edit it again.
+          </p>
+          <p class="keys" aria-label="Control C, then Control V">
+            <kbd>Ctrl</kbd> + <kbd>C</kbd>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 12h15m-5-5 5 5-5 5" />
+            </svg>
+            <kbd>Ctrl</kbd> + <kbd>V</kbd>
+          </p>
+          <ul class="ticks">
+            <li><b>Slides</b> or <b>Handout</b> size: choose how big it lands in Office.</li>
+            <li>Export PNG, SVG or PDF. Exported files open in Chalkbond again, ready to edit.</li>
+          </ul>
+        </div>
+        <figure
+          class="slide"
+          aria-label="A lesson slide titled Aromatic compounds, made with Chalkbond drawings"
+        >
+          <div class="slide-inner">
+            <p class="slide-title">Aromatic compounds</p>
+            <div class="slide-row">
+              <div>
+                <img
+                  class="mol"
+                  style="--w: 71"
+                  src="assets/molecules/benzene.svg"
+                  loading="lazy"
+                  alt=""
+                />
+                <span>benzene</span>
+              </div>
+              <div>
+                <img
+                  class="mol"
+                  style="--w: 106"
+                  src="assets/molecules/toluene.svg"
+                  loading="lazy"
+                  alt=""
+                />
+                <span>toluene</span>
+              </div>
+              <div>
+                <img
+                  class="mol"
+                  style="--w: 80"
+                  src="assets/molecules/pyridine.svg"
+                  loading="lazy"
+                  alt=""
+                />
+                <span>pyridine</span>
+              </div>
+              <div>
+                <img
+                  class="mol"
+                  style="--w: 106"
+                  src="assets/molecules/naphthalene.svg"
+                  loading="lazy"
+                  alt=""
+                />
+                <span>naphthalene</span>
+              </div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section extras" aria-labelledby="extras-title">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">And the small things</p>
+          <h2 id="extras-title">Quiet details that save you time.</h2>
+        </header>
+        <ul class="cards">
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M2 8.5a15 15 0 0 1 4.2-2.7M9.8 4.9A15 15 0 0 1 22 8.5M5 12a10 10 0 0 1 3.4-2M13.6 9.6A10 10 0 0 1 19 12M8.5 15.5a5 5 0 0 1 7 0M12 19.5h.01M3 3l18 18"
+              />
+            </svg>
+            <h3>Works offline</h3>
+            <p>
+              No internet, no account, nothing sent anywhere. It works the same in a classroom
+              without Wi‑Fi.
+            </p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 4h11l3 3v13H5Z" />
+              <path d="M8 4v5h7V4M8.5 15l2.3 2.3L15.5 13" />
+            </svg>
+            <h3>Saves itself</h3>
+            <p>
+              A drawing with a file name saves as you work. Close the app any time: every tab comes
+              back next time, undo included.
+            </p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 9h18v11H3Z" />
+              <path d="M3 9V5h7v4M10 5h6v4" />
+            </svg>
+            <h3>Tabs</h3>
+            <p>
+              Keep a lesson’s drawings open side by side and switch with Ctrl+Tab, just like browser
+              tabs.
+            </p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 3h6M10 3v6l-5.5 9.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3" />
+              <path d="M7.5 15h9" />
+            </svg>
+            <h3>Chemistry checks</h3>
+            <p>
+              Impossible valences are flagged, and the formula and molar mass of your selection show
+              as you work.
+            </p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="2.5" y="6" width="19" height="12" rx="2" />
+              <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" />
+            </svg>
+            <h3>Number keys</h3>
+            <p>
+              Every tool sits on a key from 1 to 0, and the shortcuts list shows every key in one
+              place.
+            </p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m12 3 7.8 4.5v9L12 21l-7.8-4.5v-9Z" />
+              <circle cx="12" cy="12" r="3.6" />
+            </svg>
+            <h3>Rings and labels</h3>
+            <p>
+              Benzene, cyclohexane or naphthalene in one click, a Kekulé switch, compound numbers,
+              captions, brackets and colour.
+            </p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="install" class="section install" aria-labelledby="install-title">
+      <div class="container install-grid">
+        <div>
+          <p class="eyebrow">Install</p>
+          <h2 id="install-title">Ready in about a minute.</h2>
+          <ol class="steps">
+            <li>
+              <h3>Download</h3>
+              <p>
+                Get <code>Chalkbond-1.0.0-setup.exe</code>. It works without internet from then on.
+              </p>
+            </li>
+            <li>
+              <h3>Run it</h3>
+              <p>
+                The installer is not signed yet, so Windows may say
+                <q>Windows protected your PC</q>. Click <b>More info</b>, then <b>Run anyway</b>.
+              </p>
+            </li>
+            <li>
+              <h3>Start drawing</h3>
+              <p>
+                Chalkbond installs for your user only, with no administrator rights needed, and
+                opens by itself. It is in the Start menu and on your desktop.
+              </p>
+            </li>
+          </ol>
+        </div>
+
+        <aside class="download-card" aria-label="Download">
+          <img src="assets/icon.svg" alt="" width="64" height="64" />
+          <h3>Chalkbond 1.0.0</h3>
+          <p class="download-meta">Windows 10 or 11, 64-bit<br />Installer, 100 MB</p>
+          <a
+            class="btn btn--brand"
+            href="https://github.com/AalishMS/chalkbond/releases/download/v1.0.0/Chalkbond-1.0.0-setup.exe"
+          >
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" />
+            </svg>
+            Download
+          </a>
+          <details>
+            <summary>Check the file (SHA-256)</summary>
+            <code class="hash"
+              >3415a113df30352544aeefb93a198e32ebf49da9ab6ddc631053ccb16b1cde01</code
+            >
+          </details>
+          <p class="download-foot">
+            To remove it, use Settings › Apps. Your drawings stay where you saved them.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="closing" aria-labelledby="closing-title">
+      <div class="container">
+        <h2 id="closing-title">Ready for tomorrow’s lesson?</h2>
+        <a
+          class="btn btn--chalk"
+          href="https://github.com/AalishMS/chalkbond/releases/download/v1.0.0/Chalkbond-1.0.0-setup.exe"
+        >
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" />
+          </svg>
+          Download for Windows
+        </a>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container footer-row">
+        <a class="brand brand--ink" href="./">
+          <img src="assets/icon.svg" alt="" width="24" height="24" />
+          <span>Chalkbond</span>
+        </a>
+        <p>Made for teaching chemistry.</p>
+        <nav aria-label="Footer">
+          <a href="https://github.com/AalishMS/chalkbond/releases">Releases</a>
+          <a href="https://github.com/AalishMS/chalkbond/blob/main/build/THIRD-PARTY-NOTICES.txt"
+            >Third-party notices</a
+          >
+          <a href="fonts/OFL.txt">Font licence</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

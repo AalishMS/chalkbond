@@ -7,7 +7,9 @@ with IUPAC and common names. The aim is a figure you can paste into PowerPoint o
 transparent image. The app works fully offline. Target platform is Windows 10/11 x64 (Windows 10 was not tested by hand before 1.0.0 (owner decision 2026-11-12)); the
 code is kept green on Linux as well.
 
-The product spec is `SPEC.md`. Chalkbond is a personal project (`UNLICENSED`, private).
+The product spec is `SPEC.md`. Chalkbond is a personal project (`UNLICENSED`). The product
+website is https://aalishms.github.io/chalkbond/ (source in `site/`, published by
+`.github/workflows/pages.yml` on every push to `main` that changes it).
 
 ## Status
 
@@ -142,6 +144,7 @@ e2e/                     Playwright tests against the Electron app
 tests/tooling/           tests of the tooling itself (lint rules, font table, goldens)
 tasks/                   plan-<module>.md and todo-<module>.md per module
 docs/windows-checklist.md   manual checks on the Windows machine
+site/                    the product website (static, GitHub Pages)
 ```
 
 ## Specs
