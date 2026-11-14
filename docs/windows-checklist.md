@@ -85,7 +85,7 @@ it, who verified it).
 
 Automated gates (PowerShell, from a clean clone of the final commit):
 
-- [x] `npm ci`, then `npm run check` (exit 0; write the file and test counts)
+- [ ] `npm ci`, then `npm run check` from a fresh clone (not run; standalone gates below passed)
   - Result 2026-11-12, run by the orchestrator on the Windows 11 machine at `e34414b`: `npm run check` exit 0, 239 files, 4606 tests. 
   - Result 2026-11-12, orchestrator, at `8233ea9`: `npm ci` exit 0 (a clean install of the locked dependencies; `package.json` and `package-lock.json` are unchanged since the `npm ci` of 2026-11-11 at `956a4a4`), then `npm run check` exit 0, 240 files, 4614 tests. After the install the Electron binary is present and `e2e/app-window.spec.ts` passes (1 passed). It was run in the development machine's working tree, not in a fresh clone.
 - [x] `npm run test:e2e` (builds first; includes `e2e/win/`; exit 0, count written)
@@ -142,7 +142,11 @@ the final installer. Run them on the **final** build and installer, on Windows 1
 waived, owner decision 2026-11-12), after every tabs task is done. Record each result as the other
 sections do (machine, Office where it matters, who ran it, who verified it).
 
-Automated gates (PowerShell; task TB35, run 2026-11-14 at `ea36057`, Windows 11 Pro build 26300, in
+**Final verification (orchestrator, 2026-11-14, `5d6b268`):** check 261 files / 5422 tests; coverage exit 0 (lines 89.38 %, thresholds held); full e2e 422 passed; os-input 1 passed; Windows installer exit 0; packaged smoke 10 passed (including fresh session creation); shots 119 passed in one uninterrupted run after fixing A10 at its cause. Installer 104,765,831 bytes, unpacked 340,913,314 bytes / 21 files, installed 341,095,474 bytes / 24 files. See the final `SPEC.md` Decisions Log row. All hand checks, teacher-laptop checks, Linux rerun, owner decisions and release status remain open.
+
+- [x] Standalone `npm run check` and `npm test -- --coverage` at `5d6b268` (existing pinned install, no `npm ci`): exit 0; 261 files / 5422 tests; coverage thresholds hold.
+
+Initial gate history (PowerShell; task TB35, run 2026-11-14 at `ea36057`, Windows 11 Pro build 26300, in
 the task's worktree at a clean `ea36057`, not in a fresh clone; the numbers are also in the `SPEC.md`
 Decisions Log, 2026-11-14):
 
@@ -159,7 +163,7 @@ Decisions Log, 2026-11-14):
 - [x] `npm run shots`, and the PNGs of `out/shots/TB32` looked at by eye against the mock-ups A01, A12 and A18–A21 (`node docs/mockups/shell/build.mjs --png out/mockups-shell` makes the reference PNGs)
   - Result 2026-11-14, `ea36057`: exit 0, 119 passed, on the **third** run. The first was cut off by the end of the agent session at 101 passed and 0 failed (no result); the second failed, 98 passed and 21 failed (30 s timeouts with clicks taking 8 to 10 s, one A10 "Untitled 2"; cause not proven, see the log row); the same specs passed alone. Looked at by eye: A18 `strip-several`, `strip-hover`, `strip-focus`, `strip-add-hover`, `strip-warning-unavailable`, `strip-warning-unkept`, `strip-overflow-middle-960`, `strip-drag`, `tooltip-unkept`, `tooltip-close`; A19 `menu-pressed`; A21 `min-tabs-960`; A01 `main`; A12 `shortcuts-tabs`; and `N5/rail-tooltip`, `E21/ring-options-bar`. Not looked at: the other TB32 PNGs (per-tool options bars, the A12 top and 960 shots, the other tooltips, `strip-one`, the overflow start and end), and the native A20, ☰ popup and tab menu. Differences from the mock-ups: the ones in `SPEC-app-shell.md` TH9 (a)–(d), left for the owner, and the fixture's third tab "Untitled" where the mock draws "Untitled 2". This box is the automated run and the test agent's look; it does not replace the owner's look at the installed build below.
 
-Status of this section (2026-11-14): the six automated boxes above are ticked with the results shown. No hand box is ticked by them. Every hand box below is open: none has been done
+Status of this section (2026-11-14): the six TB35 command gates passed at `5d6b268`; the separate combined fresh-clone/`npm ci` box stays unticked. Earlier results above remain history. No hand box is ticked by them. Every hand box below is open: none has been done
 on the final installer. The release is not declared and Checkpoint Z is not reached. The cold-start
 box of "App shell and installer" and Checkpoint E32 stay open on the teacher's laptop (owner decision
 2026-11-12: the development machine is not that laptop); the last box of the hand checks repeats

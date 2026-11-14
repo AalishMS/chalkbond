@@ -14,22 +14,11 @@ tests, see them fail (RED) for the reason given, then write the code. Do not pus
 "R n", "T n", "AS n", "SS n" are rows of the specs named above; "item (n)" is the fix-round test
 list in `SPEC-app-shell.md` "Testing".
 
-## Checkpoint 2026-11-14 (35 of 35 done; TB35's automated gates passed at `ea36057`; see "TB35 result" at the end of this block)
+## Checkpoint 2026-11-14 (35 of 35 done; TB35 final gates passed at `5d6b268`; see "TB35 result" at the end of this block)
 
-**State:** `main` at `0bc72d9` plus the TB34 commit. `npm run check` was green at `0bc72d9`: 261 files,
-5422 tests (the 2026-11-12 note said 260 files, 5500 tests; this is the count now). Not pushed.
-**Done (34 of 35):** TB1-TB34 (TB1-TB20, TB22-TB27, TB29 and TB30 on 2026-11-12 and 2026-11-13; TB21, TB28, TB31
-and TB32 on 2026-11-13; TB33 and TB34 on 2026-11-14), plus fixes: svg-render Decision 16 oracle (seed
-3343550), T8 "an unreadable record keeps the tab", a flaky SEC8 cleanup in `session-store.test.ts`, and two
-drag bugs found by TB32's shots. The feature set was approved and started on 2026-11-12 (its title says so);
-TB34 finished on 2026-11-14. Tabs, auto-save, restore and the ☰ menu are live in the app; the recovery code
-is gone (TB21). Checkpoints A to D above are left unticked on purpose: their boxes need a full
-`npm run test:e2e`, coverage and shots run, which is TB35's job. **No full `npm run test:e2e` run is recorded
-in this file since TB26, TB27, TB29 and TB30 were merged together** (each task ran its own specs; TB26's full
-run was 340 passed / 9 failed before its fixes; TB32's `npm run shots` was 119 passed): TB35 runs it first.
+**State:** TB1-TB35 complete and integrated on main; not pushed. AGENTS.md updates remain unstaged by owner instruction; CLAUDE.md was never staged.
 
-**Next (written before TB35 ran, kept as history):** TB35 only (the automated gates on a quiet machine: check,
-coverage, full e2e with `e2e/win`, os-input, `dist:win`, `test:packaged`, shots).
+**Final verification (orchestrator, 2026-11-14, `5d6b268`):** check 261 files / 5422 tests; coverage exit 0 (lines 89.38 %, thresholds held); full e2e 422 passed; os-input 1 passed; Windows installer exit 0; packaged smoke 10 passed (including fresh session creation); shots 119 passed in one uninterrupted run after fixing A10 at its cause. Installer 104,765,831 bytes, unpacked 340,913,314 bytes / 21 files, installed 341,095,474 bytes / 24 files. See the final `SPEC.md` Decisions Log row. All hand checks, teacher-laptop checks, Linux rerun, owner decisions and release status remain open.
 
 **TB35 result (2026-11-14, `ea36057`, Windows 11, by the test agent; details in the `SPEC.md` Decisions Log row of
 2026-11-14):** every gate exited 0 and no source, test, golden, fixture, budget, timeout or dependency was changed:
@@ -1490,13 +1479,13 @@ The hand boxes, the teacher's-laptop boxes (cold start, E32 with 10 tabs) and th
 **Tests first:** none.
 
 **Acceptance criteria:**
-- [x] Every command above exits 0 at one commit hash, written in the log row (2026-11-14, `ea36057`; `npm run shots` exited 0 on its third run, the first two are in the log row)
+- [x] Every command above exits 0 at one commit hash, written in the log row (2026-11-14, final verification at `5d6b268`; all gates exit 0, shots 119 passed in one uninterrupted run after the A10 correction)
 - [x] The log row says which hand checks are open and that the release is not declared (`SPEC.md` Decisions Log, 2026-11-14)
 
 **Result (2026-11-14):** see the "TB35 result" paragraph at the top of this file and the `SPEC.md` log row. Also
 written: `SPEC-app-shell.md` I1 (sizes) and the two status sentences of `SPEC-app-shell.md` and `SPEC-editor.md`;
 `docs/windows-checklist.md` (the six automated boxes of "Re-checks for the tabs feature set", ticked with their
-results; the combined `npm ci` box says that `npm ci` was not run). `AGENTS.md` and `CLAUDE.md` were not touched.
+results; the combined fresh-clone/`npm ci` box stays unticked). AGENTS.md status updates remain unstaged; CLAUDE.md was not edited or staged by the agents.
 
 **Verification:** the commands above.
 
