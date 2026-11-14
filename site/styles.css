@@ -717,7 +717,7 @@ kbd {
   color: #3b4357;
 }
 
-/* ---------- Details: a page from an exercise book ---------- */
+/* ---------- Details ---------- */
 
 .details-grid {
   display: grid;
@@ -758,13 +758,6 @@ kbd {
   box-shadow:
     0 1px 2px rgb(27 36 33 / 5%),
     0 24px 48px -30px rgb(27 36 33 / 35%);
-}
-
-.sheet::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 calc(var(--margin) - 1.1rem);
-  border-left: 2px solid #e3988a;
 }
 
 .sheet > li {
