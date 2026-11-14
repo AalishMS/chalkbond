@@ -11,12 +11,12 @@ The product spec is `SPEC.md`; the module list is `CAPABILITY-MAP.md`. Module id
 
 | Order | Module | Depends on | Status |
 |---|---|---|---|
-| 1 | `doc-model` | none | done |
+| 1 | `doc-model` | none | done; D2 (the serialisable undo record, `historyToRecord` / `historyFromRecord`) added 2026-11-12 for the tabs feature set |
 | 2 | `chem-core` | doc-model | done |
 | 3 | `svg-render` | doc-model, chem-core | done; automated Windows checks passed 2026-11-11; Office checks (Checkpoint K) ticked 2026-11-12 from the owner's hand checks (Office 2016) |
-| 4 | `editor` | doc-model, chem-core, svg-render | done; Checkpoint R ticked 2026-11-12 from the owner's hand checks ("Pen or touch" not applicable: the teacher uses mouse or touchpad only); feature set of 2026-11-12 implemented, automated gates passed at `e34414b`; E32 open (teacher's laptop) |
+| 4 | `editor` | doc-model, chem-core, svg-render | done; Checkpoint R ticked 2026-11-12 from the owner's hand checks ("Pen or touch" not applicable: the teacher uses mouse or touchpad only); feature set of 2026-11-12 implemented, automated gates passed at `e34414b`; tabs seam (R56-R59: host slots, per-tab state, `replace-doc`, moved keys) implemented 2026-11-12, TB35 automated gates passed at `5d6b268`; E32 open (teacher's laptop) |
 | 5 | `clipboard-export` | doc-model, svg-render | implemented; automated Windows gates passed 2026-11-11; all human boxes ticked 2026-11-12 from the owner's hand checks (`docs/windows-checklist.md`) |
-| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11 and again at `e34414b` (feature set); 16 of 17 human boxes ticked 2026-11-12 from the owner's hand checks and answers; open: cold start on the teacher's laptop, and the owner's hand re-checks on the final installer (`docs/windows-checklist.md`) |
+| 6 | `app-shell` | all | implemented; automated Windows gates passed 2026-11-11 and again at `e34414b` (feature set); 16 of 17 human boxes ticked 2026-11-12 from the owner's hand checks and answers; open: cold start on the teacher's laptop, and the owner's hand re-checks on the final installer (`docs/windows-checklist.md`); tabs, auto-save and the session store implemented (tasks TB1-TB35 done 2026-11-14, `tasks/todo-tabs.md`; TB35 gates passed at `5d6b268`) |
 
 Version 1.0.0 is prepared in `package.json`; the release is pending Checkpoint Z on a Windows
 machine (`docs/windows-checklist.md`). Everything was built on Linux; on 2026-11-11 the automated
@@ -48,11 +48,21 @@ tests), `npm run test:e2e` (342 passed), `npm run test:e2e:os-input`, `npm run d
 mock-ups). The release is **not declared** and Checkpoint Z is **not reached**. Open: the owner's
 hand re-checks on the final installer (the unticked boxes of "Re-checks after the 2026-11-12
 feature set" in `docs/windows-checklist.md`, including the installed size), and, on the teacher's
-laptop, Checkpoint E32 and the cold-start box. Fixes that touched cross-platform code need a Linux
-re-run (`npm run check`, `npm run test:e2e`, the Linux packaging check and `npm run test:packaged`);
-the list is in `docs/windows-checklist.md`. Copy timing on Windows (`docs/editor-perf.md` has the
+laptop, Checkpoint E32 and the cold-start box. **No Linux support** (owner decision 2026-11-14): the
+Linux re-runs are waived and no Linux run is a gate. Copy timing on Windows (`docs/editor-perf.md` has the
 earlier 66.9 ms): median 62.1 ms at `e34414b` (budget 500 ms). Known limitations and review notes:
 the `SPEC.md` Decisions Log (2026-11-12).
+
+The **tabs, auto-save and session feature set** (approved by the owner 2026-11-12; tasks TB1-TB35 in
+`tasks/todo-tabs.md`, plan `tasks/plan-tabs.md`; specs `SPEC-app-shell.md` "Tabs, auto-save and
+session" T1-T18, AS1-AS9, SS1-SS12 and Decisions R30-R51, `SPEC-editor.md` R56-R59,
+`SPEC-doc-model.md` D2) is **implemented**: TB1-TB35 are done (finished 2026-11-14; most code landed
+2026-11-12 and 2026-11-13). One window holds several drawings as tabs; a `.chalk` file saves itself;
+drawings without a file live in the session store; closing the app never prompts and the next start
+brings everything back; the native menu bar is a ☰ button; the keys follow Chrome. **TB35 passed on Windows 11 at `5d6b268` (2026-11-14): check 261 files / 5422 tests, coverage thresholds, full e2e 422, os-input 1, installer, packaged 10, shots 119.** Results and the corrected A10 shot race are in `SPEC.md`. Hand checks and the teacher-laptop boxes remain open (Linux rerun waived 2026-11-14); the release is not declared. Two owner
+questions are open and undecided (`tasks/todo-tabs.md` checkpoint): the `tidy.prop.test.ts` 5 s default
+under machine load, and the open-request limit ("20 waiting" or 20 files in total); so are the TB32
+mock-up differences (`SPEC-app-shell.md` TH9).
 
 ## Workflow
 
@@ -92,7 +102,7 @@ npm run dist:win          # electron-vite build, then the NSIS installer -> dist
 npm run test:packaged     # smoke test of the unpacked packaged app (not in test:e2e, shots or check)
 ```
 
-Linux development check of packaging (not a release gate): `npx electron-vite build`, then
+Linux development check of packaging (Linux is not supported, owner decision 2026-11-14; kept for reference only): `npx electron-vite build`, then
 `npx electron-builder --linux dir` run **from a terminal** (electron-builder writes
 `dist/builder-effective-config.yaml` only when its output is a terminal and `CI` is unset; without
 a terminal use `script -qec "npx electron-builder --linux dir" /dev/null`), then
@@ -146,6 +156,14 @@ Vitest projects (`vitest.config.mts`):
   it is set. A file is validated with its **own** version's strict schema, then migrated; a
   version above 2 is `newer-version`. A skeletal drawing has no `formula` key at all
   (`setStyle(doc, { formula: 'skeletal' })` leaves it undefined).
+- D2 (tabs, 2026-11-12): `historyToRecord(h, { maxSteps })` and `historyFromRecord(value, { clock? })`
+  (`history-record.ts`) turn the opaque `History` into a JSON record (the current drawing as a
+  `serialize` string plus the newest `maxSteps` undo steps; redo steps, `openKey` and the clock are not
+  kept) and back. Restoring verifies every step from the current drawing backwards (inverse applied,
+  strict schema, `checkInvariants`, and the patches must redo the drawing exactly); the first bad step
+  is dropped with every older one (`dropped`), so a damaged history never costs the drawing. Only
+  `file` failing is an error. `History` stays opaque, `HISTORY_DEPTH` stays 500; no schema change.
+  Budgets: 150 ms for 100 steps of a 500-atom drawing, 30 ms for the scheme fixture (`perf.test.ts`).
 
 ### chem-core
 
@@ -267,6 +285,27 @@ Vitest projects (`vitest.config.mts`):
   (`canRun` is true when no label or text editor is open; `run` records a focus request and the
   view moves DOM focus; R47), IME blur defers the commit to `compositionend` (R48), and "Zoom to
   100%" sets zoom 1 (R49, superseding R12).
+- Tabs seam (R56-R59, tabs feature set): **one controller serves every tab** (app-shell R43); an
+  inactive tab is data only (`EditorTabState`, opaque, from `state/tab-state.ts`). On the controller:
+  `takeState()` (tab switch; cancels a gesture, needs no label or text editor open), `putState(s)`
+  (restores history, saved baseline, selection and zoom, puts the stored centre at the canvas centre;
+  a view put in before the canvas is measured is kept on the first measurement), `snapshotState()`
+  (**read-only**: the committed state, no precondition, no side effect; what auto-save and shutdown
+  use, also mid-gesture or in an IME composition) and `newState(doc)`; `load(doc)` is
+  `putState(newState(doc))`. Pure exports `tabStateDoc`, `tabStateDirty`, `tabStateCanUndo`,
+  `tabStateCanRedo`, `tabStateView`, `tabStateMarkSaved` (an auto-save result for an inactive tab) and,
+  in `state/tab-state-record.ts`, `tabStateToRecord(s, { maxSteps })` and
+  `tabStateFromRecord(value, { clock, view, saved })` over doc-model D2 (`saved: 'unknown'` makes the
+  state dirty; `view: null` gives the default view). `EditorEvent` has `{ type: 'view' }` (zoom or
+  pan, never a resize). The `replace-doc` command (R58: one `transact`, selection cleared, viewport
+  kept, not marked saved) is how a file changed outside shows up as one undo step. `Editor` takes the
+  host slots `menu` (first child of the top bar), `tabs` (between the rail and the canvas) and
+  `tabPanelLabelledBy` (the canvas becomes `role="tabpanel"`); `--option-btn-compact` is a shell
+  token, the host's CSS narrows `.editor.has-tabs .btn-opt` below 1100 px (the editor's CSS uses
+  editor tokens only).
+- Moved keys (R59): Tidy reaction is Ctrl+Shift+R; **Zoom to 100% has no key**; `globalCommand`
+  returns `null` for Ctrl+1-9, Ctrl+T, Ctrl+W, Ctrl+Tab, Ctrl+PageUp/PageDown, Ctrl+Shift+T and
+  Ctrl+Shift+0, because those are the host's (app-shell K1, K2).
 
 ### clipboard-export
 
@@ -318,17 +357,63 @@ Vitest projects (`vitest.config.mts`):
   keymap); no menu item or accelerator changed. File > New is always skeletal (the formula is not
   remembered; `file-flows.test.ts` and `e2e/app-files.spec.ts` guard it). A skeletal drawing is
   saved as v1 and a structural one as v2; the 1.0.0 build shows `newer-version` for a v2 file.
+  (Since the tabs set, File > New is a new tab; `tab-flows.test.ts` and `e2e/app-files.spec.ts`
+  guard "always skeletal"; `file-flows.ts` is gone.)
+- Tabs, auto-save and session (tabs feature set; read `SPEC-app-shell.md` T1-T18, AS1-AS9, SS1-SS12
+  before touching any of it). **The session store is the only persistence of unsaved drawings**: the
+  recovery file and its offer are gone, and `userData/recovery` of earlier builds is neither read nor
+  deleted. Main: `src/main/session-store.ts` (one promise chain runs every record write, index
+  write, record delete, auto-save write and outside-change check in arrival order, SS5; the order for
+  a file tab is record, index with `writing`, file, index with the hashes) with the pure rules in
+  `src/main/model/{session-index,session-folders,store-hold,tab-registry,open-requests,tab-menu-model,messages}.ts`.
+  It owns `userData/session/index.json` and `tabs/<tab id>.json`; a file that does not parse is moved
+  to `damaged/` and never deleted (SS11); every store write is the atomic F9 write. Renderer:
+  `src/renderer/app/model/` holds `tabs` (the list), `tab-flows` (open, switch, restore, reopen;
+  auto-save, outside change, Save and Save as; close, unkept, shutdown: one flow at a time over
+  injected ports, so it is tested in node), `tab-close`, `tab-autosave`, `tab-status`, `tab-drag`,
+  `write-schedule`, `autosave-timer`, `session-record`, `keys`; views `TabStrip.tsx`,
+  `MenuButton.tsx`, `host.ts`, `host-keys.ts`.
+- The tab id is a renderer UUID, opaque; main binds a path to it (IPC I12) and the renderer still
+  never holds a path. Auto-save (I13) and the outside-change check (I14) hash file bytes with
+  SHA-256 in main (AS5, no `stat` shortcut); the renderer's hashing is an injected port (the host
+  supplies `crypto.subtle`), because `model/` is DOM-free. Auto-save writes a named `.chalk` file
+  about 2 s after the last change (10 s at most in a burst) and **never** over a file that changed
+  outside the app (it shows as one undo step or as a "(your changes)" tab, AS7), never a picture,
+  never a path bound to another tab (AS8, AS9); Untitled, picture and `kept` tabs are written only
+  under `userData/session`.
+- Open requests (R37): second launches, Open recent and drops queue first in, first out; the
+  request being delivered does not count, so 1 + 20 waiting is the limit (a burst of 22 opens 21,
+  a drop of 22 files opens 21; `src/main/model/open-requests.ts`, `OPEN_QUEUE_LIMIT` in
+  `tab-flows.ts`). Whether that stays is an open owner question.
+- Keys and menu: **no native menu bar** (`Menu.setApplicationMenu(null)`; `autoHideMenuBar: false`
+  is still set). The ☰ button (M4, I9) pops up the four File, Edit, View, Help submenus built from
+  `src/shared/menu.ts` at the button; Alt alone and F10 open it (K3; a lone Alt means no Alt+click,
+  Alt+Tab or other chord). The tab keys (Ctrl+T, W, Tab, Shift+Tab, PageUp/PageDown, Ctrl+1-9,
+  Ctrl+Shift+T) are the host's, in `model/keys.ts` (`hostKey`); Ctrl+1-9 match `KeyboardEvent.code`
+  (R45), so with Num Lock off Ctrl+Numpad3 and Ctrl+Numpad9 are next and previous tab (`key` is
+  `PageDown` / `PageUp` and is tested first). A right press cancelling a tab drag (T13) is a unit
+  test only (Chromium sends no `pointerdown` for a chorded right press). Menu items still register
+  no accelerators and carry no `role`.
 - Menus and native boxes are data: the pure menu model and message table are asserted in unit
   tests, and e2e stubs `dialog` and `Menu.prototype.popup` and reads what Electron received. Menu
   items never register accelerators and carry no `role` (M2, R1); the renderer owns all keys.
 - Test hook and flags (TH1, R9): `window.__chalkbondTest` exists only for an unpackaged build
-  started with `--chalkbond-test-hooks`; `--chalkbond-user-data=<dir>` isolates settings, recovery
-  and the single-instance lock; both are ignored when packaged. `e2e/launch.ts` passes them (and a
+  started with `--chalkbond-test-hooks`; `--chalkbond-user-data=<dir>` isolates settings, the
+  session store and the single-instance lock; both are ignored when packaged. `e2e/launch.ts` passes them (and a
   fresh temp folder) on every launch; `e2e/stub-dialogs.mjs` scripts native dialogs in order.
   Windows-only specs live in `e2e/win/` (`testIgnore` on other platforms, R10); nothing is skipped.
+  Hook helpers added by the tabs set (TH2): `readTabs()`, `activateTab(id)`, `menuRequests()` (there
+  is no `history()`). TH7: an unpackaged flagged build lets a test hold the session chain after a
+  record write (`globalThis.__chalkbondTestMain.hold`, `src/main/model/store-hold.ts`, wired only
+  under `flags.hooks`; `tests/tooling/store-hold-gating.test.ts` and the packaged test guard it).
+  TH8: `launchApp({ probe: true })` loads `e2e/probe-main.mjs` (counts `ipcMain.handle` calls, times
+  the restore) for `e2e/app-tabs-perf.spec.ts`; never loaded by production. Session helpers:
+  `e2e/session-steps.ts`, `e2e/drop-steps.ts`.
 - Every e2e file from A3 on ends by asserting `__chalkbondTestMain.blockedRequests === 0` (SC10).
-- Settings, the recovery file and logs live in `%APPDATA%\Chalkbond`. Recovery is at most 10 s
-  behind (O5); at a Windows session end main asks for a best-effort flush only (R5, R24, R25).
+- Settings, the session store (`session/`) and logs live in `%APPDATA%\Chalkbond`. A tab's record
+  is written within about 2 s of a change (SS4); at a Windows session end main asks for a
+  best-effort `flush-session` only (R5, R24, R25), and a window close never prompts (R35), except
+  for an *unkept* tab whose record could not be written (R51).
 - Packaging: `electron-builder.yml` (spec I1: NSIS one-click, per user, unsigned, `publish: null`).
   `build/icon.ico` and `build/chalk-file.ico` are generated by `npm run icons` without a new
   dependency; `build/THIRD-PARTY-NOTICES.txt` by `npm run notices` (checked by
@@ -354,9 +439,22 @@ Vitest projects (`vitest.config.mts`):
   when you change the guard, and do not touch the mouse while it runs.
 - Put temporary files and logs in the OS temp directory, never in the repo root or the drive
   root. `out/`, `coverage/`, `test-results/` and `dist/` are git-ignored.
-- Keep the project green on Windows and Linux: no POSIX-only syntax in npm scripts and LF line
-  endings (`.gitattributes`). `e2e/launch.ts` has a Linux branch.
+- Windows is the only supported platform (no Linux support, owner decision 2026-11-14). Still use
+  no POSIX-only syntax in npm scripts and LF line endings (`.gitattributes`). `e2e/launch.ts` keeps
+  its Linux branch, unmaintained.
 
+- Tabs gotchas: a write result (auto-save, Save as) is applied to **the tab named by its `tabId`**,
+  never to the active tab (AS3); auto-save never writes over a changed file (AS5 hashes on every
+  write, on activation and on window focus); the session store is the only persistence of unsaved
+  work, so a change to what is stored needs the SS rows and a damaged-file test (a bad file moves to
+  `damaged/`, it never stops start-up); a tab's record is renderer text that main checks only for
+  size and a leading `{`, so the editor's `tabStateFromRecord` and doc-model D2 do the verifying.
+  Shots of the tab strip, the ☰ button, the minimum window, main and shortcuts are
+  `e2e/shots/TB32.shot.ts` (`npm run shots -- TB32`; not `A18`, that name holds the focus-ring
+  shots); look at them beside `node docs/mockups/shell/build.mjs --png out/mockups-shell`. The native
+  ☰ and tab popups are in no shot. Tab-switch budgets (100 ms loaded, 300 ms from the store) are
+  asserted by `e2e/app-tabs-perf.spec.ts` and recorded in `docs/editor-perf.md` "Tabs"; a miss is
+  fixed in the code, never in the budget.
 - Structural-mode work: the goldens diff must show only added files for the pre-existing scenes;
   use `ptPerBlu` for every coordinate-to-pt step and keep R54's offsets in
   `structural-offsets.ts`; the structural perf variants share the skeletal budgets (never a
@@ -371,7 +469,7 @@ Vitest projects (`vitest.config.mts`):
   loaded into it, so that test sends no pointer input and asserts nothing about hover. It needs a
   prior `electron-builder` build (`dist/win-unpacked` or, on Linux, `dist/linux-unpacked`), and it
   reads the version from `package.json`, so rebuild after a version change.
-- Windows session-end behaviour (R24, R25: no prompt, best-effort recovery flush, the close guard
+- Windows session-end behaviour (R24, R25: no prompt, best-effort `flush-session`, the close guard
   after a cancelled shutdown) is proven on Linux only as guard logic with synthetic
   `query-session-end` / `session-end` events. A real shutdown, a cancelled shutdown and IME are
   Windows checklist items. Windows 11's Notepad does not ask before closing, so it is no test
@@ -409,12 +507,24 @@ declared released until the rest pass.
   15 and 16, clipboard-export R10-R12, doc-model D1, app-shell R27 and R28). N11 collected the
   shots `out/shots/N5`, `N7`, `N10` and the golden sheet and compared them with the mock-up PNGs.
 
+- The tabs, auto-save and session feature set (approved 2026-11-12) is implemented: tasks TB1-TB34 of
+  `tasks/todo-tabs.md` are done (TB21, TB28, TB31 and TB32 on 2026-11-13; TB33 and TB34 on
+  2026-11-14; the rest 2026-11-12 and 2026-11-13). `npm run check` was green at `0bc72d9` (261 files,
+  5422 tests). **TB35 passed at `5d6b268` on 2026-11-14**: check, coverage, full e2e (422), os-input (1), installer, packaged (10), shots (119, one uninterrupted final run after the A10 title-race correction). The results and sizes are in `SPEC.md` and I1. Open and not decided by an agent: the
+  owner's hand checks ("Re-checks for the tabs feature set" in `docs/windows-checklist.md`), the
+  teacher's-laptop boxes (cold start with 10 tabs, E32), the `tidy.prop.test.ts` 5 s default under
+  load (the bar forbids raising a timeout without approval), the open-request limit (R37 as built),
+  and the TB32 mock-up differences (`SPEC-app-shell.md` TH9). The release is not declared. The
+  specs' as-built notes (R22 and R37, W4, W6, M4, K1-K3 with R45, T13, F6, I7, TH2, TH7-TH9; doc-model
+  D2; editor R56-R59) are the truth where they differ from older rows. The Linux re-run list for
+  this set is waived (no Linux support, 2026-11-14) and kept as history in `docs/windows-checklist.md`.
+
 - Windows gates still open: the owner's hand re-checks on the final installer, and, on the
   teacher's laptop, Checkpoint E32 and the cold start. "Shutdown right after an edit" is ticked
   ("Yes, it was there") and "Pen or touch" is not applicable (mouse or touchpad only), both from the
   owner's answers of 2026-11-12. Checkpoint Z is not reached. The human checks run on Windows 11
-  only (Windows 10 waived, owner decision 2026-11-12). Linux has not re-run the cross-platform
-  fixes since `0fdf4de` (list in `docs/windows-checklist.md`).
+  only (Windows 10 waived, owner decision 2026-11-12). Linux is not supported (owner decision
+  2026-11-14); its re-runs are waived.
 - Change a behaviour: read the Decisions tables of the module's spec, update the spec first, then
   the code and tests. Decisions of later dates supersede older text anywhere (including this file).
 - A bug found in a finished module: add a failing regression test first. A property-test failure

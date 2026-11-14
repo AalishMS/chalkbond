@@ -16,9 +16,9 @@ list in `SPEC-app-shell.md` "Testing".
 
 ## Checkpoint 2026-11-14 (35 of 35 done; TB35 final gates passed at `5d6b268`; see "TB35 result" at the end of this block)
 
-**State:** TB1-TB35 complete and integrated on main; not pushed. AGENTS.md updates remain unstaged by owner instruction; CLAUDE.md was never staged.
+**State:** TB1-TB35 complete and integrated on main; AGENTS.md and CLAUDE.md committed and pushed 2026-11-14 on the owner's instruction.
 
-**Final verification (orchestrator, 2026-11-14, `5d6b268`):** check 261 files / 5422 tests; coverage exit 0 (lines 89.38 %, thresholds held); full e2e 422 passed; os-input 1 passed; Windows installer exit 0; packaged smoke 10 passed (including fresh session creation); shots 119 passed in one uninterrupted run after fixing A10 at its cause. Installer 104,765,831 bytes, unpacked 340,913,314 bytes / 21 files, installed 341,095,474 bytes / 24 files. See the final `SPEC.md` Decisions Log row. All hand checks, teacher-laptop checks, Linux rerun, owner decisions and release status remain open.
+**Final verification (orchestrator, 2026-11-14, `5d6b268`):** check 261 files / 5422 tests; coverage exit 0 (lines 89.38 %, thresholds held); full e2e 422 passed; os-input 1 passed; Windows installer exit 0; packaged smoke 10 passed (including fresh session creation); shots 119 passed in one uninterrupted run after fixing A10 at its cause. Installer 104,765,831 bytes, unpacked 340,913,314 bytes / 21 files, installed 341,095,474 bytes / 24 files. See the final `SPEC.md` Decisions Log row. All hand checks, teacher-laptop checks, owner decisions and release status remain open (the Linux rerun was waived by the owner on 2026-11-14).
 
 **TB35 result (2026-11-14, `ea36057`, Windows 11, by the test agent; details in the `SPEC.md` Decisions Log row of
 2026-11-14):** every gate exited 0 and no source, test, golden, fixture, budget, timeout or dependency was changed:
@@ -31,7 +31,7 @@ the agent session at 101 passed, 0 failed; the second failed 21 of 119 with 30 s
 unproven machine load, and the same specs passed alone). Installed size after a silent install over the 2026-11-12
 build: 341,096,373 bytes, 24 files (`SPEC-app-shell.md` I1). `npm ci` was not run (the existing pinned install was
 used). **Still open:** the owner's hand checks, the teacher's-laptop boxes (cold start with 10 tabs, Checkpoint
-E32), the Linux re-run; the release is not declared and Checkpoint Z-tabs is not ticked.
+E32); the Linux re-run was waived by the owner on 2026-11-14 (no Linux support); the release is not declared and Checkpoint Z-tabs is not ticked.
 
 **Spec text owed to TB34, done in TB34 (2026-11-14):** the "as built" notes are in
 `SPEC-app-shell.md` (R22 and R37, W4, W6, M4, the keys table with R45, T13, F6, I7, TH2; TH7, TH8 and TH9 were
@@ -1500,7 +1500,7 @@ results; the combined fresh-clone/`npm ci` box stays unticked). AGENTS.md status
 ---
 
 ### Checkpoint Z-tabs
-- [ ] TB35 done; the owner's hand checks of "Re-checks for the tabs feature set" and the teacher's-laptop boxes are open; the release is not declared (2026-11-14: TB35's automated gates passed at `ea36057`; **this box stays unticked on purpose**, because the checkpoint is not reached while the owner's hand checks, the teacher's-laptop boxes and the Linux re-run are open)
+- [ ] TB35 done; the owner's hand checks of "Re-checks for the tabs feature set" and the teacher's-laptop boxes are open; the release is not declared (2026-11-14: TB35's automated gates passed at `ea36057`; **this box stays unticked on purpose**, because the checkpoint is not reached while the owner's hand checks and the teacher's-laptop boxes are open; the Linux re-run was waived on 2026-11-14)
 
 ---
 
