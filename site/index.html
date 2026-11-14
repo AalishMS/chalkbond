@@ -327,81 +327,93 @@
       </div>
     </section>
 
-    <section class="section extras" aria-labelledby="extras-title">
-      <div class="container">
-        <header class="section-head">
+    <section class="section details" aria-labelledby="details-title">
+      <div class="container details-grid">
+        <header class="details-head">
           <p class="eyebrow">And the small things</p>
-          <h2 id="extras-title">Quiet details that save you time.</h2>
+          <h2 id="details-title">Quiet details that save you time.</h2>
+          <p>The parts you only notice when another program gets them wrong.</p>
         </header>
-        <ul class="cards">
+
+        <ol class="sheet">
           <li>
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M2 8.5a15 15 0 0 1 4.2-2.7M9.8 4.9A15 15 0 0 1 22 8.5M5 12a10 10 0 0 1 3.4-2M13.6 9.6A10 10 0 0 1 19 12M8.5 15.5a5 5 0 0 1 7 0M12 19.5h.01M3 3l18 18"
+            <h3>Every tool has a number key.</h3>
+            <p>
+              1 is Select and 0 is Text. The numbers are printed on the tool rail, so there is
+              nothing to learn by heart.
+            </p>
+            <ol class="keymap" aria-label="Number keys for the tools">
+              <li><kbd>1</kbd>Select</li>
+              <li><kbd>2</kbd>Erase</li>
+              <li><kbd>3</kbd>Bond</li>
+              <li><kbd>4</kbd>Chain</li>
+              <li><kbd>5</kbd>Ring</li>
+              <li><kbd>6</kbd>Atom</li>
+              <li><kbd>7</kbd>Arrow</li>
+              <li><kbd>8</kbd>Plus</li>
+              <li><kbd>9</kbd>Curly</li>
+              <li><kbd>0</kbd>Text</li>
+            </ol>
+          </li>
+          <li>
+            <h3>Your tabs come back.</h3>
+            <p>
+              Keep a lesson’s drawings open as tabs and switch with Ctrl+Tab. Close Chalkbond
+              whenever you like: next time every tab is where you left it, undo history included.
+            </p>
+            <div class="proof-wrap proof-wrap--fade">
+              <img
+                class="proof proof--cut"
+                src="assets/app-tabs.png"
+                width="509"
+                height="35"
+                loading="lazy"
+                alt="Chalkbond’s tab strip with three tabs: esterification, ethanol, and Untitled with a dot because it has no file yet."
               />
-            </svg>
-            <h3>Works offline</h3>
-            <p>
-              No internet, no account, nothing sent anywhere. It works the same in a classroom
-              without Wi‑Fi.
-            </p>
+            </div>
           </li>
           <li>
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 4h11l3 3v13H5Z" />
-              <path d="M8 4v5h7V4M8.5 15l2.3 2.3L15.5 13" />
-            </svg>
-            <h3>Saves itself</h3>
+            <h3>The arithmetic is done for you.</h3>
             <p>
-              A drawing with a file name saves as you work. Close the app any time: every tab comes
-              back next time, undo included.
+              Select a molecule and the status bar shows its formula and molar mass, ready for the
+              worked example.
             </p>
+            <div class="proof-wrap proof-wrap--fade-narrow">
+              <img
+                class="proof"
+                src="assets/app-formula.png"
+                width="435"
+                height="28"
+                loading="lazy"
+                alt="The status bar reading C2H4O2 · 60.05 g/mol for acetic acid, beside the Slides and Handout switch."
+              />
+            </div>
           </li>
           <li>
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 9h18v11H3Z" />
-              <path d="M3 9V5h7v4M10 5h6v4" />
-            </svg>
-            <h3>Tabs</h3>
+            <h3>It catches slips.</h3>
             <p>
-              Keep a lesson’s drawings open side by side and switch with Ctrl+Tab, just like browser
-              tabs.
+              Typed H20 with a zero, or gave a carbon five bonds? The atom gets a red outline, and
+              pointing at it says what is wrong, before it reaches your slide.
             </p>
+            <div class="proof-wrap">
+              <img
+                class="proof"
+                src="assets/app-h20.png"
+                width="168"
+                height="132"
+                loading="lazy"
+                alt="A label typed as H20 with a zero, outlined in red, with the tooltip: Unknown label H20."
+              />
+            </div>
           </li>
           <li>
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 3h6M10 3v6l-5.5 9.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3" />
-              <path d="M7.5 15h9" />
-            </svg>
-            <h3>Chemistry checks</h3>
+            <h3>It never needs the internet.</h3>
             <p>
-              Impossible valences are flagged, and the formula and molar mass of your selection show
-              as you work.
+              There is no account and nothing is sent anywhere. All 406 compound names live on your
+              computer, so it works the same in a classroom without Wi‑Fi.
             </p>
           </li>
-          <li>
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="2.5" y="6" width="19" height="12" rx="2" />
-              <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" />
-            </svg>
-            <h3>Number keys</h3>
-            <p>
-              Every tool sits on a key from 1 to 0, and the shortcuts list shows every key in one
-              place.
-            </p>
-          </li>
-          <li>
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m12 3 7.8 4.5v9L12 21l-7.8-4.5v-9Z" />
-              <circle cx="12" cy="12" r="3.6" />
-            </svg>
-            <h3>Rings and labels</h3>
-            <p>
-              Benzene, cyclohexane or naphthalene in one click, a Kekulé switch, compound numbers,
-              captions, brackets and colour.
-            </p>
-          </li>
-        </ul>
+        </ol>
       </div>
     </section>
 

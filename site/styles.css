@@ -717,44 +717,135 @@ kbd {
   color: #3b4357;
 }
 
-/* ---------- Extras ---------- */
+/* ---------- Details: a page from an exercise book ---------- */
 
-.cards {
+.details-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+  align-items: start;
+  gap: clamp(2.5rem, 6vw, 5.5rem);
 }
 
-.cards li {
-  padding: 1.75rem;
+.details-head {
+  position: sticky;
+  top: 3rem;
+  padding-top: 2rem;
+}
+
+.details-head h2 {
+  font-size: clamp(2rem, 2.6vw + 1rem, 3rem);
+  text-wrap: balance;
+}
+
+.details-head p:not(.eyebrow) {
+  max-width: 22rem;
+  margin-top: 1rem;
+  color: var(--ink-soft);
+  font-size: 1.125rem;
+  text-wrap: pretty;
+}
+
+.sheet {
+  --margin: clamp(3.75rem, 7vw, 5rem);
+  position: relative;
+  margin: 0;
+  padding: 0.5rem clamp(1.25rem, 4vw, 3rem) 0.5rem var(--margin);
+  list-style: none;
+  counter-reset: part;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
+  border-radius: 6px;
+  box-shadow:
+    0 1px 2px rgb(27 36 33 / 5%),
+    0 24px 48px -30px rgb(27 36 33 / 35%);
 }
 
-.cards .i {
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0.6rem;
-  margin-bottom: 1.1rem;
+.sheet::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 calc(var(--margin) - 1.1rem);
+  border-left: 2px solid #e3988a;
+}
+
+.sheet > li {
+  position: relative;
+  padding: clamp(1.75rem, 3.5vw, 2.4rem) 0;
+  counter-increment: part;
+}
+
+.sheet > li + li {
+  border-top: 1px dashed #d9d5c9;
+}
+
+.sheet > li::before {
+  content: '(' counter(part, lower-alpha) ')';
+  position: absolute;
+  top: calc(clamp(1.75rem, 3.5vw, 2.4rem) - 0.1rem);
+  right: calc(100% + 1.75rem);
+  font: italic 500 1.15rem/1.5 var(--font-display);
   color: var(--brand);
-  background: #e7f0ed;
-  border-radius: 12px;
-  stroke-width: 1.75;
 }
 
-.cards h3 {
-  font-size: 1.3rem;
+.sheet h3 {
+  font-size: clamp(1.3rem, 0.8vw + 1rem, 1.5rem);
   margin-bottom: 0.5rem;
+  text-wrap: balance;
 }
 
-.cards p {
+.sheet p {
+  max-width: 34rem;
   color: var(--ink-soft);
-  font-size: 0.98rem;
+  text-wrap: pretty;
+}
+
+/* Real pieces of the app, at the size they appear on screen (the files are 2x). A piece wider
+   than the column is cut, not shrunk, and fades out at the cut. */
+.proof-wrap {
+  margin-top: 1.25rem;
+  overflow: hidden;
+}
+
+.proof {
+  max-width: none;
+  background: #ffffff;
+  border: 1px solid #dadde3;
+  border-radius: 8px;
+}
+
+.proof--cut {
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+}
+
+.proof-wrap--fade {
+  mask-image: linear-gradient(to right, #000 calc(100% - 5rem), transparent);
+}
+
+.keymap {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.4rem;
+  max-width: 34rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.keymap li {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+}
+
+.keymap kbd {
+  width: 100%;
+  max-width: 2.6rem;
+  min-width: 0;
+  padding: 0.3em 0;
+  font-size: 0.95rem;
 }
 
 /* ---------- Install ---------- */
@@ -944,8 +1035,13 @@ kbd {
     display: block;
   }
 
-  .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .details-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .details-head {
+    position: static;
+    padding-top: 0;
   }
 
   .download-card {
@@ -966,8 +1062,13 @@ kbd {
     display: none;
   }
 
-  .cards {
-    grid-template-columns: minmax(0, 1fr);
+  .keymap {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    row-gap: 0.75rem;
+  }
+
+  .proof-wrap--fade-narrow {
+    mask-image: linear-gradient(to right, #000 calc(100% - 4rem), transparent);
   }
 
   .cta .btn {
